@@ -1189,7 +1189,7 @@ const products = {
             image: "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg",
             images: ["https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg", "https://ae-pic-a1.aliexpress-media.com/kf/Sd1f15bc6c69d44b1a54e7f35584e8a56A.jpg_220x220q75.jpg_.avif", "https://ae-pic-a1.aliexpress-media.com/kf/S28a736c22b0a40a3af9e11437c1b67caR.jpg_220x220q75.jpg_.avif", "https://ae-pic-a1.aliexpress-media.com/kf/Se302af0f5e5a4aefb78f102a14f42b7c9.jpg_220x220q75.jpg_.avif", "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg", "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg", "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg",]
         },
-        { name: "bi", price: "400", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" },
+        { name: "Hello Illari", price: "400", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" },
         { name: "ci", price: "300", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" },
         { name: "di", price: "200", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" }
     ]
