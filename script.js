@@ -145,7 +145,9 @@ let debounceTimeout;
 let userHistoryStack = [];
 let currentIndex = -1;
 
-
+if (location.pathname !== "/" && !location.pathname.includes(".")) {
+  history.replaceState(null, "", "/");
+}
 function navigate(action, data = null) {
     if (isReplaying) return;
     const newState = { action, data };
