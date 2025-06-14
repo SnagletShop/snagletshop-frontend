@@ -1125,12 +1125,12 @@ async function createPaymentModal() {
     document.body.appendChild(modal);
     document.getElementById("paymentModal").style.display = "flex";
 
-    // 👉 Create payment intent + mount element immediately
     const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi');
     stripeInstance = stripe;
 
     const cartItems = JSON.parse(localStorage.getItem("basket")) || {};
-    const formattedCart = Object.values(cartItems).map(item => {
+
+    const fullCart = Object.values(cartItems).map(item => {
         const price = parseFloat(item.price) || 1;
         const expectedPrice = parseFloat(item.expectedPurchasePrice) || price;
         return {
@@ -1143,25 +1143,24 @@ async function createPaymentModal() {
         };
     });
 
-    const summarizedCart = formattedCart.map(item => {
+    const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
+
+    const summarizedCart = stripeCart.map(item => {
         const name = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
         const option = item.selectedOption ? ` (${item.selectedOption})` : '';
         return `${item.quantity}x ${name}${option}`;
     }).join(", ").slice(0, 499);
-
-
 
     const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             websiteOrigin: "Dropshipping Website",
-            products: formattedCart,
+            products: stripeCart, // ✅ safe for Stripe
             currency: selectedCurrency,
             metadata: { order_summary: summarizedCart }
         })
     });
-
 
     const data = await response.json();
     const clientSecret = data.clientSecret;
@@ -1175,9 +1174,9 @@ async function createPaymentModal() {
     paymentElementInstance = elementsInstance.create("payment");
     paymentElementInstance.mount("#payment-element");
 
-    // 👉 Confirm on button click
-    document.getElementById("confirm-payment-button").addEventListener("click", async () => {
-        const confirmBtn = document.getElementById("confirm-payment-button");
+    // Attach one-time click handler
+    const confirmBtn = document.getElementById("confirm-payment-button");
+    if (!confirmBtn.dataset.listenerAttached) {
         confirmBtn.addEventListener("click", async () => {
             console.log("🟢 Pay button clicked");
 
@@ -1187,7 +1186,6 @@ async function createPaymentModal() {
                 return;
             }
 
-            // Disable the button immediately
             confirmBtn.disabled = true;
             confirmBtn.textContent = "Processing...";
 
@@ -1208,7 +1206,6 @@ async function createPaymentModal() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ paymentIntentId, userDetails })
             });
-
 
             const { error, paymentIntent } = await stripe.confirmPayment({
                 elements: elementsInstance,
@@ -1243,10 +1240,10 @@ async function createPaymentModal() {
             }
         });
 
-    });
-
-
+        confirmBtn.dataset.listenerAttached = "true";
+    }
 }
+
 // When the user clicks "Pay Now"
 
 
@@ -1334,30 +1331,28 @@ async function processPayment(e) {
         return;
     }
 
-    const formattedCart = Object.values(cartItems).map(item => {
+    const fullCart = Object.values(cartItems).map(item => {
         const price = parseFloat(item.price) || 1;
         const expectedPrice = parseFloat(item.expectedPurchasePrice) || price;
-        const productLink = item.productLink?.trim() || "N/A";
-
         return {
             name: item.name,
             quantity: parseInt(item.quantity) || 1,
-            price: price.toFixed(2),                    // ✅ selling price
-            expectedPurchasePrice: expectedPrice.toFixed(2), // ✅ your cost
-            productLink,                                // ✅ supplier link
+            price: price.toFixed(2),
+            expectedPurchasePrice: expectedPrice.toFixed(2),
+            productLink: item.productLink || "N/A",
             ...(item.selectedOption && { selectedOption: item.selectedOption })
         };
     });
 
+    // Create a Stripe-safe version (no productLink)
+    const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
 
     // Stripe metadata-safe summary (≤ 500 characters)
-    const summarizedCart = formattedCart.map(item => {
+    const summarizedCart = stripeCart.map(item => {
         const shortName = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
         const option = item.selectedOption ? ` (${item.selectedOption})` : '';
-
         return `${item.quantity}x ${shortName}${option}`;
-    }).join(", ");
-    const metadataSummary = summarizedCart.slice(0, 499); // safety buffer
+    }).join(", ").slice(0, 499);
 
     const websiteOrigin = "Dropshipping Website";
     console.log("🔍 Sending currency to server:", selectedCurrency);
@@ -1367,14 +1362,12 @@ async function processPayment(e) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                websiteOrigin: "Dropshipping Website",
-                products: formattedCart,
+                websiteOrigin,
+                products: stripeCart, // ✅ sending productLink-free version
                 currency: selectedCurrency,
                 metadata: { order_summary: summarizedCart }
-                // ❌ Do NOT send userDetails here
             })
         });
-
 
         if (!response.ok) {
             const text = await response.text();
@@ -1433,6 +1426,7 @@ async function processPayment(e) {
         alert("An error occurred while processing payment.");
     }
 }
+
 
 async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) {
     const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi'); // ✅ Replace with your real publishable key
