@@ -354,7 +354,7 @@ function invokeFunctionByName(functionName, args = []) {
 }
 async function fetchExchangeRatesFromServer() {
     try {
-        const response = await fetch("http://91.99.147.194:5500/rates");
+        const response = await fetch("https://api.snagletshop.com/rates");
         const data = await response.json();
         console.log("🔍 Raw exchange rate response from server:", data); // 👈 Add this
         if (data.rates) {
@@ -950,7 +950,7 @@ function GoToSettings() {
         }
 
         try {
-            const response = await fetch("http://91.99.147.194:5500/send-message", {
+            const response = await fetch("https://api.snagletshop.com/send-message", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, message })
@@ -1151,7 +1151,7 @@ async function createPaymentModal() {
 
 
 
-    const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+    const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1203,7 +1203,7 @@ async function createPaymentModal() {
 
             const paymentIntentId = clientSecret.split("_secret")[0];
 
-            await fetch("http://91.99.147.194:5500/store-user-details", {
+            await fetch("https://api.snagletshop.com/store-user-details", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ paymentIntentId, userDetails })
@@ -1363,7 +1363,7 @@ async function processPayment(e) {
     console.log("🔍 Sending currency to server:", selectedCurrency);
 
     try {
-        const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1439,7 +1439,7 @@ async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) 
     stripeInstance = stripe;
 
     try {
-        const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
