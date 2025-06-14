@@ -311,7 +311,23 @@ searchInput.addEventListener("keydown", (e) => {
 mobileSearchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") e.preventDefault();
 });
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const productName = params.get("product");
 
+    if (productName) {
+        const found = Object.values(products)
+            .flat()
+            .find(p => p.name === productName);
+
+        if (found) {
+            GoToProductPage(found.name, found.price, found.description || "No description available.");
+        } else {
+            console.warn("Product not found:", productName);
+        }
+    }
+
+});
 // Also call searchProducts on keyup (fallback, optional)
 document.addEventListener("DOMContentLoaded", () => {
     searchInput.addEventListener("keyup", searchProducts);
