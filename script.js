@@ -1,3 +1,4 @@
+
 window.functionBlacklist = new Set([
 
 ]);
@@ -146,7 +147,7 @@ let userHistoryStack = [];
 let currentIndex = -1;
 
 if (location.pathname !== "/" && !location.pathname.includes(".")) {
-  history.replaceState(null, "", "/");
+    history.replaceState(null, "", "/");
 }
 function navigate(action, data = null) {
     if (isReplaying) return;
@@ -478,16 +479,15 @@ function replayEventByIndex(index) {
     }
 }
 function searchProducts() {
-
     const query = document.getElementById("Search_Bar").value
         .toLowerCase()
-        .replace(/\s+/g, "") // 🔄 Remove all spaces
+        .replace(/\s+/g, "")
         .trim();
-    if (!query) {
-        return; // ✅ Skip search if empty — prevents flicker
-    }
+
+    if (!query) return;
+
     const viewer = document.getElementById("Viewer");
-    viewer.innerHTML = ""; // Clear previous products
+    viewer.innerHTML = "";
 
     let results = [];
 
@@ -516,55 +516,82 @@ function searchProducts() {
             const productDiv = document.createElement("div");
             productDiv.classList.add("product");
 
-            productDiv.innerHTML = `
-                <div class="product-card">
-                    <p class="product-name">${product.name}</p>
-                    <img class="Clickable_Image" 
-                        src="${product.image}" 
-                        alt="${product.name}" 
-                        data-name="${product.name}" 
-                        data-price="${product.price}" 
-                        data-imageurl="${product.image}"
-                        data-description="${product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER}">
-                    <p class="product-price">${product.price}€</p>
+            const card = document.createElement("div");
+            card.className = "product-card";
 
-                    <div class="quantity-container">
-                        <div class="quantity-controls">
-                            <button class="Button" onclick="decreaseQuantity('${product.name}')">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-                            <span class="WhiteText" id="quantity-${product.name}">1</span>
-                            <button class="Button" onclick="increaseQuantity('${product.name}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
-                        </div>
-                                           <button class="add-to-cart" onclick="addToCart(
-    '${product.name}',
-    '${product.price}',
-    '${product.image}',
-    '${product.expectedPurchasePrice}',
-    '${product.productLink}',
-    '${product.description}',
-    '${(product.productOptions && product.productOptions[1]) || ""}'
-)">${TEXTS.PRODUCT_SECTION.ADD_TO_CART}</button>
-                    </div>
-                </div>
-            `;
+            const nameP = document.createElement("p");
+            nameP.className = "product-name";
+            nameP.textContent = product.name;
 
-            viewer.appendChild(productDiv);
-        });
+            const img = document.createElement("img");
+            img.className = "Clickable_Image";
+            img.src = product.image;
+            img.alt = product.name;
+            img.dataset.name = product.name;
+            img.dataset.price = product.price;
+            img.dataset.imageurl = product.image;
+            img.dataset.description = product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER;
 
-        document.querySelectorAll(".Clickable_Image").forEach(img => {
-            img.addEventListener("click", function () {
-                const productName = this.dataset.name;
-                const productPrice = this.dataset.price;
-                const productDescription = this.dataset.description;
-                navigate("GoToProductPage", [productName, productPrice, productDescription]);
+            img.addEventListener("click", () => {
+                navigate("GoToProductPage", [
+                    product.name,
+                    product.price,
+                    product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+                ]);
             });
 
-        });
+            const priceP = document.createElement("p");
+            priceP.className = "product-price";
+            priceP.textContent = `${product.price}€`;
 
-    }
-    else {
+            const quantityContainer = document.createElement("div");
+            quantityContainer.className = "quantity-container";
+
+            const quantityControls = document.createElement("div");
+            quantityControls.className = "quantity-controls";
+
+            const decBtn = document.createElement("button");
+            decBtn.className = "Button";
+            decBtn.textContent = TEXTS.BASKET.BUTTONS.DECREASE;
+            decBtn.addEventListener("click", () => decreaseQuantity(product.name));
+
+            const quantitySpan = document.createElement("span");
+            quantitySpan.className = "WhiteText";
+            quantitySpan.id = `quantity-${product.name}`;
+            quantitySpan.textContent = "1";
+
+            const incBtn = document.createElement("button");
+            incBtn.className = "Button";
+            incBtn.textContent = TEXTS.BASKET.BUTTONS.INCREASE;
+            incBtn.addEventListener("click", () => increaseQuantity(product.name));
+
+            const addToCartBtn = document.createElement("button");
+            addToCartBtn.className = "add-to-cart";
+            addToCartBtn.textContent = TEXTS.PRODUCT_SECTION.ADD_TO_CART;
+            addToCartBtn.addEventListener("click", () => {
+                addToCart(
+                    product.name,
+                    product.price,
+                    product.image,
+                    product.expectedPurchasePrice,
+                    product.productLink,
+                    product.description,
+                    (product.productOptions && product.productOptions[1]) || ""
+                );
+            });
+
+            quantityControls.append(decBtn, quantitySpan, incBtn);
+            quantityContainer.append(quantityControls, addToCartBtn);
+
+            card.append(nameP, img, priceP, quantityContainer);
+            productDiv.appendChild(card);
+            viewer.appendChild(productDiv);
+        });
+    } else {
         viewer.innerHTML = "<p>No products found.</p>";
     }
 }
+
 
 
 
@@ -1620,28 +1647,24 @@ function handleSortChange(newSort) {
 
 
 function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
-    lastCategory = category; // ✅ Store selected category
+    lastCategory = category;
     if (window.matchMedia("(max-width: 680px)").matches) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
     sortBy = sortBy || "NameFirst";
     sortOrder = sortOrder || "asc";
     category = category || "Default_Page";
-    document.getElementById('Viewer').innerHTML = ''; // Clear existing products
+    document.getElementById('Viewer').innerHTML = '';
 
     if (category === "Default_Page") {
         clearCategoryHighlight();
     }
 
     let savedSort = localStorage.getItem("defaultSort") || "NameFirst";
-
     const viewer = document.getElementById("Viewer");
-    console.log("✅ Sorting event fired: " + sortBy + " (" + sortOrder + ")");
-
-    // Track the current category globally
     window.currentCategory = category;
 
-    // Ensure a wrapper exists
     let wrapper = document.getElementById("ProductWrapper");
     if (!wrapper) {
         wrapper = document.createElement("div");
@@ -1650,11 +1673,9 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         wrapper.appendChild(viewer);
     }
 
-    // Clear previous products
     viewer.innerHTML = "";
-    cart = {}; // Reset cart
+    cart = {};
 
-    // ✅ Check if category is valid and contains an iterable array
     if (!products.hasOwnProperty(category) || !Array.isArray(products[category])) {
         console.warn(`⚠️ Category '${category}' is invalid or does not contain a valid product list.`);
         return;
@@ -1662,7 +1683,6 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
 
     let productList = [...products[category]];
 
-    // Sorting logic
     productList.sort((a, b) => {
         if (sortBy === "Cheapest") return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
         if (sortBy === "Priciest") return sortOrder === "asc" ? b.price - a.price : a.price - b.price;
@@ -1672,7 +1692,6 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
 
     removeSortContainer();
 
-    // Create sorting dropdown if it doesn't exist
     let sortContainer = document.getElementById("SortContainer");
     if (!sortContainer) {
         sortContainer = document.createElement("div");
@@ -1690,61 +1709,86 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         wrapper.insertBefore(sortContainer, viewer);
     }
 
-    // Ensure correct dropdown selection
     let sortSelectElement = document.getElementById("sortSelect");
     if (sortSelectElement) {
         sortSelectElement.value = sortBy;
     }
 
-    // Display products
     productList.forEach(product => {
         cart[product.name] = 1;
         const productDiv = document.createElement("div");
         productDiv.classList.add("product");
-        productDiv.innerHTML = `
-            <div class="product-card">
-                <p class="product-name">${product.name}</p>
-                <img class="Clickable_Image" 
-                     src="${product.image}" 
-                     alt="${product.name}" 
-                     data-name="${product.name}" 
-                     data-price="${product.price}" 
-                     data-imageurl="${product.image}"
-                     data-description="${product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER}">
-                <p class="product-price">${product.price}${TEXTS.CURRENCIES.EUR}</p>
 
-                <div class="quantity-container">
-                    <div class="quantity-controls">
-                        <button class="Button" onclick="decreaseQuantity('${product.name}')">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-                        <span class="WhiteText" id="quantity-${product.name}">1</span>
-                        <button class="Button" onclick="increaseQuantity('${product.name}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
-                    </div>
-                   <button class="add-to-cart" onclick="addToCart(
-    '${product.name}',
-    '${product.price}',
-    '${product.image}',
-    '${product.expectedPurchasePrice}',
-    '${product.productLink}',
-    '${product.description}',
-    '${(product.productOptions && product.productOptions[1]) || ""}'
-)">${TEXTS.PRODUCT_SECTION.ADD_TO_CART}</button>
+        const card = document.createElement("div");
+        card.className = "product-card";
 
+        const nameP = document.createElement("p");
+        nameP.className = "product-name";
+        nameP.textContent = product.name;
 
-                </div>
-            </div>
-        `;
-        viewer.appendChild(productDiv);
-    });
+        const img = document.createElement("img");
+        img.className = "Clickable_Image";
+        img.src = product.image;
+        img.alt = product.name;
+        img.dataset.name = product.name;
+        img.dataset.price = product.price;
+        img.dataset.imageurl = product.image;
+        img.dataset.description = product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER;
 
-    // Add click listeners to product images
-    document.querySelectorAll(".Clickable_Image").forEach(img => {
-        img.addEventListener("click", function () {
-            const productName = this.dataset.name;
-            const productPrice = this.dataset.price;
-            const productDescription = this.dataset.description;
-            navigate("GoToProductPage", [productName, productPrice, productDescription]);
+        img.addEventListener("click", () => {
+            navigate("GoToProductPage", [
+                product.name,
+                product.price,
+                product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+            ]);
         });
 
+        const priceP = document.createElement("p");
+        priceP.className = "product-price";
+        priceP.textContent = `${product.price}${TEXTS.CURRENCIES.EUR}`;
+
+        const quantityContainer = document.createElement("div");
+        quantityContainer.className = "quantity-container";
+
+        const quantityControls = document.createElement("div");
+        quantityControls.className = "quantity-controls";
+
+        const decBtn = document.createElement("button");
+        decBtn.className = "Button";
+        decBtn.textContent = TEXTS.BASKET.BUTTONS.DECREASE;
+        decBtn.addEventListener("click", () => decreaseQuantity(product.name));
+
+        const quantitySpan = document.createElement("span");
+        quantitySpan.className = "WhiteText";
+        quantitySpan.id = `quantity-${product.name}`;
+        quantitySpan.textContent = "1";
+
+        const incBtn = document.createElement("button");
+        incBtn.className = "Button";
+        incBtn.textContent = TEXTS.BASKET.BUTTONS.INCREASE;
+        incBtn.addEventListener("click", () => increaseQuantity(product.name));
+
+        const addToCartBtn = document.createElement("button");
+        addToCartBtn.className = "add-to-cart";
+        addToCartBtn.textContent = TEXTS.PRODUCT_SECTION.ADD_TO_CART;
+        addToCartBtn.addEventListener("click", () => {
+            addToCart(
+                product.name,
+                product.price,
+                product.image,
+                product.expectedPurchasePrice,
+                product.productLink,
+                product.description,
+                (product.productOptions && product.productOptions[1]) || ""
+            );
+        });
+
+        quantityControls.append(decBtn, quantitySpan, incBtn);
+        quantityContainer.append(quantityControls, addToCartBtn);
+
+        card.append(nameP, img, priceP, quantityContainer);
+        productDiv.appendChild(card);
+        viewer.appendChild(productDiv);
     });
 }
 
