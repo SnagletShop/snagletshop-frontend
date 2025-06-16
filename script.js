@@ -1594,7 +1594,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const path = decodeURIComponent(window.location.pathname.slice(1).toLowerCase());
 
-    if (path && path !== "index.html") {
+    if (path && path !== "index.html" && path !== "404.html") {
         const normalized = path.replace(/-/g, " ").trim();
 
         const checkProducts = setInterval(() => {
