@@ -1562,7 +1562,11 @@ document.addEventListener("DOMContentLoaded", () => {
             clearInterval(checkProductsLoaded); // Stop checking
             const params = new URLSearchParams(window.location.search);
             if (!params.has("product")) {
-                loadProducts("Default_Page", "NameFirst", "asc");
+                const params = new URLSearchParams(window.location.search);
+                if (!params.has("product")) {
+                    loadProducts("Default_Page", "NameFirst", "asc");
+                }
+
             }
 
         } else {
