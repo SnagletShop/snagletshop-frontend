@@ -292,17 +292,7 @@ searchInput.addEventListener("input", debounce(() => {
     }
 }, 300));
 
-mobileSearchInput.addEventListener("input", debounce(() => {
-    const query = mobileSearchInput.value.trim();
-    searchInput.value = query; // Sync with desktop
 
-    if (query.length > 0) {
-        trackSearch(query);
-        searchProducts(query);
-    } else {
-        loadProducts(lastCategory || "Default_Page"); // Reload last selected category
-    }
-}, 300));
 
 // Allow pressing "Enter" without form submission
 searchInput.addEventListener("keydown", (e) => {
@@ -312,39 +302,62 @@ mobileSearchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") e.preventDefault();
 });
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ DOM fully loaded. Checking for product URL...");
+
     const params = new URLSearchParams(window.location.search);
-    const productName = params.get("product");
+    const queryProductName = params.get("product");
+    const path = decodeURIComponent(window.location.pathname.slice(1).toLowerCase());
 
-    if (productName) {
-        const found = Object.values(products)
-            .flat()
-            .find(p => p.name === productName);
+    let normalizedPathName = path.replace(/-/g, " ").trim();
+    let productNameToFind = queryProductName || normalizedPathName;
 
-        if (found) {
-            GoToProductPage(found.name, found.price, found.description || "No description available.");
-        } else {
-            console.warn("Product not found:", productName);
-        }
-    }
+    if (
+        productNameToFind &&
+        productNameToFind !== "index.html" &&
+        productNameToFind !== "404.html"
+    ) {
+        let attempts = 0;
+        const maxAttempts = 50;
 
-});
-// Also call searchProducts on keyup (fallback, optional)
-document.addEventListener("DOMContentLoaded", () => {
-    searchInput.addEventListener("keyup", searchProducts);
-});
-const path = window.location.pathname;
-if (path && path.length > 1) {
-    const cleaned = decodeURIComponent(path.replace("/", "").replace(/-/g, " "));
-    const found = Object.values(products)
-        .flat()
-        .find(p => p.name.toLowerCase() === cleaned.toLowerCase());
+        const checkProducts = setInterval(() => {
+            if (typeof products !== "undefined" && Object.keys(products).length > 0) {
+                clearInterval(checkProducts);
 
-    if (found) {
-        GoToProductPage(found.name, found.price, found.description || "No description available.");
+                const match = Object.values(products)
+                    .flat()
+                    .find(
+                        p =>
+                            p.name.toLowerCase().trim() ===
+                            productNameToFind.toLowerCase().trim()
+                    );
+
+                if (match) {
+                    console.log("✅ Matched product:", match.name);
+                    GoToProductPage(match.name, match.price, match.description || "No description available.");
+                } else {
+                    console.warn("❌ No product matched for:", productNameToFind);
+                    Default_Page();
+                }
+            } else {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkProducts);
+                    console.error("⏰ Timeout: products not loaded in time.");
+                    Default_Page();
+                } else {
+                    console.log("⌛ Waiting for products to load...");
+                }
+            }
+        }, 100);
     } else {
-        console.warn("🔍 No matching product for path:", path);
+        Default_Page();
     }
-}
+
+    // Also call searchProducts on keyup (fallback)
+    if (typeof searchInput !== "undefined") {
+        searchInput.addEventListener("keyup", searchProducts);
+    }
+});
 
 const functionRegistry = {
     loadProducts,
@@ -1548,25 +1561,6 @@ function basketButtonFunction() {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
-    const path = window.location.pathname;
-    const rawName = decodeURIComponent(window.location.pathname.slice(1)).toLowerCase();
-
-    const normalized = rawName.replace(/%/g, ' ').toLowerCase();
-
-    if (normalized && typeof products !== "undefined") {
-        for (const category in products) {
-            const match = products[category].find(p =>
-                p.name.toLowerCase() === normalized
-            );
-            if (match) {
-                GoToProductPage(match.name, match.price, match.description || "No description");
-                break;
-            }
-        }
-    }
-});
-
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1589,44 +1583,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadProducts(window.currentCategory);
 });
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ DOM fully loaded. Checking for product URL...");
 
-    const path = decodeURIComponent(window.location.pathname.slice(1).toLowerCase());
 
-    if (path && path !== "index.html" && path !== "404.html") {
-        const normalized = path.replace(/-/g, " ").trim();
-        console.log("🔍 Looking for product name:", normalized);
-
-        let attempts = 0;
-        const maxAttempts = 50; // stop after ~5 seconds (50 × 100ms)
-
-        const checkProducts = setInterval(() => {
-            if (typeof products !== "undefined" && Object.keys(products).length > 0) {
-                clearInterval(checkProducts);
-
-                const match = Object.values(products)
-                    .flat()
-                    .find(p => p.name.toLowerCase().trim() === normalized);
-
-                if (match) {
-                    console.log("✅ Matched product:", match.name);
-                    GoToProductPage(match.name, match.price, match.description || "No description available.");
-                } else {
-                    console.warn("❌ No product matched for:", normalized);
-                }
-            } else {
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    clearInterval(checkProducts);
-                    console.error("⏰ Timeout: products not loaded in time.");
-                } else {
-                    console.log("⌛ Waiting for products to load...");
-                }
-            }
-        }, 100);
-    }
-});
 
 
 let searchTimeout;
