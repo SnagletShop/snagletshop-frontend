@@ -332,6 +332,19 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("DOMContentLoaded", () => {
     searchInput.addEventListener("keyup", searchProducts);
 });
+const path = window.location.pathname;
+if (path && path.length > 1) {
+    const cleaned = decodeURIComponent(path.replace("/", "").replace(/-/g, " "));
+    const found = Object.values(products)
+        .flat()
+        .find(p => p.name.toLowerCase() === cleaned.toLowerCase());
+
+    if (found) {
+        GoToProductPage(found.name, found.price, found.description || "No description available.");
+    } else {
+        console.warn("🔍 No matching product for path:", path);
+    }
+}
 
 const functionRegistry = {
     loadProducts,
