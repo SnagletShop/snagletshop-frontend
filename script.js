@@ -1589,62 +1589,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadProducts(window.currentCategory);
 });
-document.addEventListener("DOMContentLoaded", function () {
-    console.log("✅ DOMContentLoaded event fired!");
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ DOM fully loaded. Checking for product URL...");
 
-    let checkProductsLoaded = setInterval(() => {
-        if (typeof products !== "undefined") {
-            clearInterval(checkProductsLoaded); // Stop checking once products are loaded
+    const path = decodeURIComponent(window.location.pathname.slice(1).toLowerCase());
 
-            // Extract product name from URL
-            let path = decodeURIComponent(window.location.pathname.substring(1).toLowerCase()); // Remove "/"
-            if (!path || path === "index.html") return; // Prevent running on homepage
+    if (path && path !== "index.html") {
+        const normalized = path.replace(/-/g, " ").trim();
 
-            // Normalize path by removing spaces and converting to lowercase
-            let normalizedPath = path.replace(/\s+/g, "-");
+        const checkProducts = setInterval(() => {
+            if (typeof products !== "undefined") {
+                clearInterval(checkProducts);
 
-            // Find product with a name that matches the normalized URL path
-            let product = Object.values(products).flat().find(p =>
-                p.name.toLowerCase().replace(/\s+/g, "-") === normalizedPath
-            );
+                const match = Object.values(products)
+                    .flat()
+                    .find(p => p.name.toLowerCase() === normalized);
 
-            if (product) {
-                console.log("✅ Product found:", product.name);
-                GoToProductPage(product.name, product.price, product.description);
+                if (match) {
+                    console.log("✅ Matched product:", match.name);
+                    GoToProductPage(match.name, match.price, match.description || "No description");
+                } else {
+                    console.warn("❌ No product matched for:", normalized);
+                }
             } else {
-                console.error("❌ Product not found:", normalizedPath);
+                console.log("⌛ Waiting for products to load...");
             }
-        } else {
-            console.error("⚠️ Waiting for products to load...");
-        }
-    }, 100);
+        }, 100);
+    }
 });
 
-document.addEventListener("DOMContentLoaded", function () {
-    console.log("✅ DOMContentLoaded event fired!");
-    let checkProductsLoaded = setInterval(() => {
-        if (typeof products !== "undefined") {
-            clearInterval(checkProductsLoaded); // Stop checking once products are loaded
-
-            // Extract product name from URL
-            let path = decodeURIComponent(window.location.pathname.substring(1).toLowerCase()); // Remove "/"
-            if (!path || path === "index.html") return; // Prevent running on homepage
-
-            let product = Object.values(products).flat().find(p =>
-                p.name.toLowerCase().replace(/\s+/g, "-") === path.toLowerCase()
-            );
-
-            if (product) {
-                console.log("✅ Product foud:", product.name);
-                GoToProductPage(product.name, product.price, product.description);
-            } else {
-                console.error("❌ Product nt found:", path);
-            }
-        } else {
-            console.error("⚠️ Waiting for poducts to load...");
-        }
-    }, 100);
-});
 let searchTimeout;
 
 
@@ -2472,20 +2445,5 @@ function getProductPrice(productName) {
     return product ? product.price : "N/A";
 }
 
-// ✅ Handle Browser Back/Forward Navigation
-window.addEventListener("popstate", function () {
-    let path = decodeURIComponent(window.location.pathname.substring(1).toLowerCase());
-
-    let product = Object.values(products).flat().find(p =>
-        p.name.toLowerCase().replace(/\s+/g, "-") === path
-    );
-
-    if (product) {
-        console.log("🔄 Navigated back to:", product.name);
-        GoToProductPage(product.name, product.price, product.description);
-    } else {
-        console.error("❌ Product not found:", path);
-    }
-});
 
 
