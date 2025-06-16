@@ -302,20 +302,14 @@ mobileSearchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") e.preventDefault();
 });
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ DOM fully loaded. Checking for product URL...");
+    console.log("✅ DOM fully loaded. Checking for product from query...");
 
     const params = new URLSearchParams(window.location.search);
-    const queryProductName = params.get("product");
-    const path = decodeURIComponent(window.location.pathname.slice(1).toLowerCase());
+    const productName = params.get("product");
 
-    let normalizedPathName = path.replace(/-/g, " ").trim();
-    let productNameToFind = queryProductName || normalizedPathName;
+    if (productName) {
+        console.log("🔍 Looking for product:", productName);
 
-    if (
-        productNameToFind &&
-        productNameToFind !== "index.html" &&
-        productNameToFind !== "404.html"
-    ) {
         let attempts = 0;
         const maxAttempts = 50;
 
@@ -325,17 +319,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const match = Object.values(products)
                     .flat()
-                    .find(
-                        p =>
-                            p.name.toLowerCase().trim() ===
-                            productNameToFind.toLowerCase().trim()
-                    );
+                    .find(p => p.name.toLowerCase().trim() === productName.toLowerCase().trim());
 
                 if (match) {
                     console.log("✅ Matched product:", match.name);
                     GoToProductPage(match.name, match.price, match.description || "No description available.");
                 } else {
-                    console.warn("❌ No product matched for:", productNameToFind);
+                    console.warn("❌ Product not found:", productName);
                     Default_Page();
                 }
             } else {
@@ -350,14 +340,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }, 100);
     } else {
-        Default_Page();
+        Default_Page(); // No ?product= → show homepage
     }
 
-    // Also call searchProducts on keyup (fallback)
+    // Optional: add search handler if `searchInput` exists
     if (typeof searchInput !== "undefined") {
         searchInput.addEventListener("keyup", searchProducts);
     }
 });
+
 
 const functionRegistry = {
     loadProducts,
