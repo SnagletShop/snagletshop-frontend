@@ -1564,7 +1564,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let checkProductsLoaded = setInterval(() => {
         if (typeof products !== "undefined") {
             clearInterval(checkProductsLoaded); // Stop checking
-            loadProducts("Default_Page", "NameFirst", "asc"); // Load default category
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has("product")) {
+                loadProducts("Default_Page", "NameFirst", "asc");
+            }
+
         } else {
             console.error("⚠️ Waiting for products to load...");
         }
