@@ -419,7 +419,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const navEntry = performance.getEntriesByType("navigation")[0];
     const isPageRefresh = navEntry?.type === "reload";
 
-    if (isPageRefresh) {
+    if (isPageRefresh && !new URLSearchParams(window.location.search).has("product")) {
+
         console.log("🔄 Page refresh detected, clearing session history...");
         sessionStorage.removeItem("userEventHistory");
         sessionStorage.removeItem("currentEventIndex");
