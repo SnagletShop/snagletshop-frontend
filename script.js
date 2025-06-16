@@ -1596,27 +1596,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (path && path !== "index.html" && path !== "404.html") {
         const normalized = path.replace(/-/g, " ").trim();
+        console.log("🔍 Looking for product name:", normalized);
+
+        let attempts = 0;
+        const maxAttempts = 50; // stop after ~5 seconds (50 × 100ms)
 
         const checkProducts = setInterval(() => {
-            if (typeof products !== "undefined") {
+            if (typeof products !== "undefined" && Object.keys(products).length > 0) {
                 clearInterval(checkProducts);
 
                 const match = Object.values(products)
                     .flat()
-                    .find(p => p.name.toLowerCase() === normalized);
+                    .find(p => p.name.toLowerCase().trim() === normalized);
 
                 if (match) {
                     console.log("✅ Matched product:", match.name);
-                    GoToProductPage(match.name, match.price, match.description || "No description");
+                    GoToProductPage(match.name, match.price, match.description || "No description available.");
                 } else {
                     console.warn("❌ No product matched for:", normalized);
                 }
             } else {
-                console.log("⌛ Waiting for products to load...");
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkProducts);
+                    console.error("⏰ Timeout: products not loaded in time.");
+                } else {
+                    console.log("⌛ Waiting for products to load...");
+                }
             }
         }, 100);
     }
 });
+
 
 let searchTimeout;
 
