@@ -419,17 +419,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const navEntry = performance.getEntriesByType("navigation")[0];
     const isPageRefresh = navEntry?.type === "reload";
 
-    if (isPageRefresh && !new URLSearchParams(window.location.search).has("product")) {
-
+    const params = new URLSearchParams(window.location.search);
+    if (isPageRefresh && !params.has("product")) {
         console.log("🔄 Page refresh detected, clearing session history...");
         sessionStorage.removeItem("userEventHistory");
         sessionStorage.removeItem("currentEventIndex");
-
-        // Optionally reset variables in memory too
         window.userEventHistory = [];
         window.currentEventIndex = 0;
-
-        // Replace browser state with default
         history.replaceState({ page: "loadProducts", index: 0 }, "", window.location.pathname);
     }
 });
