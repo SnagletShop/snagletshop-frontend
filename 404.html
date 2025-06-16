@@ -1,0 +1,3252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnagletShop</title>
+    <script src="Products.js" defer></script>
+    <script src="script.js" defer></script>
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <style>
+        :root {
+            --body_Background_Colour: #1A1A1A;
+            --TopBar_Background_Colour: #1a1919;
+            --SideBar_Background_Colour: #181818;
+            --SearchBar_Background_Colour: #1C1C1C;
+
+            --Modal_Background_Colour: #14171a;
+            --BasketReceipt_Background_Colour: #22222200;
+
+            --ButtonHoverState_Background_Colour: #0056b3;
+            --Default_Text_Colour: #ffffff;
+            --Borders_Colour: #232D34;
+        }
+
+        .light-mode {
+            --body_Background_Colour: #2C2A26;
+            /* Dark beige background */
+            --TopBar_Background_Colour: #3E3B36;
+            /* Dark neutral beige */
+            --SideBar_Background_Colour: #4A4742;
+            /* Muted dark beige */
+            --SearchBar_Background_Colour: #5A564E;
+            /* Subtle beige-gray */
+
+            --Modal_Background_Colour: #3E3B36;
+            /* Soft dark beige for modals */
+            --BasketReceipt_Background_Colour: #4F4A43;
+            /* Slightly lighter beige-gray */
+
+            --ButtonHoverState_Background_Colour: #C19A6B;
+            /* Warm gold beige */
+            --Default_Text_Colour: #ffffff;
+            /* Soft beige for good contrast */
+            /* Muted beige-gray for subtle borders */
+            --Borders_Colour: #C0C0C0;
+        }
+
+        .dark-mode {
+            --body_Background_Colour: #1A1A1A;
+            --TopBar_Background_Colour: #1a1919;
+            --SideBar_Background_Colour: #181818;
+            --SearchBar_Background_Colour: #1C1C1C;
+
+            --Modal_Background_Colour: #14171a;
+            --BasketReceipt_Background_Colour: #22222200;
+
+            --ButtonHoverState_Background_Colour: #0056b3;
+            --Default_Text_Colour: #ffffff;
+            --Borders_Colour: #232D34;
+        }
+
+
+
+
+
+
+        @media (min-width: 680px) {
+
+            .mobileTopBar,
+            .mobileSearch_Bar,
+            .mobileNavButtonDiv,
+            .mobileCurrencySelect,
+            .mobileBasketButton,
+            .mobileSettingsButton,
+            .mobileSideBar,
+            .mobileViewer,
+            .mobileModalDiv,
+            .mobileLogo,
+            .mobileMainPage {
+                display: none;
+            }
+
+
+            body {
+                width: auto;
+                /* Default: Matches viewport width at 100% zoom */
+                height: auto;
+                margin: 0;
+                display: grid;
+                grid-template-columns: minmax(0, auto) 1fr;
+                /* First column fits content but stays within viewport */
+                background-color: var(--body_Background_Colour);
+                overflow-x: hidden;
+
+                /* Prevents scrolling at 100% zoom */
+            }
+
+            /* When zoom level is above 100%, allow scrolling instead of shrinking */
+
+            /* Default: hide the menu button on desktop */
+            .MenuButton {
+                display: none;
+            }
+
+            .Button {
+                color: white;
+                width: 100%;
+                font-size: 14px;
+                border: none;
+                border-radius: 5%;
+                aspect-ratio: 1/1;
+                width: 25%;
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+                margin-top: 0px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .Logo {
+                grid-row: 1 / 1;
+                grid-column: 1 / 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                height: 8vh;
+                width: 31.5vh;
+
+                background-color: var(--SideBar_Background_Colour);
+                /* <-- applied always */
+                color: var(--Default_Text_Colour);
+                font-size: 2.5vh;
+                font-weight: bold;
+
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+                border-radius: 5px;
+
+            }
+
+
+
+            .MainPage {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                font-size: 4vh;
+                color: var(--Default_Text_Colour);
+                /* Match logo text */
+                background-color: var(--body_Background_Colour);
+                /* Match logo bg */
+
+                border: 0.15em solid var(--Borders_Colour);
+                /* Same as logo */
+                border-radius: 5px;
+
+                box-sizing: border-box;
+                font-weight: bold;
+            }
+
+
+            .MainPage h1 {
+                font-size: 5vh;
+                /* Scale with height */
+            }
+
+            /* Fix TopBar shifting */
+            .TopBar {
+                position: relative;
+                top: 0;
+
+                /* Match the sidebar width */
+                right: 0;
+
+                height: 8vh;
+                background-color: var(--TopBar_Background_Colour);
+
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 2vh;
+            }
+
+            .currency-select {
+                flex-shrink: 0;
+                max-height: 100%;
+                aspect-ratio: 1 / 0.75;
+                height: 100%;
+                font-size: 2.5vh;
+                border: 1px solid var(--Borders_Colour);
+                border-radius: 5px;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                margin-left: 1%;
+                padding: 0.5vh;
+                appearance: none;
+                /* Removes default browser styling */
+                -webkit-appearance: none;
+                /* For Safari */
+                -moz-appearance: none;
+                /* For Firefox */
+                text-align: center;
+            }
+
+
+
+
+
+            .SideBar {
+                background-color: var(--SideBar_Background_Colour);
+                grid-row: 2 / 3;
+                grid-column: 1 / 2;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                max-width: 31.5vh;
+                min-width: 31.5vh;
+                justify-content: start;
+
+            }
+
+
+            .Viewer {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(308px, 1fr));
+                grid-column-gap: 15px;
+                /* or column-gap */
+                grid-row-gap: 15px;
+                background-color: var(--body_Background_Colour);
+                padding: 15px;
+                width: 98%;
+                max-width: 100%;
+                margin: 0 1rem;
+                justify-content: center;
+
+                height: auto;
+
+            }
+
+            .Search_Bar {
+                max-height: 50%;
+                min-height: 50%;
+                width: 50%;
+                height: 50%;
+                font-size: 2vh;
+                border-radius: 5px;
+                border: 0.05em solid var(--Borders_Colour);
+                border-color: var(--Borders_Colour);
+                padding-left: 1%;
+                margin-left: 1%;
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                overflow-x: auto;
+
+            }
+
+
+            /* Fix button spacing issue */
+            .Category_Button.Active {
+                background-color: var(--Accent_Colour);
+                border-color: var(--Accent_Colour);
+                color: red;
+                font-weight: bold;
+                border-radius: 5px;
+
+            }
+
+
+
+            .Category_Button {
+                width: 95%;
+                height: 6vh;
+                background-color: var(--body_Background_Colour);
+                font-size: 2.5vh;
+                /* Scales with button height */
+                display: flex;
+                align-items: center;
+                border-radius: 5px;
+                justify-content: center;
+                box-sizing: border-box;
+                border: 0.1em solid var(--Borders_Colour);
+                /* Scales with font size */
+            }
+
+            .Category_Button h3 {
+                font-size: 2vh;
+                /* Ensures text scales with button */
+                white-space: nowrap;
+                border-radius: 5px;
+                margin: 0;
+            }
+
+            .product {
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                border: 1px solid #333;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                padding: 10px;
+                width: 300px;
+                /* Allow grid to define width */
+                max-width: 300px;
+                /* Ensures uniform width */
+                height: 450px;
+                max-height: 450px;
+                display: flex;
+                justify-content: center;
+            }
+
+            .Clickable_Image {
+
+                max-height: 280px;
+                aspect-ratio: 1/1;
+                margin-left: 10px;
+
+            }
+
+            .quantity-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+                padding-bottom: 15px;
+            }
+
+            .quantity-controls {
+                display: flex;
+                justify-content: left;
+                align-items: center;
+                width: 50%;
+
+                gap: 5%;
+                /* Take up 1/2 of the available space */
+                color: white;
+
+            }
+
+            .add-to-cart {
+                background-color: #007BFF;
+                color: #fff;
+
+                border: none;
+                aspect-ratio: 1/0.25;
+                width: 50%;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                flex: 1;
+                /* Take up the remaining space */
+                text-align: center;
+            }
+
+            .add-to-cart:hover {
+                background-color: var(--ButtonHoverState_Background_Colour);
+            }
+
+
+
+
+
+            .NavButtonDiv {
+                height: 6vh;
+                width: 20%;
+
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 5px;
+
+                /* Remove fixed positioning */
+                position: static;
+            }
+
+
+
+
+            .BasketButton,
+            .SettingsButton {
+                aspect-ratio: 1 / 1;
+                height: 100%;
+                width: auto;
+                max-width: 100%;
+                border-radius: 5px;
+
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                border: 1px solid var(--Borders_Colour);
+                font-size: 2.5vh;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .Quantity-Controls-Basket {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                width: 20%;
+                padding-right: 10px;
+            }
+
+            .Item-Details {
+                display: grid;
+
+                gap: 0px;
+                grid-template-rows: 1fr 3fr;
+                width: 50%;
+                height: 140%
+            }
+
+            .ProductPageBuyButton {
+                color: var(--Default_Text_Colour);
+                height: 65px;
+                width: auto;
+                max-width: 100%;
+                border-radius: 5px;
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+            }
+
+            .BasketText {
+                font-size: 40px;
+                /* Scales based on view
+            7port width */
+                padding-bottom: 10px;
+
+                overflow: hidden;
+                /* Prevents text from wrapping */
+                color: white;
+                height: 40px;
+                max-width: 26ch;
+                word-wrap: normal;
+                word-break: normal;
+                unicode-bidi: normal;
+                text-overflow: ellipsis;
+            }
+
+            .BasketTextDescription {
+                font-size: 20px;
+                color: white;
+                line-height: 1.2em;
+                /* 👈 Controls line height */
+                height: calc(1.2em * 6);
+                /* 👈 Ensures 6-line height */
+
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 6;
+                text-overflow: ellipsis;
+            }
+
+
+
+            .BasketChangeQuantityButton {
+                width: 50%;
+                background-color: var(--body_Background_Colour);
+                aspect-ratio: 1/1;
+                font-size: 200%;
+                color: var(--Default_Text_Colour);
+
+
+                color: white;
+
+
+                border: none;
+                border-radius: 5%;
+                aspect-ratio: 1 / 1;
+
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+                margin-top: 0px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .BasketChangeQuantityText {
+                font-size: 37.5px;
+                color: white;
+            }
+
+            .SortContainer {
+                background-color: var(--TopBar_Background_Colour);
+                grid-row: 1 / 1;
+                grid-column: 2 / 3;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: left;
+                padding: 0 3vh;
+                /* Fixed padding syntax */
+                width: 100%;
+                /* Ensures it spans the entire column */
+                height: 5vh;
+                max-width: 100%;
+                /* Fixed max-width */
+                max-height: 5vh;
+                color: white;
+                font-size: 3vh;
+            }
+
+            /* Ensure the dropdown doesn't resize */
+            #sortSelect {
+                min-width: 10.5%;
+                /* Minimum width */
+                max-width: 100%;
+                /* Allow it to expand */
+                width: auto;
+                /* Adjust width dynamically */
+                height: 4vh;
+                font-size: 60%;
+                border: 0px solid var(--Borders_Colour);
+                border-radius: 3px;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                margin-left: 1%;
+                padding: 0.5vh;
+                text-align: left;
+                appearance: none;
+                /* Removes default browser styling */
+                -webkit-appearance: none;
+                /* For Safari */
+                -moz-appearance: none;
+                /* For Firefox */
+            }
+
+            #sortSelect:focus {
+                outline: none;
+                box-shadow: none;
+                /* Optional: removes any glow or shadow */
+            }
+
+
+
+
+            .BasketTotalPrice {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 1000px;
+                height: 350px;
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+                /* Scales with font size */
+            }
+
+            .Basket-Item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 1000px;
+                max-width: 2000px;
+                aspect-ratio: 5.25/1;
+                height: auto;
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+            }
+
+            .Basket_Item_Container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 1000px;
+                max-width: 2000px;
+                aspect-ratio: 5.25/1;
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+                /* Scales with font size */
+            }
+
+            .Basket_Image {
+                max-width: 250px;
+                aspect-ratio: 1/1;
+                margin-left: 5px;
+            }
+
+            .Basket_Viewer {
+                display: grid;
+                width: 100%;
+                max-width: 100%;
+                margin: 0 1rem;
+                row-gap: 10px;
+                max-height: 15vh;
+                height: 15vh;
+            }
+
+            .WhiteText {
+                color: white;
+            }
+
+            .ProductPrice {
+                color: white;
+            }
+
+            .ProductName {
+                color: white;
+            }
+
+            .product-name {
+                color: var(--Default_Text_Colour);
+                font-size: 20px;
+                height: auto;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                /* 👈 Allow up to 2 lines */
+                -webkit-box-orient: vertical;
+                /* 👈 Set box direction */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                line-clamp: 2;
+                margin-top: 10px;
+                /* Optional fallback for modern browsers */
+            }
+
+            .Product_Viewer {
+                margin-top: 24px;
+                width: 1300px;
+                height: auto;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                border-radius: 5px;
+                position: relative;
+                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 32px 80px;
+
+                overflow: visible;
+                font-size: 16px;
+                /* Base font size for scaling */
+            }
+
+            .Product_Details {
+                display: flex;
+                gap: 20px;
+                width: 100%;
+                height: fit-content;
+            }
+
+            .Product_Images {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                /* Default alignment for children (main image) */
+                height: 650px;
+                width: 650px;
+            }
+
+            .image-slider-wrapper {
+
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+                border-radius: 5px;
+
+                height: 500px;
+                width: 500px;
+                overflow: hidden;
+            }
+
+
+            .slide-image {
+                transition: transform 0.4s ease;
+                will-change: transform;
+            }
+
+            .Thumbnail {
+                display: flex;
+                width: 80px;
+                height: 80px;
+                border: 1px solid var(--Borders_Colour);
+            }
+
+            .Thumbnail.active {
+                border: 4px solid red;
+                /* Thicker border on selected image */
+                box-shadow: 0 0 5px var(--Accent_Colour);
+                /* Optional glow effect */
+            }
+
+            .ThumbnailsHolder {
+                display: grid;
+                grid-template-columns: repeat(5, 80px);
+                gap: 10px;
+                padding-right: 40px;
+                max-width: 500px;
+                width: 500px;
+                margin-top: 5px;
+                height: auto;
+                padding-left: 0;
+                /* remove left padding */
+                justify-content: center;
+                /* center the grid content */
+                align-self: center;
+                /* center ThumbnailsHolder in Product_Images */
+            }
+
+            .thumbnails img {
+                width: 80px;
+                max-width: 80px;
+                height: 80px;
+                max-height: 80px;
+                cursor: pointer;
+            }
+
+            .Product_Info {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                width: 520px;
+                max-height: auto;
+                color: var(--Default_Text_Colour);
+            }
+
+            .Add_To_Cart_Product {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .Product_Option_Button {
+                margin: 5px;
+                padding: 8px 14px;
+                border: 1px solid #ccc;
+                background-color: white;
+                cursor: pointer;
+                border-radius: 6px;
+                transition: 0.2s ease;
+            }
+
+            .Product_Option_Button.selected {
+                background-color: #007bff;
+                color: white;
+                border-color: #007bff;
+            }
+
+            .Product_Option_Buttons {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            .Product_Option_Label {
+                margin: 10px 0 5px 0;
+            }
+
+
+
+
+
+            .ImageControl {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+
+                padding-right: 15vh;
+
+            }
+
+            .ImageControlButtonPrevious,
+            .ImageControlButtonNext {
+                position: relative;
+                background-color: transparent;
+                color: white;
+                font-size: 50px;
+                border: none;
+                cursor: pointer;
+                height: 60px;
+                width: 60px;
+                border-radius: 5px;
+                margin-bottom: 25px;
+                aspect-ratio: 1 / 1;
+                overflow: visible;
+                padding-bottom: 15px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .ButtonText {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+                /* ✅ Ensures proper centering */
+                aspect-ratio: 1/1;
+            }
+
+            .ImageControlButtonText {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+                /* ✅ Ensures proper centering */
+                margin-top: 12.5px;
+                aspect-ratio: 1/1;
+            }
+
+            .ImageControlButtonPrevious::before,
+            .ImageControlButtonNext::before {
+                content: "";
+                position: absolute;
+                left: 50%;
+                bottom: 100%;
+                width: 80%;
+
+                height: 0px;
+                background: rgba(0, 0, 0, 0.3);
+                filter: blur(5px);
+                opacity: 0;
+                transform: translateX(-50%);
+                transition: opacity 0.3s ease-in-out;
+            }
+
+
+
+            .mainImage {
+                max-width: 500px;
+                max-height: 500px;
+                width: 500px;
+                height: 500px;
+                aspect-ratio: 1 / 1;
+                border: 1px solid var(--Borders_Colour);
+                /* 0.1rem ≈ 1.6px */
+                box-sizing: border-box;
+            }
+
+
+
+
+            .Quantity_Controls_ProductPage {
+                display: flex;
+                justify-content: left;
+                align-items: center;
+                width: 50%;
+
+                gap: 5%;
+                /* Take up 1/2 of the available space */
+                color: white;
+            }
+
+            .ProductPageQuantityContainer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+                padding-bottom: 15px;
+
+            }
+
+
+
+
+            .BasketReceipt {
+                background: rgba(255, 255, 255, 0);
+                color: rgb(255, 255, 255);
+                width: 1000px;
+                height: 300px;
+            }
+
+            .ReceiptTable {
+                width: 1000px;
+                max-width: 1000px;
+                border-collapse: collapse;
+                background-color: rgba(255, 255, 255, 0);
+                filter: none !important;
+                text-shadow: none !important;
+                opacity: 1 !important;
+                border: 1px solid var(--Borders_Colour);
+            }
+
+
+            .ReceiptTable td {
+                padding: 15px;
+                border-bottom: 1px solid var(--Borders_Colour);
+                /* Keep individual row borders */
+                font-size: 30px;
+            }
+
+            .ReceiptTable td:nth-child(3) {
+
+                text-align: right;
+                font-size: 30px;
+
+                /* Pushes the price slightly away from the right edge */
+            }
+
+            .ReceiptTable td:nth-child(2) {
+                text-align: left;
+                color: white;
+                overflow: hidden;
+                text-overflow: ellipsis;
+
+                unicode-bidi: normal;
+                text-overflow: ellipsis;
+                word-wrap: normal;
+                word-break: normal;
+                max-width: 26ch;
+                /* Adjust spacing */
+                font-size: 30px;
+                white-space: nowrap;
+            }
+
+            .ReceiptFooter {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                border: 1px solid var(--Borders_Colour);
+                gap: 20%;
+                height: auto;
+                max-width: 2000px;
+                aspect-ratio: 15/1;
+            }
+
+            .PriceAndOptionRow {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .BasketSelectedOption {
+                font-size: 25px;
+                color: var(--Default_Text_Colour);
+                height: 30px;
+                margin-top: -3px;
+                text-align: left;
+                margin-bottom: 25px;
+            }
+
+            .PayButton {
+                background: #007BFF;
+                color: white;
+
+                border: none;
+                cursor: pointer;
+                width: 50%;
+                margin-left: 0.5%;
+                height: 90%;
+                font-size: auto;
+
+            }
+
+            .PayTotalText {
+                color: white;
+                margin-left: auto;
+                text-align: right;
+                font-size: 35px;
+                margin-right: 15px;
+                max-height: auto;
+                height: auto;
+                width: 40%;
+            }
+
+            .Basket-Item-Pay {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 1000px;
+                box-sizing: border-box;
+                border: 1px var(--Borders_Colour);
+            }
+
+            .basket-item-price {
+                font-size: 25px;
+                /* Scales based on viewport width */
+                white-space: nowrap;
+                /* Prevents text from wrapping */
+                color: white;
+                text-align: left;
+                max-width: 100%;
+                height: 30px;
+                margin-top: -3px;
+
+            }
+
+            .EmptyBasketMessage {
+                text-align: center;
+                font-size: 50px;
+                color: gray;
+                padding: 10px;
+            }
+
+
+
+            /* Modal Styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+
+            input {
+                width: 100%;
+                background: #333;
+                /* Dark input background */
+                border: 1px solid #555;
+                /* Subtle border */
+                color: white;
+                border-radius: 5px;
+                outline: none;
+            }
+
+
+            .modal-content {
+                position: relative;
+                background-color: var(--Modal_Background_Colour);
+                color: white;
+                margin: 10% auto;
+                padding: 20px;
+                border-radius: 10px;
+                width: 50%;
+                text-align: center;
+                max-height: 90vh;
+                /* Prevents overflow beyond viewport */
+                overflow-y: auto;
+                /* Enables scrolling if content exceeds max height */
+                margin: auto;
+                display: flex;
+                flex-direction: column;
+                max-width: 500px;
+
+            }
+
+            .modal-content input {
+                width: 90%;
+                padding: 10px;
+                margin: 5px;
+                border: 1px solid #272626;
+                border-radius: 5px;
+            }
+
+            .card-details {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .card-details div {
+                width: 48%;
+            }
+
+
+            .Button {
+                color: white;
+                width: 100%;
+                font-size: 14px;
+                border: none;
+                border-radius: 5%;
+                aspect-ratio: 1/1;
+                width: 25%;
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+                margin-top: 0px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+
+
+            .Submit_Button {
+                background-color: var(--ButtonHoverState_Background_Colour);
+                width: 100%;
+                height: 10%;
+                aspect-ratio: 10 / 1;
+                margin-top: 15px;
+                color: var(--Default_Text_Colour);
+                box-shadow: none;
+                border: none;
+                /* ✅ Removes any border */
+                outline: none;
+                /* ✅ Removes any focus outline */
+                appearance: none;
+                /* ✅ Prevents browser default styling (especially in Safari) */
+                background-image: none;
+                /* ✅ Disables any gradient or highlight layer */
+            }
+
+
+
+            .close {
+                position: absolute;
+                top: 10px;
+                right: 15px;
+                font-size: 24px;
+                cursor: pointer;
+                color: white;
+
+            }
+
+            /* Dark Mode Toggle */
+            .dark-mode-toggle {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+
+            .switch {
+                position: relative;
+                width: 40px;
+                height: 20px;
+                display: inline-block;
+                vertical-align: middle;
+                margin-left: 10px;
+            }
+
+            .switch input {
+                display: none;
+            }
+
+            .slider {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: black;
+                border-radius: 20px;
+                cursor: pointer;
+                transition: 0.4s;
+            }
+
+            .slider::before {
+                content: "";
+                position: absolute;
+                width: 14px;
+                height: 14px;
+                left: 3px;
+                bottom: 3px;
+                background: white;
+                border-radius: 50%;
+                transition: 0.3s;
+            }
+
+            input:checked+.slider {
+                background: white;
+            }
+
+            input:checked+.slider::before {
+                transform: translateX(20px);
+                background: black;
+            }
+
+            /* Entire Page Dark Mode */
+            .dark-mode {
+                background: #222;
+                color: white;
+            }
+
+            /* Settings Container */
+            #Settings_Viewer {
+                width: 350px;
+                padding: 20px;
+                background: white;
+                border: 2px solid black;
+                border-radius: 10px;
+                box-shadow: 5px 5px 0px black;
+                font-family: Arial, sans-serif;
+            }
+
+            .dark-mode #Settings_Viewer {
+                background: #333;
+                color: white;
+                border-color: white;
+                box-shadow: 5px 5px 0px white;
+            }
+
+            /* Settings Panel */
+            .settings-panel {
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                max-width: 700px;
+                width: 700px;
+                margin-top: 40px;
+                margin-left: 40px;
+                border-radius: 12px;
+                padding: 40px;
+                box-shadow: 0 0 15px #00000066;
+                font-family: Arial, sans-serif;
+            }
+
+            /* Individual section */
+            .settings-section {
+                margin-bottom: 30px;
+                border-bottom: 1px solid var(--Borders_Colour);
+                padding-bottom: 20px;
+            }
+
+            .settings-section h3 {
+                font-size: 22px;
+                margin-bottom: 12px;
+            }
+
+            .settings-section label {
+                font-size: 16px;
+                font-weight: bold;
+                margin-top: 10px;
+                margin-bottom: 5px;
+                display: block;
+                background-color: transparent;
+                /* Fixes "input-like" look */
+            }
+
+            .MessageTextArea {
+                font-size: 16px;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+                background-color: #333;
+                border: 1px solid var(--Borders_Colour);
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                box-sizing: border-box;
+                min-height: 500px;
+                height: fit-content;
+                overflow-y: auto;
+            }
+
+            .settings-section input {
+                font-size: 16px;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+                background-color: #333;
+                border: 1px solid var(--Borders_Colour);
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+
+
+
+            /* Buttons */
+            .settings-section button {
+                margin-top: 10px;
+                padding: 12px;
+                background-color: var(--ButtonHoverState_Background_Colour);
+                border: none;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                cursor: pointer;
+                width: 100%;
+            }
+
+            .settings-section button.clearDataButton {
+                width: auto;
+                padding: 10px 20px;
+            }
+
+            .settings-section button:hover {
+                background-color: #004080;
+            }
+
+            /* Info message */
+            .contact-note {
+                font-size: 14px;
+                margin-top: 10px;
+            }
+
+            .contact-note a {
+                color: lightblue;
+                text-decoration: underline;
+            }
+
+            /* Product section extras */
+            #ProductWrapper {
+                background-color: var(--body_Background_Colour);
+            }
+
+            .Product_Name_Heading {
+
+                font-size: 30px;
+                color: white;
+                margin-bottom: 10px;
+
+            }
+
+            .Product_Description {
+                font-size: 20px;
+                color: var(--Default_Text_Colour);
+                line-height: 1.4;
+                display: -webkit-box;
+                white-space: pre-line;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .Product_Price_Label {
+                font-size: 20px;
+                color: var(--accent-color);
+                margin-top: 10px;
+            }
+
+            .currencySelect {
+                width: auto;
+                display: inline-block;
+                padding: 0.5vh 1vh;
+                font-size: 30px;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                border: 1px solid var(--Borders_Colour);
+                border-radius: 5px;
+                appearance: none;
+                /* optional: removes native arrow styling */
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                text-align: left;
+                width: 175px;
+            }
+        }
+
+        @media (max-width: 680px) {
+
+            html,
+            body {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
+            .mobileTopBar,
+            .mobileSearch_Bar,
+            .mobileNavButtonDiv,
+            .mobileCurrencySelect,
+            .mobileBasketButton,
+            .mobileSettingsButton,
+            .mobileSideBar,
+            .mobileViewer,
+            .mobileModalDiv,
+            .mobileLogo,
+            .mobileMainPage {
+                display: flex;
+
+                /* Light red to see its area */
+            }
+
+
+
+
+
+            .sidebar-header {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 1rem;
+                margin-bottom: 1rem;
+                width: 100%;
+            }
+
+
+
+            .sidebar-categories {
+                flex-grow: 1;
+                overflow-y: auto;
+                margin-top: 1rem;
+                width: 100%;
+                padding-right: 0.5rem;
+                /* Optional: add a max height if needed */
+            }
+
+
+            .ModalDiv {
+                display: none;
+            }
+
+
+
+
+
+            .mobileViewer {
+                background-color: var(--body_Background_Colour);
+                min-height: 100vh;
+                height: auto;
+
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                /* Two equal-width columns */
+                gap: 5vw;
+                /* Optional spacing between items */
+                padding: 3vw;
+                /* Optional padding inside the container */
+            }
+
+
+            .TopBar {
+                display: none !important;
+            }
+
+            .mobileSearchRow {
+                width: 96vw;
+                margin-left: 2vw;
+                margin-right: 2vw;
+            }
+
+            .Search_Bar {
+                display: none !important;
+            }
+
+            .NavButtonDiv {
+                display: none !important;
+            }
+
+            .CurrencySelect {
+                display: none !important;
+            }
+
+            .BasketButton {
+                display: none !important;
+            }
+
+            .SettingsButton {
+                display: none !important;
+            }
+
+            .SideBar {
+                display: none !important;
+            }
+
+
+
+            .mobileModalDiv.active {
+
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+
+                display: flex;
+                justify-content: center;
+                /* centers horizontally */
+                align-items: center;
+                /* centers vertically */
+
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1001;
+            }
+
+
+
+
+
+            .Logo {
+                display: none !important;
+            }
+
+            .SettingsButton {
+                display: none !important;
+            }
+
+            .BasketButton {
+                display: none !important;
+            }
+
+            .currency-select {
+                display: none !important;
+            }
+
+            .MainPage {
+                display: none !important;
+            }
+
+
+
+            body {
+                width: auto;
+                /* Default: Matches viewport width at 100% zoom */
+                height: auto;
+                margin: 0;
+                display: grid;
+                grid-template-columns: minmax(0, auto) 1fr;
+                /* First column fits content but stays within viewport */
+                background-color: var(--body_Background_Colour);
+                overflow-x: hidden;
+
+                /* Prevents scrolling at 100% zoom */
+            }
+
+            /* When zoom level is above 100%, allow scrolling instead of shrinking */
+
+            /* Default: hide the menu button on desktop */
+            .MenuButton {
+                display: none;
+            }
+
+
+
+            /* Top bar */
+            .mobileTopBar {
+                display: flex;
+                align-items: center;
+                overflow-x: auto;
+                white-space: nowrap;
+                background-color: var(--TopBar_Background_Colour);
+                padding: 8px;
+                gap: 10px;
+                width: 100vw;
+                position: relative;
+                /* Added this to enable z-index */
+                z-index: 995;
+            }
+
+
+
+
+            .mobileNavButtonDiv {
+                height: 80%;
+                display: flex;
+                align-items: center;
+                /* Proper vertical alignment */
+                justify-content: flex-end;
+                /* Align children to the right */
+                gap: 5px;
+                margin-right: 2vw;
+                margin-left: auto;
+                /* Push div itself to the right */
+                flex-wrap: nowrap;
+                /* Prevent wrap, or change to 'wrap' if space is tight */
+                max-width: 100%;
+                /* Prevent overflow */
+            }
+
+
+            .mobileHamburgerMenu,
+            .mobileBasketButton,
+            .mobileSettingsButton {
+                font-size: 1.4rem;
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+            }
+
+            .mobileLogo h1 {
+                color: white;
+                margin: 0;
+                font-size: 1.25rem;
+            }
+
+            .mobileSearch_Bar {
+                padding: 4px;
+                width: 94vw;
+                font-size: 1rem;
+
+                min-width: 20px;
+            }
+
+            .mobileCurrencySelect {
+                padding: 4px;
+                color: var(--Default_Text_Colour);
+                font-size: 1rem;
+                background-color: var(--SearchBar_Background_Colour);
+
+
+
+            }
+
+
+            .Logo {
+                grid-row: 1 / 1;
+                grid-column: 1 / 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                height: 8vh;
+                width: 31.5vh;
+
+                background-color: var(--SideBar_Background_Colour);
+                /* <-- applied always */
+                color: var(--Default_Text_Colour);
+                font-size: 2.5vh;
+                font-weight: bold;
+
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+                border-radius: 5px;
+
+            }
+
+
+
+            .MainPage {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                font-size: 4vh;
+                color: var(--Default_Text_Colour);
+                /* Match logo text */
+                background-color: var(--body_Background_Colour);
+                /* Match logo bg */
+
+                border: 0.15em solid var(--Borders_Colour);
+                /* Same as logo */
+                border-radius: 5px;
+
+                box-sizing: border-box;
+                font-weight: bold;
+            }
+
+
+            .MainPage h1 {
+                font-size: 5vh;
+                /* Scale with height */
+            }
+
+            /* Fix TopBar shifting */
+
+
+            .currency-select {
+                flex-shrink: 0;
+                max-height: 100%;
+                aspect-ratio: 1 / 0.75;
+                height: 100%;
+                font-size: 2.5vh;
+                border: 1px solid var(--Borders_Colour);
+                border-radius: 5px;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                margin-left: 1%;
+                padding: 0.5vh;
+                appearance: none;
+                /* Removes default browser styling */
+                -webkit-appearance: none;
+                /* For Safari */
+                -moz-appearance: none;
+                /* For Firefox */
+                text-align: center;
+            }
+
+
+
+            .mobileSideBar {
+                background-color: var(--SideBar_Background_Colour);
+                grid-row: 2 / 3;
+                grid-column: 1 / 2;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: start;
+
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 60vw;
+                max-width: 300px;
+                height: 100vh;
+
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                overflow-y: auto;
+                z-index: 990;
+                padding: 1rem 1rem 5rem;
+                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            }
+
+            .mobileSideBar.open {
+                transform: translateX(0%);
+                z-index: 2000;
+            }
+
+            .MenuButton {
+                display: block;
+                font-size: 4vh;
+                background-color: transparent;
+                color: white;
+                border: none;
+                cursor: pointer;
+                margin-right: 1vh;
+            }
+
+            .SideBar-open {
+                transform: translateX(0%);
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 0;
+                width: 250px;
+                height: 100%;
+                background: #333;
+                color: white;
+                transition: left 0.3s ease;
+                z-index: 1000;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+
+
+            .main-content.SideBar-open {
+                margin-left: 250px;
+                transition: margin 0.3s ease;
+            }
+
+            .SideBar button {
+                display: block;
+                width: 100%;
+                padding: 10px 15px;
+                background: none;
+                border: none;
+                text-align: left;
+                color: #ddd;
+                font-size: 14px;
+                border-bottom: 1px solid #333;
+                cursor: pointer;
+            }
+
+            .SideBar button:hover {
+                background: #2c3e50;
+                color: white;
+            }
+
+            .Viewer {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                grid-column-gap: 3vw;
+                /* or column-gap */
+                grid-row-gap: 3vw;
+                /* or row-gap */
+
+                background-color: var(--body_Background_Colour);
+                padding: 0px;
+                width: 98%;
+                max-width: 98%;
+                margin: 0 2vw;
+                justify-content: center;
+
+                min-height: 100vh;
+                /* 👈 Ensures background fills full viewport height */
+            }
+
+
+
+
+            .Search_Bar {
+                max-height: 50%;
+                min-height: 50%;
+                width: 50%;
+                height: 50%;
+                font-size: 2vh;
+                border-radius: 5px;
+                border: 0.05em solid var(--Borders_Colour);
+                border-color: var(--Borders_Colour);
+                padding-left: 1%;
+                margin-left: 1%;
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                overflow-x: auto;
+
+            }
+
+
+            /* Fix button spacing issue */
+            .Category_Button.Active {
+                background-color: var(--Accent_Colour);
+                border-color: var(--Accent_Colour);
+                color: red;
+                font-weight: bold;
+                border-radius: 5px;
+
+            }
+
+
+
+            .Category_Button {
+                width: 95%;
+                height: 6vh;
+                margin-left: 5%;
+                background-color: var(--SideBar_Background_Colour);
+                font-size: 2.5vh;
+                /* Scales with button height */
+                display: flex;
+                align-items: flex-start;
+                border-radius: 5px;
+                justify-content: left;
+                box-sizing: border-box;
+                border: 0px, solid var(--Borders_Colour);
+                /* Scales with font size */
+            }
+
+            .Category_Button h3 {
+                font-size: 2vh;
+                /* Ensures text scales with button */
+                white-space: nowrap;
+                border-radius: 5px;
+                margin: 0;
+            }
+
+            .product {
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                border: 1px solid #333;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                padding: 10px;
+                width: 40vw;
+                aspect-ratio: 1 /1.867;
+                /* Allow grid to define width */
+                max-width: 300px;
+                /* Ensures uniform width */
+                height: fit-content;
+                max-height: 450px;
+                display: flex;
+                justify-content: center;
+            }
+
+            .Clickable_Image {
+
+                max-width: 36vw;
+                aspect-ratio: 1/1;
+                margin-left: 2vw;
+
+            }
+
+            .quantity-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+                padding-bottom: 15px;
+            }
+
+            .quantity-controls {
+                display: flex;
+                justify-content: left;
+                align-items: center;
+                width: 50%;
+
+                gap: 5%;
+                /* Take up 1/2 of the available space */
+                color: white;
+
+            }
+
+            .Product_Option_Button {
+                min-width: 15vw;
+                width: auto;
+                margin-top: 2vw;
+                padding-top: 2vw;
+                padding-bottom: 2vw;
+                margin-left: 2vw;
+                border: 1px solid #ccc;
+                background-color: white;
+                cursor: pointer;
+                border-radius: 1vw;
+                transition: 0.2s ease;
+                font-size: 3.5vw;
+            }
+
+            .Product_Option_Button.selected {
+                background-color: #007bff;
+                color: white;
+                border-color: #007bff;
+            }
+
+            .Product_Options_Container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: left;
+                width: 100%;
+                height: auto;
+            }
+
+            .Product_Option_Buttons {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            .Product_Option_Label {
+                margin-top: auto;
+                margin-bottom: auto;
+            }
+
+            .Product_Options_Container {
+                display: flex;
+                margin-right: auto;
+            }
+
+            .add-to-cart {
+                background-color: #007BFF;
+                color: #fff;
+
+                border: none;
+                aspect-ratio: 1/0.4;
+                width: 50%;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                font-size: 2.5vw;
+                /* Take up the remaining space */
+                text-align: center;
+            }
+
+            .product-price {
+                font-size: 3vw;
+                color: var(--Default_Text_Colour)1;
+            }
+
+
+            .add-to-cart:hover {
+                background-color: var(--ButtonHoverState_Background_Colour);
+            }
+
+            .NavButtonDiv {
+                height: 6vh;
+                width: 20%;
+
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 5px;
+
+                /* Remove fixed positioning */
+                position: static;
+            }
+
+
+
+
+            .BasketButton,
+            .SettingsButton {
+                aspect-ratio: 1 / 1;
+                height: 100%;
+                width: auto;
+                max-width: 100%;
+                border-radius: 5px;
+
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                border: 1px solid var(--Borders_Colour);
+                font-size: 2.5vh;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .Quantity-Controls-Basket {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1vw;
+                width: 20%;
+                height: 50%;
+                margin-right: auto;
+                margin-left: auto;
+            }
+
+            .Item-Details {
+                display: grid;
+
+                gap: 0px;
+                grid-template-rows: 1fr 3fr;
+                width: 50%;
+                height: 140%
+            }
+
+            .ProductPageBuyButton {
+                color: var(--Default_Text_Colour);
+                aspect-ratio: 7/1;
+                width: 85vw;
+                max-width: 90vw;
+                border-radius: 5px;
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+            }
+
+            .BasketText {
+                font-size: 5vw;
+                /* Scales based on view
+            7port width */
+                padding-bottom: 0vw;
+                margin-top: 1vw;
+                overflow: hidden;
+                /* Prevents text from wrapping */
+                color: white;
+                height: 5vw;
+                max-width: 26ch;
+                word-wrap: normal;
+                word-break: normal;
+                unicode-bidi: normal;
+                text-overflow: ellipsis;
+            }
+
+            .BasketTextDescription {
+                font-size: 2vw;
+                color: white;
+                line-height: 1.2em;
+                /* 👈 Controls line height */
+                height: calc(1.2em * 3);
+                /* 👈 Ensures 6-line height */
+
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 3;
+                text-overflow: ellipsis;
+            }
+
+
+
+            .BasketChangeQuantityButton {
+                height: 7.5vw;
+                width: 7.5vw;
+                background-color: var(--body_Background_Colour);
+                aspect-ratio: 1/1;
+                font-size: auto;
+                color: var(--Default_Text_Colour);
+
+
+                color: white;
+
+
+                border: none;
+                border-radius: 5%;
+                aspect-ratio: 1 / 1;
+
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+                margin-top: 0px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .BasketChangeQuantityText {
+                font-size: 7vw;
+                color: white;
+            }
+
+            .SortContainer {
+                background-color: var(--TopBar_Background_Colour);
+                grid-row: 1 / 1;
+                grid-column: 2 / 3;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: left;
+                padding: 0 3vh;
+                /* Fixed padding syntax */
+                width: 100%;
+                /* Ensures it spans the entire column */
+                height: 5vh;
+                max-width: 100%;
+                /* Fixed max-width */
+                max-height: 5vh;
+                color: white;
+                font-size: 3vh;
+            }
+
+            /* Ensure the dropdown doesn't resize */
+            #sortSelect {
+                min-width: 10.5%;
+                /* Minimum width */
+                max-width: 100%;
+                /* Allow it to expand */
+                width: auto;
+                /* Adjust width dynamically */
+                height: 3vh;
+                font-size: 60%;
+                border: 0px solid var(--Borders_Colour);
+                border-radius: 3px;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                margin-left: 1%;
+                padding: 0.5vh;
+                text-align: left;
+                appearance: none;
+                /* Removes default browser styling */
+                -webkit-appearance: none;
+                /* For Safari */
+                -moz-appearance: none;
+                /* For Firefox */
+            }
+
+            #sortSelect:focus {
+                outline: none;
+                box-shadow: none;
+                /* Optional: removes any glow or shadow */
+            }
+
+            .SortSelectLabel {
+                font-size: 70%;
+                color: var(--Default_Text_Colour);
+            }
+
+
+            .BasketTotalPrice {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 1000px;
+                height: 350px;
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+                /* Scales with font size */
+            }
+
+            .Basket-Item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 95vw;
+                max-width: 2000px;
+                aspect-ratio: 5.75/1;
+                height: auto;
+                box-sizing: border-box;
+                border: 0px solid var(--Borders_Colour);
+            }
+
+            .Basket_Item_Container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 95vw;
+                margin-top: 1vw;
+                max-width: 2000px;
+                aspect-ratio: 5.25/1;
+                box-sizing: border-box;
+                border: 1px solid var(--Borders_Colour);
+                /* Scales with font size */
+            }
+
+            .Basket_Image {
+                max-width: 20vw;
+                aspect-ratio: 1/1;
+                margin-left: 1vw;
+                margin-right: 1vw;
+            }
+
+            .Basket_Viewer {
+                display: grid;
+                width: 100%;
+                max-width: 100%;
+
+                row-gap: 0vw;
+                max-height: 15vw;
+                height: 15vw;
+            }
+
+            .WhiteText {
+                color: white;
+                font-size: 100%;
+                height: 100%;
+            }
+
+            .ProductPrice {
+                color: white;
+
+            }
+
+            .ProductName {
+                color: white;
+            }
+
+            .product-name {
+                color: var(--Default_Text_Colour);
+                font-size: 3.5vw;
+                height: auto;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                /* 👈 Allow up to 2 lines */
+                -webkit-box-orient: vertical;
+                /* 👈 Set box direction */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                line-clamp: 2;
+                margin-top: 10px;
+                /* Optional fallback for modern browsers */
+            }
+
+            .Product_Viewer {
+                padding-top: 3vw;
+                width: 80vw;
+                height: auto;
+                padding-bottom: 3vw;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                border-radius: 5px;
+                position: relative;
+                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
+                display: flex;
+                margin-left: 7.5vw;
+                margin-right: auto;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+
+
+                overflow: visible;
+                font-size: 16px;
+                /* Base font size for scaling */
+            }
+
+            .Product_Details {
+                display: flex;
+                gap: 20px;
+                width: 100%;
+                height: fit-content;
+            }
+
+
+            .Product_Images {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100vw;
+                /* Ensure full width for centering */
+            }
+
+            .ImageControl {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 2vw;
+                /* Space between arrows and image */
+                width: 90vw;
+                margin-bottom: 2vw;
+            }
+
+            .image-slider-wrapper {
+                overflow: hidden;
+                width: 101%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .slide-image {
+                transition: transform 0.4s ease;
+                will-change: transform;
+            }
+
+
+            .ImageControlButtonPrevious,
+            .ImageControlButtonNext {
+                position: relative;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 12vw;
+                /* or suitable size */
+                height: 12vw;
+                background: transparent;
+                border: none;
+                cursor: pointer;
+            }
+
+
+
+
+            .ThumbnailsHolder {
+                display: grid;
+                grid-template-columns: repeat(5, 10vw);
+                /* 5 fixed 10vw columns */
+                gap: 1vw;
+                width: fit-content;
+                margin-top: 2vw;
+                justify-content: center;
+                margin-left: auto;
+                margin-right: auto;
+                /* ✅ centers the thumbnails */
+            }
+
+            .Thumbnail {
+                width: 10vw;
+                height: 10vw;
+                object-fit: cover;
+                border: 0.3vw solid var(--Borders_Colour);
+                cursor: pointer;
+            }
+
+            .Thumbnail.active {
+                border: 0.6vw solid red;
+                box-shadow: 0 0 1vw var(--Accent_Colour);
+            }
+
+
+
+
+            .Product_Info {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                width: 85vw;
+                max-width: 520px;
+                color: var(--Default_Text_Colour);
+
+                margin: 0 auto;
+                /* Center horizontally */
+                align-items: center;
+                /* Center children inside */
+            }
+
+            .Add_To_Cart_Product {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+
+
+
+
+
+
+            .ButtonText {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+                /* ✅ Ensures proper centering */
+                aspect-ratio: 1/1;
+            }
+
+            .ImageControlButtonText {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+                /* Remove margin to avoid vertical offset */
+                margin: 0;
+                font-size: 200%;
+                color: var(--Default_Text_Colour);
+                aspect-ratio: 1 / 1;
+                /* Optional if you want it square */
+                text-align: center;
+                pointer-events: none;
+                /* So text doesn’t block button clicks */
+            }
+
+
+
+
+
+
+
+
+            .mainImage {
+                max-width: 99%;
+                max-height: 99%;
+                width: 99%;
+                height: 99%;
+                aspect-ratio: 1 / 1;
+                border: 1.6px solid var(--Borders_Colour);
+                /* 0.1rem ≈ 1.6px */
+                box-sizing: border-box;
+
+
+
+                /* Fixed image size in vw */
+
+                object-fit: cover;
+
+
+            }
+
+
+
+
+            .Quantity_Controls_ProductPage {
+                display: flex;
+                justify-content: left;
+                align-items: center;
+                width: 40vw;
+
+                gap: 5%;
+                /* Take up 1/2 of the available space */
+                color: white;
+            }
+
+            .ProductPageQuantityContainer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 5vw;
+                width: 85vw;
+                padding-bottom: 15px;
+
+            }
+
+
+
+
+            .BasketReceipt {
+                background: rgba(255, 255, 255, 0);
+                color: rgb(255, 255, 255);
+                width: 95vw;
+                height: auto;
+            }
+
+            .ReceiptTable {
+                width: 95vw;
+                max-width: 1000px;
+                margin-top: 2vw;
+                border-collapse: collapse;
+                background-color: rgba(255, 255, 255, 0);
+                filter: none !important;
+                text-shadow: none !important;
+                opacity: 1 !important;
+                border: 1px solid var(--Borders_Colour);
+                height: 5vw;
+            }
+
+
+            .ReceiptTable td {
+                padding-left: 5vw;
+                padding-top: 2vw;
+                padding-bottom: 1vw;
+                margin-top: 1vw;
+                margin-bottom: 1vw;
+                border-bottom: 1px solid var(--Borders_Colour);
+                /* Keep individual row borders */
+                font-size: 3vw;
+            }
+
+            .ReceiptTable td:nth-child(3) {
+
+                text-align: right;
+                font-size: 3vw;
+                padding-right: 3.5vw;
+                /* Pushes the price slightly away from the right edge */
+            }
+
+            .ReceiptTable td:nth-child(2) {
+                text-align: left;
+                color: white;
+                overflow: hidden;
+                text-overflow: ellipsis;
+
+                unicode-bidi: normal;
+                text-overflow: ellipsis;
+                word-wrap: normal;
+                word-break: normal;
+                max-width: 26ch;
+                /* Adjust spacing */
+                font-size: 3vw;
+                white-space: nowrap;
+            }
+
+            .ReceiptFooter {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                border: 1px solid var(--Borders_Colour);
+                gap: 20%;
+                height: auto;
+                max-width: 2000px;
+                aspect-ratio: 15/1;
+            }
+
+            .PriceAndOptionRow {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .BasketSelectedOption {
+                font-size: 3vw;
+                color: var(--Default_Text_Colour);
+                height: 3.5vw;
+                margin-top: auto;
+                margin-bottom: 1.5vw;
+                text-align: left;
+
+            }
+
+            .PayButton {
+                background: #007BFF;
+                color: white;
+
+                border: none;
+                cursor: pointer;
+                width: 50%;
+                padding-left: 1vw;
+                margin-left: 0.5%;
+                height: 90%;
+                font-size: auto;
+
+            }
+
+            .PayTotalText {
+                color: white;
+                margin-left: auto;
+                text-align: right;
+                font-size: 3vw;
+                margin-right: 15px;
+                max-height: auto;
+                height: auto;
+                width: 40%;
+            }
+
+            .Basket-Item-Pay {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                grid-template-columns: 1fr 5fr;
+                width: 1000px;
+                box-sizing: border-box;
+                border: 1px var(--Borders_Colour);
+            }
+
+            .basket-item-price {
+                font-size: 3vw;
+                /* Scales based on viewport width */
+                white-space: nowrap;
+                /* Prevents text from wrapping */
+                color: white;
+                text-align: left;
+                max-width: 100%;
+                height: 3.5vw;
+                margin-top: auto;
+                margin-bottom: 1.5vw;
+
+            }
+
+            .EmptyBasketMessage {
+                text-align: center;
+                font-size: 50px;
+                color: gray;
+                padding: 10px;
+            }
+
+
+
+            /* Modal Styles */
+
+            input {
+                width: 100%;
+                background: #333;
+                /* Dark input background */
+                border: 1px solid #555;
+                /* Subtle border */
+                color: white;
+                border-radius: 5px;
+                outline: none;
+            }
+
+
+            .modal-content {
+                background-color: var(--Modal_Background_Colour);
+                color: white;
+
+                padding: 20px;
+                border-radius: 10px;
+                position: fixed;
+                top: 0;
+                left: 0;
+                display: flex;
+                justify-content: center;
+                /* centers horizontally */
+                align-items: center;
+                /* centers vertically */
+
+                z-index: 9999;
+                /* Make modal responsive */
+                width: 90vw;
+                max-width: 500px;
+                margin: 10% auto;
+                height: fit-content;
+                max-height: 80vh;
+                overflow-y: auto;
+
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+            }
+
+
+            .modal-content input {
+                width: 90%;
+                padding: 10px;
+                margin: 5px;
+                border: 1px solid #272626;
+                border-radius: 5px;
+            }
+
+            .card-details {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .card-details div {
+                width: 48%;
+            }
+
+
+            .Button {
+                color: white;
+                width: 100%;
+                font-size: 14px;
+                border: none;
+                border-radius: 5%;
+                aspect-ratio: 1/1;
+                width: 50%;
+                background-color: var(--body_Background_Colour);
+                border: 1px solid var(--Borders_Colour);
+                margin-top: 0px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+
+
+            .Submit_Button {
+                background-color: var(--ButtonHoverState_Background_Colour);
+                width: 100%;
+                height: 10%;
+                aspect-ratio: 5 / 1;
+                margin-top: 15px;
+                color: var(--Default_Text_Colour);
+                box-shadow: none;
+                border: none;
+                /* ✅ Removes any border */
+                outline: none;
+                /* ✅ Removes any focus outline */
+                appearance: none;
+                /* ✅ Prevents browser default styling (especially in Safari) */
+                background-image: none;
+            }
+
+            .close {
+                position: absolute;
+                top: 10px;
+                right: 15px;
+                font-size: 24px;
+                cursor: pointer;
+                color: white;
+
+            }
+
+            /* Dark Mode Toggle */
+            .dark-mode-toggle {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+
+            .switch {
+                position: relative;
+                width: 40px;
+                height: 20px;
+                display: inline-block;
+                vertical-align: middle;
+                margin-left: 10px;
+            }
+
+            .switch input {
+                display: none;
+            }
+
+            .slider {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: black;
+                border-radius: 20px;
+                cursor: pointer;
+                transition: 0.4s;
+            }
+
+            .slider::before {
+                content: "";
+                position: absolute;
+                width: 14px;
+                height: 14px;
+                left: 3px;
+                bottom: 3px;
+                background: white;
+                border-radius: 50%;
+                transition: 0.3s;
+            }
+
+            input:checked+.slider {
+                background: white;
+            }
+
+            input:checked+.slider::before {
+                transform: translateX(20px);
+                background: black;
+            }
+
+            /* Entire Page Dark Mode */
+            .dark-mode {
+                background: #222;
+                color: white;
+            }
+
+            /* Settings Container */
+            #Settings_Viewer {
+                width: 350px;
+                padding: 20px;
+                background: white;
+                border: 2px solid black;
+                border-radius: 10px;
+                box-shadow: 5px 5px 0px black;
+                font-family: Arial, sans-serif;
+            }
+
+            .dark-mode #Settings_Viewer {
+                background: #333;
+                color: white;
+                border-color: white;
+                box-shadow: 5px 5px 0px white;
+            }
+
+            /* Settings Panel */
+            .settings-panel {
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                max-width: 700px;
+                width: 80vw;
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 40px;
+                border-radius: 12px;
+                padding: 30px;
+                box-shadow: 0 0 15px #00000066;
+                font-family: Arial, sans-serif;
+            }
+
+            body {
+                padding-top: 85px;
+                /* Adjust based on actual header height */
+                width: 100vw;
+            }
+
+            /* Individual section */
+            .settings-section {
+                margin-bottom: 30px;
+                border-bottom: 1px solid var(--Borders_Colour);
+                padding-bottom: 20px;
+            }
+
+            .settings-section h3 {
+                font-size: 22px;
+                margin-bottom: 12px;
+            }
+
+            .settings-section label {
+                font-size: 16px;
+                font-weight: bold;
+                margin-top: 10px;
+                margin-bottom: 5px;
+                display: block;
+                background-color: transparent;
+                /* Fixes "input-like" look */
+            }
+
+            .MessageTextArea {
+                font-size: 16px;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+                background-color: #333;
+                border: 1px solid var(--Borders_Colour);
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                box-sizing: border-box;
+                min-height: 500px;
+                height: fit-content;
+                overflow-y: auto;
+            }
+
+            .settings-section input {
+                font-size: 16px;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+                background-color: #333;
+                border: 1px solid var(--Borders_Colour);
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+
+
+
+            /* Buttons */
+            .settings-section button {
+                margin-top: 10px;
+                padding: 12px;
+                background-color: var(--ButtonHoverState_Background_Colour);
+                border: none;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                cursor: pointer;
+                width: 100%;
+            }
+
+            .settings-section button.clearDataButton {
+                width: auto;
+                padding: 10px 20px;
+            }
+
+            .settings-section button:hover {
+                background-color: #004080;
+            }
+
+            /* Info message */
+            .contact-note {
+                font-size: 14px;
+                margin-top: 10px;
+            }
+
+            .contact-note a {
+                color: lightblue;
+                text-decoration: underline;
+            }
+
+            /* Product section extras */
+            #ProductWrapper {
+                background-color: var(--body_Background_Colour);
+
+            }
+
+            .Product_Name_Heading {
+
+                font-size: 5vw;
+                color: white;
+                margin-bottom: 10px;
+                width: 80vw;
+            }
+
+            .Product_Description {
+
+
+                white-space: pre-line;
+                font-size: 3vw;
+                color: var(--Default_Text_Colour);
+                line-height: 1.4;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                width: 80vw;
+            }
+
+            .Product_Price_Label {
+                font-size: 3vw;
+                color: var(--accent-color);
+                margin-top: 10px;
+                text-align: left;
+                /* Aligns text to the left */
+                align-self: flex-start;
+                /* Ensures the container itself aligns left in flex layout */
+            }
+
+
+            .currencySelect {
+                width: auto;
+                display: inline-block;
+                padding: 0.5vh 1vh;
+                font-size: 30px;
+                background-color: var(--SearchBar_Background_Colour);
+                color: white;
+                border: 1px solid var(--Borders_Colour);
+                border-radius: 5px;
+                appearance: none;
+                /* optional: removes native arrow styling */
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                text-align: left;
+                width: 175px;
+            }
+
+            .mobileHeaderWrapper {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                padding-bottom: 2vw;
+                background-color: var(--TopBar_Background_Colour);
+                /* or your preferred color */
+                width: 100%;
+            }
+
+
+
+
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="TopBar">
+        <input type="text" class="Search_Bar" id="Search_Bar" placeholder="Search">
+        <div class="NavButtonDiv">
+            <select id="currency-select" class="currency-select">
+                <option value="EUR">EUR €</option>
+                <option value="USD">USD $</option>
+                <option value="GBP">GBP £</option>
+                <option value="CAD">CAD C$</option>
+                <option value="AUD">AUD A$</option>
+            </select>
+            <button class="BasketButton" id="BasketButton" onclick="trackedGoToCart()">
+                🛒
+            </button>
+            <button class="SettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">
+                ⚙️
+            </button>
+        </div>
+    </div>
+    </div>
+    <div class="SideBar" id="SideBar">
+
+
+
+    </div>
+    <div id="Viewer" class="Viewer">
+
+    </div>
+
+    <div id="ModalDiv" class="ModalDiv">
+
+    </div>
+    <div class="Logo" , onclick="loadProducts('Default_Page', 'NameFirst' , 'asc')">
+        <button class="MainPage">
+            <h1 style="color: white; margin: 0;">Logo</h1>
+        </button>
+    </div>
+</body>
+
+
+<body>
+    <!-- Container for both rows -->
+    <div class="mobileHeaderWrapper">
+        <!-- First row -->
+        <div class="mobileTopBar">
+            <button id="openSidebarButton" class="mobileHamburgerMenu">☰</button>
+
+
+            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
+                <h1>Logo</h1>
+            </div>
+
+            <!-- Wrapped buttons and select in navButtonDiv -->
+            <div class="mobileNavButtonDiv">
+                <select class="mobileCurrencySelect" id="currencySelect">
+                    <option value="EUR">EUR €</option>
+                    <option value="USD">USD $</option>
+                    <option value="GBP">GBP £</option>
+                    <option value="CAD">CAD C$</option>
+                    <option value="AUD">AUD A$</option>
+                </select>
+
+                <button class="mobileBasketButton" id="BasketButton" onclick="trackedGoToCart()">🛒</button>
+                <button class="mobileSettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">⚙️</button>
+            </div>
+        </div>
+
+        <!-- Second row (search bar only) -->
+        <div class="mobileSearchRow">
+            <input type="text" class="mobileSearch_Bar" id="Mobile_Search_Bar" placeholder="Search" />
+
+
+        </div>
+    </div>
+
+
+    <div id="SideBar" class="mobileSideBar">
+        <!-- First row: Hamburger + Logo -->
+        <div class="sidebar-header">
+            <button id="closeSidebarButton" class="mobileHamburgerMenu">☰</button>
+            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
+                <h1>Logo</h1>
+            </div>
+        </div>
+
+        <!-- Scrollable area for category buttons -->
+        <div id="SidebarCategories" class="sidebar-categories"></div>
+    </div>
+
+
+
+    <div class="mobileModalDiv" id="ModalDiv"></div>
+
+
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sidebar = document.querySelector(".mobileSideBar");
+            const modal = document.querySelector(".mobileModalDiv");
+            const openBtn = document.getElementById("openSidebarButton");
+            const closeBtn = document.getElementById("closeSidebarButton");
+            const sidebarLogo = document.querySelector("#SideBar .mobileLogo");
+            const mediaQuery = window.matchMedia("(max-width: 680px)");
+
+            function toggleSidebar() {
+                sidebar.classList.toggle("open");
+                modal.classList.toggle("active");
+            }
+
+            const boundHandlers = {
+                open: () => toggleSidebar(),
+                close: () => toggleSidebar(),
+                modal: () => toggleSidebar(),
+                categoryClick: function (e) {
+                    const target = e.target.closest(".Category_Button");
+                    if (target) {
+                        toggleSidebar();
+                    }
+                },
+                sidebarLogoClick: () => toggleSidebar()
+            };
+
+            function addListeners() {
+                openBtn?.addEventListener("click", boundHandlers.open);
+                closeBtn?.addEventListener("click", boundHandlers.close);
+                modal?.addEventListener("click", boundHandlers.modal);
+                document.body.addEventListener("click", boundHandlers.categoryClick);
+                sidebarLogo?.addEventListener("click", boundHandlers.sidebarLogoClick);
+            }
+
+            function removeListeners() {
+                openBtn?.removeEventListener("click", boundHandlers.open);
+                closeBtn?.removeEventListener("click", boundHandlers.close);
+                modal?.removeEventListener("click", boundHandlers.modal);
+                document.body.removeEventListener("click", boundHandlers.categoryClick);
+                sidebarLogo?.removeEventListener("click", boundHandlers.sidebarLogoClick);
+            }
+
+            function handleResize(e) {
+                if (e.matches) {
+                    addListeners();
+                } else {
+                    removeListeners();
+                }
+            }
+
+            // Initial setup
+            handleResize(mediaQuery);
+            mediaQuery.addEventListener("change", handleResize);
+        });
+    </script>
+
+
+
+
+
+
+
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const mediaQuery = window.matchMedia("(max-width: 680px)");
+
+            function moveImagesIfNeeded(productWrapper) {
+                const imagesDiv = productWrapper.querySelector(".Product_Images");
+                const productNameHeading = productWrapper.querySelector(".Product_Name_Heading");
+
+                if (!imagesDiv || !productNameHeading) return;
+
+                // Save original position only once per imagesDiv
+                if (!imagesDiv.dataset.originalParentId) {
+                    const parent = imagesDiv.parentNode;
+
+                    // Assign an ID to the parent if it doesn't have one
+                    if (!parent.id) {
+                        parent.id = "original-parent-" + Math.random().toString(36).substr(2, 9);
+                    }
+
+                    imagesDiv.dataset.originalParentId = parent.id;
+
+                    const siblings = Array.from(parent.childNodes);
+                    imagesDiv.dataset.originalIndex = siblings.indexOf(imagesDiv);
+                }
+
+                function moveImages() {
+                    if (mediaQuery.matches) {
+                        // Mobile view: move image under product name
+                        if (productNameHeading.nextSibling !== imagesDiv) {
+                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextSibling);
+                        }
+                    } else {
+                        // Desktop view: restore image to original position
+                        const originalParent = document.getElementById(imagesDiv.dataset.originalParentId);
+                        const originalIndex = parseInt(imagesDiv.dataset.originalIndex, 10);
+
+                        if (originalParent) {
+                            const currentChildren = Array.from(originalParent.childNodes).filter(n => n.nodeType === 1 || n.nodeType === 3);
+                            const referenceNode = currentChildren[originalIndex] || null;
+                            if (imagesDiv !== referenceNode) {
+                                originalParent.insertBefore(imagesDiv, referenceNode);
+                            }
+                        }
+                    }
+                }
+
+                // Initial placement and resize handling
+                moveImages();
+                mediaQuery.addEventListener("change", moveImages);
+            }
+
+            // Watch for product detail page insertions
+            const globalObserver = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && node.matches(".Product_Detail_Page")) {
+                            moveImagesIfNeeded(node);
+                        }
+                    });
+                });
+            });
+
+            globalObserver.observe(document.body, { childList: true, subtree: true });
+
+            // Handle page load case
+            const existingPage = document.querySelector(".Product_Detail_Page");
+            if (existingPage) moveImagesIfNeeded(existingPage);
+        });
+    </script>
+
+
+
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const mediaQuery = window.matchMedia("(max-width: 680px)");
+            let placeholder = null;
+            const moveDownBy = 4;  // Number of places to move down
+
+            function moveProductWrapper() {
+                const productWrapper = document.getElementById("ProductWrapper");
+                const modalDiv = document.getElementById("ModalDiv");
+                const sideBar = document.getElementById("SideBar");
+
+                if (!productWrapper || !modalDiv || !sideBar) {
+
+                    return;
+                }
+
+                if (mediaQuery.matches) {
+
+
+                    // Store placeholder for original location only once
+                    if (!placeholder) {
+                        placeholder = document.createComment("Original ProductWrapper location");
+                        productWrapper.parentNode.insertBefore(placeholder, productWrapper);
+
+                    }
+
+                    // Move ProductWrapper down by 'moveDownBy' places
+                    let targetElement = modalDiv;
+                    for (let i = 0; i < moveDownBy; i++) {
+                        if (targetElement.nextElementSibling) {
+                            targetElement = targetElement.nextElementSibling;
+                        } else {
+                            break;  // Exit if there aren't enough siblings
+                        }
+                    }
+
+                    // Insert ProductWrapper after the target element
+                    if (targetElement.nextElementSibling) {
+                        document.body.insertBefore(productWrapper, targetElement.nextElementSibling);
+                    } else {
+                        document.body.appendChild(productWrapper); // If there's no sibling, append at the end
+                    }
+
+                } else {
+
+
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.parentNode.insertBefore(productWrapper, placeholder);
+
+                    } else {
+
+                    }
+                }
+            }
+
+            // Wait until ProductWrapper appears
+            const observer = new MutationObserver(() => {
+                const productWrapper = document.getElementById("ProductWrapper");
+                if (productWrapper) {
+                    console.log("✅ ProductWrapper found");
+                    moveProductWrapper();
+                    mediaQuery.addEventListener("change", moveProductWrapper);
+                    observer.disconnect();
+                }
+            });
+
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+    </script>
+</body>
+
+
+
+
+
+
+</html>
