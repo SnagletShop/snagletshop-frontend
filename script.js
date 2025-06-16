@@ -323,7 +323,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (match) {
                     console.log("✅ Matched product:", match.name);
-                    GoToProductPage(match.name, match.price, match.description || "No description available.");
+                    navigate("GoToProductPage", [
+                        match.name,
+                        match.price,
+                        match.description || "No description available."
+                    ]);
+
                 } else {
                     console.warn("❌ Product not found:", productName);
                     Default_Page();
