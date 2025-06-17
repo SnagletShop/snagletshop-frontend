@@ -514,10 +514,12 @@ function replayEventByIndex(index) {
     }
 }
 function searchProducts() {
-    const query = document.getElementById("Search_Bar").value
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .trim();
+    const queryDesktop = document.getElementById("Search_Bar")?.value || "";
+    const queryMobile = document.getElementById("Mobile_Search_Bar")?.value || "";
+
+    const rawQuery = queryDesktop || queryMobile;
+
+    const query = rawQuery.toLowerCase().replace(/\s+/g, "").trim();
 
     if (!query) return;
 
