@@ -517,11 +517,21 @@ function searchProducts() {
     const queryDesktop = document.getElementById("Search_Bar")?.value || "";
     const queryMobile = document.getElementById("Mobile_Search_Bar")?.value || "";
 
-    const rawQuery = queryDesktop || queryMobile;
+    const activeElement = document.activeElement;
+    let rawQuery = "";
+
+    if (activeElement?.id === "Mobile_Search_Bar") {
+        rawQuery = queryMobile;
+    } else {
+        rawQuery = queryDesktop;
+    }
 
     const query = rawQuery.toLowerCase().replace(/\s+/g, "").trim();
-
     if (!query) return;
+
+    // Sync both fields
+    document.getElementById("Search_Bar").value = rawQuery;
+    document.getElementById("Mobile_Search_Bar").value = rawQuery;
 
     const viewer = document.getElementById("Viewer");
     viewer.innerHTML = "";
