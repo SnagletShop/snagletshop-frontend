@@ -1070,7 +1070,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function CategoryButtons() {
     const sidebars = document.querySelectorAll("#SideBar, #DesktopSidebar");
-    console.log("CategoryButtons")
+    console.log("CategoryButtons");
+
     if (typeof productsDatabase === "undefined" || Object.keys(productsDatabase).length === 0) {
         console.error("❌ Products database not loaded yet.");
         return;
@@ -1109,15 +1110,12 @@ function CategoryButtons() {
                     currentCategory = category;
                     const sort = localStorage.getItem("defaultSort") || "NameFirst";
                     const order = "asc";
-
-
                     navigate("loadProducts", [category, sort, order]);
                     CategoryButtons(); // Refresh buttons
                 };
 
                 const heading = document.createElement("h3");
-                heading.style.color = "white";
-                heading.style.margin = "0";
+                heading.classList.add("Category_Button_Heading");
                 heading.textContent = category.replace(/_/g, ' ');
 
                 button.appendChild(heading);
