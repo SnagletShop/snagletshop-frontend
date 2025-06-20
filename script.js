@@ -942,7 +942,7 @@ function GoToSettings() {
             <textarea id="message"class = "MessageTextArea" required></textarea>
             <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
         </form>
-        <p class="contact-note">If the form doesn't work, email us at <a href="mailto:snagletshophelp@gmail.com">support@example.com</a></p>
+        <p class="contact-note">If the form doesn't work, email us at <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a></p>
     `;
 
     // Legal Notice
