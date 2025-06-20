@@ -25,27 +25,40 @@
         }
 
         .light-mode {
-            --body_Background_Colour: #2C2A26;
-            /* Dark beige background */
-            --TopBar_Background_Colour: #3E3B36;
-            /* Dark neutral beige */
-            --SideBar_Background_Colour: #4A4742;
-            /* Muted dark beige */
-            --SearchBar_Background_Colour: #5A564E;
-            /* Subtle beige-gray */
+            --body_Background_Colour: #FFFCF7;
+            /* Warm off-white background */
+            --TopBar_Background_Colour: #F4F1EB;
+            /* Matches soft beige tone */
+            --SideBar_Background_Colour: #FFFFFF;
+            --SearchBar_Background_Colour: #EFECE8;
+            --Modal_Background_Colour: #FFFFFF;
+            --BasketReceipt_Background_Colour: #F4F1EB;
+            /* Same soft beige */
 
-            --Modal_Background_Colour: #3E3B36;
-            /* Soft dark beige for modals */
-            --BasketReceipt_Background_Colour: #4F4A43;
-            /* Slightly lighter beige-gray */
+            --ButtonHoverState_Background_Colour: #0056b3;
 
-            --ButtonHoverState_Background_Colour: #C19A6B;
-            /* Warm gold beige */
-            --Default_Text_Colour: #ffffff;
-            /* Soft beige for good contrast */
-            /* Muted beige-gray for subtle borders */
-            --Borders_Colour: #C0C0C0;
+            --Default_Text_Colour: #2A2A2A;
+            --Muted_Text_Colour: #777777;
+            /* Slightly softer muted text */
+
+            --Primary_Button_Colour: #007BFF;
+            /* Blue buttons */
+            --Primary_Button_Hover: #0056b3;
+
+            --Input_Background: #FFFFFF;
+            --Input_Border: #DDDDDD;
+
+            --Option_Button_Border: #DDDDDD;
+            /* For +/- and quantity selectors */
+
+            --Danger_Colour: #D9534F;
+            --Info_Link_Colour: #5BC0DE;
+            --Category_Button_Text_Colour: #2A2A2A;
+            /* or white for dark mode */
+
         }
+
+
 
         .dark-mode {
             --body_Background_Colour: #1A1A1A;
@@ -59,6 +72,17 @@
             --ButtonHoverState_Background_Colour: #0056b3;
             --Default_Text_Colour: #ffffff;
             --Borders_Colour: #232D34;
+            --Primary_Button_Colour: #007BFF;
+            --Primary_Button_Hover: #0056b3;
+            --Input_Background: #333;
+            --Input_Border: #555;
+            --Danger_Colour: red;
+            --Info_Link_Colour: lightblue;
+            --Muted_Text_Colour: gray;
+            --Option_Button_Border: #ccc;
+            --Category_Button_Text_Colour: #ffffff;
+            /* or white for dark mode */
+
         }
 
 
@@ -104,8 +128,13 @@
                 display: none;
             }
 
+            .Category_Button_Heading {
+                color: var(--Category_Button_Text_Colour);
+                margin: 0;
+            }
+
             .Button {
-                color: white;
+                color: var(--Default_Text_Colour);
                 width: 100%;
                 font-size: 14px;
                 border: none;
@@ -197,7 +226,7 @@
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-left: 1%;
                 padding: 0.5vh;
                 appearance: none;
@@ -266,12 +295,15 @@
             .Category_Button.Active {
                 background-color: var(--Accent_Colour);
                 border-color: var(--Accent_Colour);
-                color: red;
+                color: var(--Danger_Colour);
                 font-weight: bold;
                 border-radius: 5px;
 
             }
 
+            .ReceiptTable td {
+                color: var(--Default_Text_Colour);
+            }
 
 
             .Category_Button {
@@ -299,8 +331,8 @@
 
             .product {
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
-                border: 1px solid #333;
+                color: var(--Default_Text_Colour);
+                border: 1px solid var(--Input_Background);
                 border-radius: 8px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 padding: 10px;
@@ -339,12 +371,12 @@
 
                 gap: 5%;
                 /* Take up 1/2 of the available space */
-                color: white;
+                color: var(--Default_Text_Colour);
 
             }
 
             .add-to-cart {
-                background-color: #007BFF;
+                background-color: var(--Primary_Button_Colour);
                 color: #fff;
 
                 border: none;
@@ -438,7 +470,7 @@
 
                 overflow: hidden;
                 /* Prevents text from wrapping */
-                color: white;
+                color: var(--Default_Text_Colour);
                 height: 40px;
                 max-width: 26ch;
                 word-wrap: normal;
@@ -449,7 +481,7 @@
 
             .BasketTextDescription {
                 font-size: 20px;
-                color: white;
+                color: var(--Default_Text_Colour);
                 line-height: 1.2em;
                 /* 👈 Controls line height */
                 height: calc(1.2em * 6);
@@ -471,8 +503,7 @@
                 font-size: 200%;
                 color: var(--Default_Text_Colour);
 
-
-                color: white;
+                color: var(--Default_Text_Colour);
 
 
                 border: none;
@@ -488,7 +519,7 @@
 
             .BasketChangeQuantityText {
                 font-size: 37.5px;
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .SortContainer {
@@ -507,7 +538,7 @@
                 max-width: 100%;
                 /* Fixed max-width */
                 max-height: 5vh;
-                color: white;
+                color: var(--Default_Text_Colour);
                 font-size: 3vh;
             }
 
@@ -524,7 +555,7 @@
                 border: 0px solid var(--Borders_Colour);
                 border-radius: 3px;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-left: 1%;
                 padding: 0.5vh;
                 text-align: left;
@@ -600,15 +631,15 @@
             }
 
             .WhiteText {
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .ProductPrice {
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .ProductName {
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .product-name {
@@ -632,7 +663,7 @@
                 width: 1300px;
                 height: auto;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 position: relative;
                 box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
@@ -690,7 +721,7 @@
             }
 
             .Thumbnail.active {
-                border: 4px solid red;
+                border: 4px solid var(--Danger_Colour);
                 /* Thicker border on selected image */
                 box-shadow: 0 0 5px var(--Accent_Colour);
                 /* Optional glow effect */
@@ -739,17 +770,17 @@
             .Product_Option_Button {
                 margin: 5px;
                 padding: 8px 14px;
-                border: 1px solid #ccc;
-                background-color: white;
+                border: 1px solid var(--Option_Button_Border);
+                color: var(--Default_Text_Colour);
                 cursor: pointer;
                 border-radius: 6px;
                 transition: 0.2s ease;
             }
 
             .Product_Option_Button.selected {
-                background-color: #007bff;
-                color: white;
-                border-color: #007bff;
+                background-color: var(--Primary_Button_Colour);
+                color: var(--Default_Text_Colour);
+                border-color: var(--Primary_Button_Colour);
             }
 
             .Product_Option_Buttons {
@@ -779,7 +810,7 @@
             .ImageControlButtonNext {
                 position: relative;
                 background-color: transparent;
-                color: white;
+                color: var(--Default_Text_Colour);
                 font-size: 50px;
                 border: none;
                 cursor: pointer;
@@ -856,7 +887,7 @@
 
                 gap: 5%;
                 /* Take up 1/2 of the available space */
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .ProductPageQuantityContainer {
@@ -908,7 +939,7 @@
 
             .ReceiptTable td:nth-child(2) {
                 text-align: left;
-                color: white;
+                color: var(--Default_Text_Colour);
                 overflow: hidden;
                 text-overflow: ellipsis;
 
@@ -950,8 +981,8 @@
             }
 
             .PayButton {
-                background: #007BFF;
-                color: white;
+                background: var(--Primary_Button_Colour);
+                color: var(--Default_Text_Colour);
 
                 border: none;
                 cursor: pointer;
@@ -963,7 +994,7 @@
             }
 
             .PayTotalText {
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-left: auto;
                 text-align: right;
                 font-size: 35px;
@@ -988,7 +1019,7 @@
                 /* Scales based on viewport width */
                 white-space: nowrap;
                 /* Prevents text from wrapping */
-                color: white;
+                color: var(--Default_Text_Colour);
                 text-align: left;
                 max-width: 100%;
                 height: 30px;
@@ -999,7 +1030,7 @@
             .EmptyBasketMessage {
                 text-align: center;
                 font-size: 50px;
-                color: gray;
+                color: var(--Muted_Text_Colour);
                 padding: 10px;
             }
 
@@ -1019,11 +1050,11 @@
 
             input {
                 width: 100%;
-                background: #333;
+                background: var(--Input_Background);
                 /* Dark input background */
-                border: 1px solid #555;
+                border: 1px solid var(--Input_Border);
                 /* Subtle border */
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 outline: none;
             }
@@ -1032,7 +1063,7 @@
             .modal-content {
                 position: relative;
                 background-color: var(--Modal_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin: 10% auto;
                 padding: 20px;
                 border-radius: 10px;
@@ -1068,7 +1099,7 @@
 
 
             .Button {
-                color: white;
+                color: var(--Default_Text_Colour);
                 width: 100%;
                 font-size: 14px;
                 border: none;
@@ -1110,7 +1141,7 @@
                 right: 15px;
                 font-size: 24px;
                 cursor: pointer;
-                color: white;
+                color: var(--Default_Text_Colour);
 
             }
 
@@ -1173,7 +1204,7 @@
             /* Entire Page Dark Mode */
             .dark-mode {
                 background: #222;
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             /* Settings Container */
@@ -1188,8 +1219,8 @@
             }
 
             .dark-mode #Settings_Viewer {
-                background: #333;
-                color: white;
+                background: var(--Input_Background);
+                color: var(--Default_Text_Colour);
                 border-color: white;
                 box-shadow: 5px 5px 0px white;
             }
@@ -1235,9 +1266,9 @@
                 margin-top: 10px;
                 display: block;
                 width: 100%;
-                background-color: #333;
+                background-color: var(--Input_Background);
                 border: 1px solid var(--Borders_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 padding: 10px;
                 box-sizing: border-box;
@@ -1251,9 +1282,9 @@
                 margin-top: 10px;
                 display: block;
                 width: 100%;
-                background-color: #333;
+                background-color: var(--Input_Background);
                 border: 1px solid var(--Borders_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 padding: 10px;
                 box-sizing: border-box;
@@ -1268,7 +1299,7 @@
                 background-color: var(--ButtonHoverState_Background_Colour);
                 border: none;
                 border-radius: 5px;
-                color: white;
+                color: var(--Default_Text_Colour);
                 font-weight: bold;
                 cursor: pointer;
                 width: 100%;
@@ -1290,7 +1321,7 @@
             }
 
             .contact-note a {
-                color: lightblue;
+                color: var(--Info_Link_Colour);
                 text-decoration: underline;
             }
 
@@ -1302,7 +1333,7 @@
             .Product_Name_Heading {
 
                 font-size: 30px;
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-bottom: 10px;
 
             }
@@ -1330,7 +1361,7 @@
                 padding: 0.5vh 1vh;
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
                 appearance: none;
@@ -1369,6 +1400,10 @@
 
 
 
+            .Category_Button_Heading {
+                color: var(--Category_Button_Text_Colour);
+                margin: 0;
+            }
 
             .sidebar-header {
                 display: flex;
@@ -1559,12 +1594,12 @@
                 font-size: 1.4rem;
                 background: none;
                 border: none;
-                color: white;
+                color: var(--Default_Text_Colour);
                 cursor: pointer;
             }
 
             .mobileLogo h1 {
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin: 0;
                 font-size: 1.25rem;
             }
@@ -1573,7 +1608,7 @@
                 padding: 4px;
                 width: 94vw;
                 font-size: 1rem;
-
+                background-color: var(--SearchBar_Background_Colour);
                 min-width: 20px;
             }
 
@@ -1651,7 +1686,7 @@
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-left: 1%;
                 padding: 0.5vh;
                 appearance: none;
@@ -1698,7 +1733,7 @@
                 display: block;
                 font-size: 4vh;
                 background-color: transparent;
-                color: white;
+                color: var(--Default_Text_Colour);
                 border: none;
                 cursor: pointer;
                 margin-right: 1vh;
@@ -1714,8 +1749,8 @@
                 top: 0;
                 width: 250px;
                 height: 100%;
-                background: #333;
-                color: white;
+                background: var(--Input_Background);
+                color: var(--Default_Text_Colour);
                 transition: left 0.3s ease;
                 z-index: 1000;
             }
@@ -1740,13 +1775,13 @@
                 text-align: left;
                 color: #ddd;
                 font-size: 14px;
-                border-bottom: 1px solid #333;
+                border-bottom: 1px solid var(--Input_Background);
                 cursor: pointer;
             }
 
             .SideBar button:hover {
                 background: #2c3e50;
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .Viewer {
@@ -1793,7 +1828,7 @@
             .Category_Button.Active {
                 background-color: var(--Accent_Colour);
                 border-color: var(--Accent_Colour);
-                color: red;
+                color: var(--Danger_Colour);
                 font-weight: bold;
                 border-radius: 5px;
 
@@ -1827,8 +1862,8 @@
 
             .product {
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
-                border: 1px solid #333;
+                color: var(--Default_Text_Colour);
+                border: 1px solid var(--Input_Background);
                 border-radius: 8px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 padding: 10px;
@@ -1868,7 +1903,7 @@
 
                 gap: 5%;
                 /* Take up 1/2 of the available space */
-                color: white;
+                color: var(--Default_Text_Colour);
 
             }
 
@@ -1879,7 +1914,7 @@
                 padding-top: 2vw;
                 padding-bottom: 2vw;
                 margin-left: 2vw;
-                border: 1px solid #ccc;
+                border: 1px solid var(--Option_Button_Border);
                 background-color: white;
                 cursor: pointer;
                 border-radius: 1vw;
@@ -1888,9 +1923,9 @@
             }
 
             .Product_Option_Button.selected {
-                background-color: #007bff;
-                color: white;
-                border-color: #007bff;
+                background-color: var(--Primary_Button_Colour);
+                color: var(--Default_Text_Colour);
+                border-color: var(--Primary_Button_Colour);
             }
 
             .Product_Options_Container {
@@ -1917,7 +1952,7 @@
             }
 
             .add-to-cart {
-                background-color: #007BFF;
+                background-color: var(--Primary_Button_Colour);
                 color: #fff;
 
                 border: none;
@@ -2015,7 +2050,7 @@
                 margin-top: 1vw;
                 overflow: hidden;
                 /* Prevents text from wrapping */
-                color: white;
+                color: var(--Default_Text_Colour);
                 height: 5vw;
                 max-width: 26ch;
                 word-wrap: normal;
@@ -2026,7 +2061,7 @@
 
             .BasketTextDescription {
                 font-size: 2vw;
-                color: white;
+                color: var(--Default_Text_Colour);
                 line-height: 1.2em;
                 /* 👈 Controls line height */
                 height: calc(1.2em * 3);
@@ -2050,7 +2085,7 @@
                 color: var(--Default_Text_Colour);
 
 
-                color: white;
+                color: var(--Default_Text_Colour);
 
 
                 border: none;
@@ -2066,7 +2101,7 @@
 
             .BasketChangeQuantityText {
                 font-size: 7vw;
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .SortContainer {
@@ -2085,7 +2120,7 @@
                 max-width: 100%;
                 /* Fixed max-width */
                 max-height: 5vh;
-                color: white;
+                color: var(--Default_Text_Colour);
                 font-size: 3vh;
             }
 
@@ -2102,7 +2137,7 @@
                 border: 0px solid var(--Borders_Colour);
                 border-radius: 3px;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-left: 1%;
                 padding: 0.5vh;
                 text-align: left;
@@ -2183,23 +2218,24 @@
             }
 
             .WhiteText {
-                color: white;
+                color: var(--Default_Text_Colour);
                 font-size: 100%;
                 height: 100%;
             }
 
             .ProductPrice {
-                color: white;
+                color: var(--Default_Text_Colour);
 
             }
 
             .ProductName {
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .product-name {
                 color: var(--Default_Text_Colour);
                 font-size: 3.5vw;
+                min-height: 7vw;
                 height: auto;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
@@ -2219,7 +2255,7 @@
                 height: auto;
                 padding-bottom: 3vw;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 position: relative;
                 box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
@@ -2315,7 +2351,7 @@
             }
 
             .Thumbnail.active {
-                border: 0.6vw solid red;
+                border: 0.6vw solid var(--Danger_Colour);
                 box-shadow: 0 0 1vw var(--Accent_Colour);
             }
 
@@ -2411,7 +2447,7 @@
 
                 gap: 5%;
                 /* Take up 1/2 of the available space */
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             .ProductPageQuantityContainer {
@@ -2469,7 +2505,7 @@
 
             .ReceiptTable td:nth-child(2) {
                 text-align: left;
-                color: white;
+                color: var(--Default_Text_Colour);
                 overflow: hidden;
                 text-overflow: ellipsis;
 
@@ -2512,8 +2548,8 @@
             }
 
             .PayButton {
-                background: #007BFF;
-                color: white;
+                background: var(--Primary_Button_Colour);
+                color: var(--Default_Text_Colour);
 
                 border: none;
                 cursor: pointer;
@@ -2526,7 +2562,7 @@
             }
 
             .PayTotalText {
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-left: auto;
                 text-align: right;
                 font-size: 3vw;
@@ -2551,7 +2587,7 @@
                 /* Scales based on viewport width */
                 white-space: nowrap;
                 /* Prevents text from wrapping */
-                color: white;
+                color: var(--Default_Text_Colour);
                 text-align: left;
                 max-width: 100%;
                 height: 3.5vw;
@@ -2563,7 +2599,7 @@
             .EmptyBasketMessage {
                 text-align: center;
                 font-size: 50px;
-                color: gray;
+                color: var(--Muted_Text_Colour);
                 padding: 10px;
             }
 
@@ -2573,11 +2609,11 @@
 
             input {
                 width: 100%;
-                background: #333;
+                background: var(--Input_Background);
                 /* Dark input background */
-                border: 1px solid #555;
+                border: 1px solid var(--Input_Border);
                 /* Subtle border */
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 outline: none;
             }
@@ -2585,7 +2621,7 @@
 
             .modal-content {
                 background-color: var(--Modal_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
 
                 padding: 20px;
                 border-radius: 10px;
@@ -2632,7 +2668,7 @@
 
 
             .Button {
-                color: white;
+                color: var(--Default_Text_Colour);
                 width: 100%;
                 font-size: 14px;
                 border: none;
@@ -2671,7 +2707,7 @@
                 right: 15px;
                 font-size: 24px;
                 cursor: pointer;
-                color: white;
+                color: var(--Default_Text_Colour);
 
             }
 
@@ -2734,7 +2770,7 @@
             /* Entire Page Dark Mode */
             .dark-mode {
                 background: #222;
-                color: white;
+                color: var(--Default_Text_Colour);
             }
 
             /* Settings Container */
@@ -2749,8 +2785,8 @@
             }
 
             .dark-mode #Settings_Viewer {
-                background: #333;
-                color: white;
+                background: var(--Input_Background);
+                color: var(--Default_Text_Colour);
                 border-color: white;
                 box-shadow: 5px 5px 0px white;
             }
@@ -2803,9 +2839,9 @@
                 margin-top: 10px;
                 display: block;
                 width: 100%;
-                background-color: #333;
+                background-color: var(--Input_Background);
                 border: 1px solid var(--Borders_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 padding: 10px;
                 box-sizing: border-box;
@@ -2819,9 +2855,9 @@
                 margin-top: 10px;
                 display: block;
                 width: 100%;
-                background-color: #333;
+                background-color: var(--Input_Background);
                 border: 1px solid var(--Borders_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border-radius: 5px;
                 padding: 10px;
                 box-sizing: border-box;
@@ -2836,7 +2872,7 @@
                 background-color: var(--ButtonHoverState_Background_Colour);
                 border: none;
                 border-radius: 5px;
-                color: white;
+                color: var(--Default_Text_Colour);
                 font-weight: bold;
                 cursor: pointer;
                 width: 100%;
@@ -2858,7 +2894,7 @@
             }
 
             .contact-note a {
-                color: lightblue;
+                color: var(--Info_Link_Colour);
                 text-decoration: underline;
             }
 
@@ -2871,7 +2907,7 @@
             .Product_Name_Heading {
 
                 font-size: 5vw;
-                color: white;
+                color: var(--Default_Text_Colour);
                 margin-bottom: 10px;
                 width: 80vw;
             }
@@ -2888,6 +2924,10 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 width: 80vw;
+            }
+
+            .ReceiptTable td {
+                color: var(--Default_Text_Colour);
             }
 
             .Product_Price_Label {
@@ -2907,7 +2947,7 @@
                 padding: 0.5vh 1vh;
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
-                color: white;
+                color: var(--Default_Text_Colour);
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
                 appearance: none;
@@ -2972,7 +3012,7 @@
     </div>
     <div class="Logo" , onclick="loadProducts('Default_Page', 'NameFirst' , 'asc')">
         <button class="MainPage">
-            <h1 style="color: white; margin: 0;">Logo</h1>
+            <h1 style=" color: var(--Default_Text_Colour); margin: 0;">Logo</h1>
         </button>
     </div>
 </body>
