@@ -35,13 +35,13 @@
             --BasketReceipt_Background_Colour: #F4F1EB;
             /* Same soft beige */
 
-            --ButtonHoverState_Background_Colour: #0056b3;
+            --ButtonHoverState_Background_Colour: #59a3f2;
 
             --Default_Text_Colour: #2A2A2A;
             --Muted_Text_Colour: #777777;
             /* Slightly softer muted text */
 
-            --Primary_Button_Colour: #007BFF;
+            --Primary_Button_Colour: #59a3f2;
             /* Blue buttons */
             --Primary_Button_Hover: #0056b3;
 
@@ -185,7 +185,7 @@
                 background-color: var(--body_Background_Colour);
                 /* Match logo bg */
 
-                border: 0.15em solid var(--Borders_Colour);
+                border: 0.07em solid var(--Borders_Colour);
                 /* Same as logo */
                 border-radius: 5px;
 
@@ -1305,9 +1305,16 @@
                 width: 100%;
             }
 
-            .settings-section button.clearDataButton {
+            .settings-section {
                 width: auto;
                 padding: 10px 20px;
+                color: var(--Default_Text_Colour);
+            }
+
+            .clearDataButton {
+                width: auto;
+                color: var(--Default_Text_Colour);
+                background-color: var(--Primary_Button_Colour);
             }
 
             .settings-section button:hover {
@@ -2879,9 +2886,15 @@
                 width: 100%;
             }
 
-            .settings-section button.clearDataButton {
+            .settings-section {
                 width: auto;
                 padding: 10px 20px;
+            }
+
+            .clearDataButton {
+                width: auto;
+                color: var(--Default_Text_Colour);
+                background-color: var(--Primary_Button_Colour);
             }
 
             .settings-section button:hover {
