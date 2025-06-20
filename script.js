@@ -927,7 +927,7 @@ function GoToSettings() {
     clearSection.classList.add("settings-section");
     clearSection.innerHTML = `
         <h3>Reset</h3>
-        <button id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
+        <button class = "clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
     `;
 
     // Contact Form
