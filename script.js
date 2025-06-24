@@ -960,9 +960,41 @@ function GoToSettings() {
     const legalSection = document.createElement("div");
     legalSection.classList.add("settings-section");
     legalSection.innerHTML = `
-        <h3>Legal Notice</h3>
-        <p>Unauthorized scraping or copying of this website or its data is strictly prohibited and may result in legal action.</p>
-    `;
+    <h3>Legal Notice & Store Policies</h3>
+    <p><strong>Legal Notice:</strong><br>
+    Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is strictly prohibited. Any such actions may result in legal action.</p>
+
+    <h4>Shipping Policy</h4>
+    <p>
+    We operate on a dropshipping model, and most products are shipped directly from global suppliers. Delivery times may range from <strong>2 weeks up to 6 months</strong> depending on your location and product availability.<br><br>
+    We are not responsible for delays caused by customs, local postal services, global events, or other circumstances beyond our control.
+    </p>
+
+    <h4>Returns & Refunds</h4>
+    <p>
+    <strong>All sales are final.</strong> We do <strong>not offer refunds, returns, or exchanges</strong> unless an item arrives defective or significantly different from its description.<br><br>
+    If your item arrives damaged or is not as described, please contact us within 5 days of delivery with clear photos and your order number. We will assess the case and offer a solution at our discretion.<br><br>
+    Orders cannot be canceled after they are placed.
+    </p>
+
+    <h4>Warranty & Insurance</h4>
+    <p>
+    We do <strong>not provide any warranty or insurance</strong> on the products we sell. All items are sold “as-is.” Any manufacturer guarantees (if applicable) must be handled directly with the manufacturer.
+    </p>
+
+    <h4>Customs, Duties & Taxes</h4>
+    <p>
+    Buyers are solely responsible for any customs duties, taxes, or import restrictions that may apply in their country.
+    </p>
+
+    <h4>Responsibility Disclaimer</h4>
+    <p>
+    We are not liable for:<br>
+    - Orders lost or delayed due to incorrect shipping information provided by the customer.<br>
+    - Packages lost or stolen after delivery.<br>
+    - Use or misuse of products sold through our store.
+    </p>
+`;
 
     // Append all sections
     wrapper.append(themeSection, currencySection, clearSection, contactSection, legalSection);
