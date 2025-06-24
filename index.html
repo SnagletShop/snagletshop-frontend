@@ -645,18 +645,19 @@
             .product-name {
                 color: var(--Default_Text_Colour);
                 font-size: 20px;
-                height: auto;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
-                /* 👈 Allow up to 2 lines */
                 -webkit-box-orient: vertical;
-                /* 👈 Set box direction */
                 overflow: hidden;
                 text-overflow: ellipsis;
                 line-clamp: 2;
+                /* not necessary, safe to remove */
                 margin-top: 10px;
-                /* Optional fallback for modern browsers */
+                margin-bottom: 10px;
+                /* Remove this if causing spacing issues */
+                height: auto;
             }
+
 
             .Product_Viewer {
                 margin-top: 24px;
@@ -2252,7 +2253,8 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 line-clamp: 2;
-                margin-top: 10px;
+                margin-top: 3vw;
+                margin-bottom: 2vw;
                 /* Optional fallback for modern browsers */
             }
 
