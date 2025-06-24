@@ -566,9 +566,20 @@ function searchProducts() {
             const card = document.createElement("div");
             card.className = "product-card";
 
-            const nameP = document.createElement("p");
-            nameP.className = "product-name";
-            nameP.textContent = product.name;
+            // Clickable product name as a link, no underline
+            const nameLink = document.createElement("a");
+            nameLink.className = "product-name";
+            nameLink.href = "#";
+            nameLink.textContent = product.name;
+            nameLink.style.textDecoration = "none";
+            nameLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                navigate("GoToProductPage", [
+                    product.name,
+                    product.price,
+                    product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+                ]);
+            });
 
             const img = document.createElement("img");
             img.className = "Clickable_Image";
@@ -630,7 +641,7 @@ function searchProducts() {
             quantityControls.append(decBtn, quantitySpan, incBtn);
             quantityContainer.append(quantityControls, addToCartBtn);
 
-            card.append(nameP, img, priceP, quantityContainer);
+            card.append(nameLink, img, priceP, quantityContainer);
             productDiv.appendChild(card);
             viewer.appendChild(productDiv);
         });
@@ -1698,9 +1709,21 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         const card = document.createElement("div");
         card.className = "product-card";
 
-        const nameP = document.createElement("p");
-        nameP.className = "product-name";
-        nameP.textContent = product.name;
+        // Clickable product name as a link
+        const nameLink = document.createElement("a");
+        nameLink.className = "product-name";
+        nameLink.style.textDecoration = "none"; // Removes underline
+
+        nameLink.href = "#";
+        nameLink.textContent = product.name;
+        nameLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            navigate("GoToProductPage", [
+                product.name,
+                product.price,
+                product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+            ]);
+        });
 
         const img = document.createElement("img");
         img.className = "Clickable_Image";
@@ -1762,7 +1785,7 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         quantityControls.append(decBtn, quantitySpan, incBtn);
         quantityContainer.append(quantityControls, addToCartBtn);
 
-        card.append(nameP, img, priceP, quantityContainer);
+        card.append(nameLink, img, priceP, quantityContainer);
         productDiv.appendChild(card);
         viewer.appendChild(productDiv);
     });
