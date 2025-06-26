@@ -2538,6 +2538,19 @@
                 height: 5vw;
             }
 
+            .modal {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                /* ✅ Vertically center it */
+                position: fixed;
+                z-index: 1000;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 100vw;
+                background-color: rgba(0, 0, 0, 0.5);
+            }
 
             .ReceiptTable td {
                 padding-left: 5vw;
@@ -2676,33 +2689,17 @@
 
 
             .modal-content {
-                background-color: var(--Modal_Background_Colour);
-                color: var(--Default_Text_Colour);
-
-                padding: 20px;
-                border-radius: 10px;
-                position: fixed;
-                top: 0;
-                left: 0;
-                display: flex;
-                justify-content: center;
-                /* centers horizontally */
-                align-items: center;
-                /* centers vertically */
-
-                z-index: 9999;
-                /* Make modal responsive */
+                position: relative;
                 width: 90vw;
                 max-width: 500px;
-                margin: 10% auto;
-                height: fit-content;
-                max-height: 80vh;
+                background-color: var(--Modal_Background_Colour);
+                border-radius: 10px;
+                padding: 20px;
                 overflow-y: auto;
-
-                text-align: center;
-                display: flex;
-                flex-direction: column;
+                max-height: 90vh;
+                /* ✅ Avoids going off screen */
             }
+
 
 
             .modal-content input {
