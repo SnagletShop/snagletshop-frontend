@@ -431,7 +431,7 @@
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                transition: background-color 0.3s;
+
             }
 
             .Quantity-Controls-Basket {
@@ -1380,6 +1380,21 @@
                 text-align: left;
                 width: 175px;
             }
+
+            /* When dark mode is active (e.g., body has class "dark-mode") */
+            .SettingsIcon {
+
+                color: var(--Default_Text_Colour);
+                /* Will adapt with your theme */
+
+            }
+
+            .BasketIcon {
+
+                color: var(--Default_Text_Colour);
+            }
+
+
         }
 
         @media (max-width: 680px) {
@@ -1406,6 +1421,12 @@
                 /* Light red to see its area */
             }
 
+
+
+            .Icon {
+
+                color: var(--Default_Text_Colour);
+            }
 
 
 
@@ -1597,14 +1618,34 @@
             }
 
 
-            .mobileHamburgerMenu,
-            .mobileBasketButton,
-            .mobileSettingsButton {
+            .mobileHamburgerMenu {
                 font-size: 1.4rem;
                 background: none;
                 border: none;
                 color: var(--Default_Text_Colour);
                 cursor: pointer;
+            }
+
+            .mobileSettingsButton,
+            .mobileBasketButton {
+                font-size: 1.4rem;
+                background: none;
+                border: none;
+                color: var(--Default_Text_Colour);
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 6px;
+            }
+
+            /* 🔧 Target the actual <svg> inside */
+            .mobileSettingsButton .Icon,
+            .mobileBasketButton .Icon {
+                width: 24px;
+                height: 24px;
+                color: inherit;
+                /* ← uses the button's text color */
             }
 
             .mobileLogo h1 {
@@ -2018,7 +2059,7 @@
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                transition: background-color 0.3s;
+
             }
 
             .Quantity-Controls-Basket {
@@ -3008,10 +3049,17 @@
                 <option value="AUD">AUD A$</option>
             </select>
             <button class="BasketButton" id="BasketButton" onclick="trackedGoToCart()">
-                🛒
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
+                </svg>
+
             </button>
             <button class="SettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">
-                ⚙️
+                <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
+                </svg>
             </button>
         </div>
     </div>
@@ -3058,8 +3106,22 @@
                     <option value="AUD">AUD A$</option>
                 </select>
 
-                <button class="mobileBasketButton" id="BasketButton" onclick="trackedGoToCart()">🛒</button>
-                <button class="mobileSettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">⚙️</button>
+                <button class="mobileBasketButton" id="BasketButton" onclick="trackedGoToCart()">
+                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+
+                        <path
+                            d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
+                    </svg>
+
+                </button>
+
+                <button class="mobileSettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">
+                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path fill="currentColor"
+                            d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
+                    </svg>
+                </button>
+
             </div>
         </div>
 
