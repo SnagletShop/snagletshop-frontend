@@ -8,6 +8,9 @@
     <script src="Products.js" defer></script>
     <script src="script.js" defer></script>
     <script src="https://js.stripe.com/v3/"></script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
 
     <style>
         :root {
@@ -3151,6 +3154,14 @@
 
     <div class="mobileModalDiv" id="ModalDiv"></div>
 
+
+    <script>
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock("portrait").catch(function (err) {
+                console.warn("Orientation lock failed:", err);
+            });
+        }
+    </script>
 
 
 
