@@ -1211,6 +1211,13 @@ async function createPaymentModal() {
     `;
 
     document.body.appendChild(modal);
+    modal.addEventListener("click", handleOutsideClick);
+    modal.addEventListener("touchstart", handleOutsideClick);
+    modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
     document.getElementById("paymentModal").style.display = "flex";
 
     const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi');
@@ -1333,7 +1340,12 @@ async function createPaymentModal() {
 }
 
 // When the user clicks "Pay Now"
-
+function handleOutsideClick(event) {
+    const modalContent = modal.querySelector(".modal-content");
+    if (!modalContent.contains(event.target)) {
+        closeModal();
+    }
+}
 
 
 
@@ -2067,7 +2079,7 @@ function updateImage(direction = 'none') {
 
 
 
-// Function to go to the previous image
+
 function prevImage() {
     window.currentIndex = (window.currentIndex - 1 + window.currentProductImages.length) % window.currentProductImages.length;
     updateImage('right');
