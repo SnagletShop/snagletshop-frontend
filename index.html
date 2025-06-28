@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -239,6 +240,8 @@
                 -moz-appearance: none;
                 /* For Firefox */
                 text-align: center;
+                display: none;
+
             }
 
 
@@ -489,7 +492,7 @@
                 /* 👈 Controls line height */
                 height: calc(1.2em * 6);
                 /* 👈 Ensures 6-line height */
-
+                font-family: 'Rubik', sans-serif;
                 overflow: hidden;
                 display: -webkit-box;
                 -webkit-box-orient: vertical;
@@ -659,6 +662,9 @@
                 margin-bottom: 10px;
                 /* Remove this if causing spacing issues */
                 height: auto;
+                font-family: 'Rubik', sans-serif;
+                font-weight: 600;
+
                 margin-left: 10px;
             }
 
@@ -1343,7 +1349,9 @@
             }
 
             .Product_Name_Heading {
-
+                font-family: 'Rubik', sans-serif;
+                font-weight: 700;
+                /* or 600, 500, etc. */
                 font-size: 30px;
                 color: var(--Default_Text_Colour);
                 margin-bottom: 10px;
@@ -1359,6 +1367,7 @@
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                font-family: 'Rubik', sans-serif;
             }
 
             .Product_Price_Label {
@@ -1670,6 +1679,7 @@
                 color: var(--Default_Text_Colour);
                 font-size: 1rem;
                 background-color: var(--SearchBar_Background_Colour);
+                display: none;
 
 
 
@@ -2119,7 +2129,7 @@
                 /* 👈 Controls line height */
                 height: calc(1.2em * 3);
                 /* 👈 Ensures 6-line height */
-
+                font-family: 'Rubik', sans-serif;
                 overflow: hidden;
                 display: -webkit-box;
                 -webkit-box-orient: vertical;
@@ -2153,9 +2163,14 @@
             }
 
             .BasketChangeQuantityText {
-                font-size: 7vw;
                 color: var(--Default_Text_Colour);
+                white-space: nowrap;
+                font-size: 5vw;
+                max-width: fit-content;
+
+                transition: font-size 0s ease;
             }
+
 
             .SortContainer {
                 background-color: var(--TopBar_Background_Colour);
@@ -2297,6 +2312,8 @@
                 /* 👈 Set box direction */
                 overflow: hidden;
                 text-overflow: ellipsis;
+                font-family: 'Rubik', sans-serif;
+                font-weight: 600;
                 line-clamp: 2;
                 margin-top: 3vw;
                 margin-bottom: 2vw;
@@ -2964,7 +2981,9 @@
             }
 
             .Product_Name_Heading {
-
+                font-family: 'Rubik', sans-serif;
+                font-weight: 700;
+                /* or 600, 500, etc. */
                 font-size: 5vw;
                 color: var(--Default_Text_Colour);
                 margin-bottom: 10px;
@@ -2973,7 +2992,7 @@
 
             .Product_Description {
 
-
+                font-family: 'Rubik', sans-serif;
                 white-space: pre-line;
                 font-size: 3vw;
                 color: var(--Default_Text_Colour);
