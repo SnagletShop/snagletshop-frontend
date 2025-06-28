@@ -1202,6 +1202,7 @@ async function createPaymentModal() {
                     <input type="text" id="Postal_Code" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.POSTAL_CODE}" required>
                     <input type="text" id="Country" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.COUNTRY}" required>
                 </div>
+                <div id="payment-request-button" style="margin: 20px 0;"></div>
                 <div id="payment-element" style="margin-top: 20px;"></div>
                 <button class="Submit_Button" id="confirm-payment-button" type="button">
                     ${TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT}
@@ -1218,63 +1219,119 @@ async function createPaymentModal() {
             closeModal();
         }
     });
-    document.getElementById("paymentModal").style.display = "flex";
+    modal.style.display = "flex";
 
     const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi');
     stripeInstance = stripe;
 
     const cartItems = JSON.parse(localStorage.getItem("basket")) || {};
-
-    const fullCart = Object.values(cartItems).map(item => {
-        const price = parseFloat(item.price) || 1;
-        const expectedPrice = parseFloat(item.expectedPurchasePrice) || price;
-        return {
-            name: item.name,
-            quantity: parseInt(item.quantity) || 1,
-            price: price.toFixed(2),
-            expectedPurchasePrice: expectedPrice.toFixed(2),
-            productLink: item.productLink || "N/A",
-            ...(item.selectedOption && { selectedOption: item.selectedOption })
-        };
-    });
+    const fullCart = Object.values(cartItems).map(item => ({
+        name: item.name,
+        quantity: parseInt(item.quantity) || 1,
+        price: parseFloat(item.price || 1).toFixed(2),
+        expectedPurchasePrice: parseFloat(item.expectedPurchasePrice || item.price || 1).toFixed(2),
+        productLink: item.productLink || "N/A",
+        ...(item.selectedOption && { selectedOption: item.selectedOption })
+    }));
 
     const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
-
     const summarizedCart = stripeCart.map(item => {
         const name = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
         const option = item.selectedOption ? ` (${item.selectedOption})` : '';
         return `${item.quantity}x ${name}${option}`;
     }).join(", ").slice(0, 499);
 
-    const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
+    const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             websiteOrigin: "Dropshipping Website",
-            products: stripeCart, // ✅ safe for Stripe
+            products: stripeCart,
             currency: selectedCurrency,
             metadata: { order_summary: summarizedCart }
         })
     });
 
-    const data = await response.json();
+    const data = await res.json();
     const clientSecret = data.clientSecret;
-
     if (!clientSecret || !clientSecret.includes("_secret_")) {
         alert("❌ Could not initialize payment.");
         return;
     }
 
+    // 🧩 Initialize Stripe Elements
     elementsInstance = stripe.elements({ clientSecret });
     paymentElementInstance = elementsInstance.create("payment");
     paymentElementInstance.mount("#payment-element");
 
-    // Attach one-time click handler
+    // 💳 Apple Pay / Google Pay Button
+    const paymentRequest = stripe.paymentRequest({
+        country: "US", // You can dynamically set this based on user
+        currency: selectedCurrency.toLowerCase(),
+        total: {
+            label: "Total",
+            amount: Math.round(fullCart.reduce((sum, i) => sum + i.price * i.quantity, 0) * 100)
+        },
+        requestPayerName: true,
+        requestPayerEmail: true
+    });
+
+    const prButton = elementsInstance.create("paymentRequestButton", {
+        paymentRequest
+    });
+
+    paymentRequest.canMakePayment().then(result => {
+        if (result) {
+            prButton.mount("#payment-request-button");
+        } else {
+            document.getElementById("payment-request-button").style.display = "none";
+        }
+    });
+
+    // 🧾 Apple/Google Pay Checkout Handler
+    paymentRequest.on("paymentmethod", async ev => {
+        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("https://api.snagletshop.com/create-payment-intent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                websiteOrigin: "SnagletShop",
+                products: stripeCart,
+                currency: selectedCurrency,
+                metadata: { order_summary: summarizedCart }
+            })
+        }).then(res => res.json());
+
+        if (!freshClientSecret) {
+            ev.complete("fail");
+            return;
+        }
+
+        const { error: confirmError } = await stripe.confirmCardPayment(
+            freshClientSecret,
+            { payment_method: ev.paymentMethod.id },
+            { handleActions: false }
+        );
+
+        if (confirmError) {
+            ev.complete("fail");
+            alert("❌ Payment failed: " + confirmError.message);
+        } else {
+            ev.complete("success");
+            const finalResult = await stripe.confirmCardPayment(freshClientSecret);
+            if (finalResult.error) {
+                alert("❌ Final step failed: " + finalResult.error.message);
+            } else {
+                localStorage.removeItem("basket");
+                alert("🎉 Payment successful!");
+                location.reload();
+            }
+        }
+    });
+
+    // 🖱️ Manual Payment Button
     const confirmBtn = document.getElementById("confirm-payment-button");
     if (!confirmBtn.dataset.listenerAttached) {
         confirmBtn.addEventListener("click", async () => {
-            console.log("🟢 Pay button clicked");
-
             const form = document.getElementById("paymentForm");
             if (!form.checkValidity()) {
                 form.reportValidity();
@@ -1295,7 +1352,6 @@ async function createPaymentModal() {
             };
 
             const paymentIntentId = clientSecret.split("_secret")[0];
-
             await fetch("https://api.snagletshop.com/store-user-details", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1338,6 +1394,7 @@ async function createPaymentModal() {
         confirmBtn.dataset.listenerAttached = "true";
     }
 }
+
 
 // When the user clicks "Pay Now"
 function handleOutsideClick(event) {
