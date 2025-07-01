@@ -1276,9 +1276,19 @@ async function createPaymentModal() {
         requestPayerEmail: true
     });
 
+    const isDarkMode = document.body.classList.contains('dark');
+
     const prButton = elementsInstance.create("paymentRequestButton", {
-        paymentRequest
+        paymentRequest,
+        style: {
+            paymentRequestButton: {
+                type: "default",
+                theme: isDarkMode ? "dark" : "light",
+                height: "45px"
+            }
+        }
     });
+
 
     paymentRequest.canMakePayment().then(result => {
         if (result) {
