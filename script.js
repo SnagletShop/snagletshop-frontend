@@ -336,21 +336,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 } else {
                     console.warn("❌ Product not found:", productName);
-                    Default_Page();
+                    loadProducts("Default_Page");
+
                 }
             } else {
                 attempts++;
                 if (attempts >= maxAttempts) {
                     clearInterval(checkProducts);
                     console.error("⏰ Timeout: products not loaded in time.");
-                    Default_Page();
+                    loadProducts("Default_Page");
+
                 } else {
                     console.log("⌛ Waiting for products to load...");
                 }
             }
         }, 100);
     } else {
-        Default_Page(); // No ?product= → show homepage
+        loadProducts("Default_Page");
+        // No ?product= → show homepage
     }
 
     // Optional: add search handler if `searchInput` exists
@@ -887,13 +890,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await fetchExchangeRatesFromServer();  // ✅ WAIT for rates to update
     updateAllPrices();                     // ✅ THEN convert prices properly
 });
-app.get('/api/countries', (req, res) => {
-    const countries = Object.keys(tariffs).map(code => ({
-        code,
-        tariff: tariffs[code]
-    }));
-    res.json(countries);
-});
+
 
 async function populateCountries() {
     const response = await fetch("/api/countries");
@@ -2657,6 +2654,5 @@ function getProductPrice(productName) {
     let product = Object.values(products).flat().find(p => p.name === productName);
     return product ? product.price : "N/A";
 }
-
 
 
