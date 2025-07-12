@@ -1,5 +1,36 @@
 const products = {
-    "Procesory": [
+
+    "Home_&_Kitchen": [
+
+    ],
+    " Health_&_Wellness": [
+
+    ],
+    "Počítačové_Skrine": [
+
+    ],
+    "Gadgets_&_Tech": [
+
+    ],
+    "Cleaning_&_Maintenance": [
+
+    ],
+    "Tools_&_DIY": [
+
+    ],
+    "Apparel_&_Accessories": [
+
+    ],
+    "Personal_Care": [
+
+    ],
+    "Electronics_Accessories": [
+
+    ],
+    "Outdoor_&_Travel": [
+
+    ],
+    "Default_Page": [
 
         {
             productLink: "https://www.aliexpress.com/item/1005008347924855.html?spm=a2g0o.productlist.main.2.5caakTslkTslCj&algo_pvid=2406ad87-3199-4662-b00d-0f295074238f&algo_exp_id=2406ad87-3199-4662-b00d-0f295074238f-1&pdp_ext_f=%7B%22order%22%3A%22216%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%215.97%211.79%21%21%216.54%211.96%21%40211b819117469813109211412e7b0a%2112000044685038522%21sea%21SK%216006253967%21X&curPageLogUid=XzaISHKvWlqC&utparam-url=scene%3Asearch%7Cquery_from%3A",
@@ -161,12 +192,11 @@ const products = {
             expectedPurchasePrice: "34.53",
             image: "https://ae01.alicdn.com/kf/S758ce6ab9e97430b8712668ccb7f2f18Q.jpg",
             images: ["https://ae01.alicdn.com/kf/S758ce6ab9e97430b8712668ccb7f2f18Q.jpg",
-                "https://ae01.alicdn.com/kf/S758ce6ab9e97430b8712668ccb7f2f18Q.jpg",
+
                 "https://ae01.alicdn.com/kf/Sdc80950e27e049e78ad7695875ef8ace0.jpg",
                 "https://ae01.alicdn.com/kf/S91d98e0a08254ce7868b278b4777dd51u.jpg",
-                "https://ae01.alicdn.com/kf/S91d98e0a08254ce7868b278b4777dd51u.jpg",
                 "https://ae01.alicdn.com/kf/S98ed3b11988047e1bc778cac78ea21b7n.jpg",
-                "https://ae01.alicdn.com/kf/S758ce6ab9e97430b8712668ccb7f2f18Q.jpg"]
+            ]
         },
         {
             productLink: "https://www.aliexpress.com/item/1005005516270022.html?spm=a2g0o.productlist.main.29.4ddf72fdSmU1xk&algo_pvid=7d6acc85-d873-4421-bdcc-d5f9594992a7&algo_exp_id=7d6acc85-d873-4421-bdcc-d5f9594992a7-28&pdp_ext_f=%7B%22order%22%3A%22621%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.33%212.33%21%21%2118.52%2118.52%21%40210388c917469824064471610e0129%2112000033378746530%21sea%21SK%216006253967%21X&curPageLogUid=PHyS4vIDX5JA&utparam-url=scene%3Asearch%7Cquery_from%3A",
@@ -400,7 +430,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005008670891877.html?spm=a2g0o.productlist.main.14.656a8c69lUNECS&algo_pvid=fa03d359-ddf1-4b73-9b7c-890e3d351ff5&algo_exp_id=fa03d359-ddf1-4b73-9b7c-890e3d351ff5-13&pdp_ext_f=%7B%22order%22%3A%22138%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%214.28%214.13%21%21%2133.69%2132.51%21%402103847817475101950685120e5c43%2112000046174642721%21sea%21SK%216006253967%21X&curPageLogUid=pRiYpujfDoRv&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=d5961a51e18949b0905ff2720f2e1efa-1747510219640-00449-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=d5961a51e18949b0905ff2720f2e1efa-1747510219640-00449-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Retractable anti-theft phone hook",
-            description: "Secure your phone display with this retractable antitheft hook — perfect for shops or kiosks.\n\n🔒 Prevents theft in retail settings\n📱 Strong adhesive and retractable wire\n🔁 360° rotation for easy demo access\n✅ Clean, minimal design fits all phones",
+            description: "Secure your phone with this retractable antitheft hook — perfect for shops or kiosks.\n\n🔒 Prevents theft in retail settings\n📱 Strong adhesive and retractable wire\n🔁 360° rotation for easy demo access\n✅ Clean, minimal design fits all phones",
             price: "9.99",
             expectedPurchasePrice: "4.23",
             image: "https://ae01.alicdn.com/kf/Sefafdeb83e8749718bc4e1d6d07360aaN.jpg",
@@ -429,7 +459,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005007445701080.html?spm=a2g0o.productlist.main.27.48c515c5Uqp1BK&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=da4e32af-524d-4bc6-ad89-99e622b2dea8&algo_exp_id=da4e32af-524d-4bc6-ad89-99e622b2dea8&pdp_ext_f=%7B%22order%22%3A%22617%22%7D&pdp_npi=4%40dis%21EUR%2132.74%2116.04%21%21%21257.83%21126.34%21%40211b6c1917475103512348544e279e%2112000040781858464%21sea%21SK%216006253967%21X&aff_fcid=f308a25bbab342e58071a3dd1d2f7d65-1747510355874-00086-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=f308a25bbab342e58071a3dd1d2f7d65-1747510355874-00086-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Portable door stopper with alarm",
-            description: "Secure your space with this door stopper featuring a built-in alarm.\n\n🔒 Wedges under any inward-opening door\n🔊 120dB alarm activates on forced entry\n🧳 Compact and travel-friendly\n🔋 Powered by a 9V battery (not included)",
+            description: "Secure your space with this door stopper featuring a built-in alarm.\n\n🔒 Wedges under any inward-opening door\n🔊 120dB alarm activates on forced entry\n🧳 Compact and travel-friendly\n🔋 Powered by a small circular battery",
             price: "29.99",
             expectedPurchasePrice: "15.88",
             image: "https://ae01.alicdn.com/kf/S1c166407777043d1a5bf24b3642b1c212.jpg",
@@ -444,7 +474,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005008728005172.html?spm=a2g0o.productlist.main.2.166a53dbKr0CN3&algo_pvid=1654b513-edad-4a22-aa82-0a61497d37ab&algo_exp_id=1654b513-edad-4a22-aa82-0a61497d37ab-1&pdp_ext_f=%7B%22order%22%3A%22-1%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2111.05%215.53%21%21%2186.99%2143.49%21%40211b81a317475104084066245e6f92%2112000046417116505%21sea%21SK%216006253967%21X&curPageLogUid=pOr5SxRlKGXv&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=08cba942ec29419fb71a8f36cd6ba54d-1747510413044-01676-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=08cba942ec29419fb71a8f36cd6ba54d-1747510413044-01676-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Fillable travel neck pillow",
-            description: "Stay comfortable on the go with this inflatable travel neck pillow.\n\n🛫 Lightweight and compact for easy packing\n💨 Inflate in seconds, deflate for storage\n🧵 Choose from soft fuzz or waterproof Lycra\n👍 Perfect for flights, trains, or road trips",
+            description: "Stay comfortable on the go with this fillable travel neck pillow.\n\n🛫 Lightweight and compact for easy packing\n🧵 Choose from soft fuzz or waterproof Lycra\n👍 Perfect for flights, trains, or road trips",
             price: "14.99",
             expectedPurchasePrice: "5.47",
             productOptions: ["Material:", "Soft fuzz", "Lycra Waterproof"],
@@ -715,7 +745,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005006109553042.html?spm=a2g0o.productlist.main.3.57db620duomEsk&algo_pvid=ae23b4df-c781-4d1c-8e4d-72aab9bd52ae&algo_exp_id=ae23b4df-c781-4d1c-8e4d-72aab9bd52ae-2&pdp_ext_f=%7B%22order%22%3A%22756%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%213.77%213.57%21%21%2129.68%2128.09%21%40211b61ae17475124836382366e6bcf%2112000035788559236%21sea%21SK%216006253967%21X&curPageLogUid=bhib9JlSPfK5&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=cb6cdb93b2d0444f93bb90f02c36500b-1747512488659-04128-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=cb6cdb93b2d0444f93bb90f02c36500b-1747512488659-04128-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Funny cute socks",
-            description: "Add a pop of fun to your outfit\n\n🧦 Soft, breathable cotton blend\n🎨 Available in 11 playful colors\n😊 Cute embroidered smiley design\n👟 Fits most EU sizes 35–42\nPerfect for casual wear or gifting!",
+            description: "Add a pop of fun to your outfit\n\n🧦 Soft, breathable cotton blend\n🎨 Available in 11 playful colors\n😊 Cute embroidered smiley design\n👟 Fits most EU and US sizes\nPerfect for casual wear or gifting!",
             price: "9.99",
             expectedPurchasePrice: "3.53",
             productOptions: ["Colour:", "Pink", "Black", "Green", "Khaki", "Ivory", "Yellow", "Light green", "Purple", "Cyan", "Brown", "Rose"],
@@ -748,7 +778,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005008458767426.html?spm=a2g0o.productlist.main.6.6ffc2093ECOH1A&algo_pvid=d00711dd-aa78-4e9a-82f2-05dcfe87ccb6&algo_exp_id=d00711dd-aa78-4e9a-82f2-05dcfe87ccb6-5&pdp_ext_f=%7B%22order%22%3A%22133%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2113.32%214.66%21%21%21104.89%2136.71%21%40210390b817475127370298290e7ae5%2112000045223762327%21sea%21SK%216006253967%21X&curPageLogUid=22746zA7cjEv&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=7eee555000874e028cd8a0ab5ce5a2c3-1747512743692-07905-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=7eee555000874e028cd8a0ab5ce5a2c3-1747512743692-07905-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Handbag light",
-            description: "Automatic LED light for your bag\n\n💡 Motion-sensor activated for hands-free use\n👜 Compact and lightweight — fits any handbag\n🔋 Battery-powered with long-lasting LEDs\n🔄 Turns on only in the dark to save power\nPerfect for quick access in low light",
+            description: "Automatic LED light for your bag\n\n💡 Switch-activated for easy use use\n👜 Compact and lightweight — fits any handbag\n🔋 Battery-powered with long-lasting LEDs\n🔄 Turns on only in the dark to save power\nPerfect for quick access in low light",
             price: "9.99",
             expectedPurchasePrice: "4.68",
             image: "https://ae01.alicdn.com/kf/Sce1699832a1740848407640483361d5a3.jpg",
@@ -794,7 +824,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005008637223084.html?spm=a2g0o.productlist.main.3.3c8a2663agWImg&algo_pvid=392c21f6-9346-401d-b7a7-d2912ecf4061&algo_exp_id=392c21f6-9346-401d-b7a7-d2912ecf4061-2&pdp_ext_f=%7B%22order%22%3A%22519%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%213.23%213.08%21%21%2125.41%2124.24%21%40210384b917475136960476160e5072%2112000046046944330%21sea%21SK%216006253967%21X&curPageLogUid=Lcq698pbpAEA&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=6368d0d0fe3149efb7cfe2dc66aa3cf7-1747513703994-03213-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=6368d0d0fe3149efb7cfe2dc66aa3cf7-1747513703994-03213-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Sheep Shaun toilet paper accessory",
-            description: "Funny bathroom decor with a sheepish twist\n\n🐑 Holds toilet paper in a playful sheep shape\n🧻 Fits multiple rolls — functional and decorative\n🛠️ Easy wall mount, no drilling needed\n🎁 Great gift for humor-loving home decorators",
+            description: "Funny bathroom decor with a sheepish twist\n\n🐑 Holds toilet paper in a playful sheep shape\n🧻 Fits multiple rolls — functional and decorative\n🛠️ Easily mountable on any place\n🎁 Great gift for humor-loving home decorators",
             price: "9.99",
             expectedPurchasePrice: "2.81",
             image: "https://ae01.alicdn.com/kf/S4c2851e7c91149d9a42c3cfb1de4ae68h.jpg?width=970&height=600&hash=1570",
@@ -914,7 +944,7 @@ const products = {
         {
             productLink: "https://www.aliexpress.com/item/1005005511060334.html?spm=a2g0o.productlist.main.2.4c1e36e4JQF2Yi&algo_pvid=28a30aa1-4c27-497b-bbb4-5c0c16bfe5f8&algo_exp_id=28a30aa1-4c27-497b-bbb4-5c0c16bfe5f8-1&pdp_ext_f=%7B%22order%22%3A%222066%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%214.09%213.90%21%21%2132.18%2130.67%21%40211b618e17475885122286382e2263%2112000033360413485%21sea%21SK%216006253967%21X&curPageLogUid=eBsjLph2EefY&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=bb4e072f894446c188828a7d71bb3155-1747588516146-09027-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=bb4e072f894446c188828a7d71bb3155-1747588516146-09027-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             name: "Portable door lock",
-            description: "Stick-on solution for tidy living\n\n🧲 Reusable adhesive for organizing cords & small items\n🔧 Strong hold on smooth surfaces — no drilling\n🎨 Minimalist design in white or black\n🔁 Peel, stick, and reposition with ease",
+            description: "",
             price: "14.99",
             expectedPurchasePrice: "4.04",
             productOptions: ["Colour:", "Black", "Golden"],
@@ -1084,114 +1114,6 @@ const products = {
             ]
         },
 
-
-
-    ],
-    "Grafické_Karty": [
-        { name: "Intel i9-Grafické_Karty", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "299", image: "https://via.placeholder.com/100" }
-    ],
-    "PC_Zdroje": [
-        { name: "Intel i9-12900K", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Počítačové_Skrine": [
-        { name: "Intel i9-12900K", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "299", image: "https://via.placeholder.com/100" }
-    ],
-    "RAMky": [
-        { name: "Intel i9-12900K", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "299", image: "https://via.placeholder.com/100" }
-    ],
-    "Chladiče": [
-        { name: "Intel i9-12900K", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "299", image: "https://via.placeholder.com/100" }
-    ],
-    "Úložiská": [
-        { name: "Intel i9-12900K", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "299", image: "https://via.placeholder.com/100" }
-    ],
-    "Ventilátory": [
-        { name: "Intel i9-12900K", price: "549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "299", image: "https://via.placeholder.com/100" }
-    ],
-    "Tlačiarne": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Monitory": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Reproduktory": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Počítačové_Myši": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Slúchadlá": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Klávesnice": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Mikrofóny": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Telefóny": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Tablety": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "PowerBanky": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Notebooky": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Routery": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Kamery": [
-
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Káble": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Počítačové_Príslušenstvo": [
-        { name: "Intel i9-12900K", price: "$549", image: "https://via.placeholder.com/100" },
-        { name: "AMD Ryzen 7 5800X", price: "$299", image: "https://via.placeholder.com/100" }
-    ],
-    "Notebookove_Príslušenstvo": [
-
-
-    ],
-    "Default_Page": [
-        {
-            productLink: "toto je link",
-            name: "productaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaa ABCDEFGHIJK LMNOPQRST UVWXYZ AAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAA AAAAAA",
-            description: " the copy that will subsequently populate it, or to demonstrate various fonts of a typeface without meaningful text that could be distracting. Lorem ipsum is typically a corrupted version of De finibus bonorum et malorum, a 1st-century BC text by the Roman statesman and philosopher Cicero, with words altered, added, and removed to mLorem ipsum is a dummy or placeholder text commonly used in graphic design, publishing, and web development. Its purpose is to ",
-            price: "549",
-            expectedPurchasePrice: "10",
-            image: "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg",
-            images: ["https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg", "https://ae-pic-a1.aliexpress-media.com/kf/Sd1f15bc6c69d44b1a54e7f35584e8a56A.jpg_220x220q75.jpg_.avif", "https://ae-pic-a1.aliexpress-media.com/kf/S28a736c22b0a40a3af9e11437c1b67caR.jpg_220x220q75.jpg_.avif", "https://ae-pic-a1.aliexpress-media.com/kf/Se302af0f5e5a4aefb78f102a14f42b7c9.jpg_220x220q75.jpg_.avif", "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg", "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg", "https://interlink-static0.tsbohemia.cz/amd-ryzen-5-5600_ien404976.jpg",]
-        },
-        { name: "Hello Illari", price: "400", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" },
-        { name: "ci", price: "300", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" },
-        { name: "di", price: "200", expectedPurchasePrice: "1", image: "https://via.placeholder.com/100" }
     ]
 };
 
