@@ -893,7 +893,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 async function populateCountries() {
-    const response = await fetch("/api/countries");
+    const response = await fetch("https://api.snagletshop.com/countries");
     const countries = await response.json();
     const select = document.getElementById("countrySelect");
 
