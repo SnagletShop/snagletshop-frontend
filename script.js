@@ -1103,41 +1103,6 @@ function GoToSettings() {
 }
 
 // helper function for countries
-async function populateCountries() {
-    const response = await fetch("https://restcountries.com/v3.1/all");
-    const countries = await response.json();
-    const select = document.getElementById("countrySelect");
-    countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
-
-    select.innerHTML = "";
-    for (const c of countries) {
-        const opt = document.createElement("option");
-        opt.value = c.cca2;
-        opt.textContent = c.name.common;
-        select.appendChild(opt);
-    }
-
-    let detected = localStorage.getItem("detectedCountry");
-
-    if (!detected) {
-        try {
-            const geo = await fetch("https://ipapi.co/json/").then(r => r.json());
-            detected = geo.country_code || "US";
-            localStorage.setItem("detectedCountry", detected);
-        } catch {
-            detected = "US";
-            localStorage.setItem("detectedCountry", detected);
-        }
-    }
-
-    document.getElementById("detected-country").textContent = detected;
-    select.value = detected;
-
-    select.addEventListener("change", () => {
-        localStorage.setItem("detectedCountry", select.value);
-        updateAllPrices();
-    });
-}
 
 
 
@@ -2524,9 +2489,7 @@ function filterProducts(searchTerm) {
 
 
 
-const AmazonAPI = require("../backend/amazonAPI"); // Ensure correct path
-const AliExpressAPI = require("../backend/aliExpressAPI"); // Ensure correct path
-const Order = require("./models/Order");
+
 
 // Function to place an order based on user's basket
 async function placeOrder(userId, basket) {
