@@ -99,7 +99,7 @@ let exchangeRates = {
     CAD: 1.45,
     AUD: 1.6
 };
-const TariffMultiplier = 2;
+let tariffMultipliers = {};
 // Country-to-currency mapping
 const countryToCurrency = {
     US: "USD",
@@ -279,6 +279,11 @@ const debounce = (func, delay) => {
         timeout = setTimeout(() => func.apply(this, args), delay);
     };
 };
+async function fetchTariffs() {
+    const response = await fetch("/api/countries");
+    const countries = await response.json();
+    tariffMultipliers = Object.fromEntries(countries.map(c => [c.code, c.tariff]));
+}
 
 searchInput.addEventListener("input", debounce(() => {
     const query = searchInput.value.trim();
@@ -769,15 +774,13 @@ function detectUserCurrency() {
 }
 
 
-// Convert price based on selected currency
 function convertPrice(priceInEur) {
     let converted = priceInEur * exchangeRates[selectedCurrency];
 
-    // ✅ Apply U.S. tariff margin
-    const applyTariff = localStorage.getItem("applyTariff") === "true";
-    if (applyTariff) {
-        converted *= TariffMultiplier;
-    }
+    const selectedCountry = localStorage.getItem("detectedCountry") || "US";
+    const tariff = tariffMultipliers[selectedCountry] || 0;
+
+    converted *= (1 + tariff);
 
     return converted.toFixed(2);
 }
@@ -884,7 +887,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     await fetchExchangeRatesFromServer();  // ✅ WAIT for rates to update
     updateAllPrices();                     // ✅ THEN convert prices properly
 });
+app.get('/api/countries', (req, res) => {
+    const countries = Object.keys(tariffs).map(code => ({
+        code,
+        tariff: tariffs[code]
+    }));
+    res.json(countries);
+});
 
+async function populateCountries() {
+    const response = await fetch("/api/countries");
+    const countries = await response.json();
+    const select = document.getElementById("countrySelect");
+
+    select.innerHTML = "";
+
+    countries.sort((a, b) => a.code.localeCompare(b.code)); // optional
+
+    for (const c of countries) {
+        const opt = document.createElement("option");
+        opt.value = c.code;
+        opt.textContent = `${c.code} (Tariff: ${(c.tariff * 100).toFixed(1)}%)`;
+        select.appendChild(opt);
+    }
+
+    let detected = localStorage.getItem("detectedCountry") || "US";
+
+    document.getElementById("detected-country").textContent = detected;
+    select.value = detected;
+
+    select.addEventListener("change", () => {
+        localStorage.setItem("detectedCountry", select.value);
+        updateAllPrices();
+    });
+}
 
 
 
@@ -924,7 +960,7 @@ function GoToSettings() {
     currencySection.innerHTML = `
         <h3>Currency</h3>
         <label for="currencySelect">Preferred currency:</label>
-        <select id="currencySelect" class = "currencySelect">
+        <select id="currencySelect" class="currencySelect">
             <option value="EUR">€ (EUR)</option>
             <option value="USD">$ (USD)</option>
             <option value="GBP">£ (GBP)</option>
@@ -933,12 +969,21 @@ function GoToSettings() {
         </select>
     `;
 
+    // 🚀 Country Selector (added right under currency)
+    const countrySection = document.createElement("div");
+    countrySection.classList.add("settings-section");
+    countrySection.innerHTML = `
+        <h3>Shipping Country</h3>
+        <label for="countrySelect">Detected: <span id="detected-country"></span></label>
+        <select id="countrySelect" style="width: 100%"></select>
+    `;
+
     // Clear Data Button
     const clearSection = document.createElement("div");
     clearSection.classList.add("settings-section");
     clearSection.innerHTML = `
         <h3>Reset</h3>
-        <button class = "clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
+        <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
     `;
 
     // Contact Form
@@ -950,7 +995,7 @@ function GoToSettings() {
             <label for="email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
             <input type="email" id="email" required>
             <label for="message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
-            <textarea id="message"class = "MessageTextArea" required></textarea>
+            <textarea id="message" class="MessageTextArea" required></textarea>
             <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
         </form>
         <p class="contact-note">If the form doesn't work, email us at <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a></p>
@@ -997,7 +1042,7 @@ function GoToSettings() {
 `;
 
     // Append all sections
-    wrapper.append(themeSection, currencySection, clearSection, contactSection, legalSection);
+    wrapper.append(themeSection, currencySection, countrySection, clearSection, contactSection, legalSection);
     viewer.appendChild(wrapper);
 
     // Theme toggle logic
@@ -1017,6 +1062,9 @@ function GoToSettings() {
         localStorage.setItem("selectedCurrency", currencySelect.value);
         updateAllPrices();
     });
+
+    // 🚀 Country selector logic
+    populateCountries();
 
     // Clear data logic
     document.getElementById("clearDataButton").addEventListener("click", () => {
@@ -1056,6 +1104,45 @@ function GoToSettings() {
 
     syncCurrencySelects(currencySelect.value);
 }
+
+// helper function for countries
+async function populateCountries() {
+    const response = await fetch("https://restcountries.com/v3.1/all");
+    const countries = await response.json();
+    const select = document.getElementById("countrySelect");
+    countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+
+    select.innerHTML = "";
+    for (const c of countries) {
+        const opt = document.createElement("option");
+        opt.value = c.cca2;
+        opt.textContent = c.name.common;
+        select.appendChild(opt);
+    }
+
+    let detected = localStorage.getItem("detectedCountry");
+
+    if (!detected) {
+        try {
+            const geo = await fetch("https://ipapi.co/json/").then(r => r.json());
+            detected = geo.country_code || "US";
+            localStorage.setItem("detectedCountry", detected);
+        } catch {
+            detected = "US";
+            localStorage.setItem("detectedCountry", detected);
+        }
+    }
+
+    document.getElementById("detected-country").textContent = detected;
+    select.value = detected;
+
+    select.addEventListener("change", () => {
+        localStorage.setItem("detectedCountry", select.value);
+        updateAllPrices();
+    });
+}
+
+
 
 
 function syncCurrencySelects(newCurrency) {
@@ -1248,8 +1335,10 @@ async function createPaymentModal() {
             websiteOrigin: "Dropshipping Website",
             products: stripeCart,
             currency: selectedCurrency,
+            country: localStorage.getItem("detectedCountry") || "US",
             metadata: { order_summary: summarizedCart }
         })
+
     });
 
     const data = await res.json();
@@ -2291,9 +2380,19 @@ function updateBasket() {
         console.log(`   🔹 Product IMAGELINK: ${item.image}`);
         console.log(`   🔹 Product description: ${item.description}`);
 
-        const selectedOptionHTML = item.selectedOption
-            ? `<span class="BasketSelectedOption">Selected: ${item.selectedOption}</span>`
-            : "";
+        let selectedOptionHTML = "";
+        if (item.selectedOption) {
+            // Try to find the product from the products database
+            const product = Object.values(products).flat().find(p => p.name === item.name);
+            let label = "option";
+
+            if (product?.productOptions && product.productOptions.length > 1) {
+                label = product.productOptions[0].replace(":", "").trim().toLowerCase();
+            }
+
+            selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${label}: ${item.selectedOption.toLowerCase()}</span>`;
+        }
+
 
         productDiv.innerHTML = `
             <div class="Basket-Item">
