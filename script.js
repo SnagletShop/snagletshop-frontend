@@ -2,6 +2,7 @@
 window.functionBlacklist = new Set([
 
 ]);
+const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = true;
 
 
 const TEXTS = {
@@ -102,18 +103,39 @@ let exchangeRates = {
 let tariffMultipliers = {};
 // Country-to-currency mapping
 const countryToCurrency = {
-    US: "USD",
-    GB: "GBP",
-    CA: "CAD",
-    AU: "AUD",
-    DE: "EUR",
-    FR: "EUR",
-    IT: "EUR",
-    ES: "EUR",
-    NL: "EUR",
-    SE: "EUR"
+    US: "USD", CA: "CAD", MX: "MXN", JM: "JMD", DO: "DOP",
+    GB: "GBP", FR: "EUR", DE: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", BE: "EUR",
+    PL: "PLN", CZ: "CZK", SE: "SEK", NO: "NOK", DK: "DKK", HU: "HUF", RO: "RON", BG: "BGN",
+    RU: "RUB", UA: "UAH",
+    SK: "EUR", SI: "EUR", PT: "EUR", FI: "EUR", IE: "EUR", AT: "EUR", GR: "EUR", EE: "EUR", LV: "EUR", LT: "EUR",
+    JP: "JPY", CN: "CNY", IN: "INR", KR: "KRW", ID: "IDR", MY: "MYR", PH: "PHP", TH: "THB", VN: "VND",
+    PK: "PKR", BD: "BDT",
+    ZA: "ZAR", NG: "NGN", KE: "KES", EG: "EGP", GH: "GHS", TZ: "TZS",
+    AU: "AUD", NZ: "NZD", FJ: "FJD", PG: "PGK",
+    AE: "AED", SA: "SAR", IL: "ILS", TR: "TRY", IR: "IRR",
+    BR: "BRL", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN", VE: "VES"
 };
 
+const currencySymbols = {
+    USD: "$", CAD: "C$", MXN: "$", JMD: "J$", DOP: "RD$",
+    EUR: "€", GBP: "£", CHF: "CHF", PLN: "zł", CZK: "Kč", SEK: "kr", NOK: "kr", DKK: "kr",
+    HUF: "Ft", RON: "lei", BGN: "лв", RUB: "₽", UAH: "₴",
+    JPY: "¥", CNY: "¥", INR: "₹", KRW: "₩", IDR: "Rp", MYR: "RM", PHP: "₱", THB: "฿", VND: "₫",
+    PKR: "₨", BDT: "৳",
+    ZAR: "R", NGN: "₦", KES: "KSh", EGP: "E£", GHS: "₵", TZS: "TSh",
+    AUD: "A$", NZD: "NZ$", FJD: "FJ$", PGK: "K",
+    AED: "د.إ", SAR: "﷼", ILS: "₪", TRY: "₺", IRR: "﷼",
+    BRL: "R$", ARS: "$", CLP: "$", COP: "$", PEN: "S/", VES: "Bs"
+};
+
+
+
+let selectedCurrency = "EUR";
+try {
+    selectedCurrency = localStorage.getItem("selectedCurrency") || "EUR";
+} catch (err) {
+    console.warn("⚠️ Could not access localStorage:", err);
+}
 const searchInput = document.getElementById("Search_Bar");
 const mobileSearchInput = document.getElementById("Mobile_Search_Bar");
 const navEntry = performance.getEntriesByType("navigation")[0];
@@ -478,12 +500,6 @@ document.addEventListener("keydown", (e) => {
 
 
 
-let selectedCurrency = "EUR";
-try {
-    selectedCurrency = localStorage.getItem("selectedCurrency") || "EUR";
-} catch (err) {
-    console.warn("⚠️ Could not access localStorage:", err);
-}
 
 
 
@@ -521,6 +537,7 @@ function replayEventByIndex(index) {
         window.isReplaying = false;
     }
 }
+
 function searchProducts() {
     const queryDesktop = document.getElementById("Search_Bar")?.value || "";
     const queryMobile = document.getElementById("Mobile_Search_Bar")?.value || "";
@@ -745,16 +762,15 @@ function detectUserCurrency() {
         .then(data => {
             const userCountry = data.country_code;
 
-            // 🔄 Always update selectedCurrency based on latest location
             selectedCurrency = countryToCurrency[userCountry] || "EUR";
             localStorage.setItem("selectedCurrency", selectedCurrency);
+            localStorage.setItem("detectedCountry", userCountry); // ✅ Add this line
 
             const currencySelect = document.getElementById("currency-select");
             if (currencySelect) {
                 currencySelect.value = selectedCurrency;
             }
 
-            // ✅ Dynamic pricing logic for U.S.
             if (userCountry === "US") {
                 localStorage.setItem("applyTariff", "true");
             } else {
@@ -765,15 +781,11 @@ function detectUserCurrency() {
             console.log("💱 Currency set to:", selectedCurrency);
             console.log("📦 Tariff applied:", localStorage.getItem("applyTariff"));
 
-            updateAllPrices(); // ✅ Apply updated pricing
-        })
-        .catch(error => {
-            console.error("❌ Geolocation failed, defaulting to EUR", error);
-            selectedCurrency = "EUR";
-            localStorage.setItem("selectedCurrency", selectedCurrency);
-            localStorage.setItem("applyTariff", "false");
             updateAllPrices();
-        });
+        })
+
+
+
 }
 
 
@@ -795,14 +807,8 @@ function updateAllPrices() {
         let basePrice = parseFloat(element.dataset.eur);
         if (!isNaN(basePrice)) {
             let convertedValue = convertPrice(basePrice);
-            let currencySymbol = {
-                EUR: "€",
-                USD: "$",
-                GBP: "£",
-                CAD: "C$",
-                AUD: "A$"
-            }[selectedCurrency];
 
+            let currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
             element.textContent = `${currencySymbol}${convertedValue}`;
         }
     });
@@ -914,9 +920,20 @@ async function populateCountries() {
     select.value = detected;
 
     select.addEventListener("change", () => {
-        localStorage.setItem("detectedCountry", select.value);
+        const newCountry = select.value;
+        localStorage.setItem("detectedCountry", newCountry);
+
+        // ✅ Update currency only if we have a mapping
+        const newCurrency = countryToCurrency[newCountry];
+        if (newCurrency) {
+            selectedCurrency = newCurrency;
+            localStorage.setItem("selectedCurrency", selectedCurrency);
+            syncCurrencySelects(selectedCurrency);
+        }
+
         updateAllPrices();
     });
+
 }
 
 
@@ -1057,8 +1074,23 @@ function GoToSettings() {
     currencySelect.value = localStorage.getItem("selectedCurrency") || "EUR";
     currencySelect.addEventListener("change", () => {
         localStorage.setItem("selectedCurrency", currencySelect.value);
+        localStorage.setItem("manualCurrencyOverride", "true"); // ✅ Flag user preference
         updateAllPrices();
     });
+
+    const currencyDropdown = document.getElementById("currencySelect");
+    if (currencyDropdown) {
+        currencyDropdown.innerHTML = ""; // Clear existing
+
+        Object.keys(exchangeRates).sort().forEach(code => {
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = `${currencySymbols[code] || ''} ${code}`;
+            currencyDropdown.appendChild(opt);
+        });
+
+        currencyDropdown.value = selectedCurrency;
+    }
 
     // 🚀 Country selector logic
     populateCountries();
@@ -1491,7 +1523,21 @@ function closeModal() {
     }
 }
 
+select.addEventListener("change", () => {
+    const newCountry = select.value;
+    localStorage.setItem("detectedCountry", newCountry);
 
+    if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+        const newCurrency = countryToCurrency[newCountry];
+        if (newCurrency) {
+            selectedCurrency = newCurrency;
+            localStorage.setItem("selectedCurrency", selectedCurrency);
+            syncCurrencySelects(selectedCurrency);
+        }
+    }
+
+    updateAllPrices();
+});
 // Format card number (add spaces every 4 digits)
 function formatCardNumber(e) {
     let value = e.target.value.replace(/\D/g, ''); // Remove non-numeric characters
