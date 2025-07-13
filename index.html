@@ -10,6 +10,8 @@
     <script src="https://js.stripe.com/v3/"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -172,6 +174,12 @@
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
 
+            }
+
+            .ts-dropdown {
+                max-height: 240px;
+                /* Adjust based on item height. ~10 items */
+                overflow-y: auto;
             }
 
 
@@ -1383,8 +1391,8 @@
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
+
+
                 appearance: none;
                 /* optional: removes native arrow styling */
                 -webkit-appearance: none;
@@ -1440,6 +1448,11 @@
                 color: var(--Default_Text_Colour);
             }
 
+            .ts-dropdown {
+                max-height: 240px;
+                /* Adjust based on item height. ~10 items */
+                overflow-y: auto;
+            }
 
 
             .Category_Button_Heading {
@@ -3027,8 +3040,8 @@
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
+
+
                 appearance: none;
                 /* optional: removes native arrow styling */
                 -webkit-appearance: none;
