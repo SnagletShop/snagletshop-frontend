@@ -973,11 +973,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateAllPrices();                     // ✅ THEN convert prices properly
 });
 
-
 async function populateCountries() {
     const response = await fetch("https://api.snagletshop.com/countries");
     const countries = await response.json();
+
     const select = document.getElementById("countrySelect");
+    if (!select) {
+        console.warn("⚠️ countrySelect not found.");
+        return;
+    }
 
     select.innerHTML = "";
 
@@ -998,17 +1002,18 @@ async function populateCountries() {
         const newCountry = select.value;
         localStorage.setItem("detectedCountry", newCountry);
 
-        const newCurrency = countryToCurrency[newCountry];
-        if (newCurrency) {
-            selectedCurrency = newCurrency;
-            localStorage.setItem("selectedCurrency", selectedCurrency);
-            syncCurrencySelects(selectedCurrency);
+        if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+            const newCurrency = countryToCurrency[newCountry];
+            if (newCurrency) {
+                selectedCurrency = newCurrency;
+                localStorage.setItem("selectedCurrency", selectedCurrency);
+                syncCurrencySelects(selectedCurrency);
+            }
         }
 
         updateAllPrices();
     });
 
-    // ✅ Enhance after it’s fully populated:
     new TomSelect("#countrySelect", {
         maxOptions: 1000,
         sortField: { field: "text", direction: "asc" },
@@ -1016,6 +1021,7 @@ async function populateCountries() {
         closeAfterSelect: true
     });
 }
+
 
 
 
@@ -1223,6 +1229,42 @@ function GoToSettings() {
     syncCurrencySelects(currencySelect.value);
 
 
+    // Inject one-line Tom Select CSS fix
+    const dropdownStyle = document.createElement("style");
+    dropdownStyle.innerHTML = `
+/* Prevent multi-line dropdown input issues */
+.ts-control {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 4px 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+
+.ts-control input {
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ts-wrapper.multi .ts-control > div {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ts-wrapper.single .ts-control {
+    flex-wrap: nowrap !important;
+}
+`;
+    document.head.appendChild(dropdownStyle);
 
 
 }
