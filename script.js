@@ -116,6 +116,80 @@ const countryToCurrency = {
     BR: "BRL", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN", VE: "VES"
 };
 const moreCountryNames = {
+    US: "United States",
+    CA: "Canada",
+    MX: "Mexico",
+    JM: "Jamaica",
+    DO: "Dominican Republic",
+
+    GB: "United Kingdom",
+    FR: "France",
+    DE: "Germany",
+    IT: "Italy",
+    ES: "Spain",
+    NL: "Netherlands",
+    BE: "Belgium",
+
+    PL: "Poland",
+    CZ: "Czechia",
+    SE: "Sweden",
+    NO: "Norway",
+    DK: "Denmark",
+    HU: "Hungary",
+    RO: "Romania",
+    BG: "Bulgaria",
+
+    RU: "Russia",
+    UA: "Ukraine",
+
+    SK: "Slovakia",
+    SI: "Slovenia",
+    PT: "Portugal",
+    FI: "Finland",
+    IE: "Ireland",
+    AT: "Austria",
+    GR: "Greece",
+    EE: "Estonia",
+    LV: "Latvia",
+    LT: "Lithuania",
+
+    JP: "Japan",
+    CN: "China",
+    IN: "India",
+    KR: "South Korea",
+    ID: "Indonesia",
+    MY: "Malaysia",
+    PH: "Philippines",
+    TH: "Thailand",
+    VN: "Vietnam",
+
+    PK: "Pakistan",
+    BD: "Bangladesh",
+
+    ZA: "South Africa",
+    NG: "Nigeria",
+    KE: "Kenya",
+    EG: "Egypt",
+    GH: "Ghana",
+    TZ: "Tanzania",
+
+    AU: "Australia",
+    NZ: "New Zealand",
+    FJ: "Fiji",
+    PG: "Papua New Guinea",
+
+    AE: "United Arab Emirates",
+    SA: "Saudi Arabia",
+    IL: "Israel",
+    TR: "Turkey",
+    IR: "Iran",
+
+    BR: "Brazil",
+    AR: "Argentina",
+    CL: "Chile",
+    CO: "Colombia",
+    PE: "Peru",
+    VE: "Venezuela",
     AF: "Afghanistan",
     AL: "Albania",
     AM: "Armenia",
@@ -1023,13 +1097,17 @@ async function populateCountries() {
 
         updateAllPrices();
     });
+    const existing = TomSelect.getInstance("#countrySelect");
+    if (existing) existing.destroy();
+    if (!document.querySelector("#countrySelect.tomselect")) {
+        new TomSelect("#countrySelect", {
+            maxOptions: 1000,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a country…",
+            closeAfterSelect: true
+        });
+    }
 
-    new TomSelect("#countrySelect", {
-        maxOptions: 1000,
-        sortField: { field: "text", direction: "asc" },
-        placeholder: "Select a country…",
-        closeAfterSelect: true
-    });
 }
 
 
@@ -1189,12 +1267,17 @@ function GoToSettings() {
         currencyDropdown.value = selectedCurrency;
 
         // ✅ Only now enhance with Tom Select
-        new TomSelect("#currencySelect", {
-            maxOptions: 300,
-            sortField: { field: "text", direction: "asc" },
-            placeholder: "Select a currency…",
-            closeAfterSelect: true
-        });
+        const existing = TomSelect.getInstance("#countrySelect");
+        if (existing) existing.destroy();
+        if (!document.querySelector("#countrySelect.tomselect")) {
+            new TomSelect("#countrySelect", {
+                maxOptions: 1000,
+                sortField: { field: "text", direction: "asc" },
+                placeholder: "Select a country…",
+                closeAfterSelect: true
+            });
+        }
+
     }
 
     // 🚀 Country selector logic
