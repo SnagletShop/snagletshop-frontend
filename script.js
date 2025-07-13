@@ -1753,21 +1753,7 @@ function closeModal() {
     }
 }
 
-select.addEventListener("change", () => {
-    const newCountry = select.value;
-    localStorage.setItem("detectedCountry", newCountry);
 
-    if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
-        const newCurrency = countryToCurrency[newCountry];
-        if (newCurrency) {
-            selectedCurrency = newCurrency;
-            localStorage.setItem("selectedCurrency", selectedCurrency);
-            syncCurrencySelects(selectedCurrency);
-        }
-    }
-
-    updateAllPrices();
-});
 // Format card number (add spaces every 4 digits)
 function formatCardNumber(e) {
     let value = e.target.value.replace(/\D/g, ''); // Remove non-numeric characters
