@@ -115,7 +115,7 @@ const countryToCurrency = {
     AE: "AED", SA: "SAR", IL: "ILS", TR: "TRY", IR: "IRR",
     BR: "BRL", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN", VE: "VES"
 };
-const moreCountryNames = {
+const countryNames = {
     US: "United States",
     CA: "Canada",
     MX: "Mexico",
