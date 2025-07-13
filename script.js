@@ -1097,8 +1097,9 @@ async function populateCountries() {
 
         updateAllPrices();
     });
-    const existing = TomSelect.getInstance("#countrySelect");
+    const existing = document.querySelector("#countrySelect")?.tomselect;
     if (existing) existing.destroy();
+
     if (!document.querySelector("#countrySelect.tomselect")) {
         new TomSelect("#countrySelect", {
             maxOptions: 1000,
@@ -1267,8 +1268,9 @@ function GoToSettings() {
         currencyDropdown.value = selectedCurrency;
 
         // ✅ Only now enhance with Tom Select
-        const existing = TomSelect.getInstance("#countrySelect");
+        const existing = document.querySelector("#countrySelect")?.tomselect;
         if (existing) existing.destroy();
+
         if (!document.querySelector("#countrySelect.tomselect")) {
             new TomSelect("#countrySelect", {
                 maxOptions: 1000,
