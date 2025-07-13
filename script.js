@@ -1058,27 +1058,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function populateCountries() {
-    const response = await fetch("https://api.snagletshop.com/countries");
-    const countries = await response.json();
+    console.log("📦 Running populateCountries()");
 
     const select = document.getElementById("countrySelect");
     if (!select) {
-        console.warn("⚠️ countrySelect not found.");
+        console.warn("❌ countrySelect not found.");
         return;
     }
 
-    select.innerHTML = "";
+    const response = await fetch("https://api.snagletshop.com/countries");
+    const countries = await response.json();
+    console.log(`📦 Loaded ${countries.length} countries`, countries);
+
+    select.innerHTML = ""; // Clear it
 
     countries.sort((a, b) => a.code.localeCompare(b.code));
 
     for (const c of countries) {
+        const code = c.code.toUpperCase();
+        const name = countryNames[code] || code;
+        console.log(`🌍 Adding ${code}: ${name}`);
         const opt = document.createElement("option");
-        opt.value = c.code;
-        opt.textContent = countryNames[c.code] || c.code;
+        opt.value = code;
+        opt.textContent = name;
         select.appendChild(opt);
     }
 
-    let detected = localStorage.getItem("detectedCountry") || "US";
+    const detected = localStorage.getItem("detectedCountry") || "US";
     document.getElementById("detected-country").textContent = detected;
     select.value = detected;
 
@@ -1097,25 +1103,27 @@ async function populateCountries() {
 
         updateAllPrices();
     });
-    const existing = document.querySelector("#countrySelect")?.tomselect;
-    if (existing) existing.destroy();
 
-    if (!document.querySelector("#countrySelect.tomselect")) {
-        new TomSelect("#countrySelect", {
-            maxOptions: 1000,
-            sortField: { field: "text", direction: "asc" },
-            placeholder: "Select a country…",
-            closeAfterSelect: true
-        });
+    if (select.tomselect) {
+        select.tomselect.destroy();
     }
 
+    new TomSelect(select, {
+        maxOptions: 1000,
+        sortField: { field: "text", direction: "asc" },
+        placeholder: "Select a country…",
+        closeAfterSelect: true
+    });
+
+    console.log("✅ TomSelect initialized on countrySelect");
 }
 
 
 
 
 
-function GoToSettings() {
+
+async function GoToSettings() {
     clearCategoryHighlight();
     const viewer = document.getElementById("Viewer");
     if (!viewer) {
@@ -1270,7 +1278,7 @@ function GoToSettings() {
         // ✅ Only now enhance with Tom Select
         const existing = document.querySelector("#countrySelect")?.tomselect;
         if (existing) existing.destroy();
-
+        await populateCountries();
         if (!document.querySelector("#countrySelect.tomselect")) {
             new TomSelect("#countrySelect", {
                 maxOptions: 1000,
@@ -1283,8 +1291,8 @@ function GoToSettings() {
     }
 
     // 🚀 Country selector logic
-    populateCountries();
 
+    await populateCountries();
     // Clear data logic
     document.getElementById("clearDataButton").addEventListener("click", () => {
         if (confirm("Are you sure you want to reset all saved data?")) {
@@ -1323,7 +1331,6 @@ function GoToSettings() {
 
     syncCurrencySelects(currencySelect.value);
 
-
     // Inject one-line Tom Select CSS fix
     const dropdownStyle = document.createElement("style");
     dropdownStyle.innerHTML = `
@@ -1360,7 +1367,6 @@ function GoToSettings() {
 }
 `;
     document.head.appendChild(dropdownStyle);
-
 
 }
 
