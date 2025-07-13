@@ -115,6 +115,82 @@ const countryToCurrency = {
     AE: "AED", SA: "SAR", IL: "ILS", TR: "TRY", IR: "IRR",
     BR: "BRL", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN", VE: "VES"
 };
+const countryNames = {
+    US: "United States",
+    CA: "Canada",
+    MX: "Mexico",
+    JM: "Jamaica",
+    DO: "Dominican Republic",
+
+    GB: "United Kingdom",
+    FR: "France",
+    DE: "Germany",
+    IT: "Italy",
+    ES: "Spain",
+    NL: "Netherlands",
+    BE: "Belgium",
+
+    PL: "Poland",
+    CZ: "Czechia",
+    SE: "Sweden",
+    NO: "Norway",
+    DK: "Denmark",
+    HU: "Hungary",
+    RO: "Romania",
+    BG: "Bulgaria",
+
+    RU: "Russia",
+    UA: "Ukraine",
+
+    SK: "Slovakia",
+    SI: "Slovenia",
+    PT: "Portugal",
+    FI: "Finland",
+    IE: "Ireland",
+    AT: "Austria",
+    GR: "Greece",
+    EE: "Estonia",
+    LV: "Latvia",
+    LT: "Lithuania",
+
+    JP: "Japan",
+    CN: "China",
+    IN: "India",
+    KR: "South Korea",
+    ID: "Indonesia",
+    MY: "Malaysia",
+    PH: "Philippines",
+    TH: "Thailand",
+    VN: "Vietnam",
+
+    PK: "Pakistan",
+    BD: "Bangladesh",
+
+    ZA: "South Africa",
+    NG: "Nigeria",
+    KE: "Kenya",
+    EG: "Egypt",
+    GH: "Ghana",
+    TZ: "Tanzania",
+
+    AU: "Australia",
+    NZ: "New Zealand",
+    FJ: "Fiji",
+    PG: "Papua New Guinea",
+
+    AE: "United Arab Emirates",
+    SA: "Saudi Arabia",
+    IL: "Israel",
+    TR: "Turkey",
+    IR: "Iran",
+
+    BR: "Brazil",
+    AR: "Argentina",
+    CL: "Chile",
+    CO: "Colombia",
+    PE: "Peru",
+    VE: "Venezuela"
+};
 
 const currencySymbols = {
     USD: "$", CAD: "C$", MXN: "$", JMD: "J$", DOP: "RD$",
@@ -905,17 +981,16 @@ async function populateCountries() {
 
     select.innerHTML = "";
 
-    countries.sort((a, b) => a.code.localeCompare(b.code)); // optional
+    countries.sort((a, b) => a.code.localeCompare(b.code));
 
     for (const c of countries) {
         const opt = document.createElement("option");
         opt.value = c.code;
-        opt.textContent = `${c.code} (Tariff: ${(c.tariff * 100).toFixed(1)}%)`;
+        opt.textContent = countryNames[c.code] || c.code;
         select.appendChild(opt);
     }
 
     let detected = localStorage.getItem("detectedCountry") || "US";
-
     document.getElementById("detected-country").textContent = detected;
     select.value = detected;
 
@@ -923,7 +998,6 @@ async function populateCountries() {
         const newCountry = select.value;
         localStorage.setItem("detectedCountry", newCountry);
 
-        // ✅ Update currency only if we have a mapping
         const newCurrency = countryToCurrency[newCountry];
         if (newCurrency) {
             selectedCurrency = newCurrency;
@@ -934,6 +1008,13 @@ async function populateCountries() {
         updateAllPrices();
     });
 
+    // ✅ Enhance after it’s fully populated:
+    new TomSelect("#countrySelect", {
+        maxOptions: 1000,
+        sortField: { field: "text", direction: "asc" },
+        placeholder: "Select a country…",
+        closeAfterSelect: true
+    });
 }
 
 
@@ -1090,6 +1171,14 @@ function GoToSettings() {
         });
 
         currencyDropdown.value = selectedCurrency;
+
+        // ✅ Only now enhance with Tom Select
+        new TomSelect("#currencySelect", {
+            maxOptions: 300,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a currency…",
+            closeAfterSelect: true
+        });
     }
 
     // 🚀 Country selector logic
@@ -1132,6 +1221,10 @@ function GoToSettings() {
     });
 
     syncCurrencySelects(currencySelect.value);
+
+
+
+
 }
 
 // helper function for countries
