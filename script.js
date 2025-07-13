@@ -1275,24 +1275,41 @@ async function GoToSettings() {
 
         currencyDropdown.value = selectedCurrency;
 
-        // ✅ Only now enhance with Tom Select
-        const existing = document.querySelector("#countrySelect")?.tomselect;
-        if (existing) existing.destroy();
+        // ✅ Destroy previous instances of TomSelect if they exist
+        const existingCurrency = currencyDropdown.tomselect;
+        if (existingCurrency) existingCurrency.destroy();
+
+        const existingCountry = document.querySelector("#countrySelect")?.tomselect;
+        if (existingCountry) existingCountry.destroy();
+
+        // ✅ Populate countries before enhancing
         await populateCountries();
-        if (!document.querySelector("#countrySelect.tomselect")) {
-            new TomSelect("#countrySelect", {
-                maxOptions: 1000,
-                sortField: { field: "text", direction: "asc" },
-                placeholder: "Select a country…",
-                closeAfterSelect: true
-            });
-        }
+
+        // ✅ Enhance both selects with TomSelect
+        // ✅ Enhance both selects with TomSelect
+        // ✅ Enhance both selects with TomSelect
+        new TomSelect("#currencySelect", {
+            maxOptions: 200,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a currency…",
+            closeAfterSelect: true
+        });
+
+        new TomSelect("#countrySelect", {
+            maxOptions: 1000,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a country…",
+            closeAfterSelect: true
+        });
+
 
     }
 
     // 🚀 Country selector logic
 
     await populateCountries();
+
+
     // Clear data logic
     document.getElementById("clearDataButton").addEventListener("click", () => {
         if (confirm("Are you sure you want to reset all saved data?")) {
@@ -1334,39 +1351,33 @@ async function GoToSettings() {
     // Inject one-line Tom Select CSS fix
     const dropdownStyle = document.createElement("style");
     dropdownStyle.innerHTML = `
-/* Prevent multi-line dropdown input issues */
-.ts-control {
-    min-height: 38px !important;
-    height: 38px !important;
-    padding: 4px 8px;
-    overflow: hidden;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-}
-
-.ts-control input {
-    height: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    line-height: 1 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.ts-wrapper.multi .ts-control > div {
-    max-width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.ts-wrapper.single .ts-control {
-    flex-wrap: nowrap !important;
-}
-`;
+    /* TomSelect UI fixes */
+    .ts-control {
+        min-height: 38px !important;
+        height: 38px !important;
+        padding: 4px 8px;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        display: flex;
+        align-items: center;
+    }
+    
+    .ts-control input {
+        height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .ts-wrapper.single .ts-control {
+        flex-wrap: nowrap !important;
+    }
+    `;
     document.head.appendChild(dropdownStyle);
+
 
 }
 
