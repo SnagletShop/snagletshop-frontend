@@ -2494,6 +2494,8 @@ function getProductDescription(productName) {
 
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
+    window.__alreadyRetriedBrokenProduct = false;
+
     console.log("Product price:", productPrice);
     clearCategoryHighlight();
     const viewer = document.getElementById("Viewer");
@@ -2632,10 +2634,22 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
             // Rerender if any images remain
             if (window.currentProductImages.length > 0) {
-                GoToProductPage(productName, productPrice, productDescription);
+                // ✅ Only reload if we haven’t already tried once
+                if (!window.__alreadyRetriedBrokenProduct) {
+                    window.__alreadyRetriedBrokenProduct = true;
+                    GoToProductPage(productName, productPrice, productDescription);
+                } else {
+                    console.warn("🚫 Preventing infinite reload loop for broken product:", productName);
+                    history.replaceState({}, "", "/");
+                    viewer.innerHTML = "<p>This product could not be displayed due to image issues.</p>";
+                }
             } else {
-                viewer.innerHTML = "<p>No valid images available for this product.</p>";
+                console.warn("🚫 No valid images left — rendering fallback message");
+                history.replaceState({}, "", "/");
+                viewer.innerHTML = "<p>This product has no valid images.</p>";
             }
+
+
         });
 
         // Add swipe gesture
