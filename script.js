@@ -2491,10 +2491,14 @@ function getProductDescription(productName) {
     let product = Object.values(products || {}).flat().find(p => p.name === productName);
     return product ? product.description : "N/A";
 }
+window.__alreadyRetriedBrokenProduct = false;
 
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
-    window.__alreadyRetriedBrokenProduct = false;
+
+    if (window.__alreadyRetriedBrokenProduct === undefined) {
+        window.__alreadyRetriedBrokenProduct = false;
+    }
 
     console.log("Product price:", productPrice);
     clearCategoryHighlight();
