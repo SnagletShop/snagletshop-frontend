@@ -354,8 +354,8 @@
                 /* Allow grid to define width */
                 max-width: 300px;
                 /* Ensures uniform width */
-                height: 450px;
-                max-height: 450px;
+                height: 475px;
+                max-height: 475px;
                 display: flex;
                 justify-content: center;
             }
@@ -659,22 +659,25 @@
             .product-name {
                 color: var(--Default_Text_Colour);
                 font-size: 20px;
+                font-family: 'Rubik', sans-serif;
+                font-weight: 600;
+
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                line-clamp: 2;
-                /* not necessary, safe to remove */
+
+                line-height: 1.4em;
+                /* adjust as needed */
+                height: calc(1.4em * 2);
+                /* force exactly 2 lines of height */
+
                 margin-top: 10px;
                 margin-bottom: 10px;
-                /* Remove this if causing spacing issues */
-                height: auto;
-                font-family: 'Rubik', sans-serif;
-                font-weight: 600;
-
                 margin-left: 10px;
             }
+
 
 
             .Product_Viewer {
@@ -1387,7 +1390,7 @@
             .currencySelect {
                 width: auto;
                 display: inline-block;
-                padding: 0.5vh 1vh;
+                padding: 0.5vh;
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
