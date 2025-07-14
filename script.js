@@ -577,26 +577,29 @@ document.addEventListener("DOMContentLoaded", () => {
                     .flat()
                     .find(p => p.name.toLowerCase().trim() === productName.toLowerCase().trim());
 
-                if (match) {
+                if (
+                    match &&
+                    Array.isArray(match.images) &&
+                    match.images.length > 0
+                ) {
                     console.log("✅ Matched product:", match.name);
                     navigate("GoToProductPage", [
                         match.name,
                         match.price,
                         match.description || "No description available."
                     ]);
-
                 } else {
-                    console.warn("❌ Product not found:", productName);
+                    console.warn("❌ Product not found or has no valid images:", productName);
+                    history.replaceState({}, "", "/"); // ✅ Remove ?product= to avoid infinite loop
                     loadProducts("Default_Page");
-
                 }
             } else {
                 attempts++;
                 if (attempts >= maxAttempts) {
                     clearInterval(checkProducts);
                     console.error("⏰ Timeout: products not loaded in time.");
+                    history.replaceState({}, "", "/"); // ✅ Also clear URL on timeout
                     loadProducts("Default_Page");
-
                 } else {
                     console.log("⌛ Waiting for products to load...");
                 }
@@ -612,6 +615,8 @@ document.addEventListener("DOMContentLoaded", () => {
         searchInput.addEventListener("keyup", searchProducts);
     }
 });
+
+
 
 
 const functionRegistry = {
