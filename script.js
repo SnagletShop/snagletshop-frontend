@@ -301,6 +301,13 @@ const mobileSearchInput = document.getElementById("Mobile_Search_Bar");
 const navEntry = performance.getEntriesByType("navigation")[0];
 const productsDatabase = products;
 const isPageRefresh = navEntry?.type === "reload";
+const SETTINGS_CACHE_KEY = "preloadedSettings";
+const SETTINGS_CACHE_TTL_HOURS = 12;
+
+window.preloadedData = {
+    exchangeRates: null,
+    countries: null
+};
 
 
 let cart = {};
@@ -355,6 +362,68 @@ function navigate(action, data = null) {
     history.pushState({ index: currentIndex }, '', '');
     handleStateChange(newState);
 }
+function isSettingsCacheValid(timestamp) {
+    if (!timestamp) return false;
+    const ageInHours = (Date.now() - timestamp) / (1000 * 60 * 60);
+    return ageInHours < SETTINGS_CACHE_TTL_HOURS;
+}
+
+async function preloadSettingsData() {
+    const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || "{}");
+
+    if (isSettingsCacheValid(cached.timestamp)) {
+        console.log("⚡ Using cached settings data.");
+        window.preloadedData.exchangeRates = cached.data.exchangeRates;
+        window.preloadedData.countries = cached.data.countries;
+
+        // Apply exchange rates
+        if (cached.data.exchangeRates) {
+            for (const [currency, rate] of Object.entries(cached.data.exchangeRates)) {
+                exchangeRates[currency] = rate;
+            }
+        }
+
+        return;
+    }
+
+    // No valid cache → fetch fresh data
+    try {
+        const [countryRes, rateRes] = await Promise.all([
+            fetch("https://api.snagletshop.com/countries"),
+            fetch("https://api.snagletshop.com/rates")
+        ]);
+
+        const countries = await countryRes.json();
+        const rateData = await rateRes.json();
+
+        window.preloadedData.countries = countries;
+        window.preloadedData.exchangeRates = rateData.rates;
+
+        // Apply exchange rates
+        if (rateData.rates) {
+            for (const [currency, rate] of Object.entries(rateData.rates)) {
+                exchangeRates[currency] = rate;
+            }
+        }
+
+        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            data: {
+                countries,
+                exchangeRates: rateData.rates
+            }
+        }));
+
+        console.log("✅ Fetched and cached fresh settings data.");
+    } catch (err) {
+        console.error("❌ Failed to preload settings data:", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await preloadSettingsData();
+});
+
 
 function handleStateChange(state) {
     switch (state.action) {
@@ -1158,12 +1227,7 @@ async function GoToSettings() {
     currencySection.innerHTML = `
         <h3>Currency</h3>
         <label for="currencySelect">Preferred currency:</label>
-        <select id="currencySelect" class="currencySelect">
-            <option value="EUR">€ (EUR)</option>
-            <option value="USD">$ (USD)</option>
-            <option value="GBP">£ (GBP)</option>
-            <option value="CAD">C$ (CAD)</option>
-            <option value="AUD">A$ (AUD)</option>
+<select id="currencySelect" class="currencySelect tom-hidden"></select>
         </select>
     `;
 
@@ -1173,7 +1237,8 @@ async function GoToSettings() {
     countrySection.innerHTML = `
         <h3>Shipping Country</h3>
         <label for="countrySelect">Detected: <span id="detected-country"></span></label>
-        <select id="countrySelect" style="width: 100%"></select>
+<select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
+
     `;
 
     // Clear Data Button
@@ -1242,6 +1307,14 @@ async function GoToSettings() {
     // Append all sections
     wrapper.append(themeSection, currencySection, countrySection, clearSection, contactSection, legalSection);
     viewer.appendChild(wrapper);
+    document.getElementById("clearDataButton").addEventListener("click", () => {
+        if (confirm("Are you sure you want to reset all saved data?")) {
+            localStorage.clear();
+            sessionStorage.clear();
+            alert("All data cleared. Reloading page...");
+            location.reload();
+        }
+    });
 
     // Theme toggle logic
     const themeToggle = document.getElementById("themeToggle");
@@ -1283,11 +1356,42 @@ async function GoToSettings() {
         if (existingCountry) existingCountry.destroy();
 
         // ✅ Populate countries before enhancing
-        await populateCountries();
+        const countrySelect = document.getElementById("countrySelect");
+        countrySelect.innerHTML = "";
+        const detected = localStorage.getItem("detectedCountry") || "US";
+        document.getElementById("detected-country").textContent = detected;
+
+        window.preloadedData.countries
+            ?.sort((a, b) => a.code.localeCompare(b.code))
+            .forEach(c => {
+                const code = c.code.toUpperCase();
+                const name = countryNames[code] || code;
+                const opt = document.createElement("option");
+                opt.value = code;
+                opt.textContent = name;
+                countrySelect.appendChild(opt);
+            });
+
+        countrySelect.value = detected;
+        countrySelect.addEventListener("change", () => {
+            const newCountry = countrySelect.value;
+            localStorage.setItem("detectedCountry", newCountry);
+
+            if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+                const newCurrency = countryToCurrency[newCountry];
+                if (newCurrency) {
+                    selectedCurrency = newCurrency;
+                    localStorage.setItem("selectedCurrency", selectedCurrency);
+                    syncCurrencySelects(selectedCurrency);
+                }
+            }
+
+            updateAllPrices();
+        });
+
 
         // ✅ Enhance both selects with TomSelect
-        // ✅ Enhance both selects with TomSelect
-        // ✅ Enhance both selects with TomSelect
+
         new TomSelect("#currencySelect", {
             maxOptions: 200,
             sortField: { field: "text", direction: "asc" },
@@ -1302,23 +1406,50 @@ async function GoToSettings() {
             closeAfterSelect: true
         });
 
+        document.getElementById("currencySelect").classList.remove("tom-hidden");
+        document.getElementById("countrySelect").classList.remove("tom-hidden");
 
     }
 
     // 🚀 Country selector logic
+    const countrySelect = document.getElementById("countrySelect");
+    countrySelect.innerHTML = "";
+    const detected = localStorage.getItem("detectedCountry") || "US";
+    document.getElementById("detected-country").textContent = detected;
 
-    await populateCountries();
+    window.preloadedData.countries
+        ?.sort((a, b) => a.code.localeCompare(b.code))
+        .forEach(c => {
+            const code = c.code.toUpperCase();
+            const name = countryNames[code] || code;
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = name;
+            countrySelect.appendChild(opt);
+        });
+
+    countrySelect.value = detected;
+    countrySelect.addEventListener("change", () => {
+        const newCountry = countrySelect.value;
+        localStorage.setItem("detectedCountry", newCountry);
+
+        if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+            const newCurrency = countryToCurrency[newCountry];
+            if (newCurrency) {
+                selectedCurrency = newCurrency;
+                localStorage.setItem("selectedCurrency", selectedCurrency);
+                syncCurrencySelects(selectedCurrency);
+            }
+        }
+
+        updateAllPrices();
+    });
+
+
 
 
     // Clear data logic
-    document.getElementById("clearDataButton").addEventListener("click", () => {
-        if (confirm("Are you sure you want to reset all saved data?")) {
-            localStorage.clear();
-            sessionStorage.clear();
-            alert("All data cleared. Reloading page...");
-            location.reload();
-        }
-    });
+
 
     // Contact form submission logic
     document.getElementById("contact-form").addEventListener("submit", async (event) => {
@@ -1528,7 +1659,8 @@ async function createPaymentModal() {
                     <input type="text" id="Street" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.STREET_HOUSE_NUMBER}" required>
                     <input type="text" id="City" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.CITY}" required>
                     <input type="text" id="Postal_Code" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.POSTAL_CODE}" required>
-                    <input type="text" id="Country" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.COUNTRY}" required>
+                    <label for="Country">${TEXTS.PAYMENT_MODAL.FIELDS.COUNTRY}</label>
+                    <select id="Country" class="tom-hidden" required style="width: 100%"></select>
                 </div>
                 <div id="payment-request-button" style="margin: 20px 0;"></div>
                 <div id="payment-element" style="margin-top: 20px;"></div>
@@ -1549,6 +1681,98 @@ async function createPaymentModal() {
     });
     modal.style.display = "flex";
 
+    // Populate country dropdown with TomSelect
+    const countrySelect = document.getElementById("Country");
+    const detectedCountry = localStorage.getItem("detectedCountry") || "US";
+
+    if (countrySelect && window.preloadedData?.countries) {
+        countrySelect.innerHTML = "";
+
+        window.preloadedData.countries
+            .sort((a, b) => a.code.localeCompare(b.code))
+            .forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.code;
+                opt.textContent = countryNames[c.code] || c.code;
+                countrySelect.appendChild(opt);
+            });
+
+        countrySelect.value = detectedCountry;
+
+        // Initialize TomSelect
+        new TomSelect("#Country", {
+            maxOptions: 1000,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a country…",
+            closeAfterSelect: true
+        });
+
+        countrySelect.classList.remove("tom-hidden");
+
+        countrySelect.addEventListener("change", async () => {
+            const selected = countrySelect.value;
+            localStorage.setItem("detectedCountry", selected);
+
+            if (!localStorage.getItem("manualCurrencyOverride")) {
+                const newCurrency = countryToCurrency[selected];
+                if (newCurrency) {
+                    selectedCurrency = newCurrency;
+                    localStorage.setItem("selectedCurrency", selectedCurrency);
+                    syncCurrencySelects(selectedCurrency);
+                }
+            }
+
+            updateAllPrices();
+
+            // ✅ RECREATE PAYMENT INTENT based on new country
+            const cartItems = JSON.parse(localStorage.getItem("basket")) || {};
+            const fullCart = Object.values(cartItems).map(item => ({
+                name: item.name,
+                quantity: parseInt(item.quantity) || 1,
+                price: parseFloat(item.price || 1).toFixed(2),
+                expectedPurchasePrice: parseFloat(item.expectedPurchasePrice || item.price || 1).toFixed(2),
+                productLink: item.productLink || "N/A",
+                ...(item.selectedOption && { selectedOption: item.selectedOption })
+            }));
+
+            const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
+            const summarizedCart = stripeCart.map(item => {
+                const name = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
+                const option = item.selectedOption ? ` (${item.selectedOption})` : '';
+                return `${item.quantity}x ${name}${option}`;
+            }).join(", ").slice(0, 499);
+
+            // 🔁 Create new payment intent with new country and currency
+            const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    websiteOrigin: "Dropshipping Website",
+                    products: stripeCart,
+                    currency: selectedCurrency,
+                    country: selected,
+                    metadata: { order_summary: summarizedCart }
+                })
+            });
+
+            const data = await res.json();
+            const newClientSecret = data.clientSecret;
+
+            if (newClientSecret && newClientSecret.includes("_secret_")) {
+                const stripe = stripeInstance || await Stripe('pk_test_...');
+                stripeInstance = stripe;
+                elementsInstance = stripe.elements({ clientSecret: newClientSecret });
+                paymentElementInstance = elementsInstance.create("payment");
+                paymentElementInstance.mount("#payment-element");
+
+                // Update reference to latest client secret
+                window.latestClientSecret = newClientSecret;
+            } else {
+                alert("❌ Failed to update payment intent.");
+            }
+        });
+
+    }
     const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi');
     stripeInstance = stripe;
 
@@ -1637,9 +1861,11 @@ async function createPaymentModal() {
                 websiteOrigin: "SnagletShop",
                 products: stripeCart,
                 currency: selectedCurrency,
+                country: document.getElementById("Country")?.value || "US", // ✅ Add this
                 metadata: { order_summary: summarizedCart }
             })
         }).then(res => res.json());
+
 
         if (!freshClientSecret) {
             ev.complete("fail");
@@ -1691,7 +1917,9 @@ async function createPaymentModal() {
                 country: document.getElementById("Country").value.trim()
             };
 
-            const paymentIntentId = clientSecret.split("_secret")[0];
+            const finalClientSecret = window.latestClientSecret || clientSecret;
+            const paymentIntentId = finalClientSecret.split("_secret")[0];
+
             await fetch("https://api.snagletshop.com/store-user-details", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -2365,19 +2593,16 @@ function GoToProductPage(productName, productPrice, productDescription) {
                     </button>
                 </div>
                 <button class="ProductPageBuyButton" 
-                 <button 
-  onclick="buyNow(
-    '${productName}', 
-    ${parseFloat(productPrice)}, 
-    '${window.currentProductImages[window.currentIndex]}', 
-    '${product.expectedPurchasePrice}', 
-    '${product.productLink}', 
-    \`${productDescription}\`, 
-    window.selectedProductOption || ''
-  )">
-  ${TEXTS.PRODUCT_SECTION.BUY_NOW}
-</button>
-
+                    onclick="buyNow(
+                        '${productName}', 
+                        ${parseFloat(productPrice)}, 
+                        '${window.currentProductImages[window.currentIndex]}', 
+                        '${product.expectedPurchasePrice}', 
+                        '${product.productLink}', 
+                        \`${productDescription}\`, 
+                        window.selectedProductOption || ''
+                    )">
+                    ${TEXTS.PRODUCT_SECTION.BUY_NOW}
                 </button>
             </div>
         </div>
@@ -2388,20 +2613,40 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
     const mainImageElement = document.getElementById("mainImage");
 
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    function handleGesture() {
-        const swipeThreshold = 50;
-        if (touchEndX < touchStartX - swipeThreshold) {
-            nextImage();
-        }
-        if (touchEndX > touchStartX + swipeThreshold) {
-            prevImage();
-        }
-    }
-
+    // ✅ Handle broken main image
     if (mainImageElement) {
+        mainImageElement.addEventListener("error", () => {
+            const brokenUrl = mainImageElement.src;
+            console.warn("❌ Main image failed to load:", brokenUrl);
+
+            // Remove from product.images and window.currentProductImages
+            if (Array.isArray(product.images)) {
+                product.images = product.images.filter(img => img !== brokenUrl);
+            }
+            window.currentProductImages = window.currentProductImages.filter(img => img !== brokenUrl);
+
+            // Rerender if any images remain
+            if (window.currentProductImages.length > 0) {
+                GoToProductPage(productName, productPrice, productDescription);
+            } else {
+                viewer.innerHTML = "<p>No valid images available for this product.</p>";
+            }
+        });
+
+        // Add swipe gesture
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function handleGesture() {
+            const swipeThreshold = 50;
+            if (touchEndX < touchStartX - swipeThreshold) {
+                nextImage();
+            }
+            if (touchEndX > touchStartX + swipeThreshold) {
+                prevImage();
+            }
+        }
+
         mainImageElement.addEventListener("touchstart", (e) => {
             touchStartX = e.changedTouches[0].screenX;
         });
@@ -2410,7 +2655,24 @@ function GoToProductPage(productName, productPrice, productDescription) {
             handleGesture();
         });
     }
+
+    // ✅ Also remove broken thumbnails
+    const thumbnails = document.querySelectorAll(".ThumbnailsHolder img");
+    thumbnails.forEach(thumbnail => {
+        thumbnail.addEventListener("error", () => {
+            const badSrc = thumbnail.src;
+            console.warn("❌ Thumbnail failed to load:", badSrc);
+
+            thumbnail.remove();
+
+            if (Array.isArray(product.images)) {
+                product.images = product.images.filter(img => img !== badSrc);
+            }
+            window.currentProductImages = window.currentProductImages.filter(img => img !== badSrc);
+        });
+    });
 }
+
 
 function selectProductOption(button, optionValue) {
     document.querySelectorAll(".Product_Option_Button").forEach(btn => btn.classList.remove("selected"));
