@@ -321,8 +321,8 @@ let paymentElementInstance;
 let clientSecret = null;
 
 let lastCategory = "Default_Page"; // Start with a default
-let userEventHistory = [];
-let currentEventIndex = 0;
+
+
 let isReplaying = false;
 // === CONFIG ===
 const MAX_HISTORY_LENGTH = 500;
@@ -353,8 +353,8 @@ function navigate(action, data = null) {
 
     // Save to sessionStorage
     try {
-        sessionStorage.setItem("userEventHistory", JSON.stringify(userHistoryStack));
-        sessionStorage.setItem("currentEventIndex", currentIndex);
+
+
     } catch (err) {
         console.warn("⚠️ Could not save history:", err);
     }
@@ -457,7 +457,7 @@ window.addEventListener('popstate', (event) => {
         isReplaying = true;
         handleStateChange(userHistoryStack[index]);
         currentIndex = index;
-        sessionStorage.setItem("currentEventIndex", currentIndex);
+
         isReplaying = false;
     } else {
         console.warn("⚠️ Invalid popstate index:", event.state);
@@ -465,13 +465,7 @@ window.addEventListener('popstate', (event) => {
 });
 
 function initializeHistory() {
-    try {
-        userHistoryStack = JSON.parse(sessionStorage.getItem("userEventHistory")) || [];
-        currentIndex = parseInt(sessionStorage.getItem("currentEventIndex")) || -1;
-    } catch (e) {
-        userHistoryStack = [];
-        currentIndex = -1;
-    }
+
 
     if (currentIndex >= 0 && userHistoryStack[currentIndex]) {
         handleStateChange(userHistoryStack[currentIndex]);
@@ -629,12 +623,7 @@ const functionRegistry = {
 };
 
 // === LOAD FROM SESSION ===
-try {
-    userEventHistory = JSON.parse(sessionStorage.getItem("userEventHistory")) || [];
-    currentEventIndex = parseInt(sessionStorage.getItem("currentEventIndex")) || 0;
-} catch (err) {
-    console.warn("⚠️ Failed to load history from sessionStorage:", err);
-}
+
 
 // === UTILITIES ===
 function log(...args) {
@@ -686,10 +675,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams(window.location.search);
     if (isPageRefresh && !params.has("product")) {
         console.log("🔄 Page refresh detected, clearing session history...");
-        sessionStorage.removeItem("userEventHistory");
-        sessionStorage.removeItem("currentEventIndex");
-        window.userEventHistory = [];
-        window.currentEventIndex = 0;
+
+
+
         history.replaceState({ page: "loadProducts", index: 0 }, "", window.location.pathname);
     }
 });
@@ -708,22 +696,14 @@ window.addEventListener("popstate", function (event) {
 
     // 🔁 Existing replay logic can go here
     const index = event.state?.index;
-    if (typeof index === "number" && userEventHistory[index]) {
-        replayEventByIndex(index);
-    } else {
-        console.warn("⚠️ Invalid popstate index:", event.state);
-    }
+
 });
 
 
 // === KEYBOARD SHORTCUTS (Alt + Arrow) ===
 document.addEventListener("keydown", (e) => {
     if (!e.altKey) return;
-    if (e.key === "ArrowLeft" && currentEventIndex > 0) {
-        replayEventByIndex(currentEventIndex - 1);
-    } else if (e.key === "ArrowRight" && currentEventIndex < userEventHistory.length - 1) {
-        replayEventByIndex(currentEventIndex + 1);
-    }
+
 });
 
 
@@ -750,27 +730,7 @@ function searchQuery(query) {
 }
 
 
-// 1. First define replayEventByIndex
-function replayEventByIndex(index) {
-    const event = userEventHistory[index];
-    console.log("🔁 Replaying event:", event.functionName, "with args:", event.args);
 
-    if (!event) {
-        console.warn("⚠️ No event at index", index);
-        return;
-    }
-
-    window.isReplaying = true;
-    try {
-        log(`🔁 Replaying [${index}]:`, event.functionName, event.args);
-        invokeFunctionByName(event.functionName, event.args || []);
-        window.scrollTo(0, event.scrollY || 0);
-        currentEventIndex = index;
-        sessionStorage.setItem("currentEventIndex", currentEventIndex);
-    } finally {
-        window.isReplaying = false;
-    }
-}
 
 function searchProducts() {
     const queryDesktop = document.getElementById("Search_Bar")?.value || "";
@@ -952,10 +912,7 @@ document.addEventListener("click", function (event) {
 
     invokeFunctionByName(functionName, args);
 });
-if (userEventHistory.length === 0 && (!history.state || history.state.index == null)) {
-    history.replaceState({ page: "loadProducts", index: 0 }, "", window.location.href);
-    console.debug("🛠️ Replacing state for empty session history.");
-}
+
 
 document.addEventListener("click", function (event) {
     const img = event.target.closest(".Clickable_Image, .Basket_Image");
