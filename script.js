@@ -1336,11 +1336,16 @@ async function GoToSettings() {
     // Currency selector logic
     const currencySelect = document.getElementById("currencySelect");
     currencySelect.value = localStorage.getItem("selectedCurrency") || "EUR";
-    currencySelect.addEventListener("change", () => {
-        localStorage.setItem("selectedCurrency", currencySelect.value);
-        localStorage.setItem("manualCurrencyOverride", "true"); // ✅ Flag user preference
-        updateAllPrices();
-    });
+    if (!currencySelect.dataset.listenerAttached) {
+        currencySelect.addEventListener("change", () => {
+            localStorage.setItem("selectedCurrency", currencySelect.value);
+            localStorage.setItem("manualCurrencyOverride", "true");
+            syncCurrencySelects(currencySelect.value);
+            updateAllPrices();
+        });
+        currencySelect.dataset.listenerAttached = "true";
+    }
+
 
     const currencyDropdown = document.getElementById("currencySelect");
     if (currencyDropdown) {
