@@ -1593,16 +1593,8 @@ function CategoryButtons() {
         const categoryContainer = sidebar.querySelector(".sidebar-categories") || sidebar;
 
         // ✅ Clear previous category buttons
-        if (isMobile) {
-            // Leave only the first child (e.g., a header or input field)
-            while (categoryContainer.children.length > 0) {
-                categoryContainer.removeChild(categoryContainer.lastChild);
-            }
-        } else {
-            // Desktop: remove all elements
-            while (categoryContainer.firstChild) {
-                categoryContainer.removeChild(categoryContainer.firstChild);
-            }
+        while (categoryContainer.firstChild) {
+            categoryContainer.removeChild(categoryContainer.firstChild);
         }
 
         // ✅ Rebuild category buttons
@@ -1625,18 +1617,23 @@ function CategoryButtons() {
 
                 const heading = document.createElement("h3");
                 heading.classList.add("Category_Button_Heading");
-                // Check for icon in first item
-                let iconPath = null;
+
                 const catArray = productsDatabase[category];
-                if (catArray.length > 0 && catArray[0].icon) {
-                    iconPath = catArray[0].icon;
+                const iconPath = catArray.length > 0 && catArray[0].icon ? catArray[0].icon : null;
+                const displayName = category.replace(/_/g, ' ');
+
+                if (iconPath) {
+                    heading.innerHTML = `
+                        <span class="category-icon-wrapper">
+                            <svg viewBox="0 0 24 24" class="category-icon-svg">
+                                <path d="${iconPath}" />
+                            </svg>
+                        </span>
+                        <span class="category-label">${displayName}</span>
+                    `;
+                } else {
+                    heading.textContent = displayName;
                 }
-
-                // Build icon + text
-                heading.innerHTML = iconPath
-                    ? `<svg viewBox="0 0 24 24" width="20" height="20" style="margin-right: 0px; vertical-align: middle; fill: currentColor;"><path d="${iconPath}"/></svg> ${category.replace(/_/g, ' ')}`
-                    : category.replace(/_/g, ' ');
-
 
                 button.appendChild(heading);
                 categoryContainer.appendChild(button);
@@ -1644,6 +1641,7 @@ function CategoryButtons() {
         });
     });
 }
+
 
 
 
