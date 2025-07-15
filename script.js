@@ -800,10 +800,12 @@ function searchProducts() {
     Object.keys(products).forEach(category => {
         results.push(
             ...products[category].filter(product => {
+                if (!product.name) return false; // ⛔ Skip icon-only objects
                 const normalizedName = product.name.toLowerCase().replace(/\s+/g, "");
                 const normalizedDescription = (product.description || "").toLowerCase().replace(/\s+/g, "");
                 return normalizedName.includes(query) || normalizedDescription.includes(query);
             })
+
         );
     });
 
@@ -1623,7 +1625,18 @@ function CategoryButtons() {
 
                 const heading = document.createElement("h3");
                 heading.classList.add("Category_Button_Heading");
-                heading.textContent = category.replace(/_/g, ' ');
+                // Check for icon in first item
+                let iconPath = null;
+                const catArray = productsDatabase[category];
+                if (catArray.length > 0 && catArray[0].icon) {
+                    iconPath = catArray[0].icon;
+                }
+
+                // Build icon + text
+                heading.innerHTML = iconPath
+                    ? `<svg viewBox="0 0 24 24" width="20" height="20" style="margin-right: 8px; vertical-align: middle; fill: currentColor;"><path d="${iconPath}"/></svg> ${category.replace(/_/g, ' ')}`
+                    : category.replace(/_/g, ' ');
+
 
                 button.appendChild(heading);
                 categoryContainer.appendChild(button);
@@ -2376,7 +2389,9 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
     }
 
     productList.forEach(product => {
+        if (!product.name) return;
         cart[product.name] = 1;
+
         const productDiv = document.createElement("div");
         productDiv.classList.add("product");
 
@@ -2492,50 +2507,48 @@ function getProductDescription(productName) {
     return product ? product.description : "N/A";
 }
 window.__alreadyRetriedBrokenProduct = false;
+window.lastProductName = productName;
+window.lastProductPrice = productPrice;
+window.lastProductDescription = productDescription;
 
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
 
-    if (window.__alreadyRetriedBrokenProduct === undefined) {
-        window.__alreadyRetriedBrokenProduct = false;
+    window.lastProductName = productName;
+    window.lastProductPrice = productPrice;
+    window.lastProductDescription = productDescription;
+
+    if (typeof window.currentIndex !== "number") {
+        window.currentIndex = 0;
     }
 
-    console.log("Product price:", productPrice);
     clearCategoryHighlight();
     const viewer = document.getElementById("Viewer");
-    if (!viewer) {
-        console.error(TEXTS.ERRORS.PRODUCTS_NOT_LOADED);
-        return;
-    }
+    if (!viewer) return;
 
     viewer.innerHTML = "";
     removeSortContainer();
 
-    let Product_Viewer = document.createElement("div");
-    Product_Viewer.id = "Product_Viewer";
-    Product_Viewer.classList.add("Product_Viewer");
-
     let product = Object.values(products || {}).flat().find(p => p.name === productName);
-    if (!product) {
-        console.error(TEXTS.ERRORS.PRODUCTS_NOT_LOADED, productName);
+    if (!product || !Array.isArray(product.images) || product.images.length === 0) {
+        viewer.innerHTML = "<p>This product could not be displayed due to image issues.</p>";
         return;
     }
 
-    if (!Array.isArray(product.images) || product.images.length === 0) {
-        console.error("No images found for product:", productName);
+    // Filter out invalid/falsy image URLs
+    product.images = product.images.filter(Boolean);
+    window.currentProductImages = [...product.images];
+
+    if (window.currentProductImages.length === 0) {
+        viewer.innerHTML = "<p>This product could not be displayed due to image issues.</p>";
         return;
     }
 
-    window.currentProductImages = product.images;
-    window.currentIndex = 0;
+    const getCurrentImageSafe = () => {
+        return window.currentProductImages[window.currentIndex] || window.currentProductImages[0] || "";
+    };
 
-    let thumbnailsHTML = window.currentProductImages.map((img, index) =>
-        `<img class="Thumbnail${index === 0 ? ' active' : ''}" src="${img}" onclick="changeImage('${img}')">`).join("");
-
-    if (!window.cart) {
-        window.cart = {};
-    }
-    cart[productName] = 1;
+    const safeImage = getCurrentImageSafe();
 
     let productOptionLabel = '';
     let productOptionButtons = '';
@@ -2544,19 +2557,23 @@ function GoToProductPage(productName, productPrice, productDescription) {
     if (Array.isArray(product.productOptions) && product.productOptions.length > 1) {
         const [label, ...options] = product.productOptions;
         productOptionLabel = `<div class="Product_Option_Label"><strong>${label}</strong></div>`;
-        selectedOption = options[0]; // default
+        selectedOption = options[0];
         productOptionButtons = options.map((opt, index) => `
-            <button 
-                class="Product_Option_Button${index === 0 ? ' selected' : ''}" 
+            <button class="Product_Option_Button${index === 0 ? ' selected' : ''}" 
                 onclick="selectProductOption(this, '${opt}')">${opt}</button>
         `).join('');
     }
 
     window.selectedProductOption = selectedOption;
+    window.cart = window.cart || {};
+    cart[productName] = 1;
 
-    productDiv = document.createElement("div");
+    const Product_Viewer = document.createElement("div");
+    Product_Viewer.id = "Product_Viewer";
+    Product_Viewer.classList.add("Product_Viewer");
+
+    const productDiv = document.createElement("div");
     productDiv.classList.add("Product_Detail_Page");
-
     productDiv.innerHTML = `
         <div class="Product_Details">
             <div class="Product_Images">
@@ -2565,15 +2582,13 @@ function GoToProductPage(productName, productPrice, productDescription) {
                         <div class="ImageControlButtonText">${TEXTS.PRODUCT_SECTION.IMAGE_NAV.PREVIOUS}</div>
                     </button>
                     <div class="image-slider-wrapper">
-                        <img id="mainImage" class="mainImage slide-image" src="${window.currentProductImages[window.currentIndex]}" alt="${productName}">
+                        <img id="mainImage" class="mainImage slide-image" src="${safeImage}" alt="${productName}">
                     </div>
                     <button class="ImageControlButtonNext" onclick="nextImage()">
                         <div class="ImageControlButtonText">${TEXTS.PRODUCT_SECTION.IMAGE_NAV.NEXT}</div>
                     </button>
                 </div>
-                <div class="ThumbnailsHolder">
-                    ${thumbnailsHTML}
-                </div>
+                <div class="ThumbnailsHolder"></div>
             </div>
             <div class="Product_Info">
                 <div class="Product_Name_Heading">${productName}</div>
@@ -2599,20 +2614,12 @@ function GoToProductPage(productName, productPrice, productDescription) {
                         <button class="Button" onclick="increaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
                     </div>
                     <button class="add-to-cart" 
-                            onclick="addToCart('${productName}', ${parseFloat(productPrice)}, '${window.currentProductImages[window.currentIndex]}', '${product.expectedPurchasePrice}', '${product.productLink}', \`${productDescription}\`, window.selectedProductOption || '')">
+                        onclick="addToCart('${productName}', ${parseFloat(productPrice)}, '${getCurrentImageSafe()}', '${product.expectedPurchasePrice}', '${product.productLink}', \`${productDescription}\`, window.selectedProductOption || '')">
                         ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
                     </button>
                 </div>
                 <button class="ProductPageBuyButton" 
-                    onclick="buyNow(
-                        '${productName}', 
-                        ${parseFloat(productPrice)}, 
-                        '${window.currentProductImages[window.currentIndex]}', 
-                        '${product.expectedPurchasePrice}', 
-                        '${product.productLink}', 
-                        \`${productDescription}\`, 
-                        window.selectedProductOption || ''
-                    )">
+                    onclick="buyNow('${productName}', ${parseFloat(productPrice)}, '${getCurrentImageSafe()}', '${product.expectedPurchasePrice}', '${product.productLink}', \`${productDescription}\`, window.selectedProductOption || '')">
                     ${TEXTS.PRODUCT_SECTION.BUY_NOW}
                 </button>
             </div>
@@ -2622,79 +2629,95 @@ function GoToProductPage(productName, productPrice, productDescription) {
     viewer.appendChild(Product_Viewer);
     Product_Viewer.appendChild(productDiv);
 
+    // === Image handling and swiping ===
     const mainImageElement = document.getElementById("mainImage");
-
-    // ✅ Handle broken main image
     if (mainImageElement) {
-        mainImageElement.addEventListener("error", () => {
-            const brokenUrl = mainImageElement.src;
-            console.warn("❌ Main image failed to load:", brokenUrl);
-
-            // Remove from product.images and window.currentProductImages
-            if (Array.isArray(product.images)) {
-                product.images = product.images.filter(img => img !== brokenUrl);
+        mainImageElement.onerror = () => {
+            const badSrc = mainImageElement.src;
+            console.warn("❌ Main image failed to load:", badSrc);
+            window.currentProductImages = window.currentProductImages.filter(img => img !== badSrc);
+            if (window.currentProductImages.length === 0) {
+                viewer.innerHTML = "<p>This product could not be displayed due to image issues.</p>";
+                return;
             }
-            window.currentProductImages = window.currentProductImages.filter(img => img !== brokenUrl);
-
-            // Rerender if any images remain
-            if (window.currentProductImages.length > 0) {
-                // ✅ Only reload if we haven’t already tried once
-                if (!window.__alreadyRetriedBrokenProduct) {
-                    window.__alreadyRetriedBrokenProduct = true;
-                    GoToProductPage(productName, productPrice, productDescription);
-                } else {
-                    console.warn("🚫 Preventing infinite reload loop for broken product:", productName);
-                    history.replaceState({}, "", "/");
-                    viewer.innerHTML = "<p>This product could not be displayed due to image issues.</p>";
-                }
-            } else {
-                console.warn("🚫 No valid images left — rendering fallback message");
-                history.replaceState({}, "", "/");
-                viewer.innerHTML = "<p>This product has no valid images.</p>";
+            if (window.currentIndex >= window.currentProductImages.length) {
+                window.currentIndex = 0;
             }
+            updateMainImage();
+        };
 
-
-        });
-
-        // Add swipe gesture
         let touchStartX = 0;
-        let touchEndX = 0;
-
-        function handleGesture() {
-            const swipeThreshold = 50;
-            if (touchEndX < touchStartX - swipeThreshold) {
-                nextImage();
-            }
-            if (touchEndX > touchStartX + swipeThreshold) {
-                prevImage();
-            }
-        }
-
-        mainImageElement.addEventListener("touchstart", (e) => {
+        mainImageElement.addEventListener("touchstart", e => {
             touchStartX = e.changedTouches[0].screenX;
         });
-        mainImageElement.addEventListener("touchend", (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleGesture();
+        mainImageElement.addEventListener("touchend", e => {
+            const delta = e.changedTouches[0].screenX - touchStartX;
+            if (delta > 50) prevImage();
+            if (delta < -50) nextImage();
         });
     }
 
-    // ✅ Also remove broken thumbnails
-    const thumbnails = document.querySelectorAll(".ThumbnailsHolder img");
-    thumbnails.forEach(thumbnail => {
-        thumbnail.addEventListener("error", () => {
-            const badSrc = thumbnail.src;
-            console.warn("❌ Thumbnail failed to load:", badSrc);
-
-            thumbnail.remove();
-
-            if (Array.isArray(product.images)) {
-                product.images = product.images.filter(img => img !== badSrc);
-            }
-            window.currentProductImages = window.currentProductImages.filter(img => img !== badSrc);
-        });
-    });
+    updateMainImage(); // initial render of thumbnails
 }
+
+function updateMainImage() {
+    const viewerImage = document.getElementById("mainImage");
+    const thumbnailsHolder = document.querySelector(".ThumbnailsHolder");
+
+    if (!viewerImage || !window.currentProductImages.length) return;
+
+    if (window.currentIndex >= window.currentProductImages.length) {
+        window.currentIndex = 0;
+    } else if (window.currentIndex < 0) {
+        window.currentIndex = window.currentProductImages.length - 1;
+    }
+
+    const nextImg = window.currentProductImages[window.currentIndex];
+
+    if (!nextImg) {
+        document.getElementById("Viewer").innerHTML = "<p>This product could not be displayed due to image issues.</p>";
+        return;
+    }
+
+    viewerImage.src = nextImg;
+
+    // Rebuild thumbnails
+    if (thumbnailsHolder) {
+        thumbnailsHolder.innerHTML = "";
+
+        window.currentProductImages.forEach((img, index) => {
+            const thumb = document.createElement("img");
+            thumb.src = img;
+            thumb.className = "Thumbnail" + (index === window.currentIndex ? " active" : "");
+            thumb.onclick = () => {
+                window.currentIndex = index;
+                updateMainImage();
+            };
+            thumb.onerror = () => {
+                console.warn("❌ Thumbnail failed:", img);
+                window.currentProductImages = window.currentProductImages.filter(i => i !== img);
+                if (window.currentIndex >= window.currentProductImages.length) {
+                    window.currentIndex = 0;
+                }
+                updateMainImage();
+            };
+            thumbnailsHolder.appendChild(thumb);
+        });
+    }
+}
+
+function nextImage() {
+    if (!window.currentProductImages?.length) return;
+    window.currentIndex = (window.currentIndex + 1) % window.currentProductImages.length;
+    updateMainImage();
+}
+
+function prevImage() {
+    if (!window.currentProductImages?.length) return;
+    window.currentIndex = (window.currentIndex - 1 + window.currentProductImages.length) % window.currentProductImages.length;
+    updateMainImage();
+}
+
 
 
 function selectProductOption(button, optionValue) {
@@ -2762,15 +2785,6 @@ function updateImage(direction = 'none') {
 
 
 
-function prevImage() {
-    window.currentIndex = (window.currentIndex - 1 + window.currentProductImages.length) % window.currentProductImages.length;
-    updateImage('right');
-}
-
-function nextImage() {
-    window.currentIndex = (window.currentIndex + 1) % window.currentProductImages.length;
-    updateImage('left');
-}
 
 
 // Function to change the image when clicking a thumbnail
