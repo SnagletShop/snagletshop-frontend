@@ -1634,7 +1634,7 @@ function CategoryButtons() {
 
                 // Build icon + text
                 heading.innerHTML = iconPath
-                    ? `<svg viewBox="0 0 24 24" width="20" height="20" style="margin-right: 8px; vertical-align: middle; fill: currentColor;"><path d="${iconPath}"/></svg> ${category.replace(/_/g, ' ')}`
+                    ? `<svg viewBox="0 0 24 24" width="20" height="20" style="margin-right: 0px; vertical-align: middle; fill: currentColor;"><path d="${iconPath}"/></svg> ${category.replace(/_/g, ' ')}`
                     : category.replace(/_/g, ' ');
 
 
