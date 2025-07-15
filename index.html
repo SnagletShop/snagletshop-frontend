@@ -329,7 +329,7 @@
                 display: flex;
                 align-items: center;
                 border-radius: 5px;
-                justify-content: center;
+                justify-content: left;
                 box-sizing: border-box;
                 border: 0.1em solid var(--Borders_Colour);
                 /* Scales with font size */
@@ -341,6 +341,12 @@
                 white-space: nowrap;
                 border-radius: 5px;
                 margin: 0;
+            }
+
+            .Category_Button_Heading {
+                display: flex;
+                align-items: center;
+                gap: 1vw;
             }
 
             .product {
@@ -1457,6 +1463,11 @@
                 overflow-y: auto;
             }
 
+            .Category_Button_Heading {
+                display: flex;
+                align-items: center;
+                gap: 2vw;
+            }
 
             .Category_Button_Heading {
                 color: var(--Category_Button_Text_Colour);
@@ -1791,8 +1802,8 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 60vw;
-                max-width: 300px;
+                width: auto;
+                max-width: auto;
                 height: 100vh;
 
                 transform: translateX(-100%);
@@ -1918,7 +1929,7 @@
             .Category_Button {
                 width: 95%;
                 height: 6vh;
-                margin-left: 5%;
+                margin-left: 0%;
                 background-color: var(--SideBar_Background_Colour);
                 font-size: 2.5vh;
                 /* Scales with button height */
