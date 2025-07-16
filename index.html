@@ -734,7 +734,7 @@
             }
 
             .image-slider-wrapper {
-
+                position: relative;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -746,9 +746,20 @@
                 overflow: hidden;
             }
 
+            #mainImage {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                /* ✅ Full width */
+                height: 100%;
+                /* ✅ Full height */
+                object-fit: contain;
+                transition: none;
+            }
 
             .slide-image {
-                transition: transform 0.4s ease;
+                transition: transform 0.2s ease;
                 will-change: transform;
             }
 
@@ -2425,14 +2436,16 @@
 
             .image-slider-wrapper {
                 overflow: hidden;
-                width: 101%;
+                width: 100%;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                position: relative;
             }
 
+
             .slide-image {
-                transition: transform 0.4s ease;
+                transition: transform 0.2s ease;
                 will-change: transform;
             }
 
