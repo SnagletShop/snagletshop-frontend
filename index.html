@@ -747,7 +747,9 @@
             }
 
             #mainImage {
-                position: absolute;
+                position: relative;
+                overflow: hidden;
+
                 top: 0;
                 left: 0;
                 width: 100%;
@@ -1458,6 +1460,20 @@
             body {
                 max-width: 100%;
                 overflow-x: hidden;
+            }
+
+            #mainImage {
+                position: relative;
+                overflow: hidden;
+
+                top: 0;
+                left: 0;
+                width: 100%;
+                /* ✅ Full width */
+                height: 100%;
+                /* ✅ Full height */
+                object-fit: contain;
+                transition: none;
             }
 
             .mobileTopBar,
@@ -3322,53 +3338,49 @@
 
                 if (!imagesDiv || !productNameHeading) return;
 
-                // Save original position only once per imagesDiv
+                // Save original parent and index if not already stored
                 if (!imagesDiv.dataset.originalParentId) {
-                    const parent = imagesDiv.parentNode;
-
-                    // Assign an ID to the parent if it doesn't have one
+                    const parent = imagesDiv.parentElement;
                     if (!parent.id) {
                         parent.id = "original-parent-" + Math.random().toString(36).substr(2, 9);
                     }
-
                     imagesDiv.dataset.originalParentId = parent.id;
 
-                    const siblings = Array.from(parent.childNodes);
+                    const siblings = Array.from(parent.children);
                     imagesDiv.dataset.originalIndex = siblings.indexOf(imagesDiv);
                 }
 
                 function moveImages() {
                     if (mediaQuery.matches) {
-                        // Mobile view: move image under product name
-                        if (productNameHeading.nextSibling !== imagesDiv) {
-                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextSibling);
+                        // Mobile: move under name heading
+                        if (productNameHeading.nextElementSibling !== imagesDiv) {
+                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextElementSibling);
                         }
                     } else {
-                        // Desktop view: restore image to original position
+                        // Desktop: move back to original spot
                         const originalParent = document.getElementById(imagesDiv.dataset.originalParentId);
                         const originalIndex = parseInt(imagesDiv.dataset.originalIndex, 10);
-
-                        if (originalParent) {
-                            const currentChildren = Array.from(originalParent.childNodes).filter(n => n.nodeType === 1 || n.nodeType === 3);
-                            const referenceNode = currentChildren[originalIndex] || null;
-                            if (imagesDiv !== referenceNode) {
-                                originalParent.insertBefore(imagesDiv, referenceNode);
-                            }
+                        if (originalParent && originalParent.children[originalIndex] !== imagesDiv) {
+                            const referenceNode = originalParent.children[originalIndex] || null;
+                            originalParent.insertBefore(imagesDiv, referenceNode);
                         }
                     }
                 }
 
-                // Initial placement and resize handling
+                // Run initially and on screen size change
                 moveImages();
                 mediaQuery.addEventListener("change", moveImages);
             }
 
-            // Watch for product detail page insertions
+            // Observe body for dynamically inserted Product Detail pages
             const globalObserver = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1 && node.matches(".Product_Detail_Page")) {
-                            moveImagesIfNeeded(node);
+                        if (node.nodeType === 1) {
+                            const detailPage = node.matches(".Product_Detail_Page")
+                                ? node
+                                : node.querySelector(".Product_Detail_Page");
+                            if (detailPage) moveImagesIfNeeded(detailPage);
                         }
                     });
                 });
@@ -3376,11 +3388,12 @@
 
             globalObserver.observe(document.body, { childList: true, subtree: true });
 
-            // Handle page load case
+            // Also check immediately if a page is already loaded
             const existingPage = document.querySelector(".Product_Detail_Page");
             if (existingPage) moveImagesIfNeeded(existingPage);
         });
     </script>
+
 
 
 
