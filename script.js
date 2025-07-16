@@ -3,6 +3,8 @@ window.functionBlacklist = new Set([
 
 ]);
 const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = true;
+const APPLY_TARIFF = true; // 🔁 You can toggle this manually
+localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
 
 const TEXTS = {
@@ -288,6 +290,7 @@ const currencySymbols = {
     BRL: "R$", ARS: "$", CLP: "$", COP: "$", PEN: "S/", VES: "Bs"
 };
 
+const preloadedImages = new Set();
 
 
 let selectedCurrency = "EUR";
@@ -964,11 +967,7 @@ function detectUserCurrency() {
                 currencySelect.value = selectedCurrency;
             }
 
-            if (userCountry === "US") {
-                localStorage.setItem("applyTariff", "true");
-            } else {
-                localStorage.setItem("applyTariff", "false");
-            }
+
 
             console.log("🌍 Country detected:", userCountry);
             console.log("💱 Currency set to:", selectedCurrency);
@@ -988,7 +987,10 @@ function convertPrice(priceInEur) {
     const selectedCountry = localStorage.getItem("detectedCountry") || "US";
     const tariff = tariffMultipliers[selectedCountry] || 0;
 
-    converted *= (1 + tariff);
+    const applyTariff = localStorage.getItem("applyTariff") === "true";
+    if (applyTariff) {
+        converted *= (1 + tariff);
+    }
 
     return converted.toFixed(2);
 }
@@ -2471,6 +2473,14 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         productDiv.appendChild(card);
         viewer.appendChild(productDiv);
     });
+    let checkProductsLoaded = setInterval(() => {
+        if (typeof products !== "undefined" && Object.keys(products).length > 0) {
+            clearInterval(checkProductsLoaded);
+            preloadProductImages();  // ✅ Preload images
+            CategoryButtons();       // Existing function
+        }
+    }, 100);
+
 }
 
 
@@ -2663,6 +2673,23 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
         updateAllPrices();
         updateImage();
+    });
+}
+
+
+function preloadProductImages() {
+    if (typeof products === "undefined") return;
+
+    Object.values(products).flat().forEach(product => {
+        const urls = Array.isArray(product.images) ? product.images : [product.image];
+
+        urls.forEach(url => {
+            if (url && !preloadedImages.has(url)) {
+                const img = new Image();
+                img.src = url;
+                preloadedImages.add(url); // ✅ Mark as preloaded
+            }
+        });
     });
 }
 
