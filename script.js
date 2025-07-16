@@ -1827,7 +1827,17 @@ async function createPaymentModal() {
     }
 
     // 🧩 Initialize Stripe Elements
-    elementsInstance = stripe.elements({ clientSecret });
+    elementsInstance = stripe.elements({
+        clientSecret,
+        appearance: {
+            theme: 'flat',
+            variables: {
+                colorText: getComputedStyle(document.body).color,
+                colorBackground: getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim(),
+                fontFamily: getComputedStyle(document.body).fontFamily,
+            }
+        }
+    });
     paymentElementInstance = elementsInstance.create("payment");
     paymentElementInstance.mount("#payment-element");
 
@@ -2118,7 +2128,17 @@ async function processPayment(e) {
         if (!clientSecret) throw new Error("No client secret received.");
 
         if (!elementsInstance) {
-            elementsInstance = stripe.elements({ clientSecret });
+            elementsInstance = stripe.elements({
+                clientSecret,
+                appearance: {
+                    theme: 'flat',
+                    variables: {
+                        colorText: getComputedStyle(document.body).color,
+                        colorBackground: getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim(),
+                        fontFamily: getComputedStyle(document.body).fontFamily,
+                    }
+                }
+            });
             paymentElementInstance = elementsInstance.create("payment");
             paymentElementInstance.mount('#payment-element');
         }
@@ -2200,7 +2220,17 @@ async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) 
         }
 
         if (!elementsInstance) {
-            elementsInstance = stripe.elements({ clientSecret });
+            elementsInstance = stripe.elements({
+                clientSecret,
+                appearance: {
+                    theme: 'flat',
+                    variables: {
+                        colorText: getComputedStyle(document.body).color,
+                        colorBackground: getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim(),
+                        fontFamily: getComputedStyle(document.body).fontFamily,
+                    }
+                }
+            });
             paymentElementInstance = elementsInstance.create("payment");
             paymentElementInstance.mount("#payment-element");
         }
