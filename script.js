@@ -1452,65 +1452,10 @@ async function GoToSettings() {
 
     syncCurrencySelects(currencySelect.value);
     const settingsStyle = document.createElement("style");
-    settingsStyle.innerHTML = `
-    .settings-panel input,
-    .settings-panel select,
-    .settings-panel textarea,
-    .settings-panel label,
-    .settings-panel h3,
-    .settings-panel h4,
-    .settings-panel p {
-        color: var(--Default_Text_Colour) !important;
-    }
-    
-    .settings-panel input,
-    .settings-panel select,
-    .settings-panel textarea {
-        background-color: var(--SearchBar_Background_Colour) !important;
-        border: 1px solid #ccc;
-    }
-    
-    .settings-panel button {
-        color: var(--Default_Text_Colour) !important;
-        background-color: var(--SearchBar_Background_Colour) !important;
-        border: 1px solid #ccc;
-    }
-    `;
+
     // Inject one-line Tom Select CSS fix
     const dropdownStyle = document.createElement("style");
-    dropdownStyle.innerHTML = `
-    /* TomSelect UI fixes */
-    .ts-control {
-      background-color: var(--SearchBar_Background_Colour)
-        min-height: 38px !important;
-        height: 38px !important;
-        padding: 4px 8px;
-        overflow: hidden !important;
-        white-space: nowrap !important;
-        display: flex;
-        align-items: center;
-          border: 1px solid var(--Borders_Colour);
-          color: var(--Default_Text_Colour) !important;
-          
-    }
-    
-    .ts-control input {
-      background-color: var(--SearchBar_Background_Colour)
-        height: 100% !important;
-          color: var(--Default_Text_Colour) !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        line-height: 1 !important;
-          border: 1px solid var(--Borders_Colour);
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-    
-    .ts-wrapper.single .ts-control {
-        flex-wrap: nowrap !important;
-    }
-    `;
+
     document.head.appendChild(dropdownStyle);
 
 
@@ -1654,8 +1599,19 @@ function isDarkModeEnabled() {
         window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
+
 async function createPaymentModal() {
+
     if (document.getElementById("paymentModal")) return;
+    // Ensure the theme class is applied correctly
+    const savedTheme = localStorage.getItem("themeMode");
+    if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark-mode");
+        document.documentElement.classList.remove("light-mode");
+    } else {
+        document.documentElement.classList.add("light-mode");
+        document.documentElement.classList.remove("dark-mode");
+    }
 
     const modal = document.createElement("div");
     modal.id = "paymentModal";
@@ -1689,6 +1645,33 @@ async function createPaymentModal() {
     `;
 
     document.body.appendChild(modal);
+
+    // Inject modal-specific dark/light theme styles
+    const modalStyle = document.createElement("style");
+    modalStyle.innerHTML = `
+#paymentModal input,
+#paymentModal select,
+#paymentModal textarea,
+#paymentModal label,
+#paymentModal h2 {
+    color: var(--Default_Text_Colour) !important;
+}
+#paymentModal input,
+#paymentModal select,
+#paymentModal textarea {
+ 
+
+}
+#paymentModal button {
+    color: var(--Default_Text_Colour) !important;
+    background-color: var(--SearchBar_Background_Colour) !important;
+
+}
+`;
+
+
+    document.head.appendChild(modalStyle);
+
     modal.addEventListener("click", handleOutsideClick);
     modal.addEventListener("touchstart", handleOutsideClick);
     modal.addEventListener("click", function (event) {
@@ -1700,6 +1683,9 @@ async function createPaymentModal() {
 
     // Populate country dropdown with TomSelect
     const countrySelect = document.getElementById("Country");
+    if (countrySelect.tomselect) {
+        countrySelect.tomselect.destroy();
+    }
     const detectedCountry = localStorage.getItem("detectedCountry") || "US";
 
     if (countrySelect && window.preloadedData?.countries) {
@@ -1868,28 +1854,40 @@ async function createPaymentModal() {
         requestPayerEmail: true
     });
 
-    const isDarkMode = isDarkModeEnabled();
+    function renderPaymentRequestButton() {
+        const container = document.getElementById("payment-request-button");
+        container.innerHTML = ""; // clear previous button
 
+        const isDarkMode = document.documentElement.classList.contains("dark-mode");
 
-    const prButton = elementsInstance.create("paymentRequestButton", {
-        paymentRequest,
-        style: {
-            paymentRequestButton: {
-                type: "default",
-                theme: isDarkMode ? "dark" : "light",
-                height: "45px"
+        const prButton = elementsInstance.create("paymentRequestButton", {
+            paymentRequest,
+            style: {
+                paymentRequestButton: {
+                    type: "default",
+                    theme: isDarkMode ? "dark" : "light",
+                    height: "45px"
+                }
             }
-        }
-    });
+        });
 
+        paymentRequest.canMakePayment().then(result => {
+            if (result) {
+                prButton.mount("#payment-request-button");
+            } else {
+                container.style.display = "none";
+            }
+        });
+    }
 
-    paymentRequest.canMakePayment().then(result => {
-        if (result) {
-            prButton.mount("#payment-request-button");
-        } else {
-            document.getElementById("payment-request-button").style.display = "none";
-        }
+    // initially render
+    renderPaymentRequestButton();
+
+    // observe theme changes while modal is open
+    const observer = new MutationObserver(() => {
+        renderPaymentRequestButton();
     });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     // 🧾 Apple/Google Pay Checkout Handler
     paymentRequest.on("paymentmethod", async ev => {
