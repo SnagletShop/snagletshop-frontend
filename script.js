@@ -529,6 +529,7 @@ const debounce = (func, delay) => {
 };
 async function fetchTariffs() {
     const response = await fetch("https://api.snagletshop.com/countries");
+    console.log(response);
     const countries = await response.json();
     tariffMultipliers = Object.fromEntries(countries.map(c => [c.code, c.tariff]));
 }
@@ -1076,12 +1077,11 @@ document.getElementById("currencySelect")?.addEventListener("change", function (
 
 document.addEventListener("DOMContentLoaded", async () => {
     const currencySelect = document.getElementById("currency-select");
-
+    await fetchTariffs();
     if (!currencySelect) {
         console.warn("currency-select element not found. Skipping price initialization.");
         return;
     }
-
     currencySelect.value = selectedCurrency;
     detectUserCurrency();
     initializePrices();         // Store original EUR prices in DOM
