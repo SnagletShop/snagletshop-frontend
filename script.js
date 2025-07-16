@@ -2658,7 +2658,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
                             <span class="WhiteText" id="quantity-${productName}">1</span>
                             <button class="Button" onclick="increaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
                         </div>
-                        <button class="add-to-cart" onclick="addToCart(
+                        <button class="add-to-cart-product" onclick="addToCart(
                             '${productName}',
                             ${parseFloat(productPrice)},
                             '${validImages[0]}',
@@ -2804,7 +2804,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
                         <span class="WhiteText" id="quantity-${productName}">1</span>
                         <button class="Button" onclick="increaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
                     </div>
-                    <button class="add-to-cart" onclick="addToCart(
+                    <button class="add-to-cart-product" onclick="addToCart(
                         '${productName}',
                         ${parseFloat(productPrice)},
                         '${validImages[0]}',
