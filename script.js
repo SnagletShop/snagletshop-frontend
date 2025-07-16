@@ -2652,8 +2652,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
     updateMainImage(); // initial render of thumbnails
 }
-
-function updateMainImage() {
+function updateMainImage(direction = 'none') {
     const viewerImage = document.getElementById("mainImage");
     const thumbnailsHolder = document.querySelector(".ThumbnailsHolder");
 
@@ -2672,9 +2671,46 @@ function updateMainImage() {
         return;
     }
 
-    viewerImage.src = nextImg;
+    // If no direction provided, just change src instantly
+    if (direction === 'none') {
+        viewerImage.src = nextImg;
+    } else {
+        // Create a clone image to animate the transition
+        const clone = viewerImage.cloneNode(true);
+        clone.src = nextImg;
 
-    // Rebuild thumbnails
+        // Style the clone to slide in from the side
+        const offset = direction === 'right' ? 100 : -100;
+        clone.style.position = 'absolute';
+        clone.style.left = offset + '%';
+        clone.style.top = '0';
+        clone.style.transition = 'transform 0.2s ease';
+        clone.style.zIndex = 10;
+
+        // Prepare the original to slide out
+        viewerImage.style.transition = 'transform 0.2s ease';
+        viewerImage.style.zIndex = 5;
+
+        // Append the clone
+        viewerImage.parentNode.appendChild(clone);
+
+        // Trigger the transition
+        requestAnimationFrame(() => {
+            viewerImage.style.transform = `translateX(${-offset}%)`;
+            clone.style.transform = `translateX(${-offset}%)`;
+        });
+
+        // Clean up after animation
+        setTimeout(() => {
+            viewerImage.src = nextImg;
+            viewerImage.style.transition = 'none';
+            viewerImage.style.transform = 'none';
+            viewerImage.style.zIndex = '';
+            clone.remove();
+        }, 400);
+    }
+
+    // === Update thumbnails ===
     if (thumbnailsHolder) {
         thumbnailsHolder.innerHTML = "";
 
@@ -2683,8 +2719,11 @@ function updateMainImage() {
             thumb.src = img;
             thumb.className = "Thumbnail" + (index === window.currentIndex ? " active" : "");
             thumb.onclick = () => {
+                const oldIndex = window.currentIndex;
                 window.currentIndex = index;
-                updateMainImage();
+
+                const dir = index > oldIndex ? 'right' : index < oldIndex ? 'left' : 'none';
+                updateMainImage(dir);
             };
             thumb.onerror = () => {
                 console.warn("❌ Thumbnail failed:", img);
@@ -2699,16 +2738,17 @@ function updateMainImage() {
     }
 }
 
+
 function nextImage() {
     if (!window.currentProductImages?.length) return;
     window.currentIndex = (window.currentIndex + 1) % window.currentProductImages.length;
-    updateMainImage();
+    updateMainImage('right');
 }
 
 function prevImage() {
     if (!window.currentProductImages?.length) return;
     window.currentIndex = (window.currentIndex - 1 + window.currentProductImages.length) % window.currentProductImages.length;
-    updateMainImage();
+    updateMainImage('left');
 }
 
 
