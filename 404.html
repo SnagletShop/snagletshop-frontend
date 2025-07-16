@@ -183,7 +183,7 @@
                 font-size: 2.5vh;
                 font-weight: bold;
                 font-family: 'Afacad', sans-serif;
-                a box-sizing: border-box;
+                box-sizing: border-box;
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
 
@@ -425,6 +425,23 @@
                 font-family: 'Rubik', sans-serif;
             }
 
+            .add-to-cart-product {
+                background-color: var(--Primary_Button_Colour);
+                color: #fff;
+
+                border: none;
+                aspect-ratio: 1/0.25;
+                width: 50%;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                flex: 1;
+                /* Take up the remaining space */
+                text-align: center;
+
+                font-family: 'Rubik', sans-serif;
+            }
+
             .add-to-cart:hover {
                 background-color: var(--ButtonHoverState_Background_Colour);
             }
@@ -467,6 +484,14 @@
                 justify-content: center;
                 cursor: pointer;
 
+            }
+
+            .ts-wrapper.single .ts-control,
+            .ts-wrapper.single .ts-control input {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
             }
 
             .Quantity-Controls-Basket {
@@ -1464,9 +1489,82 @@
                 aspect-ratio: 1/1;
             }
 
+            .ts-wrapper.single .ts-control,
+            .ts-wrapper.single .ts-control input {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .ts-dropdown.single {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .ts-control,
+            .ts-wrapper.single.input-active .ts-control {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .option.active {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .ts-wrapper.active {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
         }
 
         @media (max-width: 680px) {
+
+            .ts-wrapper.single .ts-control,
+            .ts-wrapper.single .ts-control input {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .ts-dropdown.single {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .ts-control,
+            .ts-wrapper.single.input-active .ts-control {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .option.active {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
+
+            .ts-wrapper.active {
+                color: var(--Default_Text_Colour);
+                background-color: var(--Input_Background);
+                border: var(--Borders_Colour);
+                border: 1px;
+            }
 
             html,
             body {
@@ -2117,7 +2215,7 @@
                 border-radius: 4px;
                 cursor: pointer;
                 transition: background-color 0.3s;
-                font-size: auto;
+                font-size: 2vw;
                 /* Take up the remaining space */
                 text-align: center;
                 font-family: 'Rubik', sans-serif;
@@ -3098,11 +3196,27 @@
                 width: 80vw;
             }
 
+            .add-to-cart-product {
+                background-color: var(--Primary_Button_Colour);
+                color: #fff;
+
+                border: none;
+                aspect-ratio: 1/0.4;
+                width: 50%;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                font-size: 4vw;
+                /* Take up the remaining space */
+                text-align: center;
+                font-family: 'Rubik', sans-serif;
+            }
+
             .Product_Description {
 
                 font-family: 'Afacad', sans-serif;
                 white-space: pre-line;
-                font-size: 3vw;
+                font-size: 4.5vw;
                 color: var(--Default_Text_Colour);
                 line-height: 1.4;
                 display: -webkit-box;
