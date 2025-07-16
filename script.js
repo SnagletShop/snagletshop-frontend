@@ -1169,9 +1169,11 @@ async function GoToSettings() {
     }
 
     viewer.innerHTML = "";
-
     const wrapper = document.createElement("div");
     wrapper.classList.add("settings-panel");
+    wrapper.style.backgroundColor = "var(--SearchBar_Background_Colour)";
+    wrapper.style.color = "var(--Default_Text_Colour)";
+
 
     // Theme Toggle
     const themeSection = document.createElement("div");
@@ -1447,12 +1449,37 @@ async function GoToSettings() {
     });
 
     syncCurrencySelects(currencySelect.value);
-
+    const settingsStyle = document.createElement("style");
+    settingsStyle.innerHTML = `
+    .settings-panel input,
+    .settings-panel select,
+    .settings-panel textarea,
+    .settings-panel label,
+    .settings-panel h3,
+    .settings-panel h4,
+    .settings-panel p {
+        color: var(--Default_Text_Colour) !important;
+    }
+    
+    .settings-panel input,
+    .settings-panel select,
+    .settings-panel textarea {
+        background-color: var(--SearchBar_Background_Colour) !important;
+        border: 1px solid #ccc;
+    }
+    
+    .settings-panel button {
+        color: var(--Default_Text_Colour) !important;
+        background-color: var(--SearchBar_Background_Colour) !important;
+        border: 1px solid #ccc;
+    }
+    `;
     // Inject one-line Tom Select CSS fix
     const dropdownStyle = document.createElement("style");
     dropdownStyle.innerHTML = `
     /* TomSelect UI fixes */
     .ts-control {
+      background-color: var(--SearchBar_Background_Colour)
         min-height: 38px !important;
         height: 38px !important;
         padding: 4px 8px;
@@ -1460,13 +1487,19 @@ async function GoToSettings() {
         white-space: nowrap !important;
         display: flex;
         align-items: center;
+          border: 1px solid var(--Borders_Colour);
+          color: var(--Default_Text_Colour) !important;
+          
     }
     
     .ts-control input {
+      background-color: var(--SearchBar_Background_Colour)
         height: 100% !important;
+          color: var(--Default_Text_Colour) !important;
         padding: 0 !important;
         margin: 0 !important;
         line-height: 1 !important;
+          border: 1px solid var(--Borders_Colour);
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
