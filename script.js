@@ -1649,6 +1649,10 @@ function clearCategoryHighlight() {
     });
     currentCategory = null;
 }
+function isDarkModeEnabled() {
+    return document.body.classList.contains('dark') ||
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
 
 async function createPaymentModal() {
     if (document.getElementById("paymentModal")) return;
@@ -1853,7 +1857,8 @@ async function createPaymentModal() {
         requestPayerEmail: true
     });
 
-    const isDarkMode = document.body.classList.contains('dark');
+    const isDarkMode = isDarkModeEnabled();
+
 
     const prButton = elementsInstance.create("paymentRequestButton", {
         paymentRequest,
