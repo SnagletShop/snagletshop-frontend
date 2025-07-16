@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
+
     <title>SnagletShop</title>
     <script src="Products.js" defer></script>
     <script src="script.js" defer></script>
     <script src="https://js.stripe.com/v3/"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -137,6 +141,17 @@
                 margin: 0;
             }
 
+            .ts-dropdown-content {
+                background-color: var(--Input_Background);
+                color: var(--Default_Text_Colour);
+
+            }
+
+            .category-icon-svg {
+                fill: var(--Default_Text_Colour);
+
+            }
+
             .Button {
                 color: var(--Default_Text_Colour);
                 width: 100%;
@@ -167,11 +182,17 @@
                 color: var(--Default_Text_Colour);
                 font-size: 2.5vh;
                 font-weight: bold;
-
-                box-sizing: border-box;
+                font-family: 'Afacad', sans-serif;
+                a box-sizing: border-box;
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
 
+            }
+
+            .ts-dropdown {
+                max-height: 240px;
+                /* Adjust based on item height. ~10 items */
+                overflow-y: auto;
             }
 
 
@@ -321,7 +342,7 @@
                 display: flex;
                 align-items: center;
                 border-radius: 5px;
-                justify-content: center;
+                justify-content: left;
                 box-sizing: border-box;
                 border: 0.1em solid var(--Borders_Colour);
                 /* Scales with font size */
@@ -335,6 +356,12 @@
                 margin: 0;
             }
 
+            .Category_Button_Heading {
+                display: flex;
+                align-items: center;
+                gap: 1vw;
+            }
+
             .product {
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
@@ -346,8 +373,8 @@
                 /* Allow grid to define width */
                 max-width: 300px;
                 /* Ensures uniform width */
-                height: 450px;
-                max-height: 450px;
+                height: 475px;
+                max-height: 475px;
                 display: flex;
                 justify-content: center;
             }
@@ -394,6 +421,8 @@
                 flex: 1;
                 /* Take up the remaining space */
                 text-align: center;
+
+                font-family: 'Rubik', sans-serif;
             }
 
             .add-to-cart:hover {
@@ -496,6 +525,7 @@
                 overflow: hidden;
                 display: -webkit-box;
                 -webkit-box-orient: vertical;
+                font-family: 'Afacad', sans-serif;
                 -webkit-line-clamp: 6;
                 text-overflow: ellipsis;
             }
@@ -557,7 +587,7 @@
                 width: auto;
                 /* Adjust width dynamically */
                 height: 4vh;
-                font-size: 60%;
+                font-size: 50%;
                 border: 0px solid var(--Borders_Colour);
                 border-radius: 3px;
                 background-color: var(--SearchBar_Background_Colour);
@@ -571,6 +601,7 @@
                 /* For Safari */
                 -moz-appearance: none;
                 /* For Firefox */
+                font-family: 'Rubik', sans-serif;
             }
 
             #sortSelect:focus {
@@ -638,10 +669,12 @@
 
             .WhiteText {
                 color: var(--Default_Text_Colour);
+                font-family: 'Afacad', sans-serif;
             }
 
             .ProductPrice {
                 color: var(--Default_Text_Colour);
+                font-family: 'Afacad', sans-serif;
             }
 
             .ProductName {
@@ -651,22 +684,25 @@
             .product-name {
                 color: var(--Default_Text_Colour);
                 font-size: 20px;
+                font-family: 'Rubik', sans-serif;
+                font-weight: 600;
+
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                line-clamp: 2;
-                /* not necessary, safe to remove */
+
+                line-height: 1.4em;
+                /* adjust as needed */
+                height: calc(1.4em * 2);
+                /* force exactly 2 lines of height */
+
                 margin-top: 10px;
                 margin-bottom: 10px;
-                /* Remove this if causing spacing issues */
-                height: auto;
-                font-family: 'Rubik', sans-serif;
-                font-weight: 600;
-
                 margin-left: 10px;
             }
+
 
 
             .Product_Viewer {
@@ -706,7 +742,7 @@
             }
 
             .image-slider-wrapper {
-
+                position: relative;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -718,9 +754,22 @@
                 overflow: hidden;
             }
 
+            #mainImage {
+                position: relative;
+                overflow: hidden;
+
+                top: 0;
+                left: 0;
+                width: 100%;
+                /* ✅ Full width */
+                height: 100%;
+                /* ✅ Full height */
+                object-fit: contain;
+                transition: none;
+            }
 
             .slide-image {
-                transition: transform 0.4s ease;
+                transition: transform 0.2s ease;
                 will-change: transform;
             }
 
@@ -785,6 +834,7 @@
                 color: var(--Default_Text_Colour);
                 cursor: pointer;
                 border-radius: 6px;
+                font-family: 'Afacad', sans-serif;
                 transition: 0.2s ease;
             }
 
@@ -989,6 +1039,7 @@
                 margin-top: -3px;
                 text-align: left;
                 margin-bottom: 25px;
+                font-family: 'Afacad', sans-serif;
             }
 
             .PayButton {
@@ -1035,7 +1086,7 @@
                 max-width: 100%;
                 height: 30px;
                 margin-top: -3px;
-
+                font-family: 'Afacad', sans-serif;
             }
 
             .EmptyBasketMessage {
@@ -1359,6 +1410,7 @@
             }
 
             .Product_Description {
+                font-family: 'Afacad', sans-serif;
                 font-size: 20px;
                 color: var(--Default_Text_Colour);
                 line-height: 1.4;
@@ -1367,24 +1419,25 @@
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                font-family: 'Rubik', sans-serif;
+
             }
 
             .Product_Price_Label {
                 font-size: 20px;
                 color: var(--accent-color);
                 margin-top: 10px;
+                font-family: 'Afacad', sans-serif;
             }
 
             .currencySelect {
                 width: auto;
                 display: inline-block;
-                padding: 0.5vh 1vh;
+                padding: 0.5vh;
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
+
+
                 appearance: none;
                 /* optional: removes native arrow styling */
                 -webkit-appearance: none;
@@ -1406,6 +1459,10 @@
                 color: var(--Default_Text_Colour);
             }
 
+            .category-icon-wrapper {
+                width: 2.5vh;
+                aspect-ratio: 1/1;
+            }
 
         }
 
@@ -1415,6 +1472,20 @@
             body {
                 max-width: 100%;
                 overflow-x: hidden;
+            }
+
+            #mainImage {
+                position: relative;
+                overflow: hidden;
+
+                top: 0;
+                left: 0;
+                width: 100%;
+                /* ✅ Full width */
+                height: 100%;
+                /* ✅ Full height */
+                object-fit: contain;
+                transition: none;
             }
 
             .mobileTopBar,
@@ -1434,13 +1505,28 @@
             }
 
 
+            .ts-dropdown-content {
+                background-color: var(--Input_Background);
+                color: var(--Default_Text_Colour);
+
+            }
 
             .Icon {
 
                 color: var(--Default_Text_Colour);
             }
 
+            .ts-dropdown {
+                max-height: 240px;
+                /* Adjust based on item height. ~10 items */
+                overflow-y: auto;
+            }
 
+            .Category_Button_Heading {
+                display: flex;
+                align-items: center;
+                gap: 2vw;
+            }
 
             .Category_Button_Heading {
                 color: var(--Category_Button_Text_Colour);
@@ -1672,6 +1758,7 @@
                 font-size: 1rem;
                 background-color: var(--SearchBar_Background_Colour);
                 min-width: 20px;
+                font-family: 'Rubik', sans-serif;
             }
 
             .mobileCurrencySelect {
@@ -1775,8 +1862,8 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 60vw;
-                max-width: 300px;
+                width: auto;
+                max-width: auto;
                 height: 100vh;
 
                 transform: translateX(-100%);
@@ -1785,6 +1872,11 @@
                 z-index: 990;
                 padding: 1rem 1rem 5rem;
                 box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            }
+
+            .category-icon-wrapper {
+                width: 5vw;
+                aspect-ratio: 1/1;
             }
 
             .mobileSideBar.open {
@@ -1902,7 +1994,7 @@
             .Category_Button {
                 width: 95%;
                 height: 6vh;
-                margin-left: 5%;
+                margin-left: 0%;
                 background-color: var(--SideBar_Background_Colour);
                 font-size: 2.5vh;
                 /* Scales with button height */
@@ -1975,6 +2067,7 @@
                 width: auto;
                 margin-top: 2vw;
                 padding-top: 2vw;
+                font-family: 'Afacad', sans-serif;
                 padding-bottom: 2vw;
                 margin-left: 2vw;
                 border: 1px solid var(--Option_Button_Border);
@@ -2024,14 +2117,16 @@
                 border-radius: 4px;
                 cursor: pointer;
                 transition: background-color 0.3s;
-                font-size: 2.5vw;
+                font-size: auto;
                 /* Take up the remaining space */
                 text-align: center;
+                font-family: 'Rubik', sans-serif;
             }
 
             .product-price {
                 font-size: 3vw;
                 color: var(--Default_Text_Colour)1;
+                font-family: 'Afacad', sans-serif;
             }
 
 
@@ -2127,6 +2222,7 @@
                 font-size: 2vw;
                 color: var(--Default_Text_Colour);
                 line-height: 1.2em;
+                font-family: 'Afacad', sans-serif;
                 /* 👈 Controls line height */
                 height: calc(1.2em * 3);
                 /* 👈 Ensures 6-line height */
@@ -2214,6 +2310,7 @@
                 /* Removes default browser styling */
                 -webkit-appearance: none;
                 /* For Safari */
+                font-family: 'Rubik', sans-serif;
                 -moz-appearance: none;
                 /* For Firefox */
             }
@@ -2225,8 +2322,9 @@
             }
 
             .SortSelectLabel {
-                font-size: 70%;
+                font-size: 60%;
                 color: var(--Default_Text_Colour);
+                font-family: 'Rubik', sans-serif;
             }
 
 
@@ -2288,13 +2386,14 @@
 
             .WhiteText {
                 color: var(--Default_Text_Colour);
-                font-size: 100%;
+                font-size: 150%;
                 height: 100%;
+                font-family: 'Afacad', sans-serif;
             }
 
             .ProductPrice {
                 color: var(--Default_Text_Colour);
-
+                font-family: 'Afacad', sans-serif;
             }
 
             .ProductName {
@@ -2373,14 +2472,16 @@
 
             .image-slider-wrapper {
                 overflow: hidden;
-                width: 101%;
+                width: 100%;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                position: relative;
             }
 
+
             .slide-image {
-                transition: transform 0.4s ease;
+                transition: transform 0.2s ease;
                 will-change: transform;
             }
 
@@ -2630,7 +2731,7 @@
                 margin-top: auto;
                 margin-bottom: 1.5vw;
                 text-align: left;
-
+                font-family: 'Afacad', sans-serif;
             }
 
             .PayButton {
@@ -2645,6 +2746,12 @@
                 height: 90%;
                 font-size: auto;
 
+            }
+
+            .category-icon-svg {
+                fill: var(--Default_Text_Colour);
+                aspect-ratio: 1/1;
+                height: 2vh;
             }
 
             .PayTotalText {
@@ -2679,7 +2786,7 @@
                 height: 3.5vw;
                 margin-top: auto;
                 margin-bottom: 1.5vw;
-
+                font-family: 'Afacad', sans-serif;
             }
 
             .EmptyBasketMessage {
@@ -2741,7 +2848,7 @@
             .Button {
                 color: var(--Default_Text_Colour);
                 width: 100%;
-                font-size: 14px;
+                font-size: 5vw;
                 border: none;
                 border-radius: 5%;
                 aspect-ratio: 1/1;
@@ -2993,7 +3100,7 @@
 
             .Product_Description {
 
-                font-family: 'Rubik', sans-serif;
+                font-family: 'Afacad', sans-serif;
                 white-space: pre-line;
                 font-size: 3vw;
                 color: var(--Default_Text_Colour);
@@ -3016,6 +3123,7 @@
                 text-align: left;
                 /* Aligns text to the left */
                 align-self: flex-start;
+                font-family: 'Afacad', sans-serif;
                 /* Ensures the container itself aligns left in flex layout */
             }
 
@@ -3023,12 +3131,12 @@
             .currencySelect {
                 width: auto;
                 display: inline-block;
-                padding: 0.5vh 1vh;
+
                 font-size: 30px;
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
+
+
                 appearance: none;
                 /* optional: removes native arrow styling */
                 -webkit-appearance: none;
@@ -3118,13 +3226,7 @@
 
             <!-- Wrapped buttons and select in navButtonDiv -->
             <div class="mobileNavButtonDiv">
-                <select class="mobileCurrencySelect" id="currencySelect">
-                    <option value="EUR">EUR €</option>
-                    <option value="USD">USD $</option>
-                    <option value="GBP">GBP £</option>
-                    <option value="CAD">CAD C$</option>
-                    <option value="AUD">AUD A$</option>
-                </select>
+
 
                 <button class="mobileBasketButton" id="BasketButton" onclick="trackedGoToCart()">
                     <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -3257,53 +3359,49 @@
 
                 if (!imagesDiv || !productNameHeading) return;
 
-                // Save original position only once per imagesDiv
+                // Save original parent and index if not already stored
                 if (!imagesDiv.dataset.originalParentId) {
-                    const parent = imagesDiv.parentNode;
-
-                    // Assign an ID to the parent if it doesn't have one
+                    const parent = imagesDiv.parentElement;
                     if (!parent.id) {
                         parent.id = "original-parent-" + Math.random().toString(36).substr(2, 9);
                     }
-
                     imagesDiv.dataset.originalParentId = parent.id;
 
-                    const siblings = Array.from(parent.childNodes);
+                    const siblings = Array.from(parent.children);
                     imagesDiv.dataset.originalIndex = siblings.indexOf(imagesDiv);
                 }
 
                 function moveImages() {
                     if (mediaQuery.matches) {
-                        // Mobile view: move image under product name
-                        if (productNameHeading.nextSibling !== imagesDiv) {
-                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextSibling);
+                        // Mobile: move under name heading
+                        if (productNameHeading.nextElementSibling !== imagesDiv) {
+                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextElementSibling);
                         }
                     } else {
-                        // Desktop view: restore image to original position
+                        // Desktop: move back to original spot
                         const originalParent = document.getElementById(imagesDiv.dataset.originalParentId);
                         const originalIndex = parseInt(imagesDiv.dataset.originalIndex, 10);
-
-                        if (originalParent) {
-                            const currentChildren = Array.from(originalParent.childNodes).filter(n => n.nodeType === 1 || n.nodeType === 3);
-                            const referenceNode = currentChildren[originalIndex] || null;
-                            if (imagesDiv !== referenceNode) {
-                                originalParent.insertBefore(imagesDiv, referenceNode);
-                            }
+                        if (originalParent && originalParent.children[originalIndex] !== imagesDiv) {
+                            const referenceNode = originalParent.children[originalIndex] || null;
+                            originalParent.insertBefore(imagesDiv, referenceNode);
                         }
                     }
                 }
 
-                // Initial placement and resize handling
+                // Run initially and on screen size change
                 moveImages();
                 mediaQuery.addEventListener("change", moveImages);
             }
 
-            // Watch for product detail page insertions
+            // Observe body for dynamically inserted Product Detail pages
             const globalObserver = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1 && node.matches(".Product_Detail_Page")) {
-                            moveImagesIfNeeded(node);
+                        if (node.nodeType === 1) {
+                            const detailPage = node.matches(".Product_Detail_Page")
+                                ? node
+                                : node.querySelector(".Product_Detail_Page");
+                            if (detailPage) moveImagesIfNeeded(detailPage);
                         }
                     });
                 });
@@ -3311,11 +3409,12 @@
 
             globalObserver.observe(document.body, { childList: true, subtree: true });
 
-            // Handle page load case
+            // Also check immediately if a page is already loaded
             const existingPage = document.querySelector(".Product_Detail_Page");
             if (existingPage) moveImagesIfNeeded(existingPage);
         });
     </script>
+
 
 
 
