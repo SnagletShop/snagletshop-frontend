@@ -2220,17 +2220,7 @@ async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) 
         }
 
         if (!elementsInstance) {
-            elementsInstance = stripe.elements({
-                clientSecret,
-                appearance: {
-                    theme: 'flat',
-                    variables: {
-                        colorText: getComputedStyle(document.body).color,
-                        colorBackground: getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim(),
-                        fontFamily: getComputedStyle(document.body).fontFamily,
-                    }
-                }
-            });
+            elementsInstance = stripe.elements({ clientSecret });
             paymentElementInstance = elementsInstance.create("payment");
             paymentElementInstance.mount("#payment-element");
         }
