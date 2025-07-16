@@ -1723,6 +1723,17 @@ async function createPaymentModal() {
             placeholder: "Select a country…",
             closeAfterSelect: true
         });
+        // ✅ Inject dark mode styling after TomSelect is initialized
+        if (document.body.classList.contains('dark')) {
+            document.querySelector('.ts-control')?.style.setProperty(
+                'background-color',
+                getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim()
+            );
+            document.querySelector('.ts-control')?.style.setProperty(
+                'color',
+                getComputedStyle(document.body).color
+            );
+        }
 
         countrySelect.classList.remove("tom-hidden");
 
