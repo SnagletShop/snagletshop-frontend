@@ -3156,4 +3156,3 @@ function getProductPrice(productName) {
     return product ? product.price : "N/A";
 }
 
-
