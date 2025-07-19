@@ -2704,6 +2704,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
                 else if (touchEndX > touchStartX + threshold) prevImage();
             });
         }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
         updateAllPrices();
         updateImage();
