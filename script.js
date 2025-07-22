@@ -2511,7 +2511,7 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         if (typeof products !== "undefined" && Object.keys(products).length > 0) {
             clearInterval(checkProductsLoaded);
             preloadProductImages();  // ✅ Preload images
-            CategoryButtons();       // Existing function
+            CategoryButtons();       // Efxisting function
         }
     }, 100);
 
@@ -3263,6 +3263,7 @@ function updateBasket() {
             navigate("GoToProductPage", [productName, productPrice, productDescription]);
         });
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
