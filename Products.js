@@ -1050,14 +1050,14 @@ const products = {
             "description": "Funny bathroom decor with a sheepish twist\n\n🐑 Holds toilet paper in a playful sheep shape\n🧻 Fits multiple rolls — functional and decorative\n🛠️ Easily mountable on any place\n🎁 Great gift for humor-loving home decorators",
             "price": "9.99",
             "expectedPurchasePrice": "2.81",
-            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_I.avif",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Sheep%20Shaun%20Toilet%20Paper%20Holder/Modified/Image_I.avif",
             "images": [
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_I.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_II.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_III.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_IV.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_V.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3pcs%20of%20Sheep%20Shaun%20Toilet%20Paper%20Holder%2FModified/Image_VI.avif"
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Sheep%20Shaun%20Toilet%20Paper%20Holder/Modified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Sheep%20Shaun%20Toilet%20Paper%20Holder/Modified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Sheep%20Shaun%20Toilet%20Paper%20Holder/Modified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Sheep%20Shaun%20Toilet%20Paper%20Holder/Modified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Sheep%20Shaun%20Toilet%20Paper%20Holder/Modified/Image_V.avif"
+
             ]
         },
         {
