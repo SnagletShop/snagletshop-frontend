@@ -49,8 +49,8 @@ const products = {
             "productLink": "https://www.aliexpress.com/item/1005008347924855.html?spm=a2g0o.productlist.main.2.5caakTslkTslCj&algo_pvid=2406ad87-3199-4662-b00d-0f295074238f&algo_exp_id=2406ad87-3199-4662-b00d-0f295074238f-1&pdp_ext_f=%7B%22order%22%3A%22216%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%215.97%211.79%21%21%216.54%211.96%21%40211b819117469813109211412e7b0a%2112000044685038522%21sea%21SK%216006253967%21X&curPageLogUid=XzaISHKvWlqC&utparam-url=scene%3Asearch%7Cquery_from%3A",
             "name": "No Spill Spoon With a Funnel",
             "description": "Make feeding time easier and cleaner with this no-spill spoon featuring an integrated funnel design.\nPerfect for feeding babies or dispensing liquids without mess or waste.\n\n🍼 Built-in funnel controls flow and prevents spills\n🍲 Ideal for baby food, sauces, or purées\n🧼 Easy to clean and assemble\n🧴 Soft, squeezable body for controlled dispensing\n🎨 Available in Blue and Green\n\nA smart tool for parents, home cooks, and anyone needing mess-free liquid serving.",
-            "price": "9.99",
-            "expectedPurchasePrice": "2.79",
+            "price": "4.99",
+            "expectedPurchasePrice": "1.82",
             "productOptions": [
                 "Colour:",
                 "Blue",
@@ -154,7 +154,7 @@ const products = {
             "name": "Plastic Transparent Suspended Storage Boxes - 10Pcs",
             "description": "Organize your home or office with these transparent suspended storage boxes.\nDesigned to hang underneath shelves, they maximize unused space while keeping your items visible and within reach.\n\n📦 Set of 10 durable plastic boxes\n🔍 Clear design for easy item identification\n🧲 Suspended mount ideal for under shelves, cabinets, or desks\n🎨 Available in multiple colors to match your style\n🛠 Great for stationery, kitchen items, craft supplies, and more\n\nA simple and elegant way to create hidden storage anywhere.",
             "price": "19.99",
-            "expectedPurchasePrice": "7.65",
+            "expectedPurchasePrice": "7.30",
             "productOptions": [
                 "Colour:",
                 "Black",
@@ -239,8 +239,8 @@ const products = {
             "productLink": "https://www.aliexpress.com/item/1005007705647266.html?spm=a2g0o.productlist.main.36.13256726EWaQFU&algo_pvid=d063da0c-939f-4111-b17c-a74f4abbdb82&algo_exp_id=d063da0c-939f-4111-b17c-a74f4abbdb82-35&pdp_ext_f=%7B%22order%22%3A%223335%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%217.46%213.13%21%21%2159.19%2124.86%21%40211b61ae17469822942451224e9eda%2112000041922293642%21sea%21SK%216006253967%21X&curPageLogUid=c1YshmXZyPWt&utparam-url=scene%3Asearch%7Cquery_from%3A",
             "name": "Elevated Cushoned Insole",
             "description": "Add instant height and comfort with these cushioned insoles.\nDiscreet and breathable design fits most shoes.\n\n⬆️ Available in 3cm, 4.5cm, and 6cm heights\n🧼 Washable and reusable material\n🦶 Shock-absorbing heel for all-day wear\n👟 Ideal for sneakers, boots, and dress shoes\n\nStep taller and feel better—without anyone knowing.",
-            "price": "9.99",
-            "expectedPurchasePrice": "3.35",
+            "price": "14.99",
+            "expectedPurchasePrice": "5.05",
             "productOptions": [
                 "Size:",
                 "3cm",
@@ -353,9 +353,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008244347916.html?spm=a2g0o.productlist.main.6.67931f3fYo6Pf0&algo_pvid=0d178dd0-1141-4b9a-bc1f-18604bec92ad&algo_exp_id=0d178dd0-1141-4b9a-bc1f-18604bec92ad-5&pdp_ext_f=%7B%22order%22%3A%221046%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%219.83%219.44%21%21%2178.02%2174.93%21%4021038df617469826469065085e979a%2112000044355135165%21sea%21SK%216006253967%21X&curPageLogUid=ry57eyu6CKhT&utparam-url=scene%3Asearch%7Cquery_from%3A",
             "name": "Wireless Touch Control Bottle Table Lamp",
-            "description": "DESCRIPTION",
+            "description": "💡 Wireless Touch Control Bottle Table Lamp – Elegant Light, Instantly\nLight up your space with modern charm using this wireless bottle-shaped table lamp. Featuring intuitive touch controls and a sleek, minimal design, it’s the perfect blend of style and simplicity.\n\n👆 Touch-Activated Brightness\nEasily switch the light on or off with a gentle tap — no buttons, no hassle.\n\n🔋 Rechargeable & Cordless\nUSB charging means no messy wires or constant battery changes. Take it anywhere and enjoy hours of warm light.\n\n🖤🩶 Two Stylish Colors\nChoose between classic Black or clean White to match your aesthetic perfectly.\n\n🌙 Soft Ambient Glow\nIdeal for nightstands, desks, or cozy corners — gives off a warm and relaxing light that sets the mood.\n\n✨ Modern Minimalist Design\nSleek bottle-style silhouette complements any decor, from bedroom to living room.\n\n🏕️ Portable & Versatile\nGreat for indoor ambiance or even outdoor picnics and camping nights.\n\nUpgrade your lighting with this compact, touch-sensitive beauty — and let your space glow with style!",
             "price": "19.99",
-            "expectedPurchasePrice": "9.41",
+            "expectedPurchasePrice": "9.50",
             "productOptions": [
                 "Colour:",
                 "Black",
@@ -374,7 +374,7 @@ const products = {
             ]
         },
         {
-            "productLink": "+",
+            "productLink": "https://www.aliexpress.com/item/1005007190623052.html?spm=a2g0o.productlist.main.6.73bb72e0z64ztd&algo_pvid=04e5b946-353b-49bc-8714-6e04de26ec7d&algo_exp_id=04e5b946-353b-49bc-8714-6e04de26ec7d-5&pdp_ext_f=%7B%22order%22%3A%2234%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2161.10%2120.84%21%21%21501.64%21171.07%21%40211b612517536429497117055ef972%2112000039751089386%21sea%21SK%216006253967%21X&curPageLogUid=FsrpJ7jnaTwS&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=25ec4195832d49f4b95d69801eb215e9-1753642961765-08985-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=25ec4195832d49f4b95d69801eb215e9-1753642961765-08985-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "1.54-Inch Three Color E-ink Display Keychain",
             "description": "Compact smart keychain with a 1.54 inch E-Ink screen for customizable static images.\nDisplays in black, white, and red with ultra-low power consumption.\n\n🖼️ Three-color E-Ink display (1.54 inch)\n🔋 Long standby with USB-C charging\n📁 Upload custom images from PC\n🧲 Built-in magnet and keyring loop\n🎁 Ideal for personalization or gifting",
             "price": "29.99",
@@ -448,7 +448,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006461564069.html?spm=a2g0o.productlist.main.2.595e4966YqPfvN&algo_pvid=1076c833-93f1-4dae-9e53-4000d436dd23&algo_exp_id=1076c833-93f1-4dae-9e53-4000d436dd23-1&pdp_ext_f=%7B%22order%22%3A%2220%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.56%211.14%21%21%2112.31%218.99%21%402103919917475092656307423e41e2%2112000037281346144%21sea%21SK%216006253967%21X&curPageLogUid=moM7XmJUqVQE&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=e3b2795adfe1417c9b27b43fd07a2562-1747509275492-07803-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=e3b2795adfe1417c9b27b43fd07a2562-1747509275492-07803-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Folding Wall Hooks",
-            "description": "DESCRIPTION",
+            "description": "🪝 Folding Wall Hooks – Minimalist Design, Maximum Function\nAdd instant organization to any space with these sleek, foldable wall hooks. When not in use, they fold flat to blend seamlessly into your wall — modern, space-saving, and super handy.\n\n🧥 Space-Saving Foldable Design\nHooks flip down when you need them, and fold up when you don’t. Perfect for keeping your walls tidy and clutter-free.\n\n🎨 Stylish Color Options\nChoose from Black, Dark Grey, Light Grey, or elegant Gold to match any room’s aesthetic.\n\n🔩 Strong & Durable\nMade from high-quality materials with secure wall mounting — easily holds coats, bags, towels, and more.\n\n🏠 Versatile Use\nGreat for entryways, bathrooms, bedrooms, kitchens, and even behind doors. Organize your space in style!\n\n🛠️ Easy Installation\nComes with adhesive backing and optional screw mounts for added stability. No tools? No problem.\n\n✨ A clean and functional solution for modern living — add these folding wall hooks to your setup today!",
             "price": "4.99",
             "expectedPurchasePrice": "1.47",
             "productOptions": [
@@ -474,7 +474,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008543401584.html?spm=a2g0o.productlist.main.2.7f6f3e61xd6HRp&algo_pvid=85151a4e-16ca-4cd9-991f-d259533752d1&algo_exp_id=85151a4e-16ca-4cd9-991f-d259533752d1-1&pdp_ext_f=%7B%22order%22%3A%22239%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2129.84%2116.41%21%21%21234.97%21129.23%21%40211b628117475094825681881e79c5%2112000047262831369%21sea%21SK%216006253967%21X&curPageLogUid=xKwPHybuJTY1&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=0e8e1ee064924c80b771786709f5643e-1747509486303-02087-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=0e8e1ee064924c80b771786709f5643e-1747509486303-02087-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Sunglasses with Adjustable Dimming",
-            "description": "DESCRIPTION",
+            "description": "🕶️ Sunglasses with Adjustable Dimming – Perfect Shade, Anytime\nStep into the future of eyewear with these high-tech sunglasses that adapt to your environment. Featuring adjustable dimming, these smart lenses let you control how much light you block — whether you're walking under blazing sun, lounging on the beach, or driving into the sunset.\n\n🔆 Customizable Tint\nManually adjust lens darkness to match your comfort — no more squinting or over-dark shades when you don't need them.\n\n🛡️ UV400 Protection\nBlocks 100% of harmful UVA and UVB rays to keep your eyes healthy and safe.\n\n😎 Sleek, Unisex Design\nModern and stylish frame that fits comfortably on all face shapes — the perfect fusion of fashion and function.\n\n💼 Ideal for All Activities\nPerfect for driving, hiking, traveling, or just strolling downtown — always see clearly, no matter the light conditions.\n\n🔋 No Batteries Needed\nFully mechanical dimming system means no charging, no hassle — just effortless control with the push of a button.\n\n💡 Make your eyes feel as good as you look — grab a pair today and never switch sunglasses again.",
             "price": "29.99",
             "expectedPurchasePrice": "16.23",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSunglasses%20with%20Adjustable%20Dimming%2FModified/Image_I.avif",
@@ -490,7 +490,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007096767878.html?spm=a2g0o.productlist.main.10.7c5463baLwVPYt&algo_pvid=001bca9b-4402-4112-bd50-76e4904ab795&algo_exp_id=001bca9b-4402-4112-bd50-76e4904ab795-46&pdp_ext_f=%7B%22order%22%3A%223411%22%2C%22eval%22%3A%221%22%2C%22orig_sl_item_id%22%3A%221005007096767878%22%2C%22orig_item_id%22%3A%221005008541475017%22%7D&pdp_npi=4%40dis%21EUR%2112.70%215.84%21%21%21100.02%2146.01%21%402103847817475097008571288e5c34%2112000039391929470%21sea%21SK%216006253967%21X&curPageLogUid=w2BWWz1Rv9aR&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=f4216f55e36542de943bce9b178f8337-1747509708884-07056-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=f4216f55e36542de943bce9b178f8337-1747509708884-07056-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Smart IR Remote Controller Type-C",
-            "description": "DESCRIPTION",
+            "description": "📱 Smart IR Remote Controller Type-C – Control Everything from Your Phone\nTurn your smartphone into a universal remote with this compact Type-C IR controller. Instantly manage your TV, air conditioner, fan, projector, and more — all from one app, wherever you are.\n\n🎛️ Universal Compatibility\nSupports a wide range of household devices including TVs, air conditioners, speakers, and set-top boxes.\n\n⚡ Plug & Play Simplicity\nJust plug it into your phone’s Type-C port and you’re ready to start controlling — no batteries, no charging, no setup hassle.\n\n📲 App-Controlled Convenience\nUse a free companion app to create custom remote layouts, switch devices, and enjoy full fingertip control.\n\n👜 Ultra-Portable Design\nLightweight and key-sized — take it anywhere and keep full control on the go.\n\n💡 Ideal for Smart Homes\nCombine it with other smart tech or just declutter your life with one sleek gadget that replaces a pile of remotes.\n\n🔧 Compatible with Most Android Devices\nWorks with Android phones/tablets that support OTG and have a Type-C port.\n\n🔁 Ditch the pile of remotes and upgrade to one device that does it all — get yours today!",
             "price": "14.99",
             "expectedPurchasePrice": "5.48",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSmart%20IR%20Remote%20Controller%20Type-C%2FModified/Image_I.avif",
@@ -1086,7 +1086,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005005888030545.html?spm=a2g0o.productlist.main.4.1b534792IH6Kzi&algo_pvid=dadbaaa0-71b3-4632-a3b3-f736efda2dc9&algo_exp_id=dadbaaa0-71b3-4632-a3b3-f736efda2dc9-3&pdp_ext_f=%7B%22order%22%3A%2252%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2128.45%2113.37%21%21%21224.02%21105.29%21%4021038e1e17475137931935456eab31%2112000034714421718%21sea%21SK%216006253967%21X&curPageLogUid=dBR2yKm36tZg&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=1149cda335354d5487ed2a4cefd61ff7-1747513810100-00290-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=1149cda335354d5487ed2a4cefd61ff7-1747513810100-00290-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Electronic Portable Ruler Measuring Device",
-            "description": "DESCRIPTION",
+            "description": "📏 Electronic Portable Ruler – Precision in Your Pocket\nRevolutionize the way you measure with this compact digital ruler. Designed for accuracy, convenience, and versatility, it's the perfect tool for anyone from DIYers to designers.\n\n📐 Ultra-Precise Digital Measurements\nEasily measure straight lines, curves, and irregular objects with pinpoint accuracy — up to 99 meters in total length.\n\n🔋 Rechargeable & Long-Lasting\nBuilt-in lithium battery with USB charging ensures long usage time with quick recharges.\n\n🖥️ Clear OLED Display\nGet instant readings on a bright and easy-to-read screen with unit switching (cm/inch/ft).\n\n🧰 Multi-Mode Functionality\nSwitch between straight-line, curve, circular, and irregular surface measurement modes with a simple tap.\n\n👖 Pocket-Sized Convenience\nLightweight and ultra-portable — slip it into your pocket, toolbox, or bag for easy access anytime.\n\n🎨 Sleek & Durable Design\nCrafted with premium materials for durability and a professional look and feel.\n\n📦 Ideal for DIY, interior design, tailoring, and more — upgrade your measuring game with this smart tool!",
             "price": "29.99",
             "expectedPurchasePrice": "13.23",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FElectronic%20Portable%20Ruler%20Measuring%20Device%2FModified/Image_I.avif",
@@ -1175,7 +1175,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006045759392.html?spm=a2g0o.productlist.main.11.10b168448GLjNR&algo_pvid=74ad953d-a39e-4235-affa-a8147f266a95&algo_exp_id=74ad953d-a39e-4235-affa-a8147f266a95-10&pdp_ext_f=%7B%22order%22%3A%2272%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.65%211.04%21%21%211.81%211.14%21%40211b813f17475145815215813e59ba%2112000035470893896%21sea%21SK%216006253967%21X&curPageLogUid=h7QNEWe2dIsE&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=74e2d283a0a44e139f6d280d642af23f-1747514586925-05075-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=74e2d283a0a44e139f6d280d642af23f-1747514586925-05075-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Practical Household Stickers",
-            "description": "DESCRIPTION",
+            "description": "🧲 Practical Household Stickers – Easy Fixes, Big Impact\nTransform your home in seconds with these sleek, minimalistic household stickers. Whether you’re organizing, covering up blemishes, or adding a clean touch, these versatile stickers are your secret weapon.\n\n🎯 Multi-Purpose Use\nPerfect for covering up holes, scratches, or damaged surfaces on furniture, walls, doors, and more.\n\n🖤 Available in White & Black\nChoose the color that best suits your style and blends into your interior effortlessly.\n\n🛠️ Peel & Stick Simplicity\nJust peel off the backing and stick — no tools, no mess, no hassle.\n\n💪 Durable & Waterproof\nMade from high-quality PVC that resists moisture, stains, and daily wear-and-tear.\n\n🏠 Ideal for renters, DIYers, and anyone who loves a tidy, polished look without renovations.\n\n✨ Instant home upgrades made simple and affordable!",
             "price": "4.99",
             "expectedPurchasePrice": "1.03",
             "productOptions": [
@@ -1380,7 +1380,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005004082821018.html?spm=a2g0n.productlist.0.0.42aa44027etsDC&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197eda71174160368889114f19&gclid=&pdp_ext_f=%7B%22order%22%3A%221%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2136.73%2136.73%21%21%2142.05%2142.05%21%40211b80e117520388386262854e0ab6%2112000027979704459%21sea%21SK%216006253967%21X&isseo=y&algo_pvid=95e41527-f9dc-4c57-9115-d396980f034d",
             "name": "Giraffe Teapot with Two Mugs",
-            "description": "DESCRIPTION",
+            "description": "🦒 Giraffe Teapot Set – Sip with Style & Whimsy\nAdd a touch of charm to your tea time with this adorable giraffe-themed teapot set. Featuring a beautifully crafted ceramic teapot and two matching mugs, it’s perfect for cozy mornings or elegant afternoon tea.\n\n🍵 Complete 3-Piece Set\nIncludes 1 stylish teapot and 2 coordinated mugs — ideal for sharing a warm moment with someone special.\n\n🌿 Unique Giraffe Design\nEye-catching, artistic pattern with a graceful giraffe silhouette that brings joy to your kitchen or dining table.\n\n🎁 Perfect Gift Idea\nA delightful present for tea lovers, animal enthusiasts, or anyone who appreciates creative, functional art.\n\n🔥 Heat-Resistant & Durable\nMade from high-quality ceramic that keeps your tea warm longer and withstands daily use.\n\n🏡 For Everyday Elegance\nWhether you’re hosting guests or enjoying quiet self-care, this set adds personality and charm to any setting.\n\n✨ Make every cup of tea a little more magical!",
             "price": "69,99",
             "expectedPurchasePrice": "37.02",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FGiraffe%20Teapot%20with%20Two%20Mugs%2FModified/Image_I.avif",
@@ -1396,7 +1396,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008163085537.html?spm=a2g0n.productlist.0.0.7ffb6ac0HbN48R&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197edb3bb077a60d8ac20547fc&gclid=&pdp_ext_f=%7B%22order%22%3A%22435%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2115.65%217.43%21%21%21128.60%2161.10%21%40211b819117520396684602450e8a98%2112000045856074233%21sea%21SK%216006253967%21X&isseo=y&algo_pvid=410b0289-ab51-4ec6-af5b-a49f6fe6f4de",
             "name": "Smart Alcohol Dispenser",
-            "description": "DESCRIPTION",
+            "description": "🥃 Smart Alcohol Dispenser – Precision Pouring with Style\nElevate your home bar experience with this sleek, smart alcohol dispenser. Designed for perfect pours every time, it combines convenience, style, and functionality.\n\n⚙️ Adjustable Pouring Control\nDispense your favorite drinks with precision and ease — no more spills or waste.\n\n🎨 Multiple Color Options\nChoose from Black, White, Gold Plated Black, White Silver Plated, or Silvery Black to match your bar or kitchen decor.\n\n🔋 USB Rechargeable\nBuilt-in rechargeable battery for cordless, hassle-free use.\n\n💡 LED Indicator Lights\nShows battery status and operation mode clearly for a smooth pouring experience.\n\n🏠 Compact & Modern Design\nFits neatly on any bottle and adds a touch of elegance to your setup.\n\n🍹 Ideal for parties, home bars, and cocktail enthusiasts — pour like a pro every time!",
             "price": "19.99",
             "expectedPurchasePrice": "2.96",
             "productOptions": [
@@ -1423,7 +1423,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006821089861.html?spm=a2g0n.productlist.0.0.483371f2TlolGg&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197edbe6c781074cc5e0206f0b&gclid=&pdp_ext_f=%7B%22order%22%3A%2213%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2115.01%2115.01%21%21%2117.18%2117.18%21%402103894417520404920703464e2884%2112000038410677337%21sea%21SK%216006253967%21X&isseo=y&algo_pvid=2c5f4760-b78e-458f-b196-4b377210337b&search_p4p_id=20250708225452727192863744000009954614_2",
             "name": "LED Ambient Car Light Strip",
-            "description": "DESCRIPTION 110CM in length",
+            "description": "🚗 LED Ambient Car Light Strip – Transform Your Ride\nAdd a vibrant, customizable glow to your car’s interior with this 110cm LED light strip.\n\n🌈 Multi-Color Modes\nChoose from a spectrum of colors and lighting effects to match your mood or style.\n\n🔌 Easy Installation\nFlexible strip with strong adhesive backing for quick, hassle-free setup.\n\n🎮 Remote Control & App Compatibility\nControl brightness, colors, and patterns right from your smartphone or remote.\n\n✨ Enhance Night Drives\nCreate a stylish and cozy atmosphere inside your car that turns heads.\n\n💡 Energy Efficient & Durable\nLow power consumption and long-lasting LEDs for endless cruising vibes.",
             "price": "29.99",
             "expectedPurchasePrice": "9.86",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FLED%20Ambient%20Car%20Light%20Strip%2FModified/Image_I.avif",
@@ -1439,7 +1439,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007890241424.html?spm=a2g0n.productlist.0.0.51615bab8JDcJn&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197edc0dd58118f9a7671cb4d1&gclid=&pdp_ext_f=%7B%22order%22%3A%22154%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%214.40%214.40%21%21%2136.14%2136.14%21%402103849717520405292196250e5bbc%2112000042737020200%21sea%21SK%216006253967%21X&isseo=y&algo_pvid=e46078f1-83ca-421b-b4b4-9a7a185f7519",
             "name": "Reusable Lightsaber Chopsticks",
-            "description": "DESCRIPTION",
+            "description": "⚔️ Reusable Lightsaber Chopsticks – Eat with the Force!\n\n🌟 Unique Design\nLightsaber-themed reusable chopsticks in 6 vibrant colors: Red, Blue, Yellow, White, Purple, and Green.\n\n♻️ Eco-Friendly & Durable\nMade from high-quality materials for long-lasting use and easy cleaning.\n\n🍣 Perfect for Sushi & More\nAdd some fun and flair to your dining experience!\n\n🎁 Great Gift Idea\nIdeal for Star Wars fans and chopstick lovers alike.\n\n✨ Lightweight & Comfortable\nEasy to grip and use, making every meal a light side adventure!",
             "price": "14.99",
             "expectedPurchasePrice": "0.87",
             "productOptions": [
@@ -1464,7 +1464,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007462404819.html?spm=a2g0n.productlist.0.0.445120c32j5Pir&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197edde44d111217ca8819098c&gclid=&pdp_ext_f=%7B%22order%22%3A%2237%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%214.50%212.93%21%21%2136.94%2124.01%21%402103956a17520424562438632e31ab%2112000040854863798%21sea%21SK%216006253967%21X&algo_pvid=53e53005-7975-4bf3-bf98-512e12b0fdf5",
             "name": "Sparking Shoe Accessory for Motorcyclists",
-            "description": "DESCRIPTION",
+            "description": "🔥 Sparking Shoe Accessory for Motorcyclists – Ride with Style!\n\n✨ Eye-Catching Effect\nCreate dazzling sparks with every step, perfect for motorcyclists who want to stand out.\n\n🛠️ Easy to Attach\nSimple and secure installation on most shoe types.\n\n💥 Durable & Safe\nMade from high-quality materials designed to withstand road use.\n\n🎉 Perfect for Night Rides & Events\nAdd flair and safety by increasing your visibility.\n\n🎁 Unique Gift Idea\nIdeal for motorcycle enthusiasts who love bold accessories!",
             "price": "19.99",
             "expectedPurchasePrice": "2.94",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSparking%20Shoe%20Accessory%20for%20Motorcyclists%2FModified/Image_I.avif",
@@ -1480,7 +1480,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008303015731.html?spm=a2g0n.productlist.0.0.7f8e15d3QLMtJx&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197ee2ac4131793c35556e0b20&gclid=&pdp_ext_f=%7B%22order%22%3A%22362%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.33%211.33%21%21%2110.95%2110.95%21%40211b628117520474695622661e9ece%2112000044579410098%21sea%21SK%216006253967%21X&algo_pvid=c610d267-5215-4049-ba48-239ad1fefcd4&search_p4p_id=202507090051096390979391499000008578551_1",
             "name": "Universal click-on/off Zipper",
-            "description": "DESCRIPTION",
+            "description": "🧥 Universal Click-On/Off Zipper – Easy Fix for Broken Zippers!\n\n🔧 Quick & Simple\nAttach or detach in seconds without sewing – perfect for clothes, bags, and more.\n\n🎯 Universal Fit\nAvailable in Small, Medium, and Large sizes to suit all your zipper needs.\n\n💪 Durable & Reliable\nMade from sturdy materials ensuring long-lasting performance.\n\n♻️ Reusable & Eco-Friendly\nSave money and reduce waste by repairing instead of replacing your items.\n\n🎁 Handy Tool\nA must-have accessory for every household and fashion lover!",
             "price": "4.99",
             "expectedPurchasePrice": "0.87",
             "productOptions": [
@@ -1503,7 +1503,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005005083018494.html?spm=a2g0n.productlist.0.0.1c786eafXPNgS1&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197eed47e5c2725632ca948e57&gclid=&pdp_ext_f=%7B%22order%22%3A%22768%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.64%212.64%21%21%2121.66%2121.66%21%40211b612817520586008442960e796a%2112000031579046203%21sea%21SK%216006253967%21X&algo_pvid=3307459d-0c95-4364-949c-cdb9c6bf1026",
             "name": "Space Saving Hangers",
-            "description": "DESCRIPTION",
+            "description": "🧥 Space Saving Hangers — Maximize Closet Space Instantly\n📏 Vertical design lets you hang 5x more in the same space\n✅ Great for small closets, shared wardrobes, or dorm rooms\n🔄 Swivel hooks for easy access from any angle\n💪 Durable plastic construction holds heavy garments easily\n🧹 Keeps your clothes organized, wrinkle-free, and tidy\n\nMake room for more style — no more messy, overflowing closets!",
             "price": "4.99",
             "expectedPurchasePrice": "0.87",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSpace%20Saving%20Hangers%2FModified/Image_I.avif",
@@ -1519,7 +1519,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008565449772.html?spm=a2g0n.productlist.0.0.2bc419b5aDoDvp&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197eed64c50fa870b0d210f836&gclid=&pdp_ext_f=%7B%22order%22%3A%22550%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.41%212.32%21%21%2119.82%2119.06%21%40210391a017520587111012177e8a6e%2112000045743291754%21sea%21SK%216006253967%21X&algo_pvid=73282301-d20b-4b7a-b26f-d0aab51717bb",
             "name": "Vaseline Like Case for Airpods",
-            "description": "DESCRIPTION",
+            "description": "🎧 Unique Vaseline-Inspired AirPods Case — Cute, Bold, and Protective\n🧴 Fun and quirky design that turns heads instantly\n💼 Soft silicone material for shockproof protection\n🎯 Precise cutouts — charge your AirPods without removing the case\n📱 Compatible with all models: AirPods 1, 2, 3, Pro 1 & Pro 2\n🧲 Snug fit keeps your case secure and dust-free\n\nMake your AirPods stand out — fun design meets full protection!",
             "price": "19.99",
             "expectedPurchasePrice": "2.36",
             "productOptions": [
@@ -1542,7 +1542,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008862109300.html?spm=a2g0n.productlist.0.0.5b1223e5TPMyup&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197eed70bca1e9adca6a1b52ed&gclid=&pdp_ext_f=%7B%22order%22%3A%22296%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%218.10%213.97%21%21%2166.54%2132.60%21%402103892f17520587600131478e4b26%2112000046994650864%21sea%21SK%216006253967%21X&algo_pvid=b18dc9eb-a092-40b1-b8d2-5c21d06ae8b9",
             "name": "Cardboard Cutting Tool",
-            "description": "DESCRIPTION",
+            "description": "📦 Cardboard Cutting Tool — Clean Cuts with Zero Effort\n✂️ Slice through cardboard, paper, and plastic with ease\n🖐️ Ergonomic grip for comfort and control\n🔒 Safety blade design to avoid accidental cuts\n🎨 Available in sleek Red or White — compact and portable\n💼 Perfect for DIY projects, packaging, crafts, and more\n\nCut like a pro — no more struggling with scissors or box cutters!",
             "price": "4.99",
             "expectedPurchasePrice": "0.87",
             "productOptions": [
@@ -1562,9 +1562,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.us/item/3256805804543070.html?spm=a2g0n.productlist.0.0.7e62355aFxxlzk&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197eed7fdb012f61a05234a775&gclid=&pdp_ext_f=%7B%22order%22%3A%2214%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%21343.83%21206.30%21%21%21393.58%21236.15%21%40211b628117520588529408396e05c2%2112000037282767303%21sea%21SK%216006253967%21X&algo_pvid=7cb734a1-1c8d-4bed-819f-7df95507c5ea&search_p4p_id=20250709040053453720385370400010186848_3&gatewayAdapt=glo2usa4itemAdapt",
             "name": "ACEGMET DTX10 3-IN-1 Measuring Equipment 2.0",
-            "description": "DESCRIPTION",
-            "price": "499.99",
-            "expectedPurchasePrice": "346.51",
+            "description": "📐 ACEGMET DTX10 3-IN-1 Measuring Equipment 2.0 — Precision. Power. Performance.\n🛠️ Combines laser measuring, infrared scanning, and level alignment in one tool\n🎯 Ultra-accurate laser system — measure with pinpoint precision up to 100 meters\n🌡️ Integrated infrared sensor for temperature diagnostics\n📏 Digital leveling ensures perfect alignment on every job\n🔋 Rechargeable battery with long-lasting performance\n💼 Built for professionals — rugged, portable, and ready for tough environments\n\nThe ultimate all-in-one tool for contractors, engineers, and serious DIYers",
+            "price": "299.99",
+            "expectedPurchasePrice": "205.99",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FACEGMET%20DTX10%203-IN-1%20Measuring%20Equipment%202.0%2FModified/Image_I.avif",
             "images": [
                 "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FACEGMET%20DTX10%203-IN-1%20Measuring%20Equipment%202.0%2FModified/Image_I.avif",
@@ -1577,7 +1577,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005004770286496.html?spm=a2g0n.productlist.0.0.c84271d1g2QpGv&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197eedadee54998ddce2459ac4&gclid=&pdp_ext_f=%7B%22order%22%3A%22190%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%218.29%218.29%21%21%2168.14%2168.14%21%40211b81a317520590107534961e5b03%2112000030408965635%21sea%21SK%216006253967%21X&algo_pvid=76c4cd8b-e94d-49c8-831f-2f4cd0e1cccf",
             "name": "Pikachu Car Projector",
-            "description": "DESCRIPTION",
+            "description": "⚡ Pikachu Car Projector — Add a Spark of Fun to Every Ride\n🚗 Projects an adorable Pikachu image onto the ground when you open your door\n🎥 Bright, crisp projection that works even at night\n🔧 Easy installation — no drilling or wiring needed\n🧲 Magnetic sensor activates with door movement\n🎁 A must-have for Pokémon fans and car lovers alike\n\nTurn heads every time you open your door — with Pikachu by your side!",
             "price": "19.99",
             "expectedPurchasePrice": "3.96",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPikachu%20Car%20Projector%2FModified/Image_I.avif",
@@ -1593,7 +1593,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006394252322.html?spm=a2g0n.productlist.0.0.759b4fbcBnAAMU&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197f2d27c871308202d51ecf56&gclid=&pdp_ext_f=%7B%22order%22%3A%22637%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.68%210.84%21%21%2113.81%216.90%21%402103891017521255701656073ec9e4%2112000037010021143%21sea%21SK%216006253967%21X&algo_pvid=352c7e64-dc74-4a98-a115-294ec06e3ac6",
             "name": "20pcs Car Wheel Reflective Stickers",
-            "description": "DESCRIPTION",
+            "description": "🚗 20pcs Car Wheel Reflective Stickers — Style + Safety\n🌈 Choose from 6 vibrant colors to match your vibe\n💡 Reflective design boosts night-time visibility and safety\n🌀 Easy to apply — peel and stick with strong adhesion\n🌧️ Weatherproof and fade-resistant for long-term use\n🛞 Universal fit for most car, motorcycle, or bike wheels\n\nUpgrade your ride with a pop of color and added protection!",
             "price": "9.99",
             "expectedPurchasePrice": "0.84",
             "productOptions": [
@@ -1622,7 +1622,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005005720675014.html?spm=a2g0n.productlist.0.0.55a760a7MM82gi&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197f2d4050d13ea418e0967537&gclid=&pdp_ext_f=%7B%22order%22%3A%2234%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2144.36%2114.64%21%21%21365.13%21120.49%21%402103868817521256706476564e5271%2112000034112541930%21sea%21SK%216006253967%21X&algo_pvid=7a895629-b81f-412d-8dee-319728177a39",
             "name": "Honey Jar Pet House",
-            "description": "DESCRIPTION",
+            "description": "🐾 Honey Jar Pet House — Sweet Comfort for Your Furry Friend\n🍯 Adorable honey jar design that adds charm to any space\n🛏️ Soft plush interior for cozy naps and restful sleep\n🏠 Enclosed shape creates a secure, den-like feeling\n🧼 Removable cushion for easy cleaning\n🧸 Ideal for small dogs, cats, or other small pets\n\nGive your pet a home as cute as they are — comfy, warm, and irresistibly sweet!",
             "price": "29.99",
             "expectedPurchasePrice": "12.50",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoney%20Jar%20Pet%20House%2FModified/Image_I.avif",
@@ -1637,7 +1637,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008559020708.html?spm=a2g0n.productlist.0.0.5ca7473fH86jbe&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197f2e746cf1965cc11815bc30&gclid=&pdp_ext_f=%7B%22order%22%3A%22631%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2118.33%2112.83%21%21%21150.85%21105.59%21%40211b80d117521269326676715ee404%2112000045713697551%21sea%21SK%216006253967%21X&algo_pvid=7441eff2-ea52-44a4-9277-1d836ac7418a&search_p4p_id=2025070922553213768519417169500011416481_1",
             "name": "4pcs Heavy Duty Bedsheet Corner Tightener Clips",
-            "description": "DESCRIPTION",
+            "description": "🛏️ 4pcs Heavy Duty Bedsheet Corner Tightener Clips — No More Slipping Sheets\n📌 Keep your fitted sheets perfectly in place all night\n💪 Strong elastic straps and durable metal clips for a firm grip\n🔄 Adjustable length to fit any mattress size or corner\n🧺 Quick to install — no tools or lifting required\n🧵 Gentle on fabric — won’t tear or damage your sheets\n\nSay goodbye to messy, wrinkled bedding — sleep snug every night!",
             "price": "19.99",
             "expectedPurchasePrice": "6.52",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F4pcs%20Heavy%20Duty%20Bedsheet%20Corner%20Tightener%20Clips%2FModified/Image_I.avif",
@@ -1653,7 +1653,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008144896449.html?spm=a2g0n.productlist.0.0.49804ffeGsYuYh&browser_id=07066853db9045d19dfc4383bb866fec&aff_trace_key=f882699e7b674284a2d8a6f77ee117d5-1751281993122-00443-UneMJZVf&aff_platform=msite&m_page_id=fnucgwcxucasikuo197f2fe59808c06aa521e07c4c&gclid=&pdp_ext_f=%7B%22order%22%3A%221030%22%2C%22eval%22%3A%221%22%2C%22orig_sl_item_id%22%3A%221005008144896449%22%2C%22orig_item_id%22%3A%221005009088368884%22%7D&pdp_npi=4%40dis%21EUR%217.07%213.53%21%21%2158.20%2129.10%21%402103956a17521284770293373e6d23%2112000043981455046%21sea%21SK%216006253967%21X&algo_pvid=bd299c61-fb63-4b74-871c-7ede0142abf8",
             "name": "Self-Adhesive Wall Mounted Toothpaste Squeezer",
-            "description": "DESCRIPTION",
+            "description": "🦷 Self-Adhesive Wall Mounted Toothpaste Squeezer — No Waste, No Mess\n💧 Easy to install — sticks firmly on any smooth surface\n🖐️ One-handed operation to squeeze every last drop\n♻️ Saves toothpaste and money by reducing waste\n🚿 Compact design fits perfectly in any bathroom\n🧼 Easy to clean and refill\n\nMake your daily routine cleaner and more efficient!",
             "price": "9.99",
             "expectedPurchasePrice": "0.87",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSelf-Adhesive%20Wall%20Mounted%20Toothpaste%20Squeezer%2FModified/Image_I.avif",
@@ -1669,7 +1669,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008748580756.html?spm=a2g0o.productlist.main.54.27c56b46zyjFe5&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=e6badcab-c8a9-4b51-a336-25b52160236c&algo_exp_id=e6badcab-c8a9-4b51-a336-25b52160236c&pdp_ext_f=%7B%22order%22%3A%2234%22%7D&pdp_npi=4%40dis%21EUR%2115.39%2112.77%21%21%21126.33%21104.82%21%40211b61bb17535505183981679ec058%2112000046505822800%21sea%21SK%210%21ABX&aff_fcid=4edef7fdf942420ba95c2b75ae5c841c-1753550524321-05638-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=4edef7fdf942420ba95c2b75ae5c841c-1753550524321-05638-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Water Rocket",
-            "description": "DESCRIPTION",
+            "description": "🚀 Water Rocket — Launch Fun Into The Sky\n💧 Powered by water and air pressure for safe, exciting flights\n🌿 Eco-friendly and reusable design\n🛠️ Easy to assemble and launch for all ages\n🎯 Great for outdoor play, science projects, and family fun\n🌟 Watch it soar high and enjoy endless entertainment\n\nBring the thrill of rocket science to your backyard!",
             "price": "29.99",
             "expectedPurchasePrice": "15.39",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_I.avif",
@@ -1685,7 +1685,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008617263690.html?spm=a2g0o.productlist.main.2.7734BHkjBHkjzC&algo_pvid=4ce33bb5-227b-4661-bdf3-d87680b0d621&algo_exp_id=4ce33bb5-227b-4661-bdf3-d87680b0d621-1&pdp_ext_f=%7B%22order%22%3A%2252%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2125.19%2125.19%21%21%2128.89%2128.89%21%4021038da617535507630928621e149d%2112000045968074218%21sea%21SK%216006253967%21X&curPageLogUid=Jvn64ypcxEgs&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=2715cfea3e894d3897e043c14c42ac22-1753550772154-05349-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=2715cfea3e894d3897e043c14c42ac22-1753550772154-05349-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Water Ripple Effect Lamp",
-            "description": "DESCRIPTION",
+            "description": "💧 Water Ripple Effect Lamp — Relaxing and mesmerizing ambient light\n🌊 Creates soothing ripple water effects to enhance any room\n✨ Perfect for bedrooms, living rooms, or meditation spaces\n🔌 Easy to use with USB power supply\n🎨 Adds a calming and stylish atmosphere to your space\n\nSet the mood with gentle, flowing water-like illumination.",
             "price": "39.99",
             "expectedPurchasePrice": "25.19",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_I.avif",
@@ -1702,7 +1702,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008513030079.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.5.1d159mGe9mGeK4&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=899b56bb-7a20-4bb5-81db-0e8a56e689e5&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3A899b56bb-7a20-4bb5-81db-0e8a56e689e5%2Ctpp_buckets%3A668%232846%238112%231997&pdp_ext_f=%7B%22order%22%3A%2225%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%218.71%214.27%21%21%2171.49%2135.03%21%402103835e17535510235378071ecc77%2112000045495789956%21rec%21SK%216006253967%21X&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=0af80b1fef284a359e04a08f2536f264-1753551045418-04888-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=0af80b1fef284a359e04a08f2536f264-1753551045418-04888-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Dancing Skeleton",
-            "description": "DESCRIPTION",
+            "description": "🎃 Dancing Skeleton — Fun and spooky decoration for Halloween or parties\n💃 Animated skeleton figure that dances to entertain\n🌈 Available in multiple colors: Green, White, Purple, Pink\n🔋 Battery powered and easy to place anywhere\n🕺 Adds a playful vibe and a touch of eerie fun to your space",
             "price": "9.99",
             "expectedPurchasePrice": "0.86",
             "productOptions": [
@@ -1725,7 +1725,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005009562895568.html?spm=a2g0o.productlist.main.8.730cb653HT7gc8&algo_pvid=3bfd8eec-caa2-47d3-9fea-c55b8a3c671f&algo_exp_id=3bfd8eec-caa2-47d3-9fea-c55b8a3c671f-7&pdp_ext_f=%7B%22order%22%3A%22-1%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2113.81%216.90%21%21%21113.41%2156.70%21%402103963717535513617598454edf84%2112000049469835758%21sea%21SK%216006253967%21X&curPageLogUid=OMeT9CKlyM74&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=a45c845a0a7140b69572abfe7f2ba7ea-1753551365821-07044-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=a45c845a0a7140b69572abfe7f2ba7ea-1753551365821-07044-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Nessie",
-            "description": "DESCRIPTION",
+            "description": "🦕 Nessie — Cute and quirky monster-shaped lamp inspired by the Loch Ness legend\n💡 Soft, warm LED light perfect for kids’ rooms, nightlights, or decor\n👌 Compact design with easy touch control for on/off and brightness\n✨ Adds a whimsical, cozy atmosphere to any space\n🔋 Battery powered for portable use or 🔌 USB powered for convenience",
             "price": "14.99",
             "expectedPurchasePrice": "5.70",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNessie%2FModified/Image_II.avif",
@@ -1739,7 +1739,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008647489720.html?spm=a2g0o.productlist.main.6.6a3f259a4SvKIW&algo_pvid=61818275-77f6-428d-afaf-432ea58f0571&algo_exp_id=61818275-77f6-428d-afaf-432ea58f0571-5&pdp_ext_f=%7B%22order%22%3A%223857%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2114.19%216.67%21%21%21116.52%2154.76%21%402103856417535515736781590eb8d9%2112000046084714595%21sea%21SK%216006253967%21X&curPageLogUid=79DQU7SYRh3n&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=58f7fbd5217541b6932615f783848942-1753551582166-01820-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=58f7fbd5217541b6932615f783848942-1753551582166-01820-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Mario Power-Up Cube Lamp",
-            "description": "DESCRIPTION",
+            "description": "🎮 Mario Power-Up Cube Lamp inspired by classic video game design\n💡 Glowing cube with iconic question mark symbol brings nostalgic charm\n🕹️ Perfect ambient light for gaming rooms, desks, or kids’ bedrooms\n🔌 Compact size with easy USB power connection\n✨ Adds fun and whimsy to any space with soft LED illumination",
             "price": "24.99",
             "expectedPurchasePrice": "11.36",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_I.avif",
@@ -1754,7 +1754,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007988681828.html?spm=a2g0o.productlist.main.18.43bb5b61ojzdK4&algo_pvid=c0be6d4d-01cc-4e35-81d0-3eb4579df9c2&algo_exp_id=c0be6d4d-01cc-4e35-81d0-3eb4579df9c2-17&pdp_ext_f=%7B%22order%22%3A%22368%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%218.84%212.78%21%21%2172.59%2122.87%21%402103985c17535517324861484eeb07%2112000043173054079%21sea%21SK%216006253967%21X&curPageLogUid=xMoN7WlaU1Gs&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=42d52ffb3c3b4f25b67d0ab93d88a2f4-1753551738937-01239-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=42d52ffb3c3b4f25b67d0ab93d88a2f4-1753551738937-01239-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Bugs the Bunny Love Keychain",
-            "description": "DESCRIPTION",
+            "description": "🐰 Bugs the Bunny Love Keychain – cute and playful accessory\n💖 Perfect gift for fans or to add charm to your keys\n🔑 Lightweight and durable with a lovely design\n🎁 Ideal for everyday use or as a collectible keepsake",
             "price": "14.99",
             "expectedPurchasePrice": "2.13",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBugs%20the%20Bunny%20Love%20Keychain%2FModified/Image_I.avif",
@@ -1765,7 +1765,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008158502700.html?spm=a2g0o.productlist.main.27.523937eeK49IqJ&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=11e7f265-e1f6-40fe-a60b-4a3aa94c2d20&algo_exp_id=11e7f265-e1f6-40fe-a60b-4a3aa94c2d20&pdp_ext_f=%7B%22order%22%3A%221226%22%2C%22orig_sl_item_id%22%3A%221005008158502700%22%2C%22orig_item_id%22%3A%221005008148527040%22%7D&pdp_npi=4%40dis%21EUR%2170.33%2131.14%21%21%21577.44%21255.66%21%402103835e17535518071216888ecc77%2112000044031715899%21sea%21SK%210%21ABX&aff_fcid=b1169c8d2a244c6ba54f328a14008109-1753551810184-02299-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=b1169c8d2a244c6ba54f328a14008109-1753551810184-02299-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Jellyfish Flame Humidifier",
-            "description": "DESCRIPTION",
+            "description": "🦑 Jellyfish Flame Humidifier with mesmerizing flame effect\n💨 Adds moisture and a cozy glow to your room\n🌈 Colorful LED lights create a relaxing atmosphere\n🔌 Easy USB power connection for convenience\n✨ Perfect for bedrooms, offices, or meditation spaces\n⚡ Choose your plug type: EU or US",
             "price": "99.99",
             "expectedPurchasePrice": "32.44",
             "productOptions": [
@@ -1786,9 +1786,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008062254686.html?spm=a2g0o.productlist.main.27.3c90e04bFTEDTt&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=b140bf49-fe5d-4084-ac22-8e414ff4159d&algo_exp_id=b140bf49-fe5d-4084-ac22-8e414ff4159d&pdp_ext_f=%7B%22order%22%3A%223006%22%7D&pdp_npi=4%40dis%21EUR%2153.96%2114.65%21%21%21443.01%21120.25%21%402103835e17535521364416252ecc77%2112000043503319851%21sea%21SK%210%21ABX&aff_fcid=b62788f997b240c1946af64bfb73ceff-1753552149103-09287-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=b62788f997b240c1946af64bfb73ceff-1753552149103-09287-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "RC Fighter Jet Drone",
-            "description": "DESCRIPTION",
-            "price": "PRICE",
-            "expectedPurchasePrice": "+",
+            "description": "✈️ RC Fighter Jet Drone with realistic design\n🎮 Easy remote control for smooth flying\n⚡ High-speed performance with stable flight\n🔵 Available in Blue and Green colors\n🌟 Perfect gift for drone enthusiasts and kids\n🚀 Experience thrilling aerial maneuvers",
+            "price": "29.99",
+            "expectedPurchasePrice": "17.27",
             "productOptions": [
                 "Colour:",
                 "Blue",
@@ -1809,7 +1809,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008802075029.html?spm=a2g0o.productlist.main.5.50d8119arD7Xjz&algo_pvid=fb071b75-fbc9-4407-84a2-a75cdeedc00d&algo_exp_id=fb071b75-fbc9-4407-84a2-a75cdeedc00d-4&pdp_ext_f=%7B%22order%22%3A%22776%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%218.07%214.04%21%21%2166.22%2133.11%21%40210390b817535522211317681e7180%2112000046722829190%21sea%21SK%216006253967%21X&curPageLogUid=rzhAtRED89hX&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=282913fc90a24899ae8d944f38ed9395-1753552229850-02853-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=282913fc90a24899ae8d944f38ed9395-1753552229850-02853-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Insect Cather",
-            "description": "DESCRIPTION",
+            "description": "🐞 Insect Catcher – Catch & Release Without the Mess! /n 🧹 No More Squishing! /n Safely trap bugs and insects from a distance – no need to touch or kill. /n 🛡️ Safe for Kids & Pets /n A chemical-free, eco-friendly solution for your home, perfect for families. /n 📏 Extra Reach /n Equipped with an extended handle so you can grab pests in hard-to-reach places. /n 🌈 Color Options /n Choose from sleek Black, clean White, cool Blue, or bright Yellow to suit your style. /n 💡 Easy to Use /n Just aim, squeeze, and release – it’s that simple! /n 🏡 Ideal for Home, Office, or Travel /n Compact, lightweight, and a must-have for insect emergencies anywhere",
             "price": "14.99",
             "expectedPurchasePrice": "8.00",
             "productOptions": [
@@ -1835,7 +1835,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008666496434.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.1.522ejAz6jAz6Dt&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=bf1a53c7-fafa-4b67-9ec1-deff0058d867&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3Abf1a53c7-fafa-4b67-9ec1-deff0058d867%2Ctpp_buckets%3A668%232846%238110%231995&pdp_ext_f=%7B%22order%22%3A%22296%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%216.07%212.92%21%21%2149.80%2123.90%21%402103835e17535523196692522ecc77%2112000046154788255%21rec%21SK%216006253967%21XZ&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=edccb9b28f7c4463b4b383160650babb-1753552327236-06706-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=edccb9b28f7c4463b4b383160650babb-1753552327236-06706-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Car AC-Outlet Cartoon Characters",
-            "description": "DESCRIPTION",
+            "description": "🚗 Car AC-Outlet Cartoon Characters – Fun Meets Function on the Road! /n 🎉 Add a Touch of Personality /n Decorate your car vents with iconic favorites like Tom, Jerry, Spike, or Doraemon. /n 🌬️ Clips Right In /n Simply attach to your AC outlet – no tools, no hassle! /n 😍 Eye-Catching & Cute /n These charming mini figures bring smiles every time you drive. /n 🎁 Perfect Gift /n Ideal for car lovers, kids, or fans of classic cartoons. /n 🛠️ Universal Fit /n Designed to clip onto most standard vehicle air vents. /n 💨 Aesthetic + Practical /n Keeps your car stylish while allowing airflow",
             "price": "9.99",
             "expectedPurchasePrice": "4.80",
             "productOptions": [
@@ -1857,7 +1857,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005009138736610.html?spm=a2g0o.productlist.main.50.d653ce081PoK9k&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=0d51293c-446b-4b70-a8fd-ad2e63af4c66&algo_exp_id=0d51293c-446b-4b70-a8fd-ad2e63af4c66&pdp_ext_f=%7B%22order%22%3A%22-1%22%7D&pdp_npi=4%40dis%21EUR%213.44%213.44%21%21%2128.28%2128.28%21%402103835e17535525088567234ecc77%2112000048054237712%21sea%21SK%210%21ABX&aff_fcid=f1da8de7a76441f49fa645662bac5673-1753552527780-06983-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=f1da8de7a76441f49fa645662bac5673-1753552527780-06983-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "10pcs Portable Nail Clipper Set",
-            "description": "DESCRIPTION",
+            "description": "💅 10pcs Portable Nail Clipper Set – Grooming Made Easy, Anywhere! /n ✂️ Complete Care Kit /n Includes clippers, files, scissors & more – everything you need for nail and cuticle care. /n 👜 Travel-Friendly /n Lightweight, compact, and perfect for home, travel, or your bag. /n 🌈 Stylish Colors /n Choose from Lime, Silver, Pink, or Green to match your vibe. /n 🔒 Organized & Secure /n Comes in a neat, protective case to keep tools clean and accessible. /n 🎁 Great Gift Idea /n A practical, thoughtful gift for anyone who loves staying neat and polished. /n 🧼 Durable & Hygienic /n High-quality stainless steel tools that are easy to clean and built to last",
             "price": "14.99",
             "expectedPurchasePrice": "2.58",
             "productOptions": [
@@ -1879,7 +1879,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005009030405659.html?spm=a2g0o.productlist.main.31.1965Brk9Brk9mG&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=300c56f2-548b-469a-8847-1ce1418ee54c&algo_exp_id=300c56f2-548b-469a-8847-1ce1418ee54c&pdp_ext_f=%7B%22order%22%3A%22-1%22%7D&pdp_npi=4%40dis%21EUR%215.53%211.66%21%21%2145.42%2113.63%21%402103835e17535526085871303ecc77%2112000047645417691%21sea%21SK%210%21ABX&aff_fcid=3de1bab4fd9c442f9bd4c606ee5e8239-1753552718945-00714-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=3de1bab4fd9c442f9bd4c606ee5e8239-1753552718945-00714-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Bird Shaped Juicer",
-            "description": "DESCRIPTION",
+            "description": "🍋 Bird Shaped Juicer – Quirky, Cute & Functional! /n 🐦 Adorable Design /n Unique bird-shaped hand juicer adds charm to your kitchen. /n 💪 Efficient Squeeze /n Easily extracts juice from lemons, limes, and more with minimal effort. /n 🧼 Easy to Clean /n Smooth surface and simple design make cleanup quick and hassle-free. /n 🧳 Compact & Handy /n Small size makes it perfect for everyday use or travel. /n 🎁 Fun Gift Idea /n Great for home cooks, juice lovers, or anyone who enjoys playful kitchen tools",
             "price": "4.99",
             "expectedPurchasePrice": "1.62",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_I.avif",
@@ -1895,9 +1895,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007671128820.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.1.45540U0z0U0zVZ&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=134e62db-7fdd-493c-a596-74f103f5d47b&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3A134e62db-7fdd-493c-a596-74f103f5d47b%2Ctpp_buckets%3A668%232846%238107%231934&pdp_ext_f=%7B%22order%22%3A%22207%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%21213.52%2168.33%21%21%211753.02%21560.97%21%402103835e17535534626537501ecc77%2112000041734454565%21rec%21SK%216006253967%21XZ&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=881ceb8c5e5b434990fa2b1e9993d619-1753553546653-07343-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=881ceb8c5e5b434990fa2b1e9993d619-1753553546653-07343-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Rotating Table Tray",
-            "description": "DESCRIPTION",
-            "price": "PRICE",
-            "expectedPurchasePrice": "EXPRICE",
+            "description": "🍽️ Rotating Table Tray – Sleek, Space-Saving & Practical! /n 🔄 360° Rotation /n Effortlessly access condiments, snacks, or essentials with smooth spin design. /n 🏡 Versatile Use /n Perfect for dining tables, kitchen countertops, or even vanity setups. /n ✨ Premium Finish /n Durable materials with a modern look to match any home decor. /n 📏 Generous Surface /n Spacious tray accommodates bottles, jars, or utensils without crowding. /n 🧽 Easy Maintenance /n Wipe-clean surface ensures hassle-free upkeep. /n 🎁 Great Gift /n Ideal for hosts, organizers, or home improvement lovers",
+            "price": "99.99",
+            "expectedPurchasePrice": "68.33",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_I.avif",
             "images": [
                 "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_I.avif",
@@ -1912,7 +1912,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006519471947.html?spm=a2g0o.productlist.main.16.7e0d4db2BSZWh1&algo_pvid=eeea1fb4-4da7-4456-bb64-ce1344b1c8e7&algo_exp_id=eeea1fb4-4da7-4456-bb64-ce1344b1c8e7-15&pdp_ext_f=%7B%22order%22%3A%22483%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%217.38%217.24%21%21%2160.58%2159.44%21%40210385db17535537401588954e76d1%2112000037512279683%21sea%21SK%216006253967%21X&curPageLogUid=LYt1C3PsLUZV&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=aede52bb97ad4cd5843c647366551da2-1753553749328-00213-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=aede52bb97ad4cd5843c647366551da2-1753553749328-00213-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Construction Equipment Tableware",
-            "description": "DESCRIPTION",
+            "description": "🚧 Construction Equipment Tableware Set – Mealtime Just Got More Fun! /n 👷 Kid-Friendly Design /n Features fork-lift forks, bulldozer pushers & more to spark creativity at the table. /n 🍽️ Complete Set /n Includes plate, fork, spoon & pusher – all styled like real construction tools. /n 💪 Durable & Safe /n BPA-free, food-grade materials built to withstand everyday use. /n 🧽 Easy to Clean /n Dishwasher-safe pieces make cleanup quick and hassle-free. /n 🎁 Perfect Gift /n Great for toddlers, picky eaters, or construction-loving kids. /n ✨ Encourages Independence /n Helps children develop self-feeding skills through play",
             "price": "24.99",
             "expectedPurchasePrice": "16.10",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_I.avif",
@@ -1930,7 +1930,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007426260042.html?spm=a2g0o.productlist.main.20.486f2f59nq3Tkc&algo_pvid=0c8153ae-ef2c-46bf-a260-eab1fcaf9068&algo_exp_id=0c8153ae-ef2c-46bf-a260-eab1fcaf9068-19&pdp_ext_f=%7B%22order%22%3A%22208%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.61%211.61%21%21%2113.25%2113.25%21%40211b613917535539454296112e83c6%2112000040713280431%21sea%21SK%216006253967%21X&curPageLogUid=9xG2PnUznmnS&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=ea9e1332bc6f494989003b4014968b37-1753553961384-03464-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=ea9e1332bc6f494989003b4014968b37-1753553961384-03464-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Metatarsal Toe Separator Pads",
-            "description": "DESCRIPTION",
+            "description": "🦶 Metatarsal Toe Separator Pads – Relieve Foot Pain with Every Step /n 👣 All-Day Comfort /n Cushions and supports forefoot pressure points to reduce fatigue. /n ✅ Toe Alignment /n Separates and straightens toes to improve posture and relieve bunions. /n 🧼 Soft & Breathable /n Made of stretchable, skin-friendly gel for long-lasting comfort. /n 🧦 Invisible Fit /n Slim profile fits discreetly inside most shoes – perfect for daily wear. /n 📏 Multiple Sizes /n Available in S, M, L, XL to suit your foot shape. /n 🏃 Ideal For /n Walkers, runners, and anyone with forefoot or toe pain",
             "price": "4.99",
             "expectedPurchasePrice": "0.93",
             "productOptions": [
@@ -1952,7 +1952,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006848044899.html?spm=a2g0o.productlist.main.27.6cffDXLgDXLgUW&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&algo_exp_id=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&pdp_ext_f=%7B%22order%22%3A%221039%22%7D&pdp_npi=4%40dis%21EUR%21116.96%2135.98%21%21%21960.29%21295.39%21%402103835e17535541220507720ecc77%2112000038506237378%21sea%21SK%210%21ABX&aff_fcid=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Motorcycle Side Stand Shoe",
-            "description": "DESCRIPTION",
+            "description": "🏍️ Motorcycle Side Stand Shoe – Park Anywhere with Confidence /n 🛡️ Anti-Sink Design /n Prevents your kickstand from sinking into soft ground, gravel, or hot asphalt. /n 🔩 Durable Build /n Made from high-strength ABS plastic for long-lasting support. /n 🌈 Multiple Colors /n Choose from 10 vibrant options to match your bike's style. /n 🧳 Compact & Portable /n Lightweight and easy to carry in your gear bag or pocket. /n 🚦Universal Fit /n Works with most standard motorcycle kickstands – a must-have for riders. /n 🧼 Easy to Clean /n Simple rinse to remove mud, dust, or debris after use",
             "price": "9.99",
             "expectedPurchasePrice": "1.34",
             "productOptions": [
@@ -1982,7 +1982,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005007813484332.html?spm=a2g0o.productlist.main.2.2d90486dPwC21G&algo_pvid=d8d755bc-da54-4018-af08-acb2f4e8fbbe&algo_exp_id=d8d755bc-da54-4018-af08-acb2f4e8fbbe-1&pdp_ext_f=%7B%22order%22%3A%221108%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.01%212.01%21%21%212.31%212.31%21%40210384cc17535548475612412e09ea%2112000042292442191%21sea%21SK%216006253967%21X&curPageLogUid=dUeV4Fy8SBar&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=a2ee68c725eb4f549d4f93789ceb5736-1753554959869-07908-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=a2ee68c725eb4f549d4f93789ceb5736-1753554959869-07908-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Cat Door Handle Holder",
-            "description": "DESCRIPTION",
+            "description": "🐾 Cat Door Handle Holder – Smart Access Control for Your Feline Friend /n 🚪 Keeps Doors Slightly Ajar /n Allows your cat to roam freely without shutting themselves in or out. /n 🐱 Pet-Friendly & Safe /n Prevents tail pinching and accidental lock-ins. /n 🛠️ Easy to Install /n No tools required – simply hook over any standard door handle. /n 💪 Strong Elastic Band /n Durable and adjustable stretch band fits most door setups. /n 🧼 Easy to Clean /n Made from smooth materials that wipe clean in seconds. /n 🧩 Compact & Discreet /n Blends with your decor while providing everyday convenience for pet owners",
             "price": "4.99",
             "expectedPurchasePrice": "1.60",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_I.avif",
@@ -2002,9 +2002,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006848044899.html?spm=a2g0o.productlist.main.27.6cffDXLgDXLgUW&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&algo_exp_id=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&pdp_ext_f=%7B%22order%22%3A%221039%22%7D&pdp_npi=4%40dis%21EUR%21116.96%2135.98%21%21%21960.29%21295.39%21%402103835e17535541220507720ecc77%2112000038506237378%21sea%21SK%210%21ABX&aff_fcid=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Inflatable Pregnancy Pillow",
-            "description": "DESCRIPTION",
-            "price": "PRICE",
-            "expectedPurchasePrice": "EXPRICE",
+            "description": "🤰 Inflatable Pregnancy Pillow – Total Comfort for Expecting Moms /n 🌬️ Inflatable Design /n Quickly inflates and deflates for easy portability and space-saving storage. /n 🛌 Full-Body Support /n Specially contoured to support the belly, back, hips, and legs while lying face down. /n 🌈 Multiple Colors /n Available in Light-Brown, Blue, and Pink to match your comfort vibe. /n 🌿 Skin-Friendly PVC Material /n Soft, durable, and safe for long periods of use. /n 🧳 Travel-Friendly /n Ideal for home use or packing in your hospital bag. /n 🌟 Great for Prenatal Massage /n Designed with a belly hole to ease pressure during maternity treatments or relaxation",
+            "price": "49.99",
+            "expectedPurchasePrice": "38.60",
             "productOptions": [
                 "Colour:",
                 "Light-Brown",
@@ -2027,7 +2027,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006486925957.html?spm=a2g0o.productlist.main.27.3f855eeaJDaByK&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=5d0bf388-2fe5-4c6e-94da-00e2037c3aa0&algo_exp_id=5d0bf388-2fe5-4c6e-94da-00e2037c3aa0&pdp_ext_f=%7B%22order%22%3A%2248%22%7D&pdp_npi=4%40dis%21EUR%2122.47%2115.06%21%21%2125.77%2117.27%21%402103835e17535550007457008ecc77%2112000044799074519%21sea%21SK%210%21ABX&aff_fcid=dcb28f0bd9094c4ebb49fe746ff7690d-1753555005049-04197-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=dcb28f0bd9094c4ebb49fe746ff7690d-1753555005049-04197-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Pigeon Soap Dispenser",
-            "description": "DESCRIPTION",
+            "description": "🕊️ Pigeon Soap Dispenser – Add Charm to Cleanliness /n 🧼 Fun & Functional /n Dispenses soap with a gentle push – perfect for kitchens, bathrooms, or kids’ sinks. /n 🎨 Unique Pigeon Design /n A quirky touch to your decor that turns handwashing into a conversation starter. /n 🛁 Two Color Options /n Choose from sleek White or playful Coloured to match your space. /n 💦 Easy Refill /n Twist-off design for quick and hassle-free soap refills. /n 🌟 Durable & Safe /n Made from high-quality, non-toxic ABS plastic that’s built to last. /n 👧 Great for Kids /n Encourages healthy habits in a fun and engaging way",
             "price": "39.99",
             "expectedPurchasePrice": "14.68",
             "productOptions": [
@@ -2048,7 +2048,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008639711871.html?spm=a2g0o.productlist.main.27.66c70ZQf0ZQfFG&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=185d7b55-1445-49d4-bc18-efda000b65ca&algo_exp_id=185d7b55-1445-49d4-bc18-efda000b65ca&pdp_ext_f=%7B%22order%22%3A%22405%22%7D&pdp_npi=4%40dis%21EUR%219.33%211.95%21%21%2176.60%2116.02%21%402103835e17535550753658707ecc77%2112000046055509120%21sea%21SK%210%21ABX&aff_fcid=b8d591b3b89b48e48161658828555b2b-1753555079020-00595-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=b8d591b3b89b48e48161658828555b2b-1753555079020-00595-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "How To Train Your Dragon Car Decoration",
-            "description": "DESCRIPTION",
+            "description": "🐉 How To Train Your Dragon Car Decoration /n 🚗 Ride with Toothless /n Bring magic and mischief to your dashboard with this adorable dragon companion. /n 🎨 Customizable Sizes & Colors /n Choose from three sizes (20cm, 27cm, 35cm) and two colors – classic Black or sleek White. /n 🌟 Eye-Catching Detail /n Realistic sculpting and expressive eyes add personality to your car, desk, or shelf. /n 💨 Strong Grip /n Securely sits on your dashboard – won't fly off during sharp turns! /n 🎁 Perfect Gift /n Ideal for fans of the franchise, fantasy lovers, or as a quirky decor piece. /n 🚙 Universal Fit /n Adds charm to any vehicle interior, big or small",
             "price": "29.99",
             "expectedPurchasePrice": "12.78",
             "productOptions": [
@@ -2071,7 +2071,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005009246717141.html?spm=a2g0o.productlist.main.27.75851b9aIZ7ZQb&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=69424031-abb0-441a-9f94-e10bc9ccd264&algo_exp_id=69424031-abb0-441a-9f94-e10bc9ccd264&pdp_ext_f=%7B%22order%22%3A%227%22%7D&pdp_npi=4%40dis%21EUR%214.23%214.23%21%21%2134.75%2134.75%21%402103835e17535551171301903ecc77%2112000048461483562%21sea%21SK%210%21ABX&aff_fcid=ccb4f4ee86f94ae0bd28d149fdfa6b64-1753555141595-06340-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=ccb4f4ee86f94ae0bd28d149fdfa6b64-1753555141595-06340-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Double-Ended Dog Leash",
-            "description": "DESCRIPTION",
+            "description": "🐾 Double-Ended Dog Leash /n 🐶 Maximum Control, Minimal Hassle /n Designed for secure, comfortable walks, this leash is perfect for training, walking two dogs, or added control on solo walks. /n 🔁 Dual-Clip Versatility /n Attach both ends to a harness, or walk two dogs at once — no tangles, no fuss. /n 💪 Durable & Strong /n Made from heavy-duty nylon with reinforced stitching for strength and longevity. /n 🧩 Adjustable & Flexible /n Length can be adapted for close control or roaming freedom. /n 🖐️ Comfortable Grip /n Padded handle ensures no rope burns, even on long walks or with strong pullers. /n 🧳 Travel-Ready /n Lightweight and foldable — fits easily into any bag or glovebox. /n 🐕 Great for All Breeds /n Whether you’ve got a Yorkie or a Husky, this leash handles them all",
             "price": "14.99",
             "expectedPurchasePrice": "3.92",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_I.avif",
@@ -2090,7 +2090,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008267391775.html?spm=a2g0o.productlist.main.3.267f1bdemKXIkJ&algo_pvid=e5ab7a3d-27bb-4dff-84a9-94b6d56e8295&algo_exp_id=e5ab7a3d-27bb-4dff-84a9-94b6d56e8295-2&pdp_ext_f=%7B%22order%22%3A%22889%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2110.46%214.59%21%21%2185.89%2137.70%21%402103835e17535552333846449ecc83%2112000044423551035%21sea%21SK%216006253967%21X&curPageLogUid=Ayu1f0OKr3Mj&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=3c25c1e5e623448d8e29494446d75992-1753555238219-00170-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=3c25c1e5e623448d8e29494446d75992-1753555238219-00170-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Airtag Insoles",
-            "description": "DESCRIPTION",
+            "description": "🦶 Airtag Insoles /n 📍 Hidden Tracking, Maximum Peace of Mind /n These smart insoles feature a discreet pocket to securely hold your Apple Airtag — perfect for kids, elderly family members, or travel security. /n 🕵️‍♂️ Invisible Protection /n Keep tracking discreet and undetectable with the Airtag completely hidden in the heel. /n 🏃‍♀️ Comfortable All-Day Wear /n Crafted from breathable, shock-absorbing material for cushioned steps and long-lasting comfort. /n ✂️ Custom Fit /n Trim-to-fit design — easily cut to match your shoe size for a perfect fit. /n 🔒 Stay Secure /n Airtag compartment keeps your tracker snug and protected during every step. /n 👟 Fits Any Shoe /n Works in sneakers, boots, or casual shoes — just insert and go. /n 🧒 Ideal for Children & Elderly /n A subtle safety solution for added confidence during outings or travel",
             "price": "19.99",
             "expectedPurchasePrice": "10.47",
             "productOptions": [
@@ -2117,9 +2117,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008404530032.html?spm=a2g0o.productlist.main.27.1a704c36al3afx&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=86d675a4-dd99-4641-a5f8-f6008a95b0e2&algo_exp_id=86d675a4-dd99-4641-a5f8-f6008a95b0e2&pdp_ext_f=%7B%22order%22%3A%227%22%7D&pdp_npi=4%40dis%21EUR%2132.11%2111.04%21%21%21263.66%2190.71%21%402103835e17535555239543922ecc77%2112000044896844502%21sea%21SK%210%21ABX&aff_fcid=3adf91338ad14e63b47c57a849f8be2a-1753555527511-05842-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=3adf91338ad14e63b47c57a849f8be2a-1753555527511-05842-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Soap Bar Scraper",
-            "description": "DESCRIPTION",
-            "price": "PRICE",
-            "expectedPurchasePrice": "EXPRICE",
+            "description": "🧼 Soap Bar Scraper /n ♻️ No More Soap Waste! /n Say goodbye to slippery slivers and hello to full soap usage — this clever tool scrapes every last bit into usable flakes. /n 💡 Innovative Design /n Built-in grater transforms leftover soap into fine pieces perfect for lathering or re-molding into new bars. /n 🧽 Easy to Use /n Just press and twist! The ergonomic handle and sharp stainless-steel blade make soap shredding effortless. /n 🚿 Clean & Hygienic /n Keeps your soap dish mess-free and prevents bacterial buildup on soggy scraps. /n 🌍 Eco-Friendly Living /n Reduce waste and extend the life of your favorite bars — ideal for eco-conscious households. /n 🧼 Great for Homemade Soap /n Perfect for DIYers looking to create custom soap blends from scraps. /n 🛁 A Must-Have for Every Bathroom or Laundry Room!",
+            "price": "19.99",
+            "expectedPurchasePrice": "11.05",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_I.avif",
             "images": [
                 "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_I.avif",
@@ -2133,7 +2133,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006904961272.html?spm=a2g0o.productlist.main.27.41c16554sydVMT&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=491eda98-5d81-466d-b020-c90a5cde1d5d&algo_exp_id=491eda98-5d81-466d-b020-c90a5cde1d5d&pdp_ext_f=%7B%22order%22%3A%22879%22%7D&pdp_npi=4%40dis%21EUR%216.24%210.86%21%21%2151.25%217.10%21%402103835e17535557234308314ecc77%2112000038673069456%21sea%21SK%210%21ABX&aff_fcid=1fd71cd6883341138ec879ef76bfe98b-1753555731081-04769-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=1fd71cd6883341138ec879ef76bfe98b-1753555731081-04769-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "SpiderMan Web-Shooter Water Gun",
-            "description": "DESCRIPTION",
+            "description": "🕷️ SpiderMan Web-Shooter Water Gun /n 💦 Shoot Like a Hero! /n Transform into your friendly neighborhood SpiderMan with this action-packed water blaster. /n 🧤 Wrist-Mounted Design /n Strap it on like the real deal — just press and spray for epic web-slinging water battles. /n 🔫 Easy to Fill & Fire /n Comes with a refillable water canister and trigger mechanism for fast-paced fun. /n 👦 Perfect for Kids /n Safe, lightweight, and endlessly entertaining — ideal for outdoor play, parties, and costumes. /n 🎁 Awesome Gift Idea /n A must-have for young superheroes and Marvel fans alike! /n 🏖️ Great for Summer /n Keep cool and active with superhero-style water fights",
             "price": "14.99",
             "expectedPurchasePrice": "5.87",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSpiderMan%20Web-Shooter%20Water%20Gun%2FModified/Image_I.avif",
@@ -2146,7 +2146,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008554784193.html?spm=a2g0o.productlist.main.2.79d624ebs5JMgd&algo_pvid=13038a06-e035-41bc-a9f8-9e4359fddae4&algo_exp_id=13038a06-e035-41bc-a9f8-9e4359fddae4-1&pdp_ext_f=%7B%22order%22%3A%227202%22%2C%22eval%22%3A%221%22%2C%22orig_sl_item_id%22%3A%221005008554784193%22%2C%22orig_item_id%22%3A%221005008635098169%22%7D&pdp_npi=4%40dis%21EUR%219.28%214.42%21%21%2176.16%2136.27%21%402103919917535560027337287e856c%2112000045690186532%21sea%21SK%216006253967%21X&curPageLogUid=8wDHF7t6g0n7&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=9c4d1fc645d64622afd49d6617c8f1ef-1753556007378-05033-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=9c4d1fc645d64622afd49d6617c8f1ef-1753556007378-05033-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Waterproof Shower Phone Holder",
-            "description": "DESCRIPTION",
+            "description": "🚿 Waterproof Shower Phone Holder /n 📱 Watch, Scroll, or Call — Even in the Shower! /n This fog-resistant, 360° rotating case keeps your phone safe, visible, and touch-responsive while you wash. /n 💧 100% Waterproof /n Designed with a sealed silicone casing to protect your phone from water and steam. /n 🌀 Full Rotation /n Rotate up to 360° for optimal viewing angles — perfect for watching videos, checking messages, or video calling hands-free. /n 🛠️ Easy Wall Mount /n Comes with strong adhesive pads — no tools required! /n 📏 Universal Fit /n Compatible with phones up to 6.8 inches. /n 🎨 Choose Your Style /n Available in sleek Black, clean White, or cute Pink",
             "price": "14.99",
             "expectedPurchasePrice": "6.55",
             "productOptions": [
@@ -2171,9 +2171,9 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008751291077.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.2.21e5er1aer1ac3&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=a722bd9f-6dd2-40bd-b599-e5539d7fad9e&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3Aa722bd9f-6dd2-40bd-b599-e5539d7fad9e%2Ctpp_buckets%3A668%232846%238116%232002&pdp_ext_f=%7B%22order%22%3A%2217%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%2117.70%218.07%21%21%21145.31%2166.22%21%40211b61bb17535561830897304ec055%2112000046516695025%21rec%21SK%216006253967%21X&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=fd0b67d39c2140108c05521265883623-1753556204448-01217-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=fd0b67d39c2140108c05521265883623-1753556204448-01217-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "500ml Ice Cube Mold Bottle",
-            "description": "DESCRIPTION",
-            "price": "PRICE",
-            "expectedPurchasePrice": "EXPRICE",
+            "description": "🧊 500ml Ice Cube Mold Bottle /n Chill Smarter — Freeze & Serve in One! /n This all-in-one water bottle doubles as an ice cube mold, letting you hydrate or cool drinks without separate trays. /n 🌀 Twist-to-Release Design /n Just fill, freeze, twist, and pour — it's that easy. /n 🧽 Easy to Clean /n BPA-free, non-stick silicone interior makes cleaning quick and simple. /n 🎨 Stylish & Functional /n Available in Green, White, or Pink to match your vibe. /n 🍹 Perfect for Home, Gym, or On-the-Go /n Keep your drinks cool wherever you are — fits easily in most cup holders. /n ♻️ Reusable & Eco-Friendly /n Say goodbye to plastic ice bags and bulky trays",
+            "price": "19.99",
+            "expectedPurchasePrice": "8.07",
             "productOptions": [
                 "Colour:",
                 "Green",
@@ -2192,7 +2192,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006116504094.html?spm=a2g0o.productlist.main.5.13335488rPtLrc&algo_pvid=3cbef177-a7a6-43d8-be45-631cb6d125c8&algo_exp_id=3cbef177-a7a6-43d8-be45-631cb6d125c8-4&pdp_ext_f=%7B%22order%22%3A%22882%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%213.03%213.03%21%21%213.48%213.48%21%402103849717535569707893682edcae%2112000035845706637%21sea%21SK%216006253967%21X&curPageLogUid=1GsOiBexHlta&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=1627aaa54e14461cb32f7c2c22438063-1753556975634-08362-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=1627aaa54e14461cb32f7c2c22438063-1753556975634-08362-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Waterproof Rubber Cover For Shoes",
-            "description": "DESCRIPTION",
+            "description": "🛡️ Waterproof Rubber Shoe Covers /n Keep your kicks clean and dry — anytime, anywhere. /n 💧 100% Waterproof Silicone /n Perfect for rainy days, muddy trails, or snowy streets. /n 🦶 Anti-Slip Grip /n Textured soles offer stability on wet and slick surfaces. /n 🔁 Reusable & Eco-Friendly /n Durable stretch-fit design slips over most shoes with ease. /n 🧳 Compact & Travel-Friendly /n Folds neatly into bags, backpacks, or glove compartments. /n 📏 Available Sizes: S, M, L /n Great for commuting, cycling, festivals, and more",
             "price": "9.99",
             "expectedPurchasePrice": "2.01",
             "productOptions": [
@@ -2213,7 +2213,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006953855771.html?spm=a2g0o.productlist.main.27.307516d3p78aSi&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=ee08461d-a5b6-4866-9206-1401480a0e46&algo_exp_id=ee08461d-a5b6-4866-9206-1401480a0e46&pdp_ext_f=%7B%22order%22%3A%2287%22%7D&pdp_npi=4%40dis%21EUR%211.87%211.31%21%21%212.14%211.50%21%402103956a17535570242592184e7f68%2112000038840442123%21sea%21SK%210%21ABX&aff_fcid=848c71405440403da17140361dd71ab2-1753557026643-00560-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=848c71405440403da17140361dd71ab2-1753557026643-00560-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Silicone Door Handle Anti-COlision Cover",
-            "description": "DESCRIPTION",
+            "description": "🚪 Silicone Door Handle Anti-Collision Cover /n Protect walls and handles from dents, scuffs, and impact noise. /n 🛡️ Soft, Shock-Absorbing Silicone /n Cushions every swing — ideal for kids’ rooms, offices, and rentals. /n 🧲 Easy Slip-On Fit /n Flexible design stretches over most standard handle shapes. /n 🌈 Stylish Protection /n Choose from Grey, Blue, or Yellow to match your space. /n 🧼 Washable & Reusable /n Keeps your home damage-free, neat, and quiet",
             "price": "4.99",
             "expectedPurchasePrice": "1.83",
             "productOptions": [
@@ -2237,7 +2237,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005005580116613.html?spm=a2g0o.productlist.main.7.61444ed6f27WdG&algo_pvid=b0750456-f6ac-46a9-bb86-b166ff10ef3e&algo_exp_id=b0750456-f6ac-46a9-bb86-b166ff10ef3e-6&pdp_ext_f=%7B%22order%22%3A%22162%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.94%211.94%21%21%2115.92%2115.92%21%402103892f17535570709634789eac4b%2112000033628725712%21sea%21SK%216006253967%21X&curPageLogUid=GBWJ0bSxzYTm&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=6dd7f5b55fd0413d9389ea7dcbd332d7-1753557075224-07504-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=6dd7f5b55fd0413d9389ea7dcbd332d7-1753557075224-07504-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Shirt Button Aid Tool Hook",
-            "description": "DESCRIPTION",
+            "description": "👕 Shirt Button Aid Tool Hook /n Make dressing easier with this handy assistive tool. /n 🪝 Effortless Buttoning /n Thread the loop through your buttonhole and pull — no more fumbling. /n 💪 Designed for Dexterity Challenges /n Perfect for arthritis, limited mobility, or post-surgery recovery. /n 🖐️ Comfortable Grip /n Ergonomic handle provides control and comfort. /n 🎨 Multiple Types /n Choose White (Small Buttons), White or Black (Universal) for your wardrobe needs",
             "price": "4.99",
             "expectedPurchasePrice": "1.38",
             "productOptions": [
@@ -2262,7 +2262,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008373427046.html?spm=a2g0o.productlist.main.3.1e8c77789IMHKe&algo_pvid=df25a8b8-c3d3-495c-8742-ddbc8a02fb8f&algo_exp_id=df25a8b8-c3d3-495c-8742-ddbc8a02fb8f-2&pdp_ext_f=%7B%22order%22%3A%2230%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.98%211.76%21%21%2124.43%2114.41%21%40211b815c17535571997626497e94dd%2112000044761554641%21sea%21SK%216006253967%21X&curPageLogUid=HDHT0lzPscoD&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=538f0082ae654db9a419b248f79e7580-1753557203069-06313-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=538f0082ae654db9a419b248f79e7580-1753557203069-06313-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Weight Lifting Hook Grip",
-            "description": "DESCRIPTION",
+            "description": "🏋️‍♂️ Weight Lifting Hook Grip /n Maximize your lifts with better grip and wrist support. /n 🔒 Secure Hook Design /n Heavy-duty steel hooks reduce finger fatigue and enhance pulling power. /n 🧤 Wrist Support /n Padded straps protect joints and stabilize your wrists during heavy lifts. /n 💪 Ideal for Deadlifts & Pull-Ups /n Crush back day with less strain and better control. /n 🔁 One-Size-Fits-Most /n Adjustable fit for men and women of all levels",
             "price": "9.99",
             "expectedPurchasePrice": "2.90",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWeight%20Lifting%20Hook%20Grip%2FModified/Image_I.avif",
@@ -2275,7 +2275,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005009410861190.html?spm=a2g0o.productlist.main.27.6382734bUvlu4D&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=3faeb6b9-93fc-4747-8b70-e6caedca65c5&algo_exp_id=3faeb6b9-93fc-4747-8b70-e6caedca65c5&pdp_ext_f=%7B%22order%22%3A%229%22%7D&pdp_npi=4%40dis%21EUR%2123.54%218.92%21%21%21193.26%2173.19%21%40211b619a17535612501926920ede27%2112000049030484284%21sea%21SK%210%21ABX&aff_fcid=d05e0f288b7444429d79f47afe9219cf-1753561252818-01403-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=d05e0f288b7444429d79f47afe9219cf-1753561252818-01403-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Dancing Octopus",
-            "description": "DESCRIPTION",
+            "description": "🐙 Dancing Octopus Toy /n The cutest dance partner your child will ever meet! /n 🎵 Music & Motion /n Plays catchy tunes while wiggling its tentacles in hilarious, rhythmic moves. /n 🎨 Adorable Colors /n Available in Green, Yellow, or Pink – a perfect gift for boys or girls. /n 🧠 Interactive Fun /n Encourages movement, laughter, and sensory play for toddlers and up. /n 🔋 USB Rechargeable /n No batteries needed – more dancing, less hassle!",
             "price": "24.99",
             "expectedPurchasePrice": "17.07",
             "productOptions": [
@@ -2297,7 +2297,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006340481123.html?spm=a2g0o.productlist.main.33.66ad41b1JKnI7Y&algo_pvid=1ba55707-ee13-444b-a69c-a3c15d9cab5f&algo_exp_id=1ba55707-ee13-444b-a69c-a3c15d9cab5f-32&pdp_ext_f=%7B%22order%22%3A%22263%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.46%212.01%21%21%2120.18%2116.48%21%40210390c217535619161447381e46cf%2112000036819011710%21sea%21SK%216006253967%21X&curPageLogUid=UYY4NE4Ijgv6&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=c1d7b23e644f476697f5fce36cafd43c-1753561944245-07850-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=c1d7b23e644f476697f5fce36cafd43c-1753561944245-07850-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "3 in 1 Cleaning Brush",
-            "description": "DESCRIPTION",
+            "description": "🧼 3 in 1 Cleaning Brush /n Your all-in-one solution for cleaning tight spaces and tricky corners! /n 🧽 Triple Functionality /n Features a bristle brush, scraping tool, and detail cleaner in one compact design. /n 🚪 Perfect for Tracks & Gaps /n Cleans window sills, keyboard grooves, sink edges, and more with ease. /n 💧 Ergonomic Grip /n Comfortable, easy-to-hold handle makes cleaning faster and more effective. /n 🎨 Available Colors /n Choose from Grey, Green, or Blue to match your style",
             "price": "4.99",
             "expectedPurchasePrice": "1.56",
             "productOptions": [
@@ -2319,7 +2319,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008194938196.html?spm=a2g0o.productlist.main.17.74ff572eNzFW0Q&algo_pvid=c03f9670-7e07-4db1-a447-a316f445af62&algo_exp_id=c03f9670-7e07-4db1-a447-a316f445af62-12&pdp_ext_f=%7B%22order%22%3A%22767%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%210.44%210.24%21%21%210.50%210.27%21%4021038e6617535620446024236e4a62%2112000044196469026%21sea%21SK%216006253967%21X&curPageLogUid=VMy7pdOmf46q&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=bac02b848e824ce494964bad42ca5416-1753562114458-00923-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=bac02b848e824ce494964bad42ca5416-1753562114458-00923-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Boat Motor Stirrer For Mugs",
-            "description": "DESCRIPTION",
+            "description": "🚤 Boat Motor Mug Stirrer /n Stir your drink with a splash of fun! /n ☕ Perfect for Coffee & More /n Mixes coffee, milk, cocoa, or protein shakes with ease—just like a mini blender! /n 🌀 Boat Motor Design /n Features a playful outboard motor look that actually spins when turned on. /n 🧼 Easy to Clean /n Detachable and washable propeller makes cleanup effortless. /n 🎁 Great Gag Gift /n A hilarious yet functional gift for boat lovers and coffee enthusiasts alike!",
             "price": "4.99",
             "expectedPurchasePrice": "0.43",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_I.avif",
@@ -2362,7 +2362,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008604600989.html?spm=a2g0o.productlist.main.27.5e63787dJRABPi&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=b5475d52-5ca0-4e53-a2a4-7784bd828843&algo_exp_id=b5475d52-5ca0-4e53-a2a4-7784bd828843&pdp_ext_f=%7B%22order%22%3A%22103%22%7D&pdp_npi=4%40dis%21EUR%2141.85%2135.99%21%21%2148.00%2141.28%21%40211b619a17535627991506608ede27%2112000045919244149%21sea%21SK%210%21ABX&aff_fcid=8c2d46570bef4f068ab41ae589c1cc22-1753562803749-07325-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=8c2d46570bef4f068ab41ae589c1cc22-1753562803749-07325-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Hoodie With Built-In Backpack",
-            "description": "DESCRIPTION",
+            "description": "🧥 Hoodie With Built-In Backpack /n Style meets function in one sleek design! /n 🎒 Integrated Backpack /n Carry your essentials without needing a separate bag—perfect for daily commutes or quick outings. /n 🔒 Hidden Storage /n Discreet zippered compartments keep your items safe and secure. /n 👕 Comfortable Fit /n Made from soft, breathable fabric and available in sizes M to XXXL. /n 🌦️ All-Weather Wear /n Ideal for travel, festivals, or everyday urban life. /n 🔥 A must-have for minimalists, students, or on-the-go adventurers!",
             "price": "69.99",
             "expectedPurchasePrice": "40.36",
             "productOptions": [
@@ -2384,7 +2384,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005008229003638.html?spm=a2g0o.productlist.main.27.732827c48lA3oX&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=a9339fe8-70e0-41f4-9fa6-37c9acde9277&algo_exp_id=a9339fe8-70e0-41f4-9fa6-37c9acde9277&pdp_ext_f=%7B%22order%22%3A%2240%22%7D&pdp_npi=4%40dis%21EUR%216.44%212.38%21%21%217.39%212.73%21%40211b619a17535628535187801ede27%2112000044304720694%21sea%21SK%210%21ABX&aff_fcid=df73d8d7884b4a7580a2dbe4856d6008-1753562857491-07488-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&a",
             "name": "Funny Dog Shorts",
-            "description": "DESCRIPTION",
+            "description": "🐶 Funny Dog Shorts /n Shorts that turn heads and spark laughter! /n 😂 Hilarious 3D Dog Print /n Features ultra-realistic designs that make it look like a dog is peeking out from behind you. /n 🩳 Comfy & Lightweight /n Made from breathable fabric—perfect for lounging, gym sessions, or just good laughs. /n 📏 Wide Size Range /n Available in XXS to XXXL for a great fit on every body type. /n 🌈 Bold & Unique /n A conversation starter for any occasion—dare to wear them out! /n 🛍️ Great gift for dog lovers and pranksters alike!",
             "price": "14.99",
             "expectedPurchasePrice": "6.29",
             "productOptions": [
@@ -2410,7 +2410,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005009498754875.html?spm=a2g0o.productlist.main.1.d25eFYOTFYOTZH&algo_pvid=f6365d62-6f35-4138-9bc5-fa1d55290fdb&algo_exp_id=f6365d62-6f35-4138-9bc5-fa1d55290fdb-0&pdp_ext_f=%7B%22order%22%3A%22414%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%216.96%213.19%21%21%2157.17%2126.20%21%4021038e6617535635764717692e4a56%2112000049289152050%21sea%21SK%216006253967%21X&curPageLogUid=7rW5GKQdpTmI&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=044e79d97ce64b7084a9c0c57c26e9b3-1753563583129-02143-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=044e79d97ce64b7084a9c0c57c26e9b3-1753563583129-02143-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Prank Reverse-Firing Water Gun",
-            "description": "DESCRIPTION",
+            "description": "😈 Prank Reverse-Firing Water Gun /n The ultimate trickster's weapon of choice! /n 🔄 Shoots *backward* — not forward! /n Aim it at a friend and soak… yourself! /n 💦 Hilariously deceptive /n Looks like a regular water gun, but turns the tables instantly. /n 🧠 Perfect for prank wars /n Ideal for surprising friends, family, or coworkers who think they’re safe. /n 😂 Durable and reusable /n Built for repeat laughs and harmless mayhem. /n 🎁 Great gag gift /n Add it to your prankster arsenal or gift it to your mischievous bestie!",
             "price": "14.99",
             "expectedPurchasePrice": "6.21",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_I.avif",
@@ -2428,7 +2428,7 @@ const products = {
         {
             "productLink": "https://www.aliexpress.com/item/1005006073307237.html?spm=a2g0o.productlist.main.2.29255990lhqIiS&algo_pvid=55e436cb-53f9-458b-9e13-972ee35ec284&algo_exp_id=55e436cb-53f9-458b-9e13-972ee35ec284-1&pdp_ext_f=%7B%22order%22%3A%22192%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%214.59%212.34%21%21%2137.72%2119.24%21%40211b612517535643024642298ef993%2112000035606553490%21sea%21SK%216006253967%21X&curPageLogUid=HeDWSaT34AOh&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=ac27ab2685804b5dbf681584027ef86e-1753564307167-00553-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=ac27ab2685804b5dbf681584027ef86e-1753564307167-00553-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "Hoodie Woodie",
-            "description": "DESCRIPTION",
+            "description": "🪵 Hoodie Woodie /n The ultimate fakeout for flannel fans and cozy jokesters. /n 🔄 Looks like layered wood-chopping flannel — but it’s all hoodie! /n 🧥 One-piece design /n Get the rugged lumberjack vibe without the hassle of layers. /n 😂 Insta-costume or cozy gag /n Perfect for parties, pranks, or lazy days when effort is optional. /n 🧶 Soft and breathable /n Comfortable enough for lounging, bold enough for laughs. /n 🎯 Funny, functional, and effortlessly cool",
             "price": "9.99",
             "expectedPurchasePrice": "4.44",
             "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_I.avif",
