@@ -1667,21 +1667,785 @@ const products = {
             ]
         },
         {
-            "productLink": "LINK",
-            "name": "NAME",
+            "productLink": "https://www.aliexpress.com/item/1005008748580756.html?spm=a2g0o.productlist.main.54.27c56b46zyjFe5&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=e6badcab-c8a9-4b51-a336-25b52160236c&algo_exp_id=e6badcab-c8a9-4b51-a336-25b52160236c&pdp_ext_f=%7B%22order%22%3A%2234%22%7D&pdp_npi=4%40dis%21EUR%2115.39%2112.77%21%21%21126.33%21104.82%21%40211b61bb17535505183981679ec058%2112000046505822800%21sea%21SK%210%21ABX&aff_fcid=4edef7fdf942420ba95c2b75ae5c841c-1753550524321-05638-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=4edef7fdf942420ba95c2b75ae5c841c-1753550524321-05638-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Water Rocket",
+            "description": "DESCRIPTION",
+            "price": "29.99",
+            "expectedPurchasePrice": "15.39",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Rocket%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008617263690.html?spm=a2g0o.productlist.main.2.7734BHkjBHkjzC&algo_pvid=4ce33bb5-227b-4661-bdf3-d87680b0d621&algo_exp_id=4ce33bb5-227b-4661-bdf3-d87680b0d621-1&pdp_ext_f=%7B%22order%22%3A%2252%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2125.19%2125.19%21%21%2128.89%2128.89%21%4021038da617535507630928621e149d%2112000045968074218%21sea%21SK%216006253967%21X&curPageLogUid=Jvn64ypcxEgs&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=2715cfea3e894d3897e043c14c42ac22-1753550772154-05349-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=2715cfea3e894d3897e043c14c42ac22-1753550772154-05349-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Water Ripple Effect Lamp",
+            "description": "DESCRIPTION",
+            "price": "39.99",
+            "expectedPurchasePrice": "25.19",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWater%20Ripple%20Effect%20Lamp%2FModified/Image_VII.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008513030079.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.5.1d159mGe9mGeK4&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=899b56bb-7a20-4bb5-81db-0e8a56e689e5&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3A899b56bb-7a20-4bb5-81db-0e8a56e689e5%2Ctpp_buckets%3A668%232846%238112%231997&pdp_ext_f=%7B%22order%22%3A%2225%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%218.71%214.27%21%21%2171.49%2135.03%21%402103835e17535510235378071ecc77%2112000045495789956%21rec%21SK%216006253967%21X&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=0af80b1fef284a359e04a08f2536f264-1753551045418-04888-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=0af80b1fef284a359e04a08f2536f264-1753551045418-04888-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Dancing Skeleton",
+            "description": "DESCRIPTION",
+            "price": "9.99",
+            "expectedPurchasePrice": "0.86",
+            "productOptions": [
+                "Color:",
+                "Green",
+                "White",
+                "Purple",
+                "Pink"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Skeleton%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005009562895568.html?spm=a2g0o.productlist.main.8.730cb653HT7gc8&algo_pvid=3bfd8eec-caa2-47d3-9fea-c55b8a3c671f&algo_exp_id=3bfd8eec-caa2-47d3-9fea-c55b8a3c671f-7&pdp_ext_f=%7B%22order%22%3A%22-1%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2113.81%216.90%21%21%21113.41%2156.70%21%402103963717535513617598454edf84%2112000049469835758%21sea%21SK%216006253967%21X&curPageLogUid=OMeT9CKlyM74&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=a45c845a0a7140b69572abfe7f2ba7ea-1753551365821-07044-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=a45c845a0a7140b69572abfe7f2ba7ea-1753551365821-07044-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Nessie",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "5.70",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNessie%2FModified/Image_II.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNessie%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNessie%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNessie%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNessie%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008647489720.html?spm=a2g0o.productlist.main.6.6a3f259a4SvKIW&algo_pvid=61818275-77f6-428d-afaf-432ea58f0571&algo_exp_id=61818275-77f6-428d-afaf-432ea58f0571-5&pdp_ext_f=%7B%22order%22%3A%223857%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2114.19%216.67%21%21%21116.52%2154.76%21%402103856417535515736781590eb8d9%2112000046084714595%21sea%21SK%216006253967%21X&curPageLogUid=79DQU7SYRh3n&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=58f7fbd5217541b6932615f783848942-1753551582166-01820-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=58f7fbd5217541b6932615f783848942-1753551582166-01820-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Mario Power-Up Cube Lamp",
+            "description": "DESCRIPTION",
+            "price": "24.99",
+            "expectedPurchasePrice": "11.36",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMario%20Power-Up%20Cube%20Lamp%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005007988681828.html?spm=a2g0o.productlist.main.18.43bb5b61ojzdK4&algo_pvid=c0be6d4d-01cc-4e35-81d0-3eb4579df9c2&algo_exp_id=c0be6d4d-01cc-4e35-81d0-3eb4579df9c2-17&pdp_ext_f=%7B%22order%22%3A%22368%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%218.84%212.78%21%21%2172.59%2122.87%21%402103985c17535517324861484eeb07%2112000043173054079%21sea%21SK%216006253967%21X&curPageLogUid=xMoN7WlaU1Gs&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=42d52ffb3c3b4f25b67d0ab93d88a2f4-1753551738937-01239-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=42d52ffb3c3b4f25b67d0ab93d88a2f4-1753551738937-01239-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Bugs the Bunny Love Keychain",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "2.13",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBugs%20the%20Bunny%20Love%20Keychain%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBugs%20the%20Bunny%20Love%20Keychain%2FModified/Image_I.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008158502700.html?spm=a2g0o.productlist.main.27.523937eeK49IqJ&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=11e7f265-e1f6-40fe-a60b-4a3aa94c2d20&algo_exp_id=11e7f265-e1f6-40fe-a60b-4a3aa94c2d20&pdp_ext_f=%7B%22order%22%3A%221226%22%2C%22orig_sl_item_id%22%3A%221005008158502700%22%2C%22orig_item_id%22%3A%221005008148527040%22%7D&pdp_npi=4%40dis%21EUR%2170.33%2131.14%21%21%21577.44%21255.66%21%402103835e17535518071216888ecc77%2112000044031715899%21sea%21SK%210%21ABX&aff_fcid=b1169c8d2a244c6ba54f328a14008109-1753551810184-02299-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=b1169c8d2a244c6ba54f328a14008109-1753551810184-02299-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Jellyfish Flame Humidifier",
+            "description": "DESCRIPTION",
+            "price": "99.99",
+            "expectedPurchasePrice": "32.44",
+            "productOptions": [
+                "Plug Type:",
+                "EU",
+                "US"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FJellyfish%20Flame%20Humidifier%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008062254686.html?spm=a2g0o.productlist.main.27.3c90e04bFTEDTt&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=b140bf49-fe5d-4084-ac22-8e414ff4159d&algo_exp_id=b140bf49-fe5d-4084-ac22-8e414ff4159d&pdp_ext_f=%7B%22order%22%3A%223006%22%7D&pdp_npi=4%40dis%21EUR%2153.96%2114.65%21%21%21443.01%21120.25%21%402103835e17535521364416252ecc77%2112000043503319851%21sea%21SK%210%21ABX&aff_fcid=b62788f997b240c1946af64bfb73ceff-1753552149103-09287-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=b62788f997b240c1946af64bfb73ceff-1753552149103-09287-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "RC Fighter Jet Drone",
+            "description": "DESCRIPTION",
+            "price": "PRICE",
+            "expectedPurchasePrice": "+",
+            "productOptions": [
+                "Colour:",
+                "Blue",
+                "Green"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRC%20Fighter%20Jet%20Drone%2FModified/Image_VIII.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008802075029.html?spm=a2g0o.productlist.main.5.50d8119arD7Xjz&algo_pvid=fb071b75-fbc9-4407-84a2-a75cdeedc00d&algo_exp_id=fb071b75-fbc9-4407-84a2-a75cdeedc00d-4&pdp_ext_f=%7B%22order%22%3A%22776%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%218.07%214.04%21%21%2166.22%2133.11%21%40210390b817535522211317681e7180%2112000046722829190%21sea%21SK%216006253967%21X&curPageLogUid=rzhAtRED89hX&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=282913fc90a24899ae8d944f38ed9395-1753552229850-02853-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=282913fc90a24899ae8d944f38ed9395-1753552229850-02853-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Insect Cather",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "8.00",
+            "productOptions": [
+                "Colour:",
+                "Black",
+                "White",
+                "Blue",
+                "Yellow"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInsect%20Cather%2FModified/Image_IX.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008666496434.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.1.522ejAz6jAz6Dt&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=bf1a53c7-fafa-4b67-9ec1-deff0058d867&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3Abf1a53c7-fafa-4b67-9ec1-deff0058d867%2Ctpp_buckets%3A668%232846%238110%231995&pdp_ext_f=%7B%22order%22%3A%22296%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%216.07%212.92%21%21%2149.80%2123.90%21%402103835e17535523196692522ecc77%2112000046154788255%21rec%21SK%216006253967%21XZ&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=edccb9b28f7c4463b4b383160650babb-1753552327236-06706-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=edccb9b28f7c4463b4b383160650babb-1753552327236-06706-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Car AC-Outlet Cartoon Characters",
+            "description": "DESCRIPTION",
+            "price": "9.99",
+            "expectedPurchasePrice": "4.80",
+            "productOptions": [
+                "Character:",
+                "Tom",
+                "Jerry",
+                "Spike",
+                "Doraemon"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20AC-Outlet%20Cartoon%20Characters%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20AC-Outlet%20Cartoon%20Characters%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20AC-Outlet%20Cartoon%20Characters%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20AC-Outlet%20Cartoon%20Characters%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20AC-Outlet%20Cartoon%20Characters%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20AC-Outlet%20Cartoon%20Characters%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005009138736610.html?spm=a2g0o.productlist.main.50.d653ce081PoK9k&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=0d51293c-446b-4b70-a8fd-ad2e63af4c66&algo_exp_id=0d51293c-446b-4b70-a8fd-ad2e63af4c66&pdp_ext_f=%7B%22order%22%3A%22-1%22%7D&pdp_npi=4%40dis%21EUR%213.44%213.44%21%21%2128.28%2128.28%21%402103835e17535525088567234ecc77%2112000048054237712%21sea%21SK%210%21ABX&aff_fcid=f1da8de7a76441f49fa645662bac5673-1753552527780-06983-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=f1da8de7a76441f49fa645662bac5673-1753552527780-06983-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "10pcs Portable Nail Clipper Set",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "2.58",
+            "productOptions": [
+                "Colour:",
+                "Lime",
+                "Silver",
+                "Pink",
+                "Green"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F10pcs%20Portable%20Nail%20Clipper%20Set%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F10pcs%20Portable%20Nail%20Clipper%20Set%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F10pcs%20Portable%20Nail%20Clipper%20Set%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F10pcs%20Portable%20Nail%20Clipper%20Set%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F10pcs%20Portable%20Nail%20Clipper%20Set%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F10pcs%20Portable%20Nail%20Clipper%20Set%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005009030405659.html?spm=a2g0o.productlist.main.31.1965Brk9Brk9mG&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=300c56f2-548b-469a-8847-1ce1418ee54c&algo_exp_id=300c56f2-548b-469a-8847-1ce1418ee54c&pdp_ext_f=%7B%22order%22%3A%22-1%22%7D&pdp_npi=4%40dis%21EUR%215.53%211.66%21%21%2145.42%2113.63%21%402103835e17535526085871303ecc77%2112000047645417691%21sea%21SK%210%21ABX&aff_fcid=3de1bab4fd9c442f9bd4c606ee5e8239-1753552718945-00714-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=3de1bab4fd9c442f9bd4c606ee5e8239-1753552718945-00714-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Bird Shaped Juicer",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "1.62",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBird%20Shaped%20Juicer%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005007671128820.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.1.45540U0z0U0zVZ&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=134e62db-7fdd-493c-a596-74f103f5d47b&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3A134e62db-7fdd-493c-a596-74f103f5d47b%2Ctpp_buckets%3A668%232846%238107%231934&pdp_ext_f=%7B%22order%22%3A%22207%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%21213.52%2168.33%21%21%211753.02%21560.97%21%402103835e17535534626537501ecc77%2112000041734454565%21rec%21SK%216006253967%21XZ&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=881ceb8c5e5b434990fa2b1e9993d619-1753553546653-07343-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=881ceb8c5e5b434990fa2b1e9993d619-1753553546653-07343-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Rotating Table Tray",
             "description": "DESCRIPTION",
             "price": "PRICE",
             "expectedPurchasePrice": "EXPRICE",
-            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_I.avif",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_I.avif",
             "images": [
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_I.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_II.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_III.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_IV.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_V.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FNAME%2FModified/Image_VI.avif"
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FRotating%20Table%20Tray%2FModified/Image_VII.avif"
             ]
-        }
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006519471947.html?spm=a2g0o.productlist.main.16.7e0d4db2BSZWh1&algo_pvid=eeea1fb4-4da7-4456-bb64-ce1344b1c8e7&algo_exp_id=eeea1fb4-4da7-4456-bb64-ce1344b1c8e7-15&pdp_ext_f=%7B%22order%22%3A%22483%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%217.38%217.24%21%21%2160.58%2159.44%21%40210385db17535537401588954e76d1%2112000037512279683%21sea%21SK%216006253967%21X&curPageLogUid=LYt1C3PsLUZV&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=aede52bb97ad4cd5843c647366551da2-1753553749328-00213-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=aede52bb97ad4cd5843c647366551da2-1753553749328-00213-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Construction Equipment Tableware",
+            "description": "DESCRIPTION",
+            "price": "24.99",
+            "expectedPurchasePrice": "16.10",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FConstruction%20Equipment%20Tableware%2FModified/Image_VIII.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005007426260042.html?spm=a2g0o.productlist.main.20.486f2f59nq3Tkc&algo_pvid=0c8153ae-ef2c-46bf-a260-eab1fcaf9068&algo_exp_id=0c8153ae-ef2c-46bf-a260-eab1fcaf9068-19&pdp_ext_f=%7B%22order%22%3A%22208%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.61%211.61%21%21%2113.25%2113.25%21%40211b613917535539454296112e83c6%2112000040713280431%21sea%21SK%216006253967%21X&curPageLogUid=9xG2PnUznmnS&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=ea9e1332bc6f494989003b4014968b37-1753553961384-03464-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=ea9e1332bc6f494989003b4014968b37-1753553961384-03464-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Metatarsal Toe Separator Pads",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "0.93",
+            "productOptions": [
+                "Size:",
+                "S",
+                "M",
+                "L",
+                "XL"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMetatarsal%20Toe%20Separator%20Pads%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMetatarsal%20Toe%20Separator%20Pads%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMetatarsal%20Toe%20Separator%20Pads%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMetatarsal%20Toe%20Separator%20Pads%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMetatarsal%20Toe%20Separator%20Pads%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMetatarsal%20Toe%20Separator%20Pads%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006848044899.html?spm=a2g0o.productlist.main.27.6cffDXLgDXLgUW&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&algo_exp_id=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&pdp_ext_f=%7B%22order%22%3A%221039%22%7D&pdp_npi=4%40dis%21EUR%21116.96%2135.98%21%21%21960.29%21295.39%21%402103835e17535541220507720ecc77%2112000038506237378%21sea%21SK%210%21ABX&aff_fcid=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Motorcycle Side Stand Shoe",
+            "description": "DESCRIPTION",
+            "price": "9.99",
+            "expectedPurchasePrice": "1.34",
+            "productOptions": [
+                "Colour:",
+                "Black",
+                "Green",
+                "Rose",
+                "Red",
+                "Denim Blue",
+                "Yellow",
+                "Purpe",
+                "Blue",
+                "White",
+                "Pink"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FMotorcycle%20Side%20Stand%20Shoe%2FModified/Image_VII.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005007813484332.html?spm=a2g0o.productlist.main.2.2d90486dPwC21G&algo_pvid=d8d755bc-da54-4018-af08-acb2f4e8fbbe&algo_exp_id=d8d755bc-da54-4018-af08-acb2f4e8fbbe-1&pdp_ext_f=%7B%22order%22%3A%221108%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.01%212.01%21%21%212.31%212.31%21%40210384cc17535548475612412e09ea%2112000042292442191%21sea%21SK%216006253967%21X&curPageLogUid=dUeV4Fy8SBar&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=a2ee68c725eb4f549d4f93789ceb5736-1753554959869-07908-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=a2ee68c725eb4f549d4f93789ceb5736-1753554959869-07908-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Cat Door Handle Holder",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "1.60",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Image_IX.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCat%20Door%20Handle%20Holder%2FModified/Imge_X.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006848044899.html?spm=a2g0o.productlist.main.27.6cffDXLgDXLgUW&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&algo_exp_id=63fa3c1d-410a-4ec6-ae68-765eadc0acd5&pdp_ext_f=%7B%22order%22%3A%221039%22%7D&pdp_npi=4%40dis%21EUR%21116.96%2135.98%21%21%21960.29%21295.39%21%402103835e17535541220507720ecc77%2112000038506237378%21sea%21SK%210%21ABX&aff_fcid=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=e0091b66f5da4ffdbc5b03c363cc22fb-1753554126387-06114-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Inflatable Pregnancy Pillow",
+            "description": "DESCRIPTION",
+            "price": "PRICE",
+            "expectedPurchasePrice": "EXPRICE",
+            "productOptions": [
+                "Colour:",
+                "Light-Brown",
+                "Blue",
+                "Pink"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FInflatable%20Pregnancy%20Pillow%2FModified/Image_IX.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006486925957.html?spm=a2g0o.productlist.main.27.3f855eeaJDaByK&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=5d0bf388-2fe5-4c6e-94da-00e2037c3aa0&algo_exp_id=5d0bf388-2fe5-4c6e-94da-00e2037c3aa0&pdp_ext_f=%7B%22order%22%3A%2248%22%7D&pdp_npi=4%40dis%21EUR%2122.47%2115.06%21%21%2125.77%2117.27%21%402103835e17535550007457008ecc77%2112000044799074519%21sea%21SK%210%21ABX&aff_fcid=dcb28f0bd9094c4ebb49fe746ff7690d-1753555005049-04197-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=dcb28f0bd9094c4ebb49fe746ff7690d-1753555005049-04197-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Pigeon Soap Dispenser",
+            "description": "DESCRIPTION",
+            "price": "39.99",
+            "expectedPurchasePrice": "14.68",
+            "productOptions": [
+                "Colour:",
+                "White",
+                "Coloured"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPigeon%20Soap%20Dispenser%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008639711871.html?spm=a2g0o.productlist.main.27.66c70ZQf0ZQfFG&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=185d7b55-1445-49d4-bc18-efda000b65ca&algo_exp_id=185d7b55-1445-49d4-bc18-efda000b65ca&pdp_ext_f=%7B%22order%22%3A%22405%22%7D&pdp_npi=4%40dis%21EUR%219.33%211.95%21%21%2176.60%2116.02%21%402103835e17535550753658707ecc77%2112000046055509120%21sea%21SK%210%21ABX&aff_fcid=b8d591b3b89b48e48161658828555b2b-1753555079020-00595-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=b8d591b3b89b48e48161658828555b2b-1753555079020-00595-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "How To Train Your Dragon Car Decoration",
+            "description": "DESCRIPTION",
+            "price": "29.99",
+            "expectedPurchasePrice": "12.78",
+            "productOptions": [
+                "Size - Colour:",
+                "20cm - 7,8inch Black",
+                "27cm - 10,6inch Black",
+                "35cm - 13,75inch Black",
+                "20cm - 7,8inch White",
+                "27cm - 10,6inch White",
+                "35cm - 13,75inch White"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHow%20To%20Train%20Your%20Dragon%20Car%20Decoration%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHow%20To%20Train%20Your%20Dragon%20Car%20Decoration%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHow%20To%20Train%20Your%20Dragon%20Car%20Decoration%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHow%20To%20Train%20Your%20Dragon%20Car%20Decoration%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHow%20To%20Train%20Your%20Dragon%20Car%20Decoration%2FModified/Image_IV.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005009246717141.html?spm=a2g0o.productlist.main.27.75851b9aIZ7ZQb&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=69424031-abb0-441a-9f94-e10bc9ccd264&algo_exp_id=69424031-abb0-441a-9f94-e10bc9ccd264&pdp_ext_f=%7B%22order%22%3A%227%22%7D&pdp_npi=4%40dis%21EUR%214.23%214.23%21%21%2134.75%2134.75%21%402103835e17535551171301903ecc77%2112000048461483562%21sea%21SK%210%21ABX&aff_fcid=ccb4f4ee86f94ae0bd28d149fdfa6b64-1753555141595-06340-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=ccb4f4ee86f94ae0bd28d149fdfa6b64-1753555141595-06340-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Double-Ended Dog Leash",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "3.92",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDouble-Ended%20Dog%20Leash%2FModified/Image_IX.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008267391775.html?spm=a2g0o.productlist.main.3.267f1bdemKXIkJ&algo_pvid=e5ab7a3d-27bb-4dff-84a9-94b6d56e8295&algo_exp_id=e5ab7a3d-27bb-4dff-84a9-94b6d56e8295-2&pdp_ext_f=%7B%22order%22%3A%22889%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2110.46%214.59%21%21%2185.89%2137.70%21%402103835e17535552333846449ecc83%2112000044423551035%21sea%21SK%216006253967%21X&curPageLogUid=Ayu1f0OKr3Mj&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=3c25c1e5e623448d8e29494446d75992-1753555238219-00170-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=3c25c1e5e623448d8e29494446d75992-1753555238219-00170-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Airtag Insoles",
+            "description": "DESCRIPTION",
+            "price": "19.99",
+            "expectedPurchasePrice": "10.47",
+            "productOptions": [
+                "Size:",
+                "135mm-150mm/5.3in-5.9in",
+                "155mm-170mm/6.1in-6.9in",
+                "175mm-190mm/6.9in-7.5in",
+                "195mm-210mm/7.7in-8.3in.",
+                "215mm-230mm/8.5in-9.1in",
+                "235mm-250mm/9.3in-9.8in",
+                "255mm-270mm/10.1in-10.6in",
+                "275mm-290mm/10.8in-11.4in"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FAirtag%20Insoles%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008404530032.html?spm=a2g0o.productlist.main.27.1a704c36al3afx&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=86d675a4-dd99-4641-a5f8-f6008a95b0e2&algo_exp_id=86d675a4-dd99-4641-a5f8-f6008a95b0e2&pdp_ext_f=%7B%22order%22%3A%227%22%7D&pdp_npi=4%40dis%21EUR%2132.11%2111.04%21%21%21263.66%2190.71%21%402103835e17535555239543922ecc77%2112000044896844502%21sea%21SK%210%21ABX&aff_fcid=3adf91338ad14e63b47c57a849f8be2a-1753555527511-05842-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=3adf91338ad14e63b47c57a849f8be2a-1753555527511-05842-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Soap Bar Scraper",
+            "description": "DESCRIPTION",
+            "price": "PRICE",
+            "expectedPurchasePrice": "EXPRICE",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSoap%20Bar%20Scraper%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006904961272.html?spm=a2g0o.productlist.main.27.41c16554sydVMT&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=491eda98-5d81-466d-b020-c90a5cde1d5d&algo_exp_id=491eda98-5d81-466d-b020-c90a5cde1d5d&pdp_ext_f=%7B%22order%22%3A%22879%22%7D&pdp_npi=4%40dis%21EUR%216.24%210.86%21%21%2151.25%217.10%21%402103835e17535557234308314ecc77%2112000038673069456%21sea%21SK%210%21ABX&aff_fcid=1fd71cd6883341138ec879ef76bfe98b-1753555731081-04769-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=1fd71cd6883341138ec879ef76bfe98b-1753555731081-04769-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "SpiderMan Web-Shooter Water Gun",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "5.87",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSpiderMan%20Web-Shooter%20Water%20Gun%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSpiderMan%20Web-Shooter%20Water%20Gun%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSpiderMan%20Web-Shooter%20Water%20Gun%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSpiderMan%20Web-Shooter%20Water%20Gun%2FModified/Image_III.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008554784193.html?spm=a2g0o.productlist.main.2.79d624ebs5JMgd&algo_pvid=13038a06-e035-41bc-a9f8-9e4359fddae4&algo_exp_id=13038a06-e035-41bc-a9f8-9e4359fddae4-1&pdp_ext_f=%7B%22order%22%3A%227202%22%2C%22eval%22%3A%221%22%2C%22orig_sl_item_id%22%3A%221005008554784193%22%2C%22orig_item_id%22%3A%221005008635098169%22%7D&pdp_npi=4%40dis%21EUR%219.28%214.42%21%21%2176.16%2136.27%21%402103919917535560027337287e856c%2112000045690186532%21sea%21SK%216006253967%21X&curPageLogUid=8wDHF7t6g0n7&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=9c4d1fc645d64622afd49d6617c8f1ef-1753556007378-05033-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=9c4d1fc645d64622afd49d6617c8f1ef-1753556007378-05033-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Waterproof Shower Phone Holder",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "6.55",
+            "productOptions": [
+                "Colour:",
+                "Black",
+                "White",
+                "Pink"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Shower%20Phone%20Holder%2FModified/Image_IX.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008751291077.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.2.21e5er1aer1ac3&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40196.442820.0&scm_id=1007.40196.442820.0&scm-url=1007.40196.442820.0&pvid=a722bd9f-6dd2-40bd-b599-e5539d7fad9e&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40196.442820.0%2Cpvid%3Aa722bd9f-6dd2-40bd-b599-e5539d7fad9e%2Ctpp_buckets%3A668%232846%238116%232002&pdp_ext_f=%7B%22order%22%3A%2217%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%7D&pdp_npi=4%40dis%21EUR%2117.70%218.07%21%21%21145.31%2166.22%21%40211b61bb17535561830897304ec055%2112000046516695025%21rec%21SK%216006253967%21X&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A&aff_fcid=fd0b67d39c2140108c05521265883623-1753556204448-01217-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=fd0b67d39c2140108c05521265883623-1753556204448-01217-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "500ml Ice Cube Mold Bottle",
+            "description": "DESCRIPTION",
+            "price": "PRICE",
+            "expectedPurchasePrice": "EXPRICE",
+            "productOptions": [
+                "Colour:",
+                "Green",
+                "White",
+                "Pink"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F500ml%20Ice%20Cube%20Mold%20Bottle%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F500ml%20Ice%20Cube%20Mold%20Bottle%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F500ml%20Ice%20Cube%20Mold%20Bottle%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F500ml%20Ice%20Cube%20Mold%20Bottle%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F500ml%20Ice%20Cube%20Mold%20Bottle%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F500ml%20Ice%20Cube%20Mold%20Bottle%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006116504094.html?spm=a2g0o.productlist.main.5.13335488rPtLrc&algo_pvid=3cbef177-a7a6-43d8-be45-631cb6d125c8&algo_exp_id=3cbef177-a7a6-43d8-be45-631cb6d125c8-4&pdp_ext_f=%7B%22order%22%3A%22882%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%213.03%213.03%21%21%213.48%213.48%21%402103849717535569707893682edcae%2112000035845706637%21sea%21SK%216006253967%21X&curPageLogUid=1GsOiBexHlta&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=1627aaa54e14461cb32f7c2c22438063-1753556975634-08362-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=1627aaa54e14461cb32f7c2c22438063-1753556975634-08362-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Waterproof Rubber Cover For Shoes",
+            "description": "DESCRIPTION",
+            "price": "9.99",
+            "expectedPurchasePrice": "2.01",
+            "productOptions": [
+                "Size:",
+                "S",
+                "M",
+                "L"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Rubber%20Cover%20For%20Shoes%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Rubber%20Cover%20For%20Shoes%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Rubber%20Cover%20For%20Shoes%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Rubber%20Cover%20For%20Shoes%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Rubber%20Cover%20For%20Shoes%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWaterproof%20Rubber%20Cover%20For%20Shoes%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006953855771.html?spm=a2g0o.productlist.main.27.307516d3p78aSi&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=ee08461d-a5b6-4866-9206-1401480a0e46&algo_exp_id=ee08461d-a5b6-4866-9206-1401480a0e46&pdp_ext_f=%7B%22order%22%3A%2287%22%7D&pdp_npi=4%40dis%21EUR%211.87%211.31%21%21%212.14%211.50%21%402103956a17535570242592184e7f68%2112000038840442123%21sea%21SK%210%21ABX&aff_fcid=848c71405440403da17140361dd71ab2-1753557026643-00560-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=848c71405440403da17140361dd71ab2-1753557026643-00560-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Silicone Door Handle Anti-COlision Cover",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "1.83",
+            "productOptions": [
+                "Colour:",
+                "Grey",
+                "Blue",
+                "Yellow"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FSilicone%20Door%20Handle%20Anti-COlision%20Cover%2FModified/Image_VIII.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005005580116613.html?spm=a2g0o.productlist.main.7.61444ed6f27WdG&algo_pvid=b0750456-f6ac-46a9-bb86-b166ff10ef3e&algo_exp_id=b0750456-f6ac-46a9-bb86-b166ff10ef3e-6&pdp_ext_f=%7B%22order%22%3A%22162%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%211.94%211.94%21%21%2115.92%2115.92%21%402103892f17535570709634789eac4b%2112000033628725712%21sea%21SK%216006253967%21X&curPageLogUid=GBWJ0bSxzYTm&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=6dd7f5b55fd0413d9389ea7dcbd332d7-1753557075224-07504-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=6dd7f5b55fd0413d9389ea7dcbd332d7-1753557075224-07504-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Shirt Button Aid Tool Hook",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "1.38",
+            "productOptions": [
+                "Type:",
+                "White-Small Buttons",
+                "White-Universal",
+                "Black-Universal"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FShirt%20Button%20Aid%20Tool%20Hook%2FModified/Image_IX.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008373427046.html?spm=a2g0o.productlist.main.3.1e8c77789IMHKe&algo_pvid=df25a8b8-c3d3-495c-8742-ddbc8a02fb8f&algo_exp_id=df25a8b8-c3d3-495c-8742-ddbc8a02fb8f-2&pdp_ext_f=%7B%22order%22%3A%2230%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.98%211.76%21%21%2124.43%2114.41%21%40211b815c17535571997626497e94dd%2112000044761554641%21sea%21SK%216006253967%21X&curPageLogUid=HDHT0lzPscoD&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=538f0082ae654db9a419b248f79e7580-1753557203069-06313-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=538f0082ae654db9a419b248f79e7580-1753557203069-06313-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Weight Lifting Hook Grip",
+            "description": "DESCRIPTION",
+            "price": "9.99",
+            "expectedPurchasePrice": "2.90",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWeight%20Lifting%20Hook%20Grip%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWeight%20Lifting%20Hook%20Grip%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWeight%20Lifting%20Hook%20Grip%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FWeight%20Lifting%20Hook%20Grip%2FModified/Image_III.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005009410861190.html?spm=a2g0o.productlist.main.27.6382734bUvlu4D&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=3faeb6b9-93fc-4747-8b70-e6caedca65c5&algo_exp_id=3faeb6b9-93fc-4747-8b70-e6caedca65c5&pdp_ext_f=%7B%22order%22%3A%229%22%7D&pdp_npi=4%40dis%21EUR%2123.54%218.92%21%21%21193.26%2173.19%21%40211b619a17535612501926920ede27%2112000049030484284%21sea%21SK%210%21ABX&aff_fcid=d05e0f288b7444429d79f47afe9219cf-1753561252818-01403-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=d05e0f288b7444429d79f47afe9219cf-1753561252818-01403-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Dancing Octopus",
+            "description": "DESCRIPTION",
+            "price": "24.99",
+            "expectedPurchasePrice": "17.07",
+            "productOptions": [
+                "Colour:",
+                "Green",
+                "Yellow",
+                "Pink"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FDancing%20Octopus%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006340481123.html?spm=a2g0o.productlist.main.33.66ad41b1JKnI7Y&algo_pvid=1ba55707-ee13-444b-a69c-a3c15d9cab5f&algo_exp_id=1ba55707-ee13-444b-a69c-a3c15d9cab5f-32&pdp_ext_f=%7B%22order%22%3A%22263%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%212.46%212.01%21%21%2120.18%2116.48%21%40210390c217535619161447381e46cf%2112000036819011710%21sea%21SK%216006253967%21X&curPageLogUid=UYY4NE4Ijgv6&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=c1d7b23e644f476697f5fce36cafd43c-1753561944245-07850-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=c1d7b23e644f476697f5fce36cafd43c-1753561944245-07850-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "3 in 1 Cleaning Brush",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "1.56",
+            "productOptions": [
+                "Colour:",
+                "Grey",
+                "Green",
+                "Blue"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008194938196.html?spm=a2g0o.productlist.main.17.74ff572eNzFW0Q&algo_pvid=c03f9670-7e07-4db1-a447-a316f445af62&algo_exp_id=c03f9670-7e07-4db1-a447-a316f445af62-12&pdp_ext_f=%7B%22order%22%3A%22767%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%210.44%210.24%21%21%210.50%210.27%21%4021038e6617535620446024236e4a62%2112000044196469026%21sea%21SK%216006253967%21X&curPageLogUid=VMy7pdOmf46q&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=bac02b848e824ce494964bad42ca5416-1753562114458-00923-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=bac02b848e824ce494964bad42ca5416-1753562114458-00923-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Boat Motor Stirrer For Mugs",
+            "description": "DESCRIPTION",
+            "price": "4.99",
+            "expectedPurchasePrice": "0.43",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_VI.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008791541429.html?spm=a2g0o.productlist.main.5.293aseMLseMLRI&algo_pvid=81716053-301c-4fbd-9a68-c04a7b6b5457&algo_exp_id=81716053-301c-4fbd-9a68-c04a7b6b5457-4&pdp_ext_f=%7B%22order%22%3A%22203%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2144.21%2122.99%21%21%2150.71%2126.37%21%402103963717535627053775025edf8c%2112000046698821742%21sea%21SK%216006253967%21X&curPageLogUid=rh2ayz0YOAV7&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=c01a3bd54c75419f85a809ec5b6f8286-1753562717596-00106-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=c01a3bd54c75419f85a809ec5b6f8286-1753562717596-00106-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "KastKing Osage Polarized Sport Sunglasses",
+            "description": "here include that it is good for spotting fish under water",
+            "price": "99.99",
+            "expectedPurchasePrice": "42.68",
+            "productOptions": [
+                "Colour:",
+                "Brown",
+                "Orange",
+                "Blue",
+                "Green"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_IX.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FKastKing%20Osage%20Polarized%20Sport%20Sunglasses%2FModified/Image_X.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008604600989.html?spm=a2g0o.productlist.main.27.5e63787dJRABPi&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=b5475d52-5ca0-4e53-a2a4-7784bd828843&algo_exp_id=b5475d52-5ca0-4e53-a2a4-7784bd828843&pdp_ext_f=%7B%22order%22%3A%22103%22%7D&pdp_npi=4%40dis%21EUR%2141.85%2135.99%21%21%2148.00%2141.28%21%40211b619a17535627991506608ede27%2112000045919244149%21sea%21SK%210%21ABX&aff_fcid=8c2d46570bef4f068ab41ae589c1cc22-1753562803749-07325-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=8c2d46570bef4f068ab41ae589c1cc22-1753562803749-07325-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Hoodie With Built-In Backpack",
+            "description": "DESCRIPTION",
+            "price": "69.99",
+            "expectedPurchasePrice": "40.36",
+            "productOptions": [
+                "Size:",
+                "M",
+                "L",
+                "XL",
+                "XXL",
+                "XXXL"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20With%20Built-In%20Backpack%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20With%20Built-In%20Backpack%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20With%20Built-In%20Backpack%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20With%20Built-In%20Backpack%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20With%20Built-In%20Backpack%2FModified/Image_IV.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005008229003638.html?spm=a2g0o.productlist.main.27.732827c48lA3oX&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best&algo_pvid=a9339fe8-70e0-41f4-9fa6-37c9acde9277&algo_exp_id=a9339fe8-70e0-41f4-9fa6-37c9acde9277&pdp_ext_f=%7B%22order%22%3A%2240%22%7D&pdp_npi=4%40dis%21EUR%216.44%212.38%21%21%217.39%212.73%21%40211b619a17535628535187801ede27%2112000044304720694%21sea%21SK%210%21ABX&aff_fcid=df73d8d7884b4a7580a2dbe4856d6008-1753562857491-07488-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&a",
+            "name": "Funny Dog Shorts",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "6.29",
+            "productOptions": [
+                "Size:",
+                "XXS",
+                "XS",
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL",
+                "XXXL"
+            ],
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FFunny%20Dog%20Shorts%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FFunny%20Dog%20Shorts%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FFunny%20Dog%20Shorts%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FFunny%20Dog%20Shorts%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FFunny%20Dog%20Shorts%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FFunny%20Dog%20Shorts%2FModified/Image_V.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005009498754875.html?spm=a2g0o.productlist.main.1.d25eFYOTFYOTZH&algo_pvid=f6365d62-6f35-4138-9bc5-fa1d55290fdb&algo_exp_id=f6365d62-6f35-4138-9bc5-fa1d55290fdb-0&pdp_ext_f=%7B%22order%22%3A%22414%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%216.96%213.19%21%21%2157.17%2126.20%21%4021038e6617535635764717692e4a56%2112000049289152050%21sea%21SK%216006253967%21X&curPageLogUid=7rW5GKQdpTmI&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=044e79d97ce64b7084a9c0c57c26e9b3-1753563583129-02143-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=044e79d97ce64b7084a9c0c57c26e9b3-1753563583129-02143-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Prank Reverse-Firing Water Gun",
+            "description": "DESCRIPTION",
+            "price": "14.99",
+            "expectedPurchasePrice": "6.21",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FPrank%20Reverse-Firing%20Water%20Gun%2FModified/Image_VIII.avif"
+            ]
+        },
+        {
+            "productLink": "https://www.aliexpress.com/item/1005006073307237.html?spm=a2g0o.productlist.main.2.29255990lhqIiS&algo_pvid=55e436cb-53f9-458b-9e13-972ee35ec284&algo_exp_id=55e436cb-53f9-458b-9e13-972ee35ec284-1&pdp_ext_f=%7B%22order%22%3A%22192%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%214.59%212.34%21%21%2137.72%2119.24%21%40211b612517535643024642298ef993%2112000035606553490%21sea%21SK%216006253967%21X&curPageLogUid=HeDWSaT34AOh&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=ac27ab2685804b5dbf681584027ef86e-1753564307167-00553-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=ac27ab2685804b5dbf681584027ef86e-1753564307167-00553-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
+            "name": "Hoodie Woodie",
+            "description": "DESCRIPTION",
+            "price": "9.99",
+            "expectedPurchasePrice": "4.44",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_I.avif",
+            "images": [
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FHoodie%20Woodie%2FModified/Image_IX.avif"
+            ]
+        },
+
     ]
+
 };
 
