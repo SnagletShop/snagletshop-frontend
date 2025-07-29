@@ -612,23 +612,25 @@ const products = {
         },
         {
             "productLink": "https://www.aliexpress.com/item/1005007626663261.html?spm=a2g0o.productlist.main.2.60312235U0MbVr&algo_pvid=c1593c5e-71cf-4d4e-8620-ef5a36533fc2&algo_exp_id=c1593c5e-71cf-4d4e-8620-ef5a36533fc2-1&pdp_ext_f=%7B%22order%22%3A%225227%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%219.22%219.22%21%21%2172.63%2172.63%21%40211b815c17475106019528091e6909%2112000041555189495%21sea%21SK%216006253967%21X&curPageLogUid=dVReMqWWigFI&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=d1eee9b2ee104b2ea35e046e3a7791ea-1747510606631-07883-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=d1eee9b2ee104b2ea35e046e3a7791ea-1747510606631-07883-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
-            "name": "Car Speedometer Windshiel Hologram - KM/H",
-            "description": "Project your speed directly onto your windshield for safer, distraction-free driving.\n\n🚗 Real-time KM/H speed display\n🌈 Choose from white or green text\n🔌 Easy plug-and-play installation via car charger\n🛡️ No need to look down at the dashboard",
-            "price": "29.99",
+            "name": "Car Speedometer Windshiel Hologram",
+            "description": "Project your speed directly onto your windshield for safer, distraction-free driving.\n\n🚗 Real-time speed display\n🌈 Choose from white or green text\n🔌 Easy plug-and-play installation via car charger\n🛡️ No need to look down at the dashboard",
+            "price": "19.99",
             "expectedPurchasePrice": "9.12",
             "productOptions": [
                 "Text colour:",
                 "White",
                 "Green"
             ],
-            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_I.avif",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_I.avif",
             "images": [
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_I.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_II.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_III.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_IV.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_V.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FCar%20Speedometer%20Windshiel%20Hologram%20-%20KMH%2FModified/Image_VI.avif"
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Car%20Speedometer%20Windshiel%20Hologram/Modified/Image_VIII.avif",
             ]
         },
         {
@@ -2306,14 +2308,17 @@ const products = {
                 "Green",
                 "Blue"
             ],
-            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_I.avif",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_I.avif",
             "images": [
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_I.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_II.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_III.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_IV.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_V.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2F3%20in%201%20Cleaning%20Brush%2FModified/Image_VI.avif"
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_VI.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_VII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_VIII.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/3%20in%201%20Cleaning%20Brush/Modify/Image_IX.avif"
             ]
         },
         {
@@ -2322,20 +2327,20 @@ const products = {
             "description": "🚤 Boat Motor Mug Stirrer \n Stir your drink with a splash of fun! \n ☕ Perfect for Coffee & More \n Mixes coffee, milk, cocoa, or protein shakes with ease—just like a mini blender! \n 🌀 Boat Motor Design \n Features a playful outboard motor look that actually spins when turned on. \n 🧼 Easy to Clean \n Detachable and washable propeller makes cleanup effortless. \n 🎁 Great Gag Gift \n A hilarious yet functional gift for boat lovers and coffee enthusiasts alike!",
             "price": "4.99",
             "expectedPurchasePrice": "0.43",
-            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_I.avif",
+            "image": "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs/Modify/Image_I.avif",
             "images": [
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_I.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_II.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_III.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_IV.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_V.avif",
-                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images%2FBoat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_VI.avif"
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs/Modify/Image_I.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs/Modify/Image_II.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs/Modify/Image_III.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs/Modify/Image_IV.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_V.avif",
+                "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/SnagletShop--Product_Images/Boat%20Motor%20Stirrer%20For%20Mugs%2FModified/Image_VI.avif"
             ]
         },
         {
             "productLink": "https://www.aliexpress.com/item/1005008791541429.html?spm=a2g0o.productlist.main.5.293aseMLseMLRI&algo_pvid=81716053-301c-4fbd-9a68-c04a7b6b5457&algo_exp_id=81716053-301c-4fbd-9a68-c04a7b6b5457-4&pdp_ext_f=%7B%22order%22%3A%22203%22%2C%22eval%22%3A%221%22%7D&pdp_npi=4%40dis%21EUR%2144.21%2122.99%21%21%2150.71%2126.37%21%402103963717535627053775025edf8c%2112000046698821742%21sea%21SK%216006253967%21X&curPageLogUid=rh2ayz0YOAV7&utparam-url=scene%3Asearch%7Cquery_from%3A&aff_fcid=c01a3bd54c75419f85a809ec5b6f8286-1753562717596-00106-_Abgf1d&tt=CPS_NORMAL&aff_fsk=_Abgf1d&aff_platform=shareComponent-detail&sk=_Abgf1d&aff_trace_key=c01a3bd54c75419f85a809ec5b6f8286-1753562717596-00106-_Abgf1d&terminal_id=1fe4a077141d4758bf1c5dc2e87e8042&afSmartRedirect=y",
             "name": "KastKing Osage Polarized Sport Sunglasses",
-            "description": "here include that it is good for spotting fish under water",
+            "description": "KastKing Osage polarized sport sunglasses designed for outdoor adventures and fishing.\n\n🕶️ Polarized Lenses reduce glare on water, making it easier to spot fish and enhance visual clarity.\n💪 Durable & Lightweight Frame built for comfort and long-lasting performance during active use.\n🌊 Outdoor-Ready, ideal for fishing, boating, hiking, or driving under bright conditions.\n\n🎨 Multiple Color Options\nChoose Brown, Orange, Blue, or Green to match your style and environment.",
             "price": "99.99",
             "expectedPurchasePrice": "42.68",
             "productOptions": [
