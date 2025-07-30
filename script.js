@@ -1757,7 +1757,7 @@ async function createPaymentModal() {
             }).join(", ").slice(0, 499);
 
             // 🔁 Create new payment intent with new country and currency
-            const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
+            const res = await fetch("https://www.snagletshop.com/test-order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -1807,7 +1807,7 @@ async function createPaymentModal() {
         return `${item.quantity}x ${name}${option}`;
     }).join(", ").slice(0, 499);
 
-    const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
+    const res = await fetch("https://www.snagletshop.com/test-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1891,7 +1891,7 @@ async function createPaymentModal() {
 
     // 🧾 Apple/Google Pay Checkout Handler
     paymentRequest.on("paymentmethod", async ev => {
-        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("https://api.snagletshop.com/create-payment-intent", {
+        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("https://www.snagletshop.com/test-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2120,7 +2120,7 @@ async function processPayment(e) {
     console.log("🔍 Sending currency to server:", selectedCurrency);
 
     try {
-        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
+        const response = await fetch("https://www.snagletshop.com/test-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2205,7 +2205,7 @@ async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) 
     stripeInstance = stripe;
 
     try {
-        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
+        const response = await fetch("https://www.snagletshop.com/test-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -3236,7 +3236,7 @@ function updateBasket() {
     receiptContent += `
         <div class="ReceiptFooter">
             <button class="PayButton">${TEXTS.PRODUCT_SECTION.BUY_NOW}</button>
-            <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Celkom: ${totalSum.toFixed(2)}€</strong>
+            <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
         </div>
     `;
 
