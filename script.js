@@ -422,6 +422,21 @@ async function preloadSettingsData() {
         console.error("❌ Failed to preload settings data:", err);
     }
 }
+window.addEventListener("storage", (event) => {
+    if (event.key === "basket") {
+        try {
+            const updatedBasket = JSON.parse(event.newValue);
+            if (updatedBasket) {
+                basket = updatedBasket;
+                updateBasket(); // Refresh UI
+                console.log("🔄 Basket updated from another tab.");
+            }
+        } catch (e) {
+            console.error("Failed to sync basket:", e);
+        }
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     console.log("✅ DOM fully loaded. Checking for product from query...");
 
