@@ -292,6 +292,11 @@ const currencySymbols = {
 
 const preloadedImages = new Set();
 
+const redirectPath = sessionStorage.getItem("redirectAfter404");
+if (redirectPath) {
+    sessionStorage.removeItem("redirectAfter404");
+    history.replaceState({}, "", redirectPath);
+}
 
 let selectedCurrency = "EUR";
 try {
