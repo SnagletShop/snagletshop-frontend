@@ -829,7 +829,7 @@ function searchProducts() {
             // Clickable product name as a link, no underline
             const nameLink = document.createElement("a");
             nameLink.className = "product-name";
-            nameLink.href = "#";
+
             nameLink.textContent = product.name;
             nameLink.style.textDecoration = "none";
             nameLink.addEventListener("click", (e) => {
@@ -841,6 +841,9 @@ function searchProducts() {
                 ]);
             });
 
+
+            nameLink.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
+            nameLink.target = "_blank"; // Open in new tab
             const img = document.createElement("img");
             img.className = "Clickable_Image";
             img.src = product.image;
@@ -2467,7 +2470,7 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         nameLink.className = "product-name";
         nameLink.style.textDecoration = "none"; // Removes underline
 
-        nameLink.href = "#";
+
         nameLink.textContent = product.name;
         nameLink.addEventListener("click", (e) => {
             e.preventDefault();
@@ -2477,6 +2480,8 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
                 product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
             ]);
         });
+        nameLink.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
+        nameLink.target = "_blank"; // Open in new tab
 
         const img = document.createElement("img");
         img.className = "Clickable_Image";
