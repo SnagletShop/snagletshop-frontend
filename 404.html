@@ -17,6 +17,14 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  // Only run this redirect if we're not actually on the 404 page manually
+  if (!location.pathname.endsWith('/404.html')) {
+    const path = location.pathname + location.search + location.hash;
+    sessionStorage.setItem("redirectAfter404", path);
+    window.location.replace("/");
+  }
+</script>
 
     <style>
         :root {
