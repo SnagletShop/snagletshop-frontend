@@ -438,15 +438,26 @@ window.addEventListener("storage", (event) => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ DOM fully loaded. Checking for product from query...");
+    console.log("✅ DOM fully loaded. Checking for product from URL...");
 
+    const path = window.location.pathname;
+    let slug = null;
+
+    // Support old format: ?product=...
     const params = new URLSearchParams(window.location.search);
-    const productName = params.get("product");
+    const legacyProductName = params.get("product");
 
-    if (productName) {
-        const cleanedQuery = productName.toLowerCase().trim();
-        console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
+    if (path.startsWith("/product/")) {
+        slug = decodeURIComponent(path.replace("/product/", "").toLowerCase());
+        console.log("🔍 Detected product slug in path:", slug);
+    } else if (legacyProductName) {
+        slug = legacyProductName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
+        console.log("⚠️ Using legacy query format. Converted to slug:", slug);
+        // Redirect to clean URL for SEO benefit
+        history.replaceState({}, "", `/product/${slug}`);
+    }
 
+    if (slug) {
         let attempts = 0;
         const maxAttempts = 300;
 
@@ -455,49 +466,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 clearInterval(checkProducts);
 
                 const allProducts = Object.values(products).flat();
+                console.log("🧪 Loaded all products. Matching slug:", slug);
 
-                console.log("🧪 Checking against these product names:");
-                allProducts.forEach(p => {
-                    if (p && typeof p.name === "string") {
-                        const name = p.name.toLowerCase().trim();
-                        console.log("→", `"${name}"`);
-                    } else {
-                        console.warn("⚠️ Skipping invalid product:", p);
-                    }
-                });
+                const slugify = name =>
+                    name.toLowerCase().trim()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/(^-|-$)/g, "");
 
-                // Try exact match
                 let match = allProducts.find(p => {
-                    if (!p || typeof p.name !== "string") return false;
-
-                    const dbName = p.name.toLowerCase().trim();
-                    const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
-                    const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
-
-                    console.log(`🔎 Comparing "${dbName}" to "${cleanedQuery}"`);
-                    console.log("   DB char codes  :", dbNameCodes.join(" "));
-                    console.log("   Query char codes:", queryCodes.join(" "));
-
-                    return dbName === cleanedQuery;
+                    return p && typeof p.name === "string" && slugify(p.name) === slug;
                 });
 
-                // Fallback: fuzzy match
+                // Fallback: fuzzy
                 if (!match) {
                     console.warn("⚠️ No exact match. Trying fuzzy match...");
                     match = allProducts.find(p =>
                         p && typeof p.name === "string" &&
-                        p.name.toLowerCase().trim().includes(cleanedQuery)
+                        slugify(p.name).includes(slug)
                     );
-                    if (match) {
-                        console.log("✅ Fuzzy match found:", match.name);
-                    }
                 }
 
-                if (
-                    match &&
-                    Array.isArray(match.images) &&
-                    match.images.length > 0
-                ) {
+                if (match && Array.isArray(match.images) && match.images.length > 0) {
                     console.log("✅ Matched product:", match.name);
                     navigate("GoToProductPage", [
                         match.name,
@@ -505,7 +494,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         match.description || "No description available."
                     ]);
                 } else {
-                    console.warn("❌ Product not found or has no valid images:", `"${productName}"`);
+                    console.warn("❌ Product not found or has no valid images:", `"${slug}"`);
                     history.replaceState({}, "", "/");
                     loadProducts("Default_Page");
                 }
@@ -529,6 +518,7 @@ document.addEventListener("DOMContentLoaded", () => {
         searchInput.addEventListener("keyup", searchProducts);
     }
 });
+
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
 });
