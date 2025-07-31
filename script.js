@@ -445,10 +445,17 @@ window.addEventListener("storage", (event) => {
 document.addEventListener("DOMContentLoaded", () => {
     console.log("✅ DOM fully loaded. Checking for product from URL...");
 
+    // Restore redirect from 404.html fallback if needed
+    const redirectPath = sessionStorage.getItem("redirectAfter404");
+    if (redirectPath) {
+        sessionStorage.removeItem("redirectAfter404");
+        history.replaceState({}, "", redirectPath);
+    }
+
     const path = window.location.pathname;
     let slug = null;
 
-    // Support old format: ?product=...
+    // Legacy ?product=name support
     const params = new URLSearchParams(window.location.search);
     const legacyProductName = params.get("product");
 
@@ -457,14 +464,18 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("🔍 Detected product slug in path:", slug);
     } else if (legacyProductName) {
         slug = legacyProductName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
-        console.log("⚠️ Using legacy query format. Converted to slug:", slug);
-        // Redirect to clean URL for SEO benefit
+        console.log("⚠️ Using legacy query format. Redirecting to SEO-friendly URL:", slug);
         history.replaceState({}, "", `/product/${slug}`);
     }
 
     if (slug) {
         let attempts = 0;
         const maxAttempts = 300;
+
+        const slugify = name =>
+            name.toLowerCase().trim()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "");
 
         const checkProducts = setInterval(() => {
             if (typeof products !== "undefined" && Object.keys(products).length > 0) {
@@ -473,16 +484,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const allProducts = Object.values(products).flat();
                 console.log("🧪 Loaded all products. Matching slug:", slug);
 
-                const slugify = name =>
-                    name.toLowerCase().trim()
-                        .replace(/[^a-z0-9]+/g, "-")
-                        .replace(/(^-|-$)/g, "");
+                let match = allProducts.find(p =>
+                    p && typeof p.name === "string" && slugify(p.name) === slug
+                );
 
-                let match = allProducts.find(p => {
-                    return p && typeof p.name === "string" && slugify(p.name) === slug;
-                });
-
-                // Fallback: fuzzy
+                // Fallback: fuzzy match
                 if (!match) {
                     console.warn("⚠️ No exact match. Trying fuzzy match...");
                     match = allProducts.find(p =>
@@ -499,7 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         match.description || "No description available."
                     ]);
                 } else {
-                    console.warn("❌ Product not found or has no valid images:", `"${slug}"`);
+                    console.warn("❌ Product not found or has no valid images:", slug);
                     history.replaceState({}, "", "/");
                     loadProducts("Default_Page");
                 }
@@ -519,10 +525,13 @@ document.addEventListener("DOMContentLoaded", () => {
         loadProducts("Default_Page");
     }
 
-    if (typeof searchInput !== "undefined") {
-        searchInput.addEventListener("keyup", searchProducts);
+    // Guard against undefined searchInput
+    const input = document.getElementById("searchInput");
+    if (input) {
+        input.addEventListener("keyup", searchProducts);
     }
 });
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
