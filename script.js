@@ -422,7 +422,98 @@ async function preloadSettingsData() {
         console.error("❌ Failed to preload settings data:", err);
     }
 }
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ DOM fully loaded. Checking for product from query...");
 
+    const params = new URLSearchParams(window.location.search);
+    const productName = params.get("product");
+
+    if (productName) {
+        const cleanedQuery = productName.toLowerCase().trim();
+        console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
+
+        let attempts = 0;
+        const maxAttempts = 300;
+
+        const checkProducts = setInterval(() => {
+            if (typeof products !== "undefined" && Object.keys(products).length > 0) {
+                clearInterval(checkProducts);
+
+                const allProducts = Object.values(products).flat();
+
+                console.log("🧪 Checking against these product names:");
+                allProducts.forEach(p => {
+                    if (p && typeof p.name === "string") {
+                        const name = p.name.toLowerCase().trim();
+                        console.log("→", `"${name}"`);
+                    } else {
+                        console.warn("⚠️ Skipping invalid product:", p);
+                    }
+                });
+
+                // Try exact match
+                let match = allProducts.find(p => {
+                    if (!p || typeof p.name !== "string") return false;
+
+                    const dbName = p.name.toLowerCase().trim();
+                    const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
+                    const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
+
+                    console.log(`🔎 Comparing "${dbName}" to "${cleanedQuery}"`);
+                    console.log("   DB char codes  :", dbNameCodes.join(" "));
+                    console.log("   Query char codes:", queryCodes.join(" "));
+
+                    return dbName === cleanedQuery;
+                });
+
+                // Fallback: fuzzy match
+                if (!match) {
+                    console.warn("⚠️ No exact match. Trying fuzzy match...");
+                    match = allProducts.find(p =>
+                        p && typeof p.name === "string" &&
+                        p.name.toLowerCase().trim().includes(cleanedQuery)
+                    );
+                    if (match) {
+                        console.log("✅ Fuzzy match found:", match.name);
+                    }
+                }
+
+                if (
+                    match &&
+                    Array.isArray(match.images) &&
+                    match.images.length > 0
+                ) {
+                    console.log("✅ Matched product:", match.name);
+                    navigate("GoToProductPage", [
+                        match.name,
+                        match.price,
+                        match.description || "No description available."
+                    ]);
+                } else {
+                    console.warn("❌ Product not found or has no valid images:", `"${productName}"`);
+                    history.replaceState({}, "", "/");
+                    loadProducts("Default_Page");
+                }
+            } else {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkProducts);
+                    console.error("⏰ Timeout: products not loaded in time.");
+                    history.replaceState({}, "", "/");
+                    loadProducts("Default_Page");
+                } else {
+                    console.log("⌛ Waiting for products to load...");
+                }
+            }
+        }, 10);
+    } else {
+        loadProducts("Default_Page");
+    }
+
+    if (typeof searchInput !== "undefined") {
+        searchInput.addEventListener("keyup", searchProducts);
+    }
+});
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
 });
@@ -555,98 +646,7 @@ searchInput.addEventListener("keydown", (e) => {
 mobileSearchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") e.preventDefault();
 });
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ DOM fully loaded. Checking for product from query...");
 
-    const params = new URLSearchParams(window.location.search);
-    const productName = params.get("product");
-
-    if (productName) {
-        const cleanedQuery = productName.toLowerCase().trim();
-        console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
-
-        let attempts = 0;
-        const maxAttempts = 300;
-
-        const checkProducts = setInterval(() => {
-            if (typeof products !== "undefined" && Object.keys(products).length > 0) {
-                clearInterval(checkProducts);
-
-                const allProducts = Object.values(products).flat();
-
-                console.log("🧪 Checking against these product names:");
-                allProducts.forEach(p => {
-                    if (p && typeof p.name === "string") {
-                        const name = p.name.toLowerCase().trim();
-                        console.log("→", `"${name}"`);
-                    } else {
-                        console.warn("⚠️ Skipping invalid product:", p);
-                    }
-                });
-
-                // Try exact match
-                let match = allProducts.find(p => {
-                    if (!p || typeof p.name !== "string") return false;
-
-                    const dbName = p.name.toLowerCase().trim();
-                    const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
-                    const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
-
-                    console.log(`🔎 Comparing "${dbName}" to "${cleanedQuery}"`);
-                    console.log("   DB char codes  :", dbNameCodes.join(" "));
-                    console.log("   Query char codes:", queryCodes.join(" "));
-
-                    return dbName === cleanedQuery;
-                });
-
-                // Fallback: fuzzy match
-                if (!match) {
-                    console.warn("⚠️ No exact match. Trying fuzzy match...");
-                    match = allProducts.find(p =>
-                        p && typeof p.name === "string" &&
-                        p.name.toLowerCase().trim().includes(cleanedQuery)
-                    );
-                    if (match) {
-                        console.log("✅ Fuzzy match found:", match.name);
-                    }
-                }
-
-                if (
-                    match &&
-                    Array.isArray(match.images) &&
-                    match.images.length > 0
-                ) {
-                    console.log("✅ Matched product:", match.name);
-                    navigate("GoToProductPage", [
-                        match.name,
-                        match.price,
-                        match.description || "No description available."
-                    ]);
-                } else {
-                    console.warn("❌ Product not found or has no valid images:", `"${productName}"`);
-                    history.replaceState({}, "", "/");
-                    loadProducts("Default_Page");
-                }
-            } else {
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    clearInterval(checkProducts);
-                    console.error("⏰ Timeout: products not loaded in time.");
-                    history.replaceState({}, "", "/");
-                    loadProducts("Default_Page");
-                } else {
-                    console.log("⌛ Waiting for products to load...");
-                }
-            }
-        }, 100);
-    } else {
-        loadProducts("Default_Page");
-    }
-
-    if (typeof searchInput !== "undefined") {
-        searchInput.addEventListener("keyup", searchProducts);
-    }
-});
 
 
 
