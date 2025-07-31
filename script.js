@@ -563,7 +563,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (productName) {
         const cleanedQuery = productName.toLowerCase().trim();
-        console.log("🔍 Looking for product:", cleanedQuery);
+        console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
 
         let attempts = 0;
         const maxAttempts = 300;
@@ -575,11 +575,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 const allProducts = Object.values(products).flat();
 
                 console.log("🧪 Checking against these product names:");
-                allProducts.forEach(p => console.log("→", p.name.toLowerCase().trim()));
+                allProducts.forEach(p => {
+                    const name = p.name.toLowerCase().trim();
+                    console.log("→", `"${name}"`);
+                });
 
-                const match = allProducts.find(p =>
-                    p.name.toLowerCase().trim() === cleanedQuery
-                );
+                // Try exact match
+                let match = allProducts.find(p => {
+                    const dbName = p.name.toLowerCase().trim();
+                    const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
+                    const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
+
+                    console.log(`🔎 Comparing "${dbName}" to "${cleanedQuery}"`);
+                    console.log("   DB char codes  :", dbNameCodes.join(" "));
+                    console.log("   Query char codes:", queryCodes.join(" "));
+
+                    return dbName === cleanedQuery;
+                });
+
+                // Fallback: fuzzy match
+                if (!match) {
+                    console.warn("⚠️ No exact match. Trying fuzzy match...");
+                    match = allProducts.find(p =>
+                        p.name.toLowerCase().trim().includes(cleanedQuery)
+                    );
+                    if (match) {
+                        console.log("✅ Fuzzy match found:", match.name);
+                    }
+                }
 
                 if (
                     match &&
@@ -593,7 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         match.description || "No description available."
                     ]);
                 } else {
-                    console.warn("❌ Product not found or has no valid images:", productName);
+                    console.warn("❌ Product not found or has no valid images:", `"${productName}"`);
                     history.replaceState({}, "", "/");
                     loadProducts("Default_Page");
                 }
