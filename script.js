@@ -562,18 +562,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const productName = params.get("product");
 
     if (productName) {
-        console.log("🔍 Looking for product:", productName);
+        const cleanedQuery = productName.toLowerCase().trim();
+        console.log("🔍 Looking for product:", cleanedQuery);
 
         let attempts = 0;
-        const maxAttempts = 50;
+        const maxAttempts = 300;
 
         const checkProducts = setInterval(() => {
             if (typeof products !== "undefined" && Object.keys(products).length > 0) {
                 clearInterval(checkProducts);
 
-                const match = Object.values(products)
-                    .flat()
-                    .find(p => p.name.toLowerCase().trim() === productName.toLowerCase().trim());
+                const allProducts = Object.values(products).flat();
+
+                console.log("🧪 Checking against these product names:");
+                allProducts.forEach(p => console.log("→", p.name.toLowerCase().trim()));
+
+                const match = allProducts.find(p =>
+                    p.name.toLowerCase().trim() === cleanedQuery
+                );
 
                 if (
                     match &&
@@ -588,7 +594,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     ]);
                 } else {
                     console.warn("❌ Product not found or has no valid images:", productName);
-                    history.replaceState({}, "", "/"); // ✅ Remove ?product= to avoid infinite loop
+                    history.replaceState({}, "", "/");
                     loadProducts("Default_Page");
                 }
             } else {
@@ -596,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (attempts >= maxAttempts) {
                     clearInterval(checkProducts);
                     console.error("⏰ Timeout: products not loaded in time.");
-                    history.replaceState({}, "", "/"); // ✅ Also clear URL on timeout
+                    history.replaceState({}, "", "/");
                     loadProducts("Default_Page");
                 } else {
                     console.log("⌛ Waiting for products to load...");
@@ -605,14 +611,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 100);
     } else {
         loadProducts("Default_Page");
-        // No ?product= → show homepage
     }
 
-    // Optional: add search handler if `searchInput` exists
     if (typeof searchInput !== "undefined") {
         searchInput.addEventListener("keyup", searchProducts);
     }
 });
+
 
 
 
