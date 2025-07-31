@@ -7,9 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
 
     <title>SnagletShop</title>
-    <script src="/Products.js"></script>
-
-    <script src="/script.js"></script>
+    <script src="Products.js" defer></script>
+    <script src="script.js" defer></script>
     <script src="https://js.stripe.com/v3/"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -17,13 +16,6 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-  if (!location.pathname.endsWith("/404.html")) {
-    const path = location.pathname + location.search + location.hash;
-    sessionStorage.setItem("redirectAfter404", path);
-    window.location.replace("/");
-  }
-</script>
 
     <style>
         :root {
