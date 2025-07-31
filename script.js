@@ -3237,7 +3237,7 @@ function updateBasket() {
                      data-imageurl="${item.image}">
             </a>
             <div class="Item-Details">
-                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketTextLink">
+                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
                     <strong class="BasketText">${item.name}</strong>
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
