@@ -853,6 +853,9 @@ function searchProducts() {
             img.dataset.imageurl = product.image;
             img.dataset.description = product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER;
 
+
+            img.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
+            img.target = "_blank"; // Open in new tab
             img.addEventListener("click", () => {
                 navigate("GoToProductPage", [
                     product.name,
@@ -3221,9 +3224,10 @@ function updateBasket() {
             selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${label}: ${item.selectedOption.toLowerCase()}</span>`;
         }
 
-
+        const encodedName = encodeURIComponent(item.name);
         productDiv.innerHTML = `
-            <div class="Basket-Item">
+        <div class="Basket-Item">
+            <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank">
                 <img class="Basket_Image" 
                      src="${item.image}" 
                      alt="${item.name}" 
@@ -3231,22 +3235,24 @@ function updateBasket() {
                      data-price="${item.price}" 
                      data-description="${item.description}" 
                      data-imageurl="${item.image}">
-                <div class="Item-Details">
+            </a>
+            <div class="Item-Details">
+                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
                     <strong class="BasketText">${item.name}</strong>
-                    <p class="BasketTextDescription">${item.description}</p>
-                    <div class="PriceAndOptionRow">
+                </a>
+                <p class="BasketTextDescription">${item.description}</p>
+                <div class="PriceAndOptionRow">
                     <p class="basket-item-price" data-eur="${totalPrice}">${totalPrice}€</p>
-                        ${selectedOptionHTML}
-                        
-                    </div>
-                </div>
-                <div class="Quantity-Controls-Basket">
-                    <button class="BasketChangeQuantityButton" onclick="changeQuantity('${key}', -1)">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-                    <span class="BasketChangeQuantityText">${item.quantity}</span>
-                    <button class="BasketChangeQuantityButton" onclick="changeQuantity('${key}', 1)">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
+                    ${selectedOptionHTML}
                 </div>
             </div>
-        `;
+            <div class="Quantity-Controls-Basket">
+                <button class="BasketChangeQuantityButton" onclick="changeQuantity('${key}', -1)">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
+                <span class="BasketChangeQuantityText">${item.quantity}</span>
+                <button class="BasketChangeQuantityButton" onclick="changeQuantity('${key}', 1)">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
+            </div>
+        </div>
+    `;
 
         basketContainer.appendChild(productDiv);
         BasketTotalPrice += value * item.quantity;
