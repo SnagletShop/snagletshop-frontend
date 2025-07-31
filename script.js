@@ -576,12 +576,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 console.log("🧪 Checking against these product names:");
                 allProducts.forEach(p => {
-                    const name = p.name.toLowerCase().trim();
-                    console.log("→", `"${name}"`);
+                    if (p && typeof p.name === "string") {
+                        const name = p.name.toLowerCase().trim();
+                        console.log("→", `"${name}"`);
+                    } else {
+                        console.warn("⚠️ Skipping invalid product:", p);
+                    }
                 });
 
                 // Try exact match
                 let match = allProducts.find(p => {
+                    if (!p || typeof p.name !== "string") return false;
+
                     const dbName = p.name.toLowerCase().trim();
                     const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
                     const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
@@ -597,6 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!match) {
                     console.warn("⚠️ No exact match. Trying fuzzy match...");
                     match = allProducts.find(p =>
+                        p && typeof p.name === "string" &&
                         p.name.toLowerCase().trim().includes(cleanedQuery)
                     );
                     if (match) {
