@@ -3238,7 +3238,7 @@ function updateBasket() {
             </a>
             <div class="Item-Details">
                 <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
-                    <strong class="BasketText">${item.name.length > 20 ? item.name.slice(0, 20) + "…" : item.name}</strong>
+                    <strong class="BasketText">${item.name.length > 15 ? item.name.slice(0, 15) + "…" : item.name}</strong>
 
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
