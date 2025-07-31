@@ -422,42 +422,16 @@ async function preloadSettingsData() {
         console.error("❌ Failed to preload settings data:", err);
     }
 }
-window.addEventListener("storage", (event) => {
-    if (event.key === "basket") {
-        try {
-            const updatedBasket = JSON.parse(event.newValue);
-            if (updatedBasket) {
-                basket = updatedBasket;
-                updateBasket(); // Refresh UI
-                console.log("🔄 Basket updated from another tab.");
-            }
-        } catch (e) {
-            console.error("Failed to sync basket:", e);
-        }
-    }
-});
-
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ DOM fully loaded. Checking for product from URL...");
+    console.log("✅ DOM fully loaded. Checking for product from query...");
 
-    const path = window.location.pathname;
-    let slug = null;
-
-    // Support old format: ?product=...
     const params = new URLSearchParams(window.location.search);
-    const legacyProductName = params.get("product");
+    const productName = params.get("product");
 
-    if (path.startsWith("/product/")) {
-        slug = decodeURIComponent(path.replace("/product/", "").toLowerCase());
-        console.log("🔍 Detected product slug in path:", slug);
-    } else if (legacyProductName) {
-        slug = legacyProductName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
-        console.log("⚠️ Using legacy query format. Converted to slug:", slug);
-        // Redirect to clean URL for SEO benefit
-        history.replaceState({}, "", `/product/${slug}`);
-    }
+    if (productName) {
+        const cleanedQuery = productName.toLowerCase().trim();
+        console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
 
-    if (slug) {
         let attempts = 0;
         const maxAttempts = 300;
 
@@ -466,27 +440,49 @@ document.addEventListener("DOMContentLoaded", () => {
                 clearInterval(checkProducts);
 
                 const allProducts = Object.values(products).flat();
-                console.log("🧪 Loaded all products. Matching slug:", slug);
 
-                const slugify = name =>
-                    name.toLowerCase().trim()
-                        .replace(/[^a-z0-9]+/g, "-")
-                        .replace(/(^-|-$)/g, "");
-
-                let match = allProducts.find(p => {
-                    return p && typeof p.name === "string" && slugify(p.name) === slug;
+                console.log("🧪 Checking against these product names:");
+                allProducts.forEach(p => {
+                    if (p && typeof p.name === "string") {
+                        const name = p.name.toLowerCase().trim();
+                        console.log("→", `"${name}"`);
+                    } else {
+                        console.warn("⚠️ Skipping invalid product:", p);
+                    }
                 });
 
-                // Fallback: fuzzy
+                // Try exact match
+                let match = allProducts.find(p => {
+                    if (!p || typeof p.name !== "string") return false;
+
+                    const dbName = p.name.toLowerCase().trim();
+                    const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
+                    const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
+
+                    console.log(`🔎 Comparing "${dbName}" to "${cleanedQuery}"`);
+                    console.log("   DB char codes  :", dbNameCodes.join(" "));
+                    console.log("   Query char codes:", queryCodes.join(" "));
+
+                    return dbName === cleanedQuery;
+                });
+
+                // Fallback: fuzzy match
                 if (!match) {
                     console.warn("⚠️ No exact match. Trying fuzzy match...");
                     match = allProducts.find(p =>
                         p && typeof p.name === "string" &&
-                        slugify(p.name).includes(slug)
+                        p.name.toLowerCase().trim().includes(cleanedQuery)
                     );
+                    if (match) {
+                        console.log("✅ Fuzzy match found:", match.name);
+                    }
                 }
 
-                if (match && Array.isArray(match.images) && match.images.length > 0) {
+                if (
+                    match &&
+                    Array.isArray(match.images) &&
+                    match.images.length > 0
+                ) {
                     console.log("✅ Matched product:", match.name);
                     navigate("GoToProductPage", [
                         match.name,
@@ -494,7 +490,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         match.description || "No description available."
                     ]);
                 } else {
-                    console.warn("❌ Product not found or has no valid images:", `"${slug}"`);
+                    console.warn("❌ Product not found or has no valid images:", `"${productName}"`);
                     history.replaceState({}, "", "/");
                     loadProducts("Default_Page");
                 }
@@ -518,7 +514,6 @@ document.addEventListener("DOMContentLoaded", () => {
         searchInput.addEventListener("keyup", searchProducts);
     }
 });
-
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
 });
@@ -3242,7 +3237,7 @@ function updateBasket() {
                      data-imageurl="${item.image}">
             </a>
             <div class="Item-Details">
-                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
+                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketTextLink">
                     <strong class="BasketText">${item.name}</strong>
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
