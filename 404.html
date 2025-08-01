@@ -415,6 +415,7 @@
             .add-to-cart {
                 background-color: var(--Primary_Button_Colour);
                 color: #fff;
+                font-size: 20px;
 
                 border: none;
                 aspect-ratio: 1/0.25;
@@ -1340,6 +1341,14 @@
                 padding-bottom: 20px;
             }
 
+            .cart-icon {
+                stroke: white;
+                height: 20px;
+                width: 20px;
+                align-items: flex-end;
+                margin-left: 5px;
+            }
+
             .settings-section h3 {
                 font-size: 22px;
                 margin-bottom: 12px;
@@ -1630,7 +1639,7 @@
             .Category_Button_Heading {
                 display: flex;
                 align-items: center;
-                gap: 2vw;
+                gap: 4vw;
             }
 
             .Category_Button_Heading {
@@ -1822,7 +1831,7 @@
 
 
             .mobileHamburgerMenu {
-                font-size: 1.4rem;
+                font-size: 2rem;
                 background: none;
                 border: none;
                 color: var(--Default_Text_Colour);
@@ -1831,7 +1840,7 @@
 
             .mobileSettingsButton,
             .mobileBasketButton {
-                font-size: 1.4rem;
+                font-size: 1.9rem;
                 background: none;
                 border: none;
                 color: var(--Default_Text_Colour);
@@ -1845,8 +1854,8 @@
             /* 🔧 Target the actual <svg> inside */
             .mobileSettingsButton .Icon,
             .mobileBasketButton .Icon {
-                width: 24px;
-                height: 24px;
+                width: 1.9rem;
+                height: 1.9rem;
                 color: inherit;
                 /* ← uses the button's text color */
             }
@@ -1854,7 +1863,7 @@
             .mobileLogo h1 {
                 color: var(--Default_Text_Colour);
                 margin: 0;
-                font-size: 1.25rem;
+                font-size: 1.9rem;
             }
 
             .mobileSearch_Bar {
@@ -2098,10 +2107,10 @@
 
             .Category_Button {
                 width: 95%;
-                height: 6vh;
+                height: 7vh;
                 margin-left: 0%;
                 background-color: var(--SideBar_Background_Colour);
-                font-size: 2.5vh;
+                font-size: 4vh;
                 /* Scales with button height */
                 display: flex;
                 align-items: flex-start;
@@ -2113,11 +2122,12 @@
             }
 
             .Category_Button h3 {
-                font-size: 2vh;
+                font-size: 2.75vh;
                 /* Ensures text scales with button */
                 white-space: nowrap;
                 border-radius: 5px;
-                margin: 0;
+                margin-left: 0;
+
             }
 
             .product {
@@ -2215,21 +2225,22 @@
             .add-to-cart {
                 background-color: var(--Primary_Button_Colour);
                 color: #fff;
-
+                font-weight: bold;
                 border: none;
                 aspect-ratio: 1/0.4;
                 width: 50%;
                 border-radius: 4px;
                 cursor: pointer;
                 transition: background-color 0.3s;
-                font-size: 2vw;
+                font-size: 2.4vw;
                 /* Take up the remaining space */
                 text-align: center;
                 font-family: 'Rubik', sans-serif;
             }
 
             .product-price {
-                font-size: 3vw;
+                font-weight: 550;
+                font-size: 4vw;
                 color: var(--Default_Text_Colour)1;
                 font-family: 'Afacad', sans-serif;
             }
@@ -2350,7 +2361,7 @@
                 font-size: auto;
                 color: var(--Default_Text_Colour);
 
-
+                border-radius: 0.1rem;
                 color: var(--Default_Text_Colour);
 
 
@@ -2478,13 +2489,20 @@
                 aspect-ratio: 1/1;
                 margin-left: 1vw;
                 margin-right: 1vw;
+                border-radius: 0.2rem;
+            }
+
+            .cart-icon {
+                stroke: white;
+                height: 3vw;
+                width: 3vw;
             }
 
             .Basket_Viewer {
                 display: grid;
                 width: 100%;
                 max-width: 100%;
-
+                padding-top: 3vw;
                 row-gap: 0vw;
                 max-height: 15vw;
                 height: 15vw;
@@ -2628,11 +2646,13 @@
                 object-fit: cover;
                 border: 0.3vw solid var(--Borders_Colour);
                 cursor: pointer;
+                border-radius: 0.1rem;
             }
 
             .Thumbnail.active {
-                border: 0.6vw solid var(--Danger_Colour);
-                box-shadow: 0 0 1vw var(--Accent_Colour);
+                border: 0.3vw solid var(--Danger_Colour);
+                box-shadow: 0 0 0.5vw var(--Accent_Colour);
+                border-radius: 0.1rem;
             }
 
 
@@ -2707,7 +2727,7 @@
                 /* 0.1rem ≈ 1.6px */
                 box-sizing: border-box;
 
-
+                border-radius: 0.3rem;
 
                 /* Fixed image size in vw */
 
@@ -2857,7 +2877,7 @@
             .category-icon-svg {
                 fill: var(--Default_Text_Colour);
                 aspect-ratio: 1/1;
-                height: 2vh;
+                height: 2.75vh;
             }
 
             .PayTotalText {
@@ -2956,7 +2976,7 @@
                 width: 100%;
                 font-size: 5vw;
                 border: none;
-                border-radius: 5%;
+                border-radius: 10%;
                 aspect-ratio: 1/1;
                 width: 50%;
                 background-color: var(--body_Background_Colour);
@@ -3098,9 +3118,9 @@
 
             /* Individual section */
             .settings-section {
-                margin-bottom: 30px;
+
                 border-bottom: 1px solid var(--Borders_Colour);
-                padding-bottom: 20px;
+
             }
 
             .settings-section h3 {
@@ -3164,7 +3184,8 @@
 
             .settings-section {
                 width: auto;
-                padding: 10px 20px;
+                padding: 10px;
+                padding-bottom: 30px;
             }
 
             .clearDataButton {
@@ -3207,7 +3228,7 @@
             .add-to-cart-product {
                 background-color: var(--Primary_Button_Colour);
                 color: #fff;
-
+                font-weight: bold;
                 border: none;
                 aspect-ratio: 1/0.4;
                 width: 50%;
