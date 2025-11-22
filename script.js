@@ -6,6 +6,37 @@ const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = true;
 const APPLY_TARIFF = true; // 🔁 You can toggle this manually
 localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
+// early in boot:
+const API_BASE = window.SNAGLET_API_BASE || "https://api.snagletshop.com";
+
+let productsDatabase = {};
+
+async function initProducts() {
+    try {
+        const r = await fetch(`${API_BASE}/products`);
+        if (!r.ok) {
+            throw new Error(`Products request failed: ${r.status}`);
+        }
+
+        productsDatabase = await r.json();
+
+        // Keep legacy code that still uses `products` working
+        window.products = productsDatabase;
+
+        console.log("✅ Products data loaded.");
+    } catch (err) {
+        console.error("❌ Failed to load products from server, falling back to window.products:", err);
+
+        // Fallback to whatever is already on window.products (e.g. from products.js)
+        productsDatabase = window.products || {};
+        window.products = productsDatabase;
+    }
+}
+
+// Kick off loading immediately when the script is loaded
+initProducts();
+
+
 
 const TEXTS = {
     ERRORS: {
@@ -302,7 +333,7 @@ try {
 const searchInput = document.getElementById("Search_Bar");
 const mobileSearchInput = document.getElementById("Mobile_Search_Bar");
 const navEntry = performance.getEntriesByType("navigation")[0];
-const productsDatabase = products;
+
 const isPageRefresh = navEntry?.type === "reload";
 const SETTINGS_CACHE_KEY = "preloadedSettings";
 const SETTINGS_CACHE_TTL_HOURS = 12;
@@ -518,6 +549,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
 });
 
+const ANALYTICS_SESSION_KEY = 'snaglet_analytics_session';
+
+// Simple anonymous session id stored in localStorage
+let analyticsSessionId = localStorage.getItem(ANALYTICS_SESSION_KEY);
+if (!analyticsSessionId) {
+    analyticsSessionId =
+        Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSessionId);
+}
+
+/**
+ * Fire a lightweight analytics event to the server.
+ * This should never block the UI or throw.
+ */
+function sendAnalyticsEvent(type, payload = {}, options = {}) {
+    try {
+        fetch(`${API_BASE}/analytics/event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type,
+                sessionId: analyticsSessionId,
+                path: window.location.pathname + window.location.search,
+                websiteOrigin: window.location.hostname,
+                ...payload
+            }),
+            // For unload events you could set keepalive: true
+            keepalive: !!options.keepalive
+        }).catch(() => {
+            // ignore network errors for analytics
+        });
+    } catch (e) {
+        // swallow; analytics must never break the page
+    }
+}
+
+// Fire a simple "page opened" ping as soon as the script runs
+sendAnalyticsEvent('page_open');
 
 function handleStateChange(state) {
     switch (state.action) {
@@ -2055,11 +2124,14 @@ async function createPaymentModal() {
 
 // When the user clicks "Pay Now"
 function handleOutsideClick(event) {
+    const modal = document.getElementById("paymentModal");
+    if (!modal) return;
     const modalContent = modal.querySelector(".modal-content");
-    if (!modalContent.contains(event.target)) {
+    if (modalContent && !modalContent.contains(event.target)) {
         closeModal();
     }
 }
+
 
 
 
@@ -2612,9 +2684,10 @@ function getProductDescription(productName) {
     return product ? product.description : "N/A";
 }
 window.__alreadyRetriedBrokenProduct = false;
-window.lastProductName = productName;
-window.lastProductPrice = productPrice;
-window.lastProductDescription = productDescription;
+window.lastProductName = null;
+window.lastProductPrice = null;
+window.lastProductDescription = null;
+
 
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
@@ -2927,41 +3000,16 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     updateAllPrices();
     updateImage(); // set initial state
-}
-
-function updateImage(direction = 'none') {
-    const imageElement = document.getElementById("mainImage");
-
-    if (imageElement) {
-        if (direction === 'right') {
-            imageElement.style.transform = 'translateX(100vw)';
-            setTimeout(() => {
-                imageElement.src = window.currentProductImages[window.currentIndex];
-                imageElement.style.transition = 'none';
-                imageElement.style.transform = 'translateX(-100vw)';
-                void imageElement.offsetWidth;
-                imageElement.style.transition = 'transform 0.4s ease';
-                imageElement.style.transform = 'translateX(0)';
-            }, 100);
-        } else if (direction === 'left') {
-            imageElement.style.transform = 'translateX(-100vw)';
-            setTimeout(() => {
-                imageElement.src = window.currentProductImages[window.currentIndex];
-                imageElement.style.transition = 'none';
-                imageElement.style.transform = 'translateX(100vw)';
-                void imageElement.offsetWidth;
-                imageElement.style.transition = 'transform 0.4s ease';
-                imageElement.style.transform = 'translateX(0)';
-            }, 100);
-        } else {
-            imageElement.src = window.currentProductImages[window.currentIndex];
+    sendAnalyticsEvent('product_view', {
+        product: {
+            name: product.name,
+            category: product.category || '',
+            productLink: product.productLink || product.url || '',
+            priceEUR: Number(product.price) || 0
         }
-    }
-
-    document.querySelectorAll(".Thumbnail").forEach(img => img.classList.remove("active"));
-    const currentImage = window.currentProductImages[window.currentIndex];
-    document.querySelector(`.Thumbnail[src="${currentImage}"]`)?.classList.add("active");
+    });
 }
+
 
 
 function attachSwipeListeners() {
@@ -3001,22 +3049,14 @@ function attachSwipeListeners() {
     }
 }
 
-function prevImage() {
-    window.currentIndex = (window.currentIndex - 1 + window.currentProductImages.length) % window.currentProductImages.length;
-    updateImage('right');
-}
-
-function nextImage() {
-    window.currentIndex = (window.currentIndex + 1) % window.currentProductImages.length;
-    updateImage('left');
-}
 
 
 let currentImageIndex = 0;
 let startX = 0;
 
 const carousel = document.getElementById("imageCarousel");
-const images = carousel.querySelectorAll(".carousel-image");
+const images = carousel ? carousel.querySelectorAll(".carousel-image") : [];
+
 
 carousel.addEventListener("touchstart", (e) => {
     startX = e.touches[0].clientX;
@@ -3399,115 +3439,6 @@ function filterProducts(searchTerm) {
 
 
 
-// Function to place an order based on user's basket
-async function placeOrder(userId, basket) {
-    try {
-        const orders = [];
-        for (const item of basket) {
-            let orderResponse;
-            if (item.source === "Amazon") {
-                orderResponse = await AmazonAPI.placeOrder(item);
-            } else if (item.source === "AliExpress") {
-                orderResponse = await AliExpressAPI.placeOrder(item);
-            } else {
-                throw new Error("Unknown source");
-            }
-
-            orders.push({
-                userId,
-                productId: item.id,
-                orderId: orderResponse.orderId,
-                status: "Pending",
-                source: item.source,
-            });
-        }
-        await Order.insertMany(orders);
-        return { success: true, message: "Orders placed successfully" };
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// API endpoint to handle orders
-router.post("/place-order", async (req, res) => {
-    const { userId, basket } = req.body;
-    if (!userId || !basket || !Array.isArray(basket)) {
-        return res.status(400).json({ success: false, message: "Invalid request" });
-    }
-    const response = await placeOrder(userId, basket);
-    res.json(response);
-});
-
-module.exports = router;
-
-
-
-const stripe = require("stripe")("pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi");
-const nodemailer = require("nodemailer");
-
-async function processOrder(cartItems, userDetails) {
-    const totalAmount = calculateTotal(cartItems);
-    console.error("processOrder");
-    // Create Stripe payment with metadata
-    const paymentIntent = await createStripePayment(userDetails, totalAmount, cartItems);
-    if (!paymentIntent || paymentIntent.status !== "succeeded") {
-        console.error("Payment failed or not confirmed.");
-        return;
-    }
-
-    // Send confirmation email to the customer
-    //await sendConfirmationEmail(userDetails.email, cartItems, totalAmount);
-
-    // Trigger "Thanks for Purchase" function
-    thanksForPurchase();
-
-    console.log("Payment successful, order details sent to Stripe and customer.");
-}
-
-// Create Stripe PaymentIntent with metadata
-async function createStripePayment(userDetails, amount, cartItems) {
-    try {
-        const safeOrderSummary = cartItems.map(item => {
-            const name = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
-            const option = item.selectedOption ? ` (${item.selectedOption})` : '';
-            return `${item.quantity}x ${name}${option}`;
-        }).join(", ");
-
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(amount * 100),
-            currency: "eur",
-            metadata: {
-                customer_name: `${userDetails.name} ${userDetails.surname}`,
-                email: userDetails.email,
-                order_summary: safeOrderSummary.slice(0, 499) // enforce Stripe's limit
-            }
-        });
-
-
-        console.log("PaymentIntent created:", paymentIntent.id);
-        return paymentIntent;
-    } catch (error) {
-        console.error("Stripe PaymentIntent Error:", error);
-        return null;
-    }
-}
-
-// Send email confirmation
-async function sendConfirmationEmail(userEmail, cartItems, totalAmount) {
-
-}
-
-// Calculate total price
-function calculateTotal(cartItems) {
-    return cartItems.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0).toFixed(2);
-}
-
-// "Thanks for Purchase" function
-function thanksForPurchase() {
-    console.log("Thanks for your purchase! Your order is being processed.");
-}
-
-module.exports = { processOrder };
 
 
 
