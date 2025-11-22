@@ -7,9 +7,15 @@ const APPLY_TARIFF = true; // 🔁 You can toggle this manually
 localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
 // early in boot:
-const API_BASE = window.SNAGLET_API_BASE || "http://91.99.147.194:5500";
+const API_BASE = window.SNAGLET_API_BASE || "https://api.snagletshop.com";
 
 let productsDatabase = {};
+
+// Seed from legacy window.products (if present)
+if (typeof window !== "undefined" && window.products && typeof window.products === "object" && Object.keys(window.products).length > 0) {
+    productsDatabase = window.products;
+    console.log("ℹ️ Seeded productsDatabase from legacy window.products.");
+}
 
 async function initProducts() {
     try {
@@ -330,8 +336,8 @@ try {
 } catch (err) {
     console.warn("⚠️ Could not access localStorage:", err);
 }
-const searchInput = document.getElementById("Search_Bar");
-const mobileSearchInput = document.getElementById("Mobile_Search_Bar");
+let searchInput = null;
+let mobileSearchInput = null;
 const navEntry = performance.getEntriesByType("navigation")[0];
 
 const isPageRefresh = navEntry?.type === "reload";
@@ -423,8 +429,8 @@ async function preloadSettingsData() {
     // No valid cache → fetch fresh data
     try {
         const [countryRes, rateRes] = await Promise.all([
-            fetch("http://91.99.147.194:5500/countries"),
-            fetch("http://91.99.147.194:5500/rates")
+            fetch("https://api.snagletshop.com/countries"),
+            fetch("https://api.snagletshop.com/rates")
         ]);
 
         const countries = await countryRes.json();
@@ -541,9 +547,6 @@ document.addEventListener("DOMContentLoaded", () => {
         loadProducts("Default_Page");
     }
 
-    if (typeof searchInput !== "undefined") {
-        searchInput.addEventListener("keyup", searchProducts);
-    }
 });
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
@@ -660,24 +663,7 @@ initializeHistory();
 
 
 
-document.getElementById("Search_Bar").addEventListener("input", () => {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(searchProducts, 200);
-});
-document.getElementById("Search_Bar").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault(); // stops form submit
-    }
-});
-document.getElementById("Mobile_Search_Bar").addEventListener("input", () => {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(searchProducts, 200);
-});
-document.getElementById("Mobile_Search_Bar").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault(); // stops form submit
-    }
-});
+
 // Unified Search Handling for Both Desktop and Mobile
 
 const debounce = (func, delay) => {
@@ -688,33 +674,55 @@ const debounce = (func, delay) => {
     };
 };
 async function fetchTariffs() {
-    const response = await fetch("http://91.99.147.194:5500/countries");
+    const response = await fetch("https://api.snagletshop.com/countries");
     console.log(response);
     const countries = await response.json();
     tariffMultipliers = Object.fromEntries(countries.map(c => [c.code, c.tariff]));
 }
 
-searchInput.addEventListener("input", debounce(() => {
-    const query = searchInput.value.trim();
-    mobileSearchInput.value = query; // Sync with mobile
+function setupSearchInputs() {
+    searchInput = document.getElementById("Search_Bar");
+    mobileSearchInput = document.getElementById("Mobile_Search_Bar");
 
-    if (query.length > 0) {
-        trackSearch(query);
-        searchProducts(query);
-    } else {
-        loadProducts(lastCategory || "Default_Page"); // Reload last selected category
+    if (!searchInput || !mobileSearchInput) {
+        console.warn("⚠️ Search inputs not found; skipping search binding.");
+        return;
     }
-}, 300));
 
+    const handleSearch = (query) => {
+        const trimmed = (query || "").trim();
+        searchInput.value = trimmed;
+        mobileSearchInput.value = trimmed;
 
+        if (trimmed.length > 0) {
+            trackSearch(trimmed);
+            searchProducts(trimmed);
+        } else {
+            loadProducts(lastCategory || "Default_Page");
+        }
+    };
 
-// Allow pressing "Enter" without form submission
-searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") e.preventDefault();
-});
-mobileSearchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") e.preventDefault();
-});
+    const debouncedDesktop = debounce(() => {
+        handleSearch(searchInput.value);
+    }, 300);
+
+    const debouncedMobile = debounce(() => {
+        handleSearch(mobileSearchInput.value);
+    }, 300);
+
+    searchInput.addEventListener("input", debouncedDesktop);
+    mobileSearchInput.addEventListener("input", debouncedMobile);
+
+    const stopSubmit = (e) => {
+        if (e.key === "Enter") e.preventDefault();
+    };
+
+    searchInput.addEventListener("keydown", stopSubmit);
+    mobileSearchInput.addEventListener("keydown", stopSubmit);
+}
+
+document.addEventListener("DOMContentLoaded", setupSearchInputs);
+
 
 
 
@@ -753,7 +761,7 @@ function invokeFunctionByName(functionName, args = []) {
 }
 async function fetchExchangeRatesFromServer() {
     try {
-        const response = await fetch("http://91.99.147.194:5500/rates");
+        const response = await fetch("https://api.snagletshop.com/rates");
         const data = await response.json();
         console.log("🔍 Raw exchange rate response from server:", data); // 👈 Add this
         if (data.rates) {
@@ -1222,7 +1230,7 @@ async function populateCountries() {
         return;
     }
 
-    const response = await fetch("http://91.99.147.194:5500/countries");
+    const response = await fetch("https://api.snagletshop.com/countries");
     const countries = await response.json();
     console.log(`📦 Loaded ${countries.length} countries`, countries);
 
@@ -1557,7 +1565,7 @@ async function GoToSettings() {
         }
 
         try {
-            const response = await fetch("http://91.99.147.194:5500/send-message", {
+            const response = await fetch("https://api.snagletshop.com/send-message", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, message })
@@ -1630,15 +1638,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("✅ DOMContentLoaded fired!");
-    let checkProductsLoaded = setInterval(() => {
-        if (typeof products !== "undefined" && Object.keys(products).length > 0) {
-            clearInterval(checkProductsLoaded); // Stop checking
+    const checkProductsLoaded = setInterval(() => {
+        const hasWindowProducts = typeof window !== "undefined"
+            && typeof window.products !== "undefined"
+            && Object.keys(window.products).length > 0;
+        const hasDatabase = productsDatabase && Object.keys(productsDatabase).length > 0;
+
+        if (hasWindowProducts || hasDatabase) {
+            clearInterval(checkProductsLoaded);
+
+            // Keep legacy `products` and new `productsDatabase` in sync
+            if (!hasDatabase && hasWindowProducts) {
+                productsDatabase = window.products;
+            } else if (hasDatabase && !hasWindowProducts) {
+                window.products = productsDatabase;
+            }
+
             CategoryButtons(); // Now call the function
         } else {
             console.error("⚠️ Waiting for products to load...");
         }
     }, 100);
 });
+
 
 function CategoryButtons() {
     const sidebars = document.querySelectorAll("#SideBar, #DesktopSidebar");
@@ -1878,7 +1900,7 @@ async function createPaymentModal() {
             }).join(", ").slice(0, 499);
 
             // 🔁 Create new payment intent with new country and currency
-            const res = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+            const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -1928,7 +1950,7 @@ async function createPaymentModal() {
         return `${item.quantity}x ${name}${option}`;
     }).join(", ").slice(0, 499);
 
-    const res = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+    const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2012,7 +2034,7 @@ async function createPaymentModal() {
 
     // 🧾 Apple/Google Pay Checkout Handler
     paymentRequest.on("paymentmethod", async ev => {
-        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("https://api.snagletshop.com/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2078,7 +2100,7 @@ async function createPaymentModal() {
             const finalClientSecret = window.latestClientSecret || clientSecret;
             const paymentIntentId = finalClientSecret.split("_secret")[0];
 
-            await fetch("http://91.99.147.194:5500/store-user-details", {
+            await fetch("https://api.snagletshop.com/store-user-details", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ paymentIntentId, userDetails })
@@ -2244,7 +2266,7 @@ async function processPayment(e) {
     console.log("🔍 Sending currency to server:", selectedCurrency);
 
     try {
-        const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2329,7 +2351,7 @@ async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) 
     stripeInstance = stripe;
 
     try {
-        const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
+        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
