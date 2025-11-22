@@ -7,7 +7,7 @@ const APPLY_TARIFF = true; // 🔁 You can toggle this manually
 localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
 // early in boot:
-const API_BASE = window.SNAGLET_API_BASE || "https://api.snagletshop.com";
+const API_BASE = window.SNAGLET_API_BASE || "http://91.99.147.194:5500";
 
 let productsDatabase = {};
 
@@ -423,8 +423,8 @@ async function preloadSettingsData() {
     // No valid cache → fetch fresh data
     try {
         const [countryRes, rateRes] = await Promise.all([
-            fetch("https://api.snagletshop.com/countries"),
-            fetch("https://api.snagletshop.com/rates")
+            fetch("http://91.99.147.194:5500/countries"),
+            fetch("http://91.99.147.194:5500/rates")
         ]);
 
         const countries = await countryRes.json();
@@ -688,7 +688,7 @@ const debounce = (func, delay) => {
     };
 };
 async function fetchTariffs() {
-    const response = await fetch("https://api.snagletshop.com/countries");
+    const response = await fetch("http://91.99.147.194:5500/countries");
     console.log(response);
     const countries = await response.json();
     tariffMultipliers = Object.fromEntries(countries.map(c => [c.code, c.tariff]));
@@ -753,7 +753,7 @@ function invokeFunctionByName(functionName, args = []) {
 }
 async function fetchExchangeRatesFromServer() {
     try {
-        const response = await fetch("https://api.snagletshop.com/rates");
+        const response = await fetch("http://91.99.147.194:5500/rates");
         const data = await response.json();
         console.log("🔍 Raw exchange rate response from server:", data); // 👈 Add this
         if (data.rates) {
@@ -1222,7 +1222,7 @@ async function populateCountries() {
         return;
     }
 
-    const response = await fetch("https://api.snagletshop.com/countries");
+    const response = await fetch("http://91.99.147.194:5500/countries");
     const countries = await response.json();
     console.log(`📦 Loaded ${countries.length} countries`, countries);
 
@@ -1557,7 +1557,7 @@ async function GoToSettings() {
         }
 
         try {
-            const response = await fetch("https://api.snagletshop.com/send-message", {
+            const response = await fetch("http://91.99.147.194:5500/send-message", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, message })
@@ -1878,7 +1878,7 @@ async function createPaymentModal() {
             }).join(", ").slice(0, 499);
 
             // 🔁 Create new payment intent with new country and currency
-            const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
+            const res = await fetch("http://91.99.147.194:5500/create-payment-intent", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -1928,7 +1928,7 @@ async function createPaymentModal() {
         return `${item.quantity}x ${name}${option}`;
     }).join(", ").slice(0, 499);
 
-    const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
+    const res = await fetch("http://91.99.147.194:5500/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2012,7 +2012,7 @@ async function createPaymentModal() {
 
     // 🧾 Apple/Google Pay Checkout Handler
     paymentRequest.on("paymentmethod", async ev => {
-        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("https://api.snagletshop.com/create-payment-intent", {
+        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("http://91.99.147.194:5500/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2078,7 +2078,7 @@ async function createPaymentModal() {
             const finalClientSecret = window.latestClientSecret || clientSecret;
             const paymentIntentId = finalClientSecret.split("_secret")[0];
 
-            await fetch("https://api.snagletshop.com/store-user-details", {
+            await fetch("http://91.99.147.194:5500/store-user-details", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ paymentIntentId, userDetails })
@@ -2244,7 +2244,7 @@ async function processPayment(e) {
     console.log("🔍 Sending currency to server:", selectedCurrency);
 
     try {
-        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
+        const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2329,7 +2329,7 @@ async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) 
     stripeInstance = stripe;
 
     try {
-        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
+        const response = await fetch("http://91.99.147.194:5500/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
