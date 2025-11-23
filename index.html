@@ -126,9 +126,10 @@
                 /* First column fits content but stays within viewport */
                 background-color: var(--body_Background_Colour);
                 overflow-x: hidden;
-
-                /* Prevents scrolling at 100% zoom */
+                min-height: 100vh;
+                /* ← add this */
             }
+
 
             /* When zoom level is above 100%, allow scrolling instead of shrinking */
 
@@ -194,27 +195,29 @@
             }
 
 
-
             .MainPage {
                 width: 100%;
                 height: 100%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+
                 font-size: 4vh;
                 color: var(--Default_Text_Colour);
-                /* Match logo text */
-                background-color: var(--body_Background_Colour);
-                /* Match logo bg */
-                border: 0.07em solid var(--Borders_Colour);
-                /* Same as logo */
-                border-radius: 5px;
-                box-sizing: border-box;
-                font-weight: bold;
-                margin-top: 10px;
-                margin-left: 5px;
-                margin-right: 5px;
+
+                /* remove button styling */
+                background: none;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                padding: 0;
+
+                appearance: none;
+                -webkit-appearance: none;
+                cursor: pointer;
+                /* still shows it’s clickable */
             }
+
 
 
             .MainPage h1 {
@@ -294,6 +297,7 @@
                 margin: 0 1rem;
                 justify-content: center;
                 height: auto;
+                align-self: stretch;
             }
 
             .Search_Bar {
@@ -310,14 +314,15 @@
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
                 overflow-x: auto;
-
+                font-weight: 600;
+                font-family: sans-serif;
             }
 
 
             /* Fix button spacing issue */
             .Category_Button.Active {
                 background-color: var(--Accent_Colour);
-                border-color: var(--Accent_Colour);
+
                 color: var(--Danger_Colour);
                 font-weight: bold;
                 border-radius: 5px;
@@ -519,6 +524,7 @@
                 border-radius: 5px;
                 background-color: var(--body_Background_Colour);
                 border: 1px solid var(--Borders_Colour);
+                min-width: 100%;
             }
 
             .BasketText {
@@ -601,7 +607,8 @@
                 /* Fixed max-width */
                 max-height: 5vh;
                 color: var(--Default_Text_Colour);
-                font-size: 3vh;
+                font-size: 2.5vh;
+                font-weight: 600;
             }
 
             /* Ensure the dropdown doesn't resize */
@@ -628,6 +635,7 @@
                 -moz-appearance: none;
                 /* For Firefox */
                 font-family: 'Rubik', sans-serif;
+                font-weight: 600;
             }
 
             #sortSelect:focus {
@@ -696,6 +704,7 @@
             .WhiteText {
                 color: var(--Default_Text_Colour);
                 font-family: 'Afacad', sans-serif;
+                font-size: 150%;
             }
 
             .ProductPrice {
@@ -712,18 +721,15 @@
                 font-size: 20px;
                 font-family: 'Rubik', sans-serif;
                 font-weight: 600;
-
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
-
                 line-height: 1.4em;
                 /* adjust as needed */
                 height: calc(1.4em * 2);
                 /* force exactly 2 lines of height */
-
                 margin-top: 10px;
                 margin-bottom: 10px;
                 margin-left: 10px;
@@ -838,7 +844,6 @@
                 margin: 5px;
                 padding: 8px 14px;
                 border: 1px solid var(--Option_Button_Border);
-                color: var(--Default_Text_Colour);
                 cursor: pointer;
                 border-radius: 6px;
                 font-family: 'Afacad', sans-serif;
@@ -1568,6 +1573,7 @@
             body {
                 max-width: 100%;
                 overflow-x: hidden;
+                min-height: 100vh;
             }
 
             #mainImage {
@@ -2076,7 +2082,7 @@
             /* Fix button spacing issue */
             .Category_Button.Active {
                 background-color: var(--Accent_Colour);
-                border-color: var(--Accent_Colour);
+
                 color: var(--Danger_Colour);
                 font-weight: bold;
                 border-radius: 5px;
@@ -3578,6 +3584,8 @@
                 box-shadow: 4px 0 12px rgba(0, 0, 0, 0.06);
                 /* border-right: 1px solid rgba(0, 0, 0, 0.04); */
                 /* row-gap: 10px; */
+                align-self: stretch;
+                min-height: calc(100vh - 8vh);
             }
 
             /* logo block more like a card */
@@ -3627,20 +3635,8 @@
             }
 
             /* active category → blue pill from mock */
-            .Category_Button.Active {
-                background-color: var(--Sidebar_Button_BG_Active);
-                border-color: var(--Sidebar_Button_BG_Active);
-                box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
-            }
 
-            .Category_Button.Active .Category_Button_Heading,
-            .Category_Button.Active .Category_Button_Heading h3 {
-                color: #ffffff;
-            }
 
-            .Category_Button.Active .category-icon-svg {
-                fill: #ffffff;
-            }
 
             /* text + icon layout inside buttons */
             .Category_Button_Heading {
@@ -3737,6 +3733,8 @@
                 align-items: flex-start;
                 width: 650px;
                 height: auto;
+                justify-content: center;
+                align-items: center;
             }
 
             .Product_Info {
@@ -3890,44 +3888,196 @@
         }
         // ]]>
     </script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
-</script>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+        // ]]>
+    </script>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+        // ]]>
+    </script>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+        // ]]>
+    </script>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+        // ]]>
+    </script>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+        // ]]>
+    </script>
 </body>
 
 
