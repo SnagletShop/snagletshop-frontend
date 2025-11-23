@@ -77,10 +77,8 @@
             --TopBar_Background_Colour: #1a1919;
             --SideBar_Background_Colour: #181818;
             --SearchBar_Background_Colour: #1C1C1C;
-
-            --Modal_Background_Colour: #14171a;
+            --Modal_Background_Colour: #14161E;
             --BasketReceipt_Background_Colour: #22222200;
-
             --ButtonHoverState_Background_Colour: #0056b3;
             --Default_Text_Colour: #ffffff;
             --Borders_Colour: #232D34;
@@ -94,7 +92,6 @@
             --Option_Button_Border: #ccc;
             --Category_Button_Text_Colour: #ffffff;
             /* or white for dark mode */
-
         }
 
 
@@ -177,10 +174,8 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-
                 height: 8vh;
                 width: 31.5vh;
-
                 background-color: var(--SideBar_Background_Colour);
                 /* <-- applied always */
                 color: var(--Default_Text_Colour);
@@ -190,7 +185,6 @@
                 box-sizing: border-box;
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
-
             }
 
             .ts-dropdown {
@@ -207,19 +201,19 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-
                 font-size: 4vh;
                 color: var(--Default_Text_Colour);
                 /* Match logo text */
                 background-color: var(--body_Background_Colour);
                 /* Match logo bg */
-
                 border: 0.07em solid var(--Borders_Colour);
                 /* Same as logo */
                 border-radius: 5px;
-
                 box-sizing: border-box;
                 font-weight: bold;
+                margin-top: 10px;
+                margin-left: 5px;
+                margin-right: 5px;
             }
 
 
@@ -294,14 +288,12 @@
                 /* or column-gap */
                 grid-row-gap: 15px;
                 background-color: var(--body_Background_Colour);
-                padding: 15px;
+                padding-top: 15px;
                 width: 98%;
                 max-width: 100%;
                 margin: 0 1rem;
                 justify-content: center;
-
                 height: auto;
-
             }
 
             .Search_Bar {
@@ -357,7 +349,7 @@
                 /* Ensures text scales with button */
                 white-space: nowrap;
                 border-radius: 5px;
-                margin: 0;
+                margin-left: -10px
             }
 
             .Category_Button_Heading {
@@ -738,7 +730,6 @@
             }
 
 
-
             .Product_Viewer {
                 margin-top: 24px;
                 width: 1300px;
@@ -753,27 +744,8 @@
                 align-items: center;
                 justify-content: flex-start;
                 padding: 32px 80px;
-
                 overflow: visible;
                 font-size: 16px;
-                /* Base font size for scaling */
-            }
-
-            .Product_Details {
-                display: flex;
-                gap: 20px;
-
-                width: 100%;
-                height: fit-content;
-            }
-
-            .Product_Images {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                /* Default alignment for children (main image) */
-                height: auto;
-                width: 650px;
             }
 
             .image-slider-wrapper {
@@ -1174,7 +1146,7 @@
                 display: flex;
                 flex-direction: column;
                 max-width: 500px;
-
+                /* min-width: 00px; */
             }
 
             .modal-content input {
@@ -2070,14 +2042,12 @@
                 /* or column-gap */
                 grid-row-gap: 3vw;
                 /* or row-gap */
-
                 background-color: var(--body_Background_Colour);
                 padding: 0px;
                 width: 98%;
                 max-width: 98%;
-                margin: 0 2vw;
+                margin: 0 6vw;
                 justify-content: center;
-
                 min-height: 100vh;
                 /* 👈 Ensures background fills full viewport height */
             }
@@ -2127,7 +2097,7 @@
                 border-radius: 5px;
                 justify-content: left;
                 box-sizing: border-box;
-                border: 0px, solid var(--Borders_Colour);
+                border: 0px solid var(--Borders_Colour);
                 /* Scales with font size */
             }
 
@@ -2190,7 +2160,7 @@
             .Product_Option_Button {
                 min-width: 15vw;
                 width: auto;
-         
+
                 padding-top: 2vw;
                 font-family: 'Afacad', sans-serif;
                 padding-bottom: 2vw;
@@ -2253,7 +2223,7 @@
             .product-price {
                 font-weight: 550;
                 font-size: 4vw;
-                color: var(--Default_Text_Colour)1;
+                color: var(--Default_Text_Colour);
                 font-family: 'Afacad', sans-serif;
             }
 
@@ -2565,28 +2535,6 @@
                 /* Optional fallback for modern browsers */
             }
 
-            .Product_Viewer {
-                padding-top: 3vw;
-                width: 80vw;
-                height: auto;
-                padding-bottom: 3vw;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                position: relative;
-                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
-                display: flex;
-                margin-left: 7.5vw;
-                margin-right: auto;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-
-
-                overflow: visible;
-                font-size: 16px;
-                /* Base font size for scaling */
-            }
 
             .Product_Details {
                 display: flex;
@@ -2602,6 +2550,7 @@
                 align-items: center;
                 width: 100vw;
                 /* Ensure full width for centering */
+                /* justify-content: center; */
             }
 
             .ImageControl {
@@ -3327,6 +3276,535 @@
 
 
         }
+
+        /* === PAYMENT MODAL – OVERLAY, LAYOUT, TYPOGRAPHY ======================= */
+
+        #paymentModal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 12px;
+            box-sizing: border-box;
+            overflow: hidden;
+            /* no horizontal scroll */
+            font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* make all inner elements respect the width */
+        #paymentModal * {
+            box-sizing: border-box;
+        }
+
+        /* light overlay */
+        .light-mode #paymentModal {
+            background: rgba(15, 23, 42, 0.30);
+        }
+
+        /* dark overlay – tuned to match reference */
+        .dark-mode #paymentModal {
+            background: #00000087;
+        }
+
+        /* === CARD CONTAINER ==================================================== */
+
+        #paymentModal .modal-content {
+            position: relative;
+            width: min(520px, 100%);
+            max-height: calc(100vh - 48px);
+            overflow-y: auto;
+            padding: 30px 28px 26px;
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            /* box-shadow: 0 24px 60px rgba(15, 23, 42, 0.65); */
+        }
+
+        /* dark card – deep navy, soft highlight like screenshot */
+        .dark-mode #paymentModal .modal-content {
+            background: #14161E;
+            border: 1px solid #282839;
+            /* color: #e5e7eb; */
+        }
+
+        /* light card */
+        .light-mode #paymentModal .modal-content {
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        /* === HEADER & CLOSE BUTTON ============================================ */
+
+        #paymentModal h2 {
+            margin: 0 0 26px;
+            font-size: 22px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        #paymentModal .close {
+            position: absolute;
+            top: 16px;
+            right: 22px;
+            font-size: 22px;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.7;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        #paymentModal .close:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* === FORM LAYOUT ======================================================= */
+
+        #paymentModal #paymentForm {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #paymentModal #Name_Holder,
+        #paymentModal #Address_Holder {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* === INPUTS & SELECTS ================================================== */
+
+        #paymentModal input[type="text"],
+        #paymentModal input[type="email"],
+        #paymentModal input[type="tel"],
+        #paymentModal input[type="number"],
+        #paymentModal select {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            padding: 13px 14px;
+            font-size: 14px;
+            background: rgba(249, 250, 251, 1);
+            /* color: #111827; */
+            outline: none;
+            transition:
+                border-color 0.15s ease,
+                box-shadow 0.15s ease,
+                background-color 0.15s ease,
+                transform 0.07s ease;
+        }
+
+        /* dark fields – slightly lighter than card, bluish tint */
+        .dark-mode #paymentModal input[type="text"],
+        .dark-mode #paymentModal input[type="email"],
+        .dark-mode #paymentModal input[type="tel"],
+        .dark-mode #paymentModal input[type="number"],
+        .dark-mode #paymentModal select {
+            background: #1D2028;
+            border-color: #202535;
+            color: #e5e7eb;
+        }
+
+        #paymentModal input::placeholder {
+            color: rgba(148, 163, 184, 0.85);
+        }
+
+        .dark-mode #paymentModal input::placeholder {
+            color: #64748b;
+        }
+
+        #paymentModal input:focus,
+        #paymentModal select:focus {
+            border-color: #22c55e;
+            box-shadow:
+                0 0 0 1px rgba(34, 197, 94, 0.95),
+                0 0 0 6px rgba(34, 197, 94, 0.14);
+            transform: translateY(-0.5px);
+        }
+
+        /* Country of Residence label */
+        #paymentModal #Address_Holder label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 4px;
+            color: inherit;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        /* === TOMSELECT (Country of Residence dropdown) ======================== */
+
+        #paymentModal .ts-wrapper.single .ts-control {
+            border-radius: 14px !important;
+            border: 1px solid rgba(148, 163, 184, 0.45) !important;
+            min-height: 48px;
+            padding: 0 12px !important;
+            background: rgba(249, 250, 251, 1) !important;
+            color: #111827 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            /* center text horizontally */
+            text-align: center !important;
+            box-shadow: none !important;
+        }
+
+        /* dark version – same tone as inputs */
+        .dark-mode #paymentModal .ts-wrapper.single .ts-control {
+            background: #1D2028 !important;
+            border-color: #1e293b !important;
+            color: #e5e7eb !important;
+        }
+
+        #paymentModal .ts-wrapper .ts-control .item,
+        #paymentModal .ts-control input {
+            text-align: center !important;
+        }
+
+        /* dropdown menu */
+        #paymentModal .ts-dropdown {
+            border-radius: 14px !important;
+            border: 1px solid rgba(148, 163, 184, 0.45) !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        .dark-mode #paymentModal .ts-dropdown {
+            background: #020617 !important;
+            color: #e5e7eb !important;
+        }
+
+        /* === STRIPE ELEMENT CONTAINERS ======================================== */
+
+        #paymentModal #payment-request-button {
+            margin: 20px 0 12px;
+        }
+
+        /* round Link/Apple/Google pay button */
+        #paymentModal #payment-request-button .StripeElement {
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        /* container around Payment Element tabs etc. */
+        #paymentModal #payment-element {
+            margin-top: 14px;
+            padding: 14px 14px 12px;
+            border-radius: 18px;
+            background: #ffffff;
+            /* border: 1px solid rgba(148, 163, 184, 0.45); */
+        }
+
+        /* dark: same card tone as screenshot */
+        .dark-mode #paymentModal #payment-element {
+            background: var(--Modal_Background_Colour);
+            border: none;
+        }
+
+
+        /* === SUBMIT BUTTON ===================================================== */
+
+        #paymentModal .Submit_Button {
+            margin-top: 22px;
+            width: 100%;
+            border-radius: 9999px;
+            border: none;
+            /* padding: 14px 18px; */
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #386400 !important;
+            color: #f9fafb !important;
+            text-align: center;
+            transition:
+                background-color 0.15s ease,
+                box-shadow 0.15s ease,
+                transform 0.07s ease,
+                opacity 0.15s ease;
+        }
+
+        .light-mode #paymentModal .Submit_Button {
+            background: #020617 !important;
+        }
+
+        #paymentModal .Submit_Button:hover:not(:disabled) {
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+            transform: translateY(-1px);
+        }
+
+        #paymentModal .Submit_Button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        /* === SIDE BAR REFINEMENT – DESKTOP (>= 680px) ======================= */
+
+        :root {
+            /* extra tokens just for sidebar buttons */
+            --Sidebar_Button_BG: #F4F1EB;
+            --Sidebar_Button_BG_Hover: #E9E1D6;
+            --Sidebar_Button_BG_Active: #59a3f2;
+            --Sidebar_Button_Border: #E0D7C9;
+        }
+
+        .light-mode {
+            --Sidebar_Button_BG: #F4F1EB;
+            --Sidebar_Button_BG_Hover: #E9E1D6;
+            --Sidebar_Button_BG_Active: #59a3f2;
+            --Sidebar_Button_Border: #E0D7C9;
+        }
+
+        .dark-mode {
+            /* keep sidebar readable in dark mode too */
+            --Sidebar_Button_BG: #262626;
+            --Sidebar_Button_BG_Hover: #303030;
+            --Sidebar_Button_BG_Active: #007BFF;
+            --Sidebar_Button_Border: #3A3A3A;
+        }
+
+        @media (min-width: 680px) {
+
+            /* sidebar container */
+            .SideBar {
+                background-color: var(--TopBar_Background_Colour);
+                /* max-width: 280px; */
+                min-width: 280px;
+                padding: 5px 10px 50px;
+                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.06);
+                /* border-right: 1px solid rgba(0, 0, 0, 0.04); */
+                /* row-gap: 10px; */
+            }
+
+            /* logo block more like a card */
+            .Logo {
+                width: 100%;
+                border-radius: 10px;
+                background-color: var(--TopBar_Background_Colour);
+                border: 1px solid var(--Sidebar_Button_Border);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+                font-family: 'Inter', system-ui, sans-serif;
+                font-size: 26px;
+                letter-spacing: 0.03em;
+                /* margin-bottom: 18px; */
+                padding-bottom: 10px;
+                /* margin-left: 5px; */
+                /* margin-right: 5px; */
+            }
+
+            /* category buttons -> soft beige cards */
+            .Category_Button {
+                width: 100%;
+                min-width: fit-content;
+                min-height: 48px;
+                height: auto;
+                margin: 4px 0;
+                padding: 9px 11px;
+                border-radius: 10px;
+                background-color: var(--Sidebar_Button_BG);
+                border: 1px solid var(--Sidebar_Button_Border);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                cursor: pointer;
+                transition:
+                    background-color 0.15s ease,
+                    border-color 0.15s ease,
+                    box-shadow 0.15s ease,
+                    transform 0.15s ease;
+            }
+
+            .Category_Button:hover {
+                background-color: var(--Sidebar_Button_BG_Hover);
+                border-color: var(--Sidebar_Button_BG_Hover);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+                transform: translateY(-1px);
+            }
+
+            /* active category → blue pill from mock */
+            .Category_Button.Active {
+                background-color: var(--Sidebar_Button_BG_Active);
+                border-color: var(--Sidebar_Button_BG_Active);
+                box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+            }
+
+            .Category_Button.Active .Category_Button_Heading,
+            .Category_Button.Active .Category_Button_Heading h3 {
+                color: #ffffff;
+            }
+
+            .Category_Button.Active .category-icon-svg {
+                fill: #ffffff;
+            }
+
+            /* text + icon layout inside buttons */
+            .Category_Button_Heading {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 0.8rem;
+                width: 100%;
+            }
+
+            .Category_Button_Heading h3 {
+                margin: 0;
+                font-family: 'Inter', system-ui, sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                letter-spacing: 0.02em;
+                color: var(--Category_Button_Text_Colour);
+                white-space: nowrap;
+            }
+
+            /* circular icon background, smaller SVG */
+            .category-icon-wrapper {
+                width: 28px;
+                height: 28px;
+                border-radius: 999px;
+                background-color: rgba(0, 0, 0, 0.04);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .category-icon-svg {
+                width: 16px;
+                height: 16px;
+                fill: var(--Default_Text_Colour);
+            }
+        }
+
+        /* === OPTIONAL: MOBILE SIDEBAR TO MATCH DESKTOP STYLE =============== */
+
+        @media (max-width: 680px) {
+            .mobileSideBar {
+                background-color: var(--SideBar_Background_Colour);
+                padding-top: 16px;
+                padding-bottom: 32px;
+                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.14);
+            }
+
+            .mobileSideBar .Category_Button {
+                background-color: var(--Sidebar_Button_BG);
+                border-radius: 10px;
+                border: 1px solid var(--Sidebar_Button_Border);
+                margin: 4px 0;
+                padding: 10px 12px;
+                box-shadow: 0 2px 6px;
+            }
+        }
+
+
+        /* === OVERRIDE PRODUCT DETAIL LAYOUT (desktop + mobile) === */
+
+        @media (min-width: 681px) {
+            .Product_Viewer {
+                margin-top: 24px;
+                max-width: 1300px;
+                margin-left: 25px;
+                height: auto;
+                background-color: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                border-radius: 5px;
+                position: relative;
+                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 32px 80px;
+                overflow: visible;
+                font-size: 16px;
+            }
+
+            .Product_Details {
+                display: flex;
+                gap: 40px;
+                width: 100%;
+                align-items: flex-start;
+                height: auto;
+            }
+
+            .Product_Images {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                width: 650px;
+                height: auto;
+            }
+
+            .Product_Info {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                width: 520px;
+                max-width: 520px;
+                margin: 0;
+                align-items: flex-start;
+                color: var(--Default_Text_Colour);
+            }
+
+            .ThumbnailsHolder {
+                display: grid;
+                grid-template-columns: repeat(5, 80px);
+                gap: 10px;
+                padding-right: 40px;
+                max-width: 500px;
+                width: 500px;
+                margin-top: 5px;
+                padding-left: 0;
+                justify-content: center;
+                align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .Product_Viewer {
+                margin-top: 20px;
+                width: 100%;
+                max-width: 100%;
+                padding: 16px;
+                box-shadow: none;
+            }
+
+            .Product_Details {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                width: 100%;
+                height: auto;
+            }
+
+            .Product_Images {
+                width: 100%;
+                align-items: center;
+                margin-left: -5vw;
+            }
+
+            .Product_Info {
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                align-items: flex-start;
+            }
+
+            .ThumbnailsHolder {
+                display: grid;
+                grid-template-columns: repeat(5, 10vw);
+                gap: 1vw;
+                width: fit-content;
+                margin-top: 2vw;
+                justify-content: center;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
     </style>
 </head>
 
@@ -3374,6 +3852,44 @@
             <h1 style=" color: var(--Default_Text_Colour); margin: 0;">SnagletShop</h1>
         </button>
     </div>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+        // ]]>
+    </script>
 </body>
 
 
@@ -3654,11 +4170,4 @@
             observer.observe(document.body, { childList: true, subtree: true });
         });
     </script>
-</body>
-
-
-
-
-
-
-</html>
+    <!-- Code injected by live-s
