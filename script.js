@@ -579,8 +579,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("✅ DOM fully loaded. Checking for product from query...");
 
     const params = new URLSearchParams(window.location.search);
-    const productName = params.get("product");
 
+    // 1) Show thank-you if we set a flag before reload
+    const thankFlag = sessionStorage.getItem("lastPurchaseThankYou");
+    if (thankFlag === "1") {
+        sessionStorage.removeItem("lastPurchaseThankYou");
+
+        alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+    } else {
+        // 2) Handle Stripe 3DS / redirect flow: ?redirect_status=succeeded
+        const redirectStatus = params.get("redirect_status");
+        if (redirectStatus === "succeeded") {
+            alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+
+            // Clean the URL so refresh doesn't re-trigger this
+            params.delete("redirect_status");
+            params.delete("payment_intent");
+            params.delete("payment_intent_client_secret");
+
+            const newQuery = params.toString();
+            const newUrl =
+                window.location.pathname +
+                (newQuery ? "?" + newQuery : "") +
+                window.location.hash;
+
+            window.history.replaceState({}, "", newUrl);
+        }
+    }
+
+    const productName = params.get("product");
     if (productName) {
         const cleanedQuery = productName.toLowerCase().trim();
         console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
@@ -2190,15 +2217,15 @@ async function createPaymentModal() {
             if (finalResult.error) {
                 alert("❌ Final step failed: " + finalResult.error.message);
             } else {
-                // ✅ Clear basket fully
-
                 localStorage.removeItem("basket");
-                await clearBasketCompletely();
-                alert("🎉 Payment successful!");
 
-                // Optional full reload:
-                ////location.reload();
+                // ✅ Remember to show thank-you after reload
+                sessionStorage.setItem("lastPurchaseThankYou", "1");
+
+                // Reload page (Stripe redirect is already done at this point)
+                location.reload();
             }
+
         }
     });
 
@@ -2317,13 +2344,16 @@ async function createPaymentModal() {
                     updateBasket();
                 }
 
-                // alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
-                ////location.reload();
-            }
-            else {
+                // ✅ Remember to show thank-you after reload
+                sessionStorage.setItem("lastPurchaseThankYou", "1");
+
+                location.reload();
+            } else {
                 alert("Payment submitted. Please check your email for updates.");
-                ////location.reload();
+                location.reload();
             }
+
+
 
         });
 
