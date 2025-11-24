@@ -1527,7 +1527,7 @@ async function GoToSettings() {
             localStorage.clear();
             sessionStorage.clear();
             alert("All data cleared. Reloading page...");
-            //  location.reload();
+            ////location.reload();
         }
     });
 
@@ -2197,7 +2197,7 @@ async function createPaymentModal() {
                 alert("🎉 Payment successful!");
 
                 // Optional full reload:
-                // location.reload();
+                ////location.reload();
             }
         }
     });
@@ -2318,10 +2318,10 @@ async function createPaymentModal() {
                 }
 
                 alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
-                // location.reload();
+                ////location.reload();
             } else {
                 alert("Payment submitted. Please check your email for updates.");
-                // location.reload();
+                ////location.reload();
             }
 
         });
@@ -2340,6 +2340,7 @@ function handleOutsideClick(event) {
         closeModal();
     }
 }
+// Completely clear basket: in-memory, localStorage, and UI
 // Completely clear basket: in-memory, localStorage, and UI
 function clearBasketCompletely() {
     try {
@@ -2369,6 +2370,7 @@ function clearBasketCompletely() {
         console.warn("updateBasket failed during clearBasketCompletely", e);
     }
 }
+
 
 
 
@@ -2565,11 +2567,11 @@ async function processPayment(e) {
                     alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
 
                     // Optional: if you still want a full reload, keep this line:
-                    // location.reload();
+                    ////location.reload();
                 } else {
                     alert("Payment submitted. Please check your email for updates.");
                     // You can also reload here if you want, but it’s not required:
-                    // location.reload();
+                    ////location.reload();
                 }
 
             });
@@ -2657,7 +2659,7 @@ async function confirmStripePayment(userDetails) {
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
         localStorage.removeItem("basket");
         alert("🎉 Payment succeeded!");
-        //location.reload();
+        //////location.reload();
     }
 }
 
@@ -3975,7 +3977,7 @@ async function attachConfirmHandler(stripe, elementsInstance, paymentElementInst
                 if (paymentIntent && paymentIntent.status === "succeeded") {
                     localStorage.removeItem("basket");
                     alert("Payment succeeded!");
-                    //location.reload();
+                    ////location.reload();
                 }
             } catch (err) {
                 console.error("Payment flow error:", err);
@@ -4049,7 +4051,7 @@ function attachConfirmHandlerOnce() {
             if (paymentIntent && paymentIntent.status === "succeeded") {
                 localStorage.removeItem("basket");
                 alert("Payment succeeded!");
-                //location.reload();
+                ////location.reload();
             }
         } catch (err) {
             console.error("Payment flow error:", err);
