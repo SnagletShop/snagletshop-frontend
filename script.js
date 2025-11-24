@@ -1775,6 +1775,10 @@ async function createPaymentModal() {
                     <input type="text" id="Street" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.STREET_HOUSE_NUMBER}" required>
                     <input type="text" id="City" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.CITY}" required>
                     <input type="text" id="Postal_Code" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.POSTAL_CODE}" required>
+                    <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
+<input type="text" id="State" placeholder="State / Province / Region">
+<input type="tel"  id="Phone" placeholder="Phone (for delivery updates)">
+
                     <label for="Country">${TEXTS.PAYMENT_MODAL.FIELDS.COUNTRY}</label>
                     <select id="Country" class="tom-hidden" required style="width: 100%"></select>
                 </div>
@@ -2085,27 +2089,42 @@ async function createPaymentModal() {
             }
 
             confirmBtn.disabled = true;
-            confirmBtn.textContent = "Processing...";
+            confirmBtn.textContent = "Processing…";
 
             const userDetails = {
                 name: document.getElementById("Name").value.trim(),
                 surname: document.getElementById("Surname").value.trim(),
                 email: document.getElementById("email").value.trim(),
                 street: document.getElementById("Street").value.trim(),
+                address2: (document.getElementById("Address_Line2")?.value || "").trim(),
                 city: document.getElementById("City").value.trim(),
+                state: (document.getElementById("State")?.value || "").trim(),
                 postalCode: document.getElementById("Postal_Code").value.trim(),
-                country: document.getElementById("Country").value.trim()
+                country: document.getElementById("Country").value.trim().toUpperCase(),
+                phone: (document.getElementById("Phone")?.value || "").trim()
             };
 
+            // Require state/phone for US; extend with CA/AU if you want
+            const needsRegion = ["US"].includes(userDetails.country);
+            if (needsRegion && (!userDetails.state || !userDetails.phone)) {
+                alert("Please provide State and Phone for shipping.");
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
+                return;
+            }
+
+            // Use the latest PI client secret if the country changed
             const finalClientSecret = window.latestClientSecret || clientSecret;
             const paymentIntentId = finalClientSecret.split("_secret")[0];
 
+            // Persist user details (keeps prior PI metadata)
             await fetch("https://api.snagletshop.com/store-user-details", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ paymentIntentId, userDetails })
             });
 
+            // Confirm Stripe payment with full billing details
             const { error, paymentIntent } = await stripe.confirmPayment({
                 elements: elementsInstance,
                 confirmParams: {
@@ -2114,28 +2133,47 @@ async function createPaymentModal() {
                         billing_details: {
                             name: `${userDetails.name} ${userDetails.surname}`,
                             email: userDetails.email,
+                            phone: userDetails.phone || undefined,
                             address: {
+                                line1: userDetails.street,
+                                line2: userDetails.address2 || undefined,
                                 city: userDetails.city,
+                                state: userDetails.state || undefined,
                                 postal_code: userDetails.postalCode,
                                 country: userDetails.country
                             }
                         }
+                    },
+                    // Optional: also attach shipping details for your records
+                    shipping: {
+                        name: `${userDetails.name} ${userDetails.surname}`,
+                        phone: userDetails.phone || undefined,
+                        address: {
+                            line1: userDetails.street,
+                            line2: userDetails.address2 || undefined,
+                            city: userDetails.city,
+                            state: userDetails.state || undefined,
+                            postal_code: userDetails.postalCode,
+                            country: userDetails.country
+                        }
                     }
-                },
-                redirect: "if_required"
+                }
             });
 
             if (error) {
-                alert("❌ Payment failed: " + error.message);
+                console.error(error);
+                alert(error.message || "Payment could not be completed.");
                 confirmBtn.disabled = false;
                 confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
-            } else if (paymentIntent?.status === "succeeded") {
-                localStorage.removeItem("basket");
-                alert("🎉 Payment succeeded!");
+                return;
+            }
+
+            if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_capture")) {
+                alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
                 location.reload();
             } else {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
+                alert("Payment submitted. Please check your email for updates.");
+                location.reload();
             }
         });
 
@@ -3479,3 +3517,323 @@ function getProductPrice(productName) {
     return product ? product.price : "N/A";
 }
 
+// ---------- CHECKOUT HELPERS (DROP-IN) ----------
+
+// Reads a value from an input if present; returns "" if missing.
+function _val(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+}
+
+// Build a sanitized snapshot of the cart you already send to the server
+// Expected shape is your current "stripeCart": [{name, price, quantity, selectedOption?}, ...]
+function buildStripeCartFromLocalStorage() {
+    const basket = JSON.parse(localStorage.getItem("basket") || "{}");
+    // Basket is a map of id -> { name, price, quantity, selectedOption? }
+    return Object.values(basket)
+        .filter(x => x && !isNaN(parseFloat(x.price)))
+        .map(x => ({
+            name: String(x.name || "").slice(0, 80),
+            price: Number(parseFloat(x.price).toFixed(2)),
+            quantity: Number(x.quantity || 1),
+            selectedOption: x.selectedOption ? String(x.selectedOption).slice(0, 40) : undefined
+        }));
+}
+
+// Helper for safe value access by ID (modal fields)
+
+// Collects user details from your current checkout modal.
+// IDs must match your inputs (Name, Surname, email, Street, City, Postal_Code, Country, Phone, State/Region, AddressLine2, OrderNote).
+function collectUserDetails() {
+    const v = _val;
+
+    // Existing fields
+    const name = v("Name");
+    const surname = v("Surname");
+    const email = v("email");
+    const street = v("Street");        // Address line 1
+    const city = v("City");
+    const postalCode = v("Postal_Code");
+    const country = v("Country");       // Prefer ISO-2 code if possible
+
+    // New / optional
+    const phone = v("Phone");                 // Important for shipping labels
+    const region = v("State") || v("Region");  // State / province / region
+    const address2 = v("AddressLine2");          // Apt / Suite / Unit
+    const orderNote = v("OrderNote");
+
+    return { name, surname, email, phone, street, address2, city, region, postalCode, country, orderNote };
+}
+
+// Mount Stripe Elements exactly once for a given clientSecret
+async function mountStripeElementsOnce(stripe, clientSecret) {
+    if (!window.elementsInstance) {
+        window.elementsInstance = stripe.elements({
+            clientSecret,
+            appearance: {
+                theme: "flat",
+                variables: {
+                    colorText: getComputedStyle(document.body).color,
+                    colorBackground: getComputedStyle(document.documentElement)
+                        .getPropertyValue("--Input_Background")
+                        .trim(),
+                    fontFamily: getComputedStyle(document.body).fontFamily
+                }
+            }
+        });
+        window.paymentElementInstance = window.elementsInstance.create("payment");
+        window.paymentElementInstance.mount("#payment-element");
+    }
+}
+
+
+// Creates the PI on your Node server and mounts the Payment Element
+async function initStripePaymentUI() {
+    const stripe = window.stripeInstance || await Stripe(window.STRIPE_PUBLISHABLE_KEY);
+    window.stripeInstance = stripe;
+
+    // Build cart snapshot from basket/localStorage
+    const basket = JSON.parse(localStorage.getItem("basket") || "{}");
+    const stripeCart = Object.values(basket)
+        .filter(x => x && !isNaN(parseFloat(x.price)))
+        .map(x => ({
+            name: String(x.name || "").slice(0, 80),
+            price: Number(parseFloat(x.price).toFixed(2)),
+            quantity: Number(x.quantity || 1),
+            selectedOption: x.selectedOption ? String(x.selectedOption).slice(0, 40) : undefined,
+            productLink: x.productLink || x.url || undefined
+        }));
+
+    if (!stripeCart.length) {
+        alert("Your cart is empty.");
+        return;
+    }
+
+    const usedCurrency = (window.selectedCurrency || "EUR").toUpperCase();
+
+    // Collect user details early so we can pass COUNTRY for tariff
+    const ud = collectUserDetails();
+
+    const summarizedCart = stripeCart.map(item => {
+        const n = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
+        const o = item.selectedOption ? ` (${item.selectedOption})` : "";
+        return `${item.quantity}x ${n}${o}`;
+    }).join(", ").slice(0, 499);
+
+    const res = await fetch("/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            websiteOrigin: "SnagletShop",
+            products: stripeCart,
+            currency: usedCurrency,
+            country: ud.country || "",                // important for tariffs
+            metadata: { order_summary: summarizedCart }
+        })
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Failed to create payment intent: ${res.status} ${text}`);
+    }
+
+    const { clientSecret } = await res.json();
+    if (!clientSecret) throw new Error("No clientSecret from server");
+
+    await mountStripeElementsOnce(stripe, clientSecret);
+    window.latestClientSecret = clientSecret;
+}
+
+
+// Reads and validates the checkout modal fields into a userDetails object
+function readCheckoutForm() {
+    const get = id => (document.getElementById(id)?.value || "").trim();
+
+    const userDetails = {
+        name: get("firstName"),
+        surname: get("lastName"),
+        email: get("email"),
+        emailConfirm: get("email2"),
+        phone: get("phone"),
+        street: get("address1"),
+        address2: get("address2"),
+        city: get("city"),
+        state: get("state"),                // US: state, elsewhere: region/province
+        postalCode: get("postalCode"),
+        country: (get("country") || "US").toUpperCase(),
+        company: get("company"),
+        taxId: get("taxId"),
+        shippingNotes: get("shippingNotes"),
+        acceptedTerms: document.getElementById("acceptTerms")?.checked === true
+    };
+
+    // Minimal validation
+    if (!userDetails.name || !userDetails.surname) throw new Error("Missing name/surname");
+    if (!userDetails.email || userDetails.email !== userDetails.emailConfirm) throw new Error("Emails do not match");
+    if (!userDetails.street || !userDetails.city || !userDetails.postalCode || !userDetails.country) throw new Error("Missing address");
+    if (!userDetails.acceptedTerms) throw new Error("Please accept terms");
+
+    // Country-specific: enforce state for US/CA/BR/AU
+    if (["US", "CA", "BR", "AU"].includes(userDetails.country) && !userDetails.state) {
+        throw new Error("State/Province required");
+    }
+
+    return userDetails;
+}
+// Assumes you have: selectedCurrency, stripeInstance/elementsInstance/paymentElementInstance already created
+async function attachConfirmHandler(stripe, elementsInstance, paymentElementInstance, websiteOrigin, formattedCart, summarizedCart) {
+    const confirmBtn = document.getElementById("confirm-payment-button");
+    if (!confirmBtn) throw new Error("Confirm payment button not found");
+
+    if (!confirmBtn.dataset.listenerAttached) {
+        confirmBtn.addEventListener("click", async () => {
+            try {
+                const userDetails = readCheckoutForm();
+
+                // 1) Create PaymentIntent with destination country (tariff logic) + cart
+                const createRes = await fetch("https://api.snagletshop.com/create-payment-intent", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        websiteOrigin,
+                        products: formattedCart,                  // productLink-free version
+                        currency: selectedCurrency,
+                        country: userDetails.country,             // IMPORTANT: let server apply correct tariff
+                        metadata: { order_summary: summarizedCart }
+                    })
+                });
+                if (!createRes.ok) throw new Error(`Create PI failed: ${await createRes.text()}`);
+                const { clientSecret, orderId } = await createRes.json();
+
+                // 2) Store user details into PI metadata (merge on server)
+                const piId = clientSecret.split("_secret_")[0];
+                await fetch("https://api.snagletshop.com/store-user-details", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentIntentId: piId, userDetails })
+                });
+
+                // 3) Confirm payment with full billing_details
+                const { error, paymentIntent } = await stripe.confirmPayment({
+                    elements: elementsInstance,
+                    confirmParams: {
+                        return_url: window.location.href,
+                        payment_method_data: {
+                            billing_details: {
+                                name: `${userDetails.name} ${userDetails.surname}`,
+                                email: userDetails.email,
+                                phone: userDetails.phone || undefined,
+                                address: {
+                                    line1: userDetails.street,
+                                    line2: userDetails.address2 || undefined,
+                                    city: userDetails.city,
+                                    state: userDetails.state || undefined,
+                                    postal_code: userDetails.postalCode,
+                                    country: userDetails.country
+                                }
+                            }
+                        }
+                    },
+                    redirect: "if_required"
+                });
+
+                if (error) {
+                    alert("Payment failed: " + error.message);
+                    return;
+                }
+                if (paymentIntent && paymentIntent.status === "succeeded") {
+                    localStorage.removeItem("basket");
+                    alert("Payment succeeded!");
+                    location.reload();
+                }
+            } catch (err) {
+                console.error("Payment flow error:", err);
+                alert(err.message || "Payment could not be completed");
+            }
+        });
+
+        confirmBtn.dataset.listenerAttached = "true";
+    }
+}
+
+// Attaches the confirm handler exactly once; validates form; stores user details; confirms payment.
+// Attaches the confirm handler exactly once; validates form; stores user details; confirms payment.
+function attachConfirmHandlerOnce() {
+    const btn = document.getElementById("confirm-payment-button");
+    if (!btn || btn.dataset.listenerAttached === "true") return;
+    btn.dataset.listenerAttached = "true";
+
+    btn.addEventListener("click", async () => {
+        const form = document.getElementById("paymentForm");
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const userDetails = collectUserDetails();
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "Processing…";
+
+        try {
+            const clientSecret = window.latestClientSecret;
+            if (!clientSecret) throw new Error("Missing client secret");
+            const paymentIntentId = clientSecret.split("_secret")[0];
+
+            // Persist user details onto the PaymentIntent (merge on server)
+            await fetch("/store-user-details", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentIntentId, userDetails })
+            });
+
+            // Confirm the payment with full billing_details
+            const { error, paymentIntent } = await window.stripeInstance.confirmPayment({
+                elements: window.elementsInstance,
+                confirmParams: {
+                    return_url: window.location.href,
+                    payment_method_data: {
+                        billing_details: {
+                            name: `${userDetails.name} ${userDetails.surname}`,
+                            email: userDetails.email,
+                            phone: userDetails.phone || undefined,
+                            address: {
+                                line1: userDetails.street,
+                                line2: userDetails.address2 || undefined,
+                                city: userDetails.city,
+                                state: userDetails.region || undefined,
+                                postal_code: userDetails.postalCode,
+                                country: userDetails.country
+                            }
+                        }
+                    }
+                },
+                redirect: "if_required"
+            });
+
+            if (error) {
+                alert("Payment failed: " + error.message);
+                return;
+            }
+            if (paymentIntent && paymentIntent.status === "succeeded") {
+                localStorage.removeItem("basket");
+                alert("Payment succeeded!");
+                location.reload();
+            }
+        } catch (err) {
+            console.error("Payment flow error:", err);
+            alert(err.message || "Payment could not be completed");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+}
+
+
+
+// Call these from your “Pay Now” flow after you render/open the modal:
+async function setupCheckoutFlow() {
+    await initStripePaymentUI();  // creates PI and mounts Payment Element
+    attachConfirmHandlerOnce();   // attaches confirm listener only once
+}
