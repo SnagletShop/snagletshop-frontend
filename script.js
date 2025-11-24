@@ -2683,30 +2683,57 @@ document.addEventListener("DOMContentLoaded", () => {
     if (redirectStatus === "succeeded") {
         console.log("✅ Stripe redirect success detected – clearing basket.");
 
-        // ✅ Clear basket now
+        // Always clear basket once we are back from Stripe
         clearBasketCompletely();
 
-        // Show success message once
-        if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
-            alert(TEXTS.CHECKOUT_SUCCESS);
-        } else {
-            //alert("Thank you! Your payment was successful.");
+        // Ask user whether to reload to origin
+        const reloaded = askUserAndMaybeReloadToOrigin();
+
+        // If user chose NOT to reload, just clean the URL and stay
+        if (!reloaded) {
+            params.delete("redirect_status");
+            params.delete("payment_intent");
+            params.delete("payment_intent_client_secret");
+
+            const newQuery = params.toString();
+            const newUrl =
+                window.location.pathname +
+                (newQuery ? "?" + newQuery : "") +
+                window.location.hash;
+
+            window.history.replaceState({}, "", newUrl);
         }
-
-        // Clean the URL so refresh doesn't re-trigger this logic
-        params.delete("redirect_status");
-        params.delete("payment_intent");
-        params.delete("payment_intent_client_secret");
-
-        const newQuery = params.toString();
-        const newUrl =
-            window.location.pathname +
-            (newQuery ? "?" + newQuery : "") +
-            window.location.hash;
-
-        window.history.replaceState({}, "", newUrl);
     }
+
 });
+// Ask the user and, if confirmed, reload the shop to the origin URL
+function askUserAndMaybeReloadToOrigin(messageOverride) {
+    let msg = messageOverride;
+
+    if (!msg) {
+        if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
+            // Use your localized success text, plus a reload hint
+            msg = TEXTS.CHECKOUT_SUCCESS + "\n\n" + "Click OK to reload the shop.";
+        } else {
+            msg = "Payment successful. Click OK to reload the shop.";
+        }
+    }
+
+    const shouldReload = window.confirm(msg);
+
+    if (shouldReload) {
+        // Reload to the origin, e.g. https://snagletshop.com
+        try {
+            window.location.href = window.location.origin;
+        } catch (e) {
+            // Fallback in bizarre cases
+            window.location.href = "/";
+        }
+        return true;
+    }
+
+    return false;
+}
 
 
 
