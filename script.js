@@ -459,7 +459,7 @@ async function preloadSettingsData() {
         console.error("❌ Failed to preload settings data:", err);
     }
 }
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     console.log("✅ DOM fully loaded. Checking for product from query...");
 
     const params = new URLSearchParams(window.location.search);
@@ -1288,7 +1288,9 @@ async function populateCountries() {
 
 
 async function GoToSettings() {
+    await preloadSettingsData();
     clearCategoryHighlight();
+
     const viewer = document.getElementById("Viewer");
     if (!viewer) {
         console.error("Viewer element not found.");
@@ -1747,6 +1749,7 @@ async function createPaymentModal() {
 
     if (document.getElementById("paymentModal")) return;
     // Ensure the theme class is applied correctly
+    await preloadSettingsData();
     const savedTheme = localStorage.getItem("themeMode");
     if (savedTheme === "dark") {
         document.documentElement.classList.add("dark-mode");
