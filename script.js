@@ -1527,7 +1527,7 @@ async function GoToSettings() {
             localStorage.clear();
             sessionStorage.clear();
             alert("All data cleared. Reloading page...");
-            location.reload();
+            //  location.reload();
         }
     });
 
@@ -2190,9 +2190,14 @@ async function createPaymentModal() {
             if (finalResult.error) {
                 alert("❌ Final step failed: " + finalResult.error.message);
             } else {
+                // ✅ Clear basket fully
+
                 localStorage.removeItem("basket");
+                await clearBasketCompletely();
                 alert("🎉 Payment successful!");
-                location.reload();
+
+                // Optional full reload:
+                // location.reload();
             }
         }
     });
@@ -2313,10 +2318,10 @@ async function createPaymentModal() {
                 }
 
                 alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
-                location.reload();
+                // location.reload();
             } else {
                 alert("Payment submitted. Please check your email for updates.");
-                location.reload();
+                // location.reload();
             }
 
         });
@@ -2333,6 +2338,35 @@ function handleOutsideClick(event) {
     const modalContent = modal.querySelector(".modal-content");
     if (modalContent && !modalContent.contains(event.target)) {
         closeModal();
+    }
+}
+// Completely clear basket: in-memory, localStorage, and UI
+function clearBasketCompletely() {
+    try {
+        // In-memory basket
+        if (typeof basket === "object" && basket !== null) {
+            for (const key of Object.keys(basket)) {
+                delete basket[key];
+            }
+        }
+    } catch (e) {
+        console.warn("Could not clear in-memory basket", e);
+    }
+
+    try {
+        // Persisted basket
+        localStorage.removeItem("basket");
+    } catch (e) {
+        console.warn("Could not remove basket from localStorage", e);
+    }
+
+    try {
+        // Re-render basket UI (if we are on the basket page)
+        if (typeof updateBasket === "function") {
+            updateBasket();
+        }
+    } catch (e) {
+        console.warn("updateBasket failed during clearBasketCompletely", e);
     }
 }
 
@@ -2510,12 +2544,34 @@ async function processPayment(e) {
                 });
 
                 if (error) {
-                    alert("❌ Payment failed: " + error.message);
-                } else if (paymentIntent && paymentIntent.status === "succeeded") {
-                    localStorage.removeItem("basket");
-                    alert("🎉 Payment succeeded!");
-                    location.reload();
+                    console.error(error);
+                    alert(error.message || "Payment could not be completed.");
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
+                    return;
                 }
+
+                if (
+                    paymentIntent &&
+                    (
+                        paymentIntent.status === "succeeded" ||
+                        paymentIntent.status === "processing" ||
+                        paymentIntent.status === "requires_capture"
+                    )
+                ) {
+                    // ✅ Empty basket before anything else
+                    clearBasketCompletely();
+
+                    alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+
+                    // Optional: if you still want a full reload, keep this line:
+                    // location.reload();
+                } else {
+                    alert("Payment submitted. Please check your email for updates.");
+                    // You can also reload here if you want, but it’s not required:
+                    // location.reload();
+                }
+
             });
 
             confirmBtn.dataset.listenerAttached = "true";
@@ -2601,7 +2657,7 @@ async function confirmStripePayment(userDetails) {
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
         localStorage.removeItem("basket");
         alert("🎉 Payment succeeded!");
-        location.reload();
+        //location.reload();
     }
 }
 
@@ -2617,6 +2673,37 @@ function basketButtonFunction() {
     window.open(`basket.html?data=${basketData}`, "_blank");
 };
 
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get("redirect_status");
+
+    if (redirectStatus === "succeeded") {
+        console.log("✅ Stripe redirect success detected – clearing basket.");
+
+        // ✅ Clear basket now
+        clearBasketCompletely();
+
+        // Show success message once
+        if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
+            alert(TEXTS.CHECKOUT_SUCCESS);
+        } else {
+            alert("Thank you! Your payment was successful.");
+        }
+
+        // Clean the URL so refresh doesn't re-trigger this logic
+        params.delete("redirect_status");
+        params.delete("payment_intent");
+        params.delete("payment_intent_client_secret");
+
+        const newQuery = params.toString();
+        const newUrl =
+            window.location.pathname +
+            (newQuery ? "?" + newQuery : "") +
+            window.location.hash;
+
+        window.history.replaceState({}, "", newUrl);
+    }
+});
 
 
 
@@ -3888,7 +3975,7 @@ async function attachConfirmHandler(stripe, elementsInstance, paymentElementInst
                 if (paymentIntent && paymentIntent.status === "succeeded") {
                     localStorage.removeItem("basket");
                     alert("Payment succeeded!");
-                    location.reload();
+                    //location.reload();
                 }
             } catch (err) {
                 console.error("Payment flow error:", err);
@@ -3962,7 +4049,7 @@ function attachConfirmHandlerOnce() {
             if (paymentIntent && paymentIntent.status === "succeeded") {
                 localStorage.removeItem("basket");
                 alert("Payment succeeded!");
-                location.reload();
+                //location.reload();
             }
         } catch (err) {
             console.error("Payment flow error:", err);
