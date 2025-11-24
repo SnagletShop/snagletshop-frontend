@@ -2317,9 +2317,10 @@ async function createPaymentModal() {
                     updateBasket();
                 }
 
-                alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+                // alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
                 ////location.reload();
-            } else {
+            }
+            else {
                 alert("Payment submitted. Please check your email for updates.");
                 ////location.reload();
             }
@@ -2564,7 +2565,7 @@ async function processPayment(e) {
                     // ✅ Empty basket before anything else
                     clearBasketCompletely();
 
-                    alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+                    ///   alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
 
                     // Optional: if you still want a full reload, keep this line:
                     ////location.reload();
@@ -2689,7 +2690,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
             alert(TEXTS.CHECKOUT_SUCCESS);
         } else {
-            alert("Thank you! Your payment was successful.");
+            //alert("Thank you! Your payment was successful.");
         }
 
         // Clean the URL so refresh doesn't re-trigger this logic
