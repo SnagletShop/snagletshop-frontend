@@ -312,7 +312,123 @@ const countryNames = {
     UZ: "Uzbekistan",
     YE: "Yemen",
     ZM: "Zambia",
-    ZW: "Zimbabwe"
+    ZW: "Zimbabwe",
+    AD: "Andorra",
+    AG: "Antigua and Barbuda",
+    AI: "Anguilla",
+    AQ: "Antarctica",
+    AS: "American Samoa",
+    AW: "Aruba",
+    AX: "Åland Islands",
+
+    BF: "Burkina Faso",
+    BL: "Saint Barthélemy",
+    BM: "Bermuda",
+    BN: "Brunei",
+    BQ: "Bonaire, Sint Eustatius and Saba",
+    BS: "Bahamas",
+    BT: "Bhutan",
+    BV: "Bouvet Island",
+
+    CC: "Cocos (Keeling) Islands",
+    CH: "Switzerland",
+    CK: "Cook Islands",
+    CM: "Cameroon",
+    CW: "Curaçao",
+    CX: "Christmas Island",
+
+    DM: "Dominica",
+    EH: "Western Sahara",
+
+    FK: "Falkland Islands (Malvinas)",
+    FM: "Micronesia",
+    FO: "Faroe Islands",
+
+    GD: "Grenada",
+    GF: "French Guiana",
+    GG: "Guernsey",
+    GI: "Gibraltar",
+    GL: "Greenland",
+    GP: "Guadeloupe",
+    GS: "South Georgia and the South Sandwich Islands",
+    GU: "Guam",
+    GW: "Guinea-Bissau",
+
+    HK: "Hong Kong",
+    HM: "Heard Island and McDonald Islands",
+    IM: "Isle of Man",
+    IO: "British Indian Ocean Territory",
+    IQ: "Iraq",
+    JE: "Jersey",
+
+    KG: "Kyrgyzstan",
+    KH: "Cambodia",
+    KI: "Kiribati",
+    KM: "Comoros",
+    KN: "Saint Kitts and Nevis",
+    KP: "North Korea",
+    KW: "Kuwait",
+    KY: "Cayman Islands",
+    LA: "Laos",
+    LC: "Saint Lucia",
+    LI: "Liechtenstein",
+    LU: "Luxembourg",
+
+    MC: "Monaco",
+    MF: "Saint Martin (French part)",
+    MH: "Marshall Islands",
+    MO: "Macao",
+    MP: "Northern Mariana Islands",
+    MQ: "Martinique",
+    MS: "Montserrat",
+    MT: "Malta",
+    MU: "Mauritius",
+    MV: "Maldives",
+
+    NC: "New Caledonia",
+    NF: "Norfolk Island",
+    NR: "Nauru",
+    NU: "Niue",
+
+    PF: "French Polynesia",
+    PM: "Saint Pierre and Miquelon",
+    PN: "Pitcairn",
+    PR: "Puerto Rico",
+    PW: "Palau",
+    PY: "Paraguay",
+    RE: "Réunion",
+
+    SB: "Solomon Islands",
+    SC: "Seychelles",
+    SG: "Singapore",
+    SH: "Saint Helena, Ascension and Tristan da Cunha",
+    SJ: "Svalbard and Jan Mayen",
+    SL: "Sierra Leone",
+    SM: "San Marino",
+    ST: "São Tomé and Príncipe",
+    SX: "Sint Maarten (Dutch part)",
+    SZ: "Eswatini",
+
+    TC: "Turks and Caicos Islands",
+    TD: "Chad",
+    TF: "French Southern Territories",
+    TG: "Togo",
+    TJ: "Tajikistan",
+    TK: "Tokelau",
+    TL: "Timor-Leste",
+    TO: "Tonga",
+    TV: "Tuvalu",
+
+    UM: "United States Minor Outlying Islands",
+    VA: "Vatican City",
+    VC: "Saint Vincent and the Grenadines",
+    VG: "British Virgin Islands",
+    VI: "U.S. Virgin Islands",
+    VU: "Vanuatu",
+    WF: "Wallis and Futuna",
+    WS: "Samoa",
+    YT: "Mayotte",
+
 };
 
 const currencySymbols = {
@@ -2171,13 +2287,38 @@ async function createPaymentModal() {
                 return;
             }
 
-            if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_capture")) {
+            console.log("Stripe paymentIntent result:", paymentIntent);
+
+            if (
+                paymentIntent &&
+                (
+                    paymentIntent.status === "succeeded" ||
+                    paymentIntent.status === "processing" ||
+                    paymentIntent.status === "requires_capture"
+                )
+            ) {
+                // ✅ Clear basket in memory
+                if (typeof basket === "object" && basket !== null) {
+                    for (const key of Object.keys(basket)) {
+                        delete basket[key];
+                    }
+                }
+
+                // ✅ Clear basket in localStorage
+                localStorage.removeItem("basket");
+
+                // ✅ Re-render basket UI if we are on basket page
+                if (typeof updateBasket === "function") {
+                    updateBasket();
+                }
+
                 alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
                 location.reload();
             } else {
                 alert("Payment submitted. Please check your email for updates.");
                 location.reload();
             }
+
         });
 
         confirmBtn.dataset.listenerAttached = "true";
