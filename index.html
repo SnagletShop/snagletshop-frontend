@@ -46,7 +46,7 @@
             --Modal_Background_Colour: #FFFFFF;
             --BasketReceipt_Background_Colour: #F4F1EB;
             /* Same soft beige */
-
+            --Thumbnail_Active_Border: #FF5722;
             --ButtonHoverState_Background_Colour: #59a3f2;
 
             --Default_Text_Colour: #2A2A2A;
@@ -92,6 +92,7 @@
             --Option_Button_Border: #ccc;
             --Category_Button_Text_Colour: #ffffff;
             /* or white for dark mode */
+            --Thumbnail_Active_Border: #4DABFF;
         }
 
 
@@ -306,7 +307,7 @@
                 width: 50%;
                 height: 50%;
                 font-size: 2vh;
-                border-radius: 5px;
+                border-radius: 25px;
                 border: 0.05em solid var(--Borders_Colour);
                 border-color: var(--Borders_Colour);
                 padding-left: 1%;
@@ -385,6 +386,7 @@
                 max-height: 280px;
                 aspect-ratio: 1/1;
                 margin-left: 10px;
+                border-radius: 2%;
 
             }
 
@@ -794,7 +796,7 @@
             }
 
             .Thumbnail.active {
-                border: 4px solid var(--Danger_Colour);
+                border: 4px solid var(--Thumbnail_Active_Border);
                 /* Thicker border on selected image */
                 box-shadow: 0 0 5px var(--Accent_Colour);
                 /* Optional glow effect */
@@ -2139,7 +2141,7 @@
                 max-width: 36vw;
                 aspect-ratio: 1/1;
                 margin-left: 2vw;
-
+                border-radius: 2%;
             }
 
             .quantity-container {
@@ -2625,7 +2627,7 @@
             }
 
             .Thumbnail.active {
-                border: 0.3vw solid var(--Danger_Colour);
+                border: 0.3vw solid var(--Thumbnail_Active_Border);
                 box-shadow: 0 0 0.5vw var(--Accent_Colour);
                 border-radius: 0.1rem;
             }
@@ -3616,7 +3618,6 @@
                 margin: 4px 0;
                 padding: 9px 11px;
                 border-radius: 10px;
-                background-color: var(--Sidebar_Button_BG);
                 border: 1px solid var(--Sidebar_Button_Border);
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
                 display: flex;
@@ -3806,6 +3807,18 @@
                 margin-right: auto;
             }
         }
+
+        @media (max-width: 680px) {
+            .mobileSideBar .Category_Button {
+                background-color: var(--SideBar_Background_Colour);
+                border-radius: 10px;
+                border: 0px solid var(--Sidebar_Button_Border) !important;
+                margin: 4px 0;
+                padding: 10px 12px;
+                box-shadow: 0 0px 0px;
+
+            }
+        }
     </style>
 </head>
 
@@ -3853,6 +3866,45 @@
             <h1 style=" color: var(--Default_Text_Colour); margin: 0;">SnagletShop</h1>
         </button>
     </div>
+    <!-- Code injected by live-server -->
+    <script>
+        // <![CDATA[  <-- For SVG support
+        if ('WebSocket' in window) {
+            (function () {
+                function refreshCSS() {
+                    var sheets = [].slice.call(document.getElementsByTagName("link"));
+                    var head = document.getElementsByTagName("head")[0];
+                    for (var i = 0; i < sheets.length; ++i) {
+                        var elem = sheets[i];
+                        var parent = elem.parentElement || head;
+                        parent.removeChild(elem);
+                        var rel = elem.rel;
+                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                        }
+                        parent.appendChild(elem);
+                    }
+                }
+                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+                var address = protocol + window.location.host + window.location.pathname + '/ws';
+                var socket = new WebSocket(address);
+                socket.onmessage = function (msg) {
+                    if (msg.data == 'reload') window.location.reload();
+                    else if (msg.data == 'refreshcss') refreshCSS();
+                };
+                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                    console.log('Live reload enabled.');
+                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+                }
+            })();
+        }
+        else {
+            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+        }
+
+        // ]]>
+    </script>
     <!-- Code injected by live-server -->
     <script>
         // <![CDATA[  <-- For SVG support
