@@ -2217,13 +2217,21 @@ async function createPaymentModal() {
             if (finalResult.error) {
                 alert("❌ Final step failed: " + finalResult.error.message);
             } else {
+                // ✅ Clear basket fully
                 localStorage.removeItem("basket");
+                await clearBasketCompletely();
 
-                // ✅ Remember to show thank-you after reload
-                sessionStorage.setItem("lastPurchaseThankYou", "1");
+                // Ask user and maybe reload to origin URL
+                const reloaded = askUserAndMaybeReloadToOrigin();
 
-                // Reload page (Stripe redirect is already done at this point)
-                location.reload();
+                // If user chooses not to reload, close the payment modal
+                if (!reloaded) {
+                    try {
+                        closeModal();
+                    } catch (e) {
+                        console.warn("closeModal failed after PRB payment", e);
+                    }
+                }
             }
 
         }
@@ -2344,14 +2352,23 @@ async function createPaymentModal() {
                     updateBasket();
                 }
 
-                // ✅ Remember to show thank-you after reload
-                sessionStorage.setItem("lastPurchaseThankYou", "1");
+                // Ask user and maybe reload to origin URL
+                const reloaded = askUserAndMaybeReloadToOrigin();
 
-                location.reload();
-            } else {
-                alert("Payment submitted. Please check your email for updates.");
-                location.reload();
+                // If user chooses not to reload, just close the payment modal
+                if (!reloaded) {
+                    try {
+                        closeModal();
+                    } catch (e) {
+                        console.warn("closeModal failed after payment success", e);
+                    }
+                }
             }
+            else {
+                alert("Payment submitted. Please check your email for updates.");
+                ////location.reload();
+            }
+
 
 
 
@@ -2713,50 +2730,49 @@ document.addEventListener("DOMContentLoaded", () => {
     if (redirectStatus === "succeeded") {
         console.log("✅ Stripe redirect success detected – clearing basket.");
 
-        // Always clear basket once we are back from Stripe
+        // ✅ Clear basket now
         clearBasketCompletely();
 
-        // Ask user whether to reload to origin
-        const reloaded = askUserAndMaybeReloadToOrigin();
+        // Clean the URL so refresh doesn't re-trigger this logic
+        params.delete("redirect_status");
+        params.delete("payment_intent");
+        params.delete("payment_intent_client_secret");
 
-        // If user chose NOT to reload, just clean the URL and stay
-        if (!reloaded) {
-            params.delete("redirect_status");
-            params.delete("payment_intent");
-            params.delete("payment_intent_client_secret");
+        const newQuery = params.toString();
+        const newUrl =
+            window.location.pathname +
+            (newQuery ? "?" + newQuery : "") +
+            window.location.hash;
 
-            const newQuery = params.toString();
-            const newUrl =
-                window.location.pathname +
-                (newQuery ? "?" + newQuery : "") +
-                window.location.hash;
+        window.history.replaceState({}, "", newUrl);
 
-            window.history.replaceState({}, "", newUrl);
-        }
+        // Show the success dialog AFTER other startup code has run
+        setTimeout(() => {
+            askUserAndMaybeReloadToOrigin();
+        }, 0);
     }
-
 });
-// Ask the user and, if confirmed, reload the shop to the origin URL
-function askUserAndMaybeReloadToOrigin(messageOverride) {
-    let msg = messageOverride;
 
-    if (!msg) {
-        if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
-            // Use your localized success text, plus a reload hint
-            msg = TEXTS.CHECKOUT_SUCCESS + "\n\n" + "Click OK to reload the shop.";
-        } else {
-            msg = "Payment successful. Click OK to reload the shop.";
-        }
+// Ask the user and, if confirmed, reload the shop to the origin URL
+// Ask the user to reload to the origin URL after a successful payment
+function askUserAndMaybeReloadToOrigin(messageOverride) {
+    let msg;
+
+    if (messageOverride != null) {
+        msg = messageOverride;
+    } else if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
+        msg = TEXTS.CHECKOUT_SUCCESS + "\n\nClick OK to reload the shop.";
+    } else {
+        msg = "Payment successful. Click OK to reload the shop.";
     }
 
     const shouldReload = window.confirm(msg);
 
     if (shouldReload) {
-        // Reload to the origin, e.g. https://snagletshop.com
         try {
+            // Reload to your main shop URL
             window.location.href = window.location.origin;
         } catch (e) {
-            // Fallback in bizarre cases
             window.location.href = "/";
         }
         return true;
@@ -2764,6 +2780,7 @@ function askUserAndMaybeReloadToOrigin(messageOverride) {
 
     return false;
 }
+
 
 
 
