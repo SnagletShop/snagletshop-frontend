@@ -585,12 +585,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (thankFlag === "1") {
         sessionStorage.removeItem("lastPurchaseThankYou");
 
-        alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+        alert(TEXTS.CHECKOUT_SUCCESS || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!");
     } else {
         // 2) Handle Stripe 3DS / redirect flow: ?redirect_status=succeeded
         const redirectStatus = params.get("redirect_status");
         if (redirectStatus === "succeeded") {
-            alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
+            alert(TEXTS.CHECKOUT_SUCCESS || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!");
 
             // Clean the URL so refresh doesn't re-trigger this
             params.delete("redirect_status");
@@ -2408,7 +2408,7 @@ function showPaymentSuccessOverlay(message) {
     title.style.cssText = "font-size:16px;font-weight:700;margin-bottom:8px;";
 
     const body = document.createElement("div");
-    body.textContent = message || "Thank you! Your payment was successful.";
+    body.textContent = message || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!";
     body.style.cssText = "font-size:14px;opacity:0.92;line-height:1.35;margin-bottom:14px;";
 
     const actions = document.createElement("div");
@@ -2469,7 +2469,7 @@ function checkAndShowPaymentSuccess() {
         // (Keep the flag until user clicks OK; overlay will remove it.)
         const msg = (typeof TEXTS !== "undefined" && TEXTS?.CHECKOUT_SUCCESS)
             ? TEXTS.CHECKOUT_SUCCESS
-            : "Thank you! Your payment was successful.";
+            : "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!";
 
         // Let initial scripts paint first, but do not block timers like alert()
         requestAnimationFrame(() => showPaymentSuccessOverlay(msg));
