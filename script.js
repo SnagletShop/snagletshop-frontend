@@ -581,7 +581,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const params = new URLSearchParams(window.location.search);
 
     // 1) Show thank-you if we set a flag before reload
-    const thankFlag = sessionStorage.getItem("lastPurchaseThankYou");
+
     if (thankFlag === "1") {
         sessionStorage.removeItem("lastPurchaseThankYou");
 
@@ -2217,22 +2217,14 @@ async function createPaymentModal() {
             if (finalResult.error) {
                 alert("❌ Final step failed: " + finalResult.error.message);
             } else {
-                // ✅ Clear basket fully
                 localStorage.removeItem("basket");
                 await clearBasketCompletely();
 
-                // Ask user and maybe reload to origin URL
-                const reloaded = askUserAndMaybeReloadToOrigin();
-
-                // If user chooses not to reload, close the payment modal
-                if (!reloaded) {
-                    try {
-                        closeModal();
-                    } catch (e) {
-                        console.warn("closeModal failed after PRB payment", e);
-                    }
-                }
+                // Flag success and reload so alert appears after reinitialization
+                setPaymentSuccessFlag();
+                window.location.href = window.location.origin;
             }
+
 
         }
     });
@@ -2347,28 +2339,18 @@ async function createPaymentModal() {
                 // ✅ Clear basket in localStorage
                 localStorage.removeItem("basket");
 
-                // ✅ Re-render basket UI if we are on basket page
+                // ✅ Update basket UI if function exists
                 if (typeof updateBasket === "function") {
                     updateBasket();
                 }
 
-                // Ask user and maybe reload to origin URL
-                const reloaded = askUserAndMaybeReloadToOrigin();
-
-                // If user chooses not to reload, just close the payment modal
-                if (!reloaded) {
-                    try {
-                        closeModal();
-                    } catch (e) {
-                        console.warn("closeModal failed after payment success", e);
-                    }
-                }
+                // ✅ Set success flag and reload to show message after full init
+                setPaymentSuccessFlag();
+                window.location.href = window.location.origin;
             }
             else {
                 alert("Payment submitted. Please check your email for updates.");
-                ////location.reload();
             }
-
 
 
 
@@ -2377,6 +2359,130 @@ async function createPaymentModal() {
         confirmBtn.dataset.listenerAttached = "true";
     }
 }
+// --- PAYMENT SUCCESS (non-blocking UI) ---------------------------
+const PAYMENT_SUCCESS_FLAG_KEY = "payment_successful";
+const PAYMENT_SUCCESS_RELOAD_KEY = "payment_successful_reload_on_ok";
+
+function setPaymentSuccessFlag({ reloadOnOk = true } = {}) {
+    try {
+        localStorage.setItem(PAYMENT_SUCCESS_FLAG_KEY, "1");
+        if (reloadOnOk) localStorage.setItem(PAYMENT_SUCCESS_RELOAD_KEY, "1");
+        else localStorage.removeItem(PAYMENT_SUCCESS_RELOAD_KEY);
+    } catch (e) {
+        console.warn("Could not set payment success flag:", e);
+    }
+}
+
+function showPaymentSuccessOverlay(message) {
+    // Prevent duplicates
+    if (document.getElementById("paymentSuccessOverlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "paymentSuccessOverlay";
+    overlay.style.cssText = [
+        "position:fixed",
+        "inset:0",
+        "z-index:100000",
+        "display:flex",
+        "align-items:center",
+        "justify-content:center",
+        "padding:16px",
+        "background:rgba(0,0,0,0.55)",
+        "backdrop-filter:blur(6px)"
+    ].join(";");
+
+    const card = document.createElement("div");
+    card.style.cssText = [
+        "width:min(520px, calc(100vw - 32px))",
+        "background:#141414",
+        "color:#fff",
+        "border:1px solid rgba(255,255,255,0.12)",
+        "border-radius:14px",
+        "box-shadow:0 20px 60px rgba(0,0,0,0.65)",
+        "padding:16px 16px 14px",
+        "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
+    ].join(";");
+
+    const title = document.createElement("div");
+    title.textContent = "Payment successful";
+    title.style.cssText = "font-size:16px;font-weight:700;margin-bottom:8px;";
+
+    const body = document.createElement("div");
+    body.textContent = message || "Thank you! Your payment was successful.";
+    body.style.cssText = "font-size:14px;opacity:0.92;line-height:1.35;margin-bottom:14px;";
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;justify-content:flex-end;gap:10px;";
+
+    const ok = document.createElement("button");
+    ok.type = "button";
+    ok.textContent = "OK";
+    ok.style.cssText = [
+        "padding:10px 14px",
+        "border-radius:10px",
+        "border:1px solid rgba(255,255,255,0.18)",
+        "background:rgba(255,255,255,0.08)",
+        "color:#fff",
+        "cursor:pointer",
+        "font-weight:600"
+    ].join(";");
+
+    actions.appendChild(ok);
+    card.appendChild(title);
+    card.appendChild(body);
+    card.appendChild(actions);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    const reloadOnOk = (() => {
+        try { return localStorage.getItem(PAYMENT_SUCCESS_RELOAD_KEY) === "1"; }
+        catch { return false; }
+    })();
+
+    const cleanupAndMaybeReload = () => {
+        // Ensure it can't show again
+        try {
+            localStorage.removeItem(PAYMENT_SUCCESS_FLAG_KEY);
+            localStorage.removeItem(PAYMENT_SUCCESS_RELOAD_KEY);
+        } catch { }
+
+        overlay.remove();
+
+        // If you want “OK → reload to origin”
+        if (reloadOnOk) {
+            window.location.replace(window.location.origin);
+        }
+    };
+
+    ok.addEventListener("click", cleanupAndMaybeReload);
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) cleanupAndMaybeReload();
+    });
+}
+
+function checkAndShowPaymentSuccess() {
+    try {
+        const flag = localStorage.getItem(PAYMENT_SUCCESS_FLAG_KEY);
+        if (flag !== "1") return false;
+
+        // Do NOT show a blocking alert. Show overlay.
+        // (Keep the flag until user clicks OK; overlay will remove it.)
+        const msg = (typeof TEXTS !== "undefined" && TEXTS?.CHECKOUT_SUCCESS)
+            ? TEXTS.CHECKOUT_SUCCESS
+            : "Thank you! Your payment was successful.";
+
+        // Let initial scripts paint first, but do not block timers like alert()
+        requestAnimationFrame(() => showPaymentSuccessOverlay(msg));
+        return true;
+    } catch (e) {
+        console.warn("Could not check payment success flag:", e);
+        return false;
+    }
+}
+
+
+
+
 
 
 // When the user clicks "Pay Now"
@@ -2704,11 +2810,23 @@ async function confirmStripePayment(userDetails) {
 
     if (error) {
         alert("❌ Payment failed: " + error.message);
-    } else if (paymentIntent && paymentIntent.status === "succeeded") {
-        localStorage.removeItem("basket");
-        alert("🎉 Payment succeeded!");
-        //////location.reload();
+        return;
     }
+
+    // If it didn’t redirect and completed instantly:
+    if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_capture")) {
+        clearBasketCompletely();
+        setPaymentSuccessFlag({ reloadOnOk: true });
+
+        // Close your payment modal if it exists
+        if (typeof closeModal === "function") closeModal();
+
+        // Show non-blocking success message now; OK will reload to origin
+        checkAndShowPaymentSuccess();
+        return;
+    }
+
+    // Otherwise Stripe handled redirect; your DOMContentLoaded handler will show success after return.
 }
 
 
@@ -2728,30 +2846,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const redirectStatus = params.get("redirect_status");
 
     if (redirectStatus === "succeeded") {
-        console.log("✅ Stripe redirect success detected – clearing basket.");
+        console.log("✅ Stripe redirect success detected – clearing basket and flagging success.");
 
-        // ✅ Clear basket now
+        // Clear basket and mark success
         clearBasketCompletely();
+        setPaymentSuccessFlag({ reloadOnOk: true }); // OK will reload to origin
 
-        // Clean the URL so refresh doesn't re-trigger this logic
+        // Clean Stripe params so refresh doesn't re-trigger
         params.delete("redirect_status");
         params.delete("payment_intent");
         params.delete("payment_intent_client_secret");
 
         const newQuery = params.toString();
-        const newUrl =
+        const cleanUrl =
             window.location.pathname +
             (newQuery ? "?" + newQuery : "") +
             window.location.hash;
 
-        window.history.replaceState({}, "", newUrl);
+        // IMPORTANT: no reload here. Just clean the address bar.
+        history.replaceState({}, "", cleanUrl);
 
-        // Show the success dialog AFTER other startup code has run
-        setTimeout(() => {
-            askUserAndMaybeReloadToOrigin();
-        }, 0);
+        // Show success overlay (non-blocking)
+        checkAndShowPaymentSuccess();
+        return;
     }
+
+    // Normal loads: if a previous flow set the flag, show it now
+    checkAndShowPaymentSuccess();
 });
+
+
 
 // Ask the user and, if confirmed, reload the shop to the origin URL
 // Ask the user to reload to the origin URL after a successful payment
@@ -3992,77 +4116,63 @@ function readCheckoutForm() {
 async function attachConfirmHandler(stripe, elementsInstance, paymentElementInstance, websiteOrigin, formattedCart, summarizedCart) {
     const confirmBtn = document.getElementById("confirm-payment-button");
     if (!confirmBtn) throw new Error("Confirm payment button not found");
+    if (confirmBtn.dataset.listenerAttached) return;
 
-    if (!confirmBtn.dataset.listenerAttached) {
-        confirmBtn.addEventListener("click", async () => {
-            try {
-                const userDetails = readCheckoutForm();
+    confirmBtn.dataset.listenerAttached = "true";
 
-                // 1) Create PaymentIntent with destination country (tariff logic) + cart
-                const createRes = await fetch("https://api.snagletshop.com/create-payment-intent", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        websiteOrigin,
-                        products: formattedCart,                  // productLink-free version
-                        currency: selectedCurrency,
-                        country: userDetails.country,             // IMPORTANT: let server apply correct tariff
-                        metadata: { order_summary: summarizedCart }
-                    })
-                });
-                if (!createRes.ok) throw new Error(`Create PI failed: ${await createRes.text()}`);
-                const { clientSecret, orderId } = await createRes.json();
+    confirmBtn.addEventListener("click", async () => {
+        const originalText = confirmBtn.textContent;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Processing…";
 
-                // 2) Store user details into PI metadata (merge on server)
-                const piId = clientSecret.split("_secret_")[0];
-                await fetch("https://api.snagletshop.com/store-user-details", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentIntentId: piId, userDetails })
-                });
+        try {
+            const userDetails = readCheckoutForm();
 
-                // 3) Confirm payment with full billing_details
-                const { error, paymentIntent } = await stripe.confirmPayment({
-                    elements: elementsInstance,
-                    confirmParams: {
-                        return_url: window.location.href,
-                        payment_method_data: {
-                            billing_details: {
-                                name: `${userDetails.name} ${userDetails.surname}`,
-                                email: userDetails.email,
-                                phone: userDetails.phone || undefined,
-                                address: {
-                                    line1: userDetails.street,
-                                    line2: userDetails.address2 || undefined,
-                                    city: userDetails.city,
-                                    state: userDetails.state || undefined,
-                                    postal_code: userDetails.postalCode,
-                                    country: userDetails.country
-                                }
-                            }
-                        }
-                    },
-                    redirect: "if_required"
-                });
+            const createRes = await fetch("https://api.snagletshop.com/create-payment-intent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    websiteOrigin,
+                    products: formattedCart,
+                    currency: selectedCurrency,
+                    country: userDetails.country,
+                    metadata: { order_summary: summarizedCart }
+                })
+            });
+            if (!createRes.ok) throw new Error(`Create PI failed: ${await createRes.text()}`);
+            const { clientSecret } = await createRes.json();
 
-                if (error) {
-                    alert("Payment failed: " + error.message);
-                    return;
-                }
-                if (paymentIntent && paymentIntent.status === "succeeded") {
-                    localStorage.removeItem("basket");
-                    alert("Payment succeeded!");
-                    ////location.reload();
-                }
-            } catch (err) {
-                console.error("Payment flow error:", err);
-                alert(err.message || "Payment could not be completed");
+            const piId = clientSecret.split("_secret_")[0];
+            await fetch("https://api.snagletshop.com/store-user-details", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentIntentId: piId, userDetails })
+            });
+
+            const { error, paymentIntent } = await stripe.confirmPayment({
+                elements: elementsInstance,
+                confirmParams: { return_url: window.location.href },
+                redirect: "if_required"
+            });
+
+            if (error) throw new Error(error.message);
+
+            if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_capture")) {
+                clearBasketCompletely();
+                setPaymentSuccessFlag({ reloadOnOk: true });
+                if (typeof closeModal === "function") closeModal();
+                checkAndShowPaymentSuccess();
             }
-        });
-
-        confirmBtn.dataset.listenerAttached = "true";
-    }
+        } catch (err) {
+            console.error("Payment flow error:", err);
+            alert(err.message || "Payment could not be completed");
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+        }
+    });
 }
+
 
 // Attaches the confirm handler exactly once; validates form; stores user details; confirms payment.
 // Attaches the confirm handler exactly once; validates form; stores user details; confirms payment.
