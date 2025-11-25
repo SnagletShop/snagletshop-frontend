@@ -1512,64 +1512,59 @@ async function GoToSettings() {
     legalSection.innerHTML = `
     <h3>Legal Notice &amp; Store Policies</h3>
     <p><strong>Legal Notice:</strong><br>
-    Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is strictly prohibited. Any such actions may result in legal action and claims for damages, including but not limited to loss of revenue, reputational harm, and costs of enforcement.</p>
-
+    Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
+  
     <h4>Shipping Policy</h4>
     <p>
-    We operate on a dropshipping model, and most products are shipped directly from global suppliers and logistics partners. Delivery times may range from <strong>2 weeks up to 6 months</strong> depending on your location, customs processing, courier performance, and product availability.<br><br>
-    All stated delivery times are estimates only and are <strong>not guaranteed.</strong> We are not responsible for delays caused by customs authorities, local postal services, couriers, logistics partners, global events, strikes, natural disasters, or any other circumstances beyond our direct control.
+    We operate on a dropshipping model. Most items ship from global suppliers and logistics partners. Estimated delivery: <strong>2&nbsp;weeks to several weeks</strong>, depending on destination, carrier performance, customs processing, and product availability. Estimated dates are <strong>not guaranteed</strong>.<br><br>
+    We are not responsible for delays caused by customs, carriers, labor actions, natural disasters, or other events outside our direct control. If your order exceeds the maximum timeframe shown at checkout/product page, contact us so we can investigate and, where required by law, offer an appropriate remedy.
     </p>
-
-    <h4>Returns &amp; Refunds</h4>
+  
+    <h4>Returns, Cancellations &amp; Refunds</h4>
+    <p><strong>Before shipment:</strong> We may be able to cancel an order if it has not yet been processed; this is not guaranteed.</p>
+    <p><strong>After shipment (general rule):</strong> We do not accept cancellations or “change-of-mind” returns once an order has been handed to a carrier, <strong>except</strong> where mandatory consumer law grants you a right to withdraw.</p>
+    <p><strong>EU/EEA/UK consumers (cooling-off):</strong> For most physical goods, you have a statutory right to withdraw from a distance contract within <strong>14 days</strong> after delivery without giving a reason (exceptions apply, e.g., custom-made or sealed hygiene items once unsealed). If you exercise this right, you must return the goods in accordance with our instructions; unless we state otherwise, you bear the direct cost of return, which may involve shipping outside your country. This paragraph prevails over any conflicting term in these policies.</p>
+  
+    <h4>Items Damaged, Defective, or Not-as-Described</h4>
     <p>
-    <strong>All sales are final.</strong> By placing an order, you acknowledge and agree to the following terms regarding returns, refunds, and cancellations:
+    If your item arrives damaged, defective, or significantly different from its description, contact us <strong>promptly</strong> (ideally within 5 days) with your order number and clear photos/videos so we can assist, arrange a replacement, repair, or refund as appropriate. Any request for early notice does not limit your <strong>non-waivable statutory rights</strong>.
     </p>
-    <ul>
-        <li><strong>No refunds after shipment:</strong> Once an order has been processed and shipped by our supplier or logistics partner, we <strong>do not accept cancellations, returns, or refunds</strong>, except where required by mandatory consumer protection law.</li>
-        <li><strong>Pre-shipment cancellation:</strong> In limited cases, and only if the order has not yet been processed or shipped, we may <strong>at our sole discretion</strong> attempt to cancel the order. We do not guarantee that a pre-shipment cancellation will be possible.</li>
-        <li><strong>Defective or not-as-described items:</strong> If your item arrives <strong>defective, damaged, or significantly different from its description</strong>, you must contact us within <strong>5 days of delivery</strong>. You must provide your order number and clear photos (and/or video) showing the issue. After reviewing your case, we may, at our discretion and in coordination with the supplier, offer a partial refund, full refund, replacement, or store credit.</li>
-        <li><strong>Non-qualifying cases:</strong> We generally do <strong>not</strong> offer refunds, returns, or exchanges for:
-            <ul>
-                <li>Change of mind, buyer’s remorse, or finding a better price elsewhere.</li>
-                <li>Incorrect size, color, or variant selected by the customer.</li>
-                <li>Minor deviations in color, packaging, or appearance that do not affect basic function.</li>
-                <li>Delays in shipping or delivery that are outside our direct control.</li>
-            </ul>
-        </li>
-        <li><strong>Inspection and verification:</strong> We reserve the right to request additional evidence (such as more photos, videos, or documentation) and to verify claims with our supplier before approving any remedy.</li>
-    </ul>
+  
+    <h4>Warranty / Legal Guarantee</h4>
     <p>
-    Except in the specific cases described above, and except where mandatory law requires otherwise, <strong>payments made to us are non-refundable</strong>. Any refunds or accommodations beyond these rules are provided strictly on a goodwill and case-by-case basis and do not create any future obligation on our part.<br><br>
-    This policy does not affect any <strong>non-waivable rights</strong> you may have under applicable consumer protection or e-commerce laws in your jurisdiction.
+    Unless a manufacturer warranty is explicitly provided with the product, we do not offer a separate commercial warranty. <strong>This does not affect your statutory rights</strong> (e.g., the legal guarantee for lack of conformity for consumers in the EU/EEA/UK). Claims under any manufacturer warranty must be made directly with the manufacturer unless we state we handle them.
     </p>
-
-    <h4>Warranty &amp; Insurance</h4>
-    <p>
-    Unless explicitly stated otherwise for a specific product, we do <strong>not provide any additional warranty, guarantee, or insurance</strong> on the products we sell. All items are sold “as-is” and “as available.” Any manufacturer warranty (if applicable) is provided solely by the manufacturer, and any claims under such warranty must be made directly with that manufacturer.<br><br>
-    We do not cover wear and tear, accidental damage, misuse, improper installation, or modification of the product.
-    </p>
-
+  
     <h4>Customs, Duties &amp; Taxes</h4>
     <p>
-    Buyers are solely responsible for understanding and complying with any customs regulations, import restrictions, duties, VAT, GST, or other taxes that may apply in their country. <strong>Any such fees are the buyer’s responsibility</strong> and are <strong>not included</strong> in our product prices unless explicitly stated.<br><br>
-    We are not responsible for packages held, delayed, or confiscated by customs authorities.
-    </p>
-
-    <h4>Responsibility Disclaimer</h4>
-    <p>
-    To the fullest extent permitted by law, we are not liable for:
-    </p>
+    Prices may or may not include taxes and import fees depending on your destination and the shipping method:
     <ul>
-        <li>Orders lost, delayed, or misdelivered due to incorrect, incomplete, or outdated shipping information provided by the customer.</li>
-        <li>Packages that are lost, stolen, or damaged after the courier or postal service marks them as delivered.</li>
-        <li>Any indirect, incidental, or consequential damages arising from the purchase, use, or inability to use products purchased through our store.</li>
-        <li>Use or misuse of products sold through our store, including any damage, injury, or loss resulting from improper or unintended use.</li>
+      <li><strong>Taxes collected at checkout (e.g., VAT/IOSS, DDP):</strong> If stated at checkout, we or our logistics partner collect/handle these and they are included in your final price.</li>
+      <li><strong>Taxes due on delivery (DDU/DAP):</strong> If not shown as included, you are responsible for any applicable import duties, VAT/GST, and clearance fees charged by your customs authority or carrier.</li>
     </ul>
-    <p>
-    By using this website and placing an order, you confirm that you have read, understood, and agreed to these policies. If you do not agree with these terms, please do not place an order.<br><br>
-    Nothing in these policies is intended to exclude or limit any rights that you may have under mandatory consumer protection law that cannot be excluded or limited by agreement.
+    We are not responsible for packages held, delayed, or confiscated by customs where the product is lawful to import but subject to duties or restrictions.
     </p>
-`;
+  
+    <h4>Delivery Issues &amp; Risk of Loss</h4>
+    <p>
+    Ensure your shipping address and contact details are accurate. We are not responsible for loss, delay, or misdelivery arising from incorrect or incomplete addresses provided by you. If tracking shows “delivered” but you cannot locate the package, notify us promptly so we can open a carrier investigation; resolutions (e.g., replacement or refund) may depend on the carrier’s findings.
+    </p>
+  
+    <h4>Exclusions</h4>
+    <ul>
+      <li>We do not accept returns for buyer’s remorse where not required by law.</li>
+      <li>We do not accept returns for incorrect size/color/variant chosen by the customer, unless required by law.</li>
+      <li>Minor variations in color, packaging, or appearance that do not affect basic function are not considered defects.</li>
+    </ul>
+  
+    <h4>Contact</h4>
+    <p>
+    To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email. We will provide return instructions (including the return address, which may be outside your country) and, where applicable, an estimate of return shipping costs before you confirm a withdrawal.
+    </p>
+  
+    <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
+  `;
+  
 
 
     // Append all sections
