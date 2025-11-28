@@ -7,7 +7,14 @@ const APPLY_TARIFF = true; // 🔁 You can toggle this manually
 localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
 // early in boot:
-const API_BASE = window.SNAGLET_API_BASE || "https://91.99.147.194";
+const API_BASE =
+    (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+        ? "http://localhost:5500"
+        : "https://api.snagletshop.com";
+
+const WS_BASE =
+    (location.protocol === "https:" ? "wss://" : "ws://") +
+    (location.hostname === "localhost" ? "localhost:5500" : "91.99.147.194");
 
 let productsDatabase = {};
 
