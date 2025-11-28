@@ -7,7 +7,7 @@ const APPLY_TARIFF = true; // 🔁 You can toggle this manually
 localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
 // early in boot:
-const API_BASE = window.SNAGLET_API_BASE || "https://api.snagletshop.com";
+const API_BASE = window.SNAGLET_API_BASE || "https://91.99.147.194";
 
 let productsDatabase = {};
 
@@ -462,8 +462,10 @@ const SETTINGS_CACHE_TTL_HOURS = 12;
 
 window.preloadedData = {
     exchangeRates: null,
-    countries: null
+    countries: null,
+    tariffs: null
 };
+
 
 
 let cart = {};
@@ -523,179 +525,146 @@ function isSettingsCacheValid(timestamp) {
     const ageInHours = (Date.now() - timestamp) / (1000 * 60 * 60);
     return ageInHours < SETTINGS_CACHE_TTL_HOURS;
 }
+function safeJsonParse(str, fallback = null) {
+    try { return JSON.parse(str); } catch { return fallback; }
+}
 
+function lsGet(key, fallback = null) {
+    try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+
+function lsSet(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch { return false; }
+}
+
+function tariffsObjectToCountriesArray(tariffsObj) {
+    if (!tariffsObj || typeof tariffsObj !== "object" || Array.isArray(tariffsObj)) return [];
+    return Object.keys(tariffsObj)
+        .map(code => ({ code, tariff: Number(tariffsObj[code]) || 0 }))
+        .sort((a, b) => a.code.localeCompare(b.code));
+}
 async function preloadSettingsData() {
-    const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || "{}");
-
-    if (isSettingsCacheValid(cached.timestamp)) {
-        console.log("⚡ Using cached settings data.");
-        window.preloadedData.exchangeRates = cached.data.exchangeRates;
-        window.preloadedData.countries = cached.data.countries;
-
-        // Apply exchange rates
-        if (cached.data.exchangeRates) {
-            for (const [currency, rate] of Object.entries(cached.data.exchangeRates)) {
-                exchangeRates[currency] = rate;
-            }
+    try {
+        const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
+        if (cached && isSettingsCacheValid(cached)) {
+            tariffMultipliers = cached.tariffs || {};
+            exchangeRates = cached.rates || {};
+            handlesTariffsDropdown(cached.countries || []);
+            console.log("⚡ Using cached settings data.");
+            return;
         }
 
-        return;
-    }
-
-    // No valid cache → fetch fresh data
-    try {
-        const [countryRes, rateRes] = await Promise.all([
-            fetch("https://api.snagletshop.com/countries"),
-            fetch("https://api.snagletshop.com/rates")
+        // Fetch fresh settings
+        const [tariffsData, ratesData] = await Promise.all([
+            fetchTariffs(),
+            fetchExchangeRatesFromServer()
         ]);
 
-        const countries = await countryRes.json();
-        const rateData = await rateRes.json();
+        const safeTariffs = (tariffsData && typeof tariffsData.tariffs === "object") ? tariffsData.tariffs : {};
+        const safeRates = (ratesData && typeof ratesData.rates === "object") ? ratesData.rates : {};
 
-        window.preloadedData.countries = countries;
-        window.preloadedData.exchangeRates = rateData.rates;
+        tariffMultipliers = { ...safeTariffs };
+        exchangeRates = { ...safeRates };
 
-        // Apply exchange rates
-        if (rateData.rates) {
-            for (const [currency, rate] of Object.entries(rateData.rates)) {
-                exchangeRates[currency] = rate;
-            }
-        }
+        const countriesList = tariffsObjectToCountriesArray(tariffMultipliers);
+        handlesTariffsDropdown(countriesList);
 
-        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
-            timestamp: Date.now(),
-            data: {
-                countries,
-                exchangeRates: rateData.rates
-            }
+        lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
+            tariffs: tariffMultipliers,
+            rates: exchangeRates,
+            countries: countriesList,
+            timestamp: Date.now()
         }));
 
-        console.log("✅ Fetched and cached fresh settings data.");
+        console.log("✅ Settings data loaded & cached.");
     } catch (err) {
-        console.error("❌ Failed to preload settings data:", err);
+        console.warn("⚠️ preloadSettingsData failed:", err?.message || err);
+
+        // last-resort fallback: keep whatever is already in-memory; do not crash checkout
+        tariffMultipliers = tariffMultipliers && typeof tariffMultipliers === "object" ? tariffMultipliers : {};
+        exchangeRates = exchangeRates && typeof exchangeRates === "object" ? exchangeRates : {};
     }
 }
-document.addEventListener("DOMContentLoaded", async () => {
-    console.log("✅ DOM fully loaded. Checking for product from query...");
 
-    const params = new URLSearchParams(window.location.search);
 
-    // 1) Show thank-you if we set a flag before reload
 
-    if (thankFlag === "1") {
-        sessionStorage.removeItem("lastPurchaseThankYou");
-
-        alert(TEXTS.CHECKOUT_SUCCESS || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!");
-    } else {
-        // 2) Handle Stripe 3DS / redirect flow: ?redirect_status=succeeded
-        const redirectStatus = params.get("redirect_status");
-        if (redirectStatus === "succeeded") {
-            alert(TEXTS.CHECKOUT_SUCCESS || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!");
-
-            // Clean the URL so refresh doesn't re-trigger this
-            params.delete("redirect_status");
-            params.delete("payment_intent");
-            params.delete("payment_intent_client_secret");
-
-            const newQuery = params.toString();
-            const newUrl =
-                window.location.pathname +
-                (newQuery ? "?" + newQuery : "") +
-                window.location.hash;
-
-            window.history.replaceState({}, "", newUrl);
-        }
-    }
-
-    const productName = params.get("product");
-    if (productName) {
-        const cleanedQuery = productName.toLowerCase().trim();
-        console.log("🔍 Looking for product:", `"${cleanedQuery}"`);
-
-        let attempts = 0;
-        const maxAttempts = 300;
-
-        const checkProducts = setInterval(() => {
-            if (typeof products !== "undefined" && Object.keys(products).length > 0) {
-                clearInterval(checkProducts);
-
-                const allProducts = Object.values(products).flat();
-
-                console.log("🧪 Checking against these product names:");
-                allProducts.forEach(p => {
-                    if (p && typeof p.name === "string") {
-                        const name = p.name.toLowerCase().trim();
-                        console.log("→", `"${name}"`);
-                    } else {
-                        console.warn("⚠️ Skipping invalid product:", p);
-                    }
-                });
-
-                // Try exact match
-                let match = allProducts.find(p => {
-                    if (!p || typeof p.name !== "string") return false;
-
-                    const dbName = p.name.toLowerCase().trim();
-                    const dbNameCodes = [...dbName].map(c => c.charCodeAt(0));
-                    const queryCodes = [...cleanedQuery].map(c => c.charCodeAt(0));
-
-                    console.log(`🔎 Comparing "${dbName}" to "${cleanedQuery}"`);
-                    console.log("   DB char codes  :", dbNameCodes.join(" "));
-                    console.log("   Query char codes:", queryCodes.join(" "));
-
-                    return dbName === cleanedQuery;
-                });
-
-                // Fallback: fuzzy match
-                if (!match) {
-                    console.warn("⚠️ No exact match. Trying fuzzy match...");
-                    match = allProducts.find(p =>
-                        p && typeof p.name === "string" &&
-                        p.name.toLowerCase().trim().includes(cleanedQuery)
-                    );
-                    if (match) {
-                        console.log("✅ Fuzzy match found:", match.name);
-                    }
-                }
-
-                if (
-                    match &&
-                    Array.isArray(match.images) &&
-                    match.images.length > 0
-                ) {
-                    console.log("✅ Matched product:", match.name);
-                    navigate("GoToProductPage", [
-                        match.name,
-                        match.price,
-                        match.description || "No description available."
-                    ]);
-                } else {
-                    console.warn("❌ Product not found or has no valid images:", `"${productName}"`);
-                    history.replaceState({}, "", "/");
-                    loadProducts("Default_Page");
-                }
-            } else {
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    clearInterval(checkProducts);
-                    console.error("⏰ Timeout: products not loaded in time.");
-                    history.replaceState({}, "", "/");
-                    loadProducts("Default_Page");
-                } else {
-                    console.log("⌛ Waiting for products to load...");
-                }
-            }
-        }, 10);
-    } else {
-        loadProducts("Default_Page");
-    }
-
-});
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
 });
 
 const ANALYTICS_SESSION_KEY = 'snaglet_analytics_session';
+function findCatalogProductByLink(productLink) {
+    const link = String(productLink || "").trim();
+    if (!link) return null;
+
+    if (Array.isArray(products)) {
+        const hit = products.find(p => String(p?.productLink || "").trim() === link);
+        if (hit) return hit;
+    }
+
+    if (productsDatabase && typeof productsDatabase === "object") {
+        for (const arr of Object.values(productsDatabase)) {
+            if (!Array.isArray(arr)) continue;
+            const hit = arr.find(p => String(p?.productLink || "").trim() === link);
+            if (hit) return hit;
+        }
+    }
+
+    return null;
+}
+
+function findCatalogProductByName(name) {
+    const n = String(name || "").trim();
+    if (!n) return null;
+
+    if (Array.isArray(products)) {
+        const hit = products.find(p => String(p?.name || "").trim() === n);
+        if (hit) return hit;
+    }
+
+    if (productsDatabase && typeof productsDatabase === "object") {
+        for (const arr of Object.values(productsDatabase)) {
+            if (!Array.isArray(arr)) continue;
+            const hit = arr.find(p => String(p?.name || "").trim() === n);
+            if (hit) return hit;
+        }
+    }
+
+    return null;
+}
+
+function buildFullCartFromBasket() {
+    const basket = readBasket();
+    const fullCart = [];
+
+    for (const item of basket) {
+        const quantity = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+
+        // Prefer server-provided catalog truth
+        const cat =
+            findCatalogProductByLink(item?.productLink) ||
+            findCatalogProductByName(item?.name);
+
+        const unitEUR = Number(cat?.price ?? item?.price ?? 0) || 0;
+        const expectedPurchase = Number(cat?.expectedPurchasePrice ?? item?.expectedPurchasePrice ?? 0) || 0;
+
+        fullCart.push({
+            name: String(cat?.name ?? item?.name ?? "").trim(),
+            selectedOption: String(item?.selectedOption ?? "").trim(),
+            quantity,
+            // keep both fields (your server accepts either)
+            price: unitEUR,
+            unitPriceEUR: unitEUR,
+            expectedPurchasePrice: expectedPurchase,
+            expectedPurchase: expectedPurchase,
+            productLink: String(cat?.productLink ?? item?.productLink ?? "").trim(),
+            image: String(cat?.image ?? item?.image ?? "").trim(),
+            description: String(cat?.description ?? item?.description ?? "")
+        });
+    }
+
+    return fullCart;
+}
 
 // Simple anonymous session id stored in localStorage
 let analyticsSessionId = localStorage.getItem(ANALYTICS_SESSION_KEY);
@@ -817,11 +786,35 @@ const debounce = (func, delay) => {
     };
 };
 async function fetchTariffs() {
-    const response = await fetch("https://api.snagletshop.com/countries");
-    console.log(response);
-    const countries = await response.json();
-    tariffMultipliers = Object.fromEntries(countries.map(c => [c.code, c.tariff]));
+    try {
+        // If preload already filled it, use it
+        if (window.preloadedData?.tariffs && Object.keys(window.preloadedData.tariffs).length) {
+            tariffMultipliers = { ...window.preloadedData.tariffs };
+            return tariffMultipliers;
+        }
+
+        // Otherwise preload (which fetches /tariffs)
+        await preloadSettingsData();
+
+        if (window.preloadedData?.tariffs) {
+            tariffMultipliers = { ...window.preloadedData.tariffs };
+            return tariffMultipliers;
+        }
+
+        // Last resort direct fetch
+        const response = await fetch(`${API_BASE}/tariffs`, { cache: "no-store" });
+        const tariffsObj = await response.json();
+        tariffMultipliers = (tariffsObj && typeof tariffsObj === "object" && !Array.isArray(tariffsObj)) ? tariffsObj : {};
+        window.preloadedData.tariffs = tariffMultipliers;
+        window.preloadedData.countries = tariffsObjectToCountriesArray(tariffMultipliers);
+        return tariffMultipliers;
+    } catch (e) {
+        console.warn("⚠️ fetchTariffs failed; keeping existing tariffMultipliers:", e);
+        tariffMultipliers = tariffMultipliers || {};
+        return tariffMultipliers;
+    }
 }
+
 
 function setupSearchInputs() {
     searchInput = document.getElementById("Search_Bar");
@@ -902,23 +895,226 @@ function invokeFunctionByName(functionName, args = []) {
         console.warn(`❌ Function not found in registry: ${functionName}`);
     }
 }
-async function fetchExchangeRatesFromServer() {
+// --- PAYMENT PENDING (covers 3DS redirects) --------------------------
+const PAYMENT_PENDING_KEY = "payment_pending_v1";
+
+/**
+ * Stores enough info to recover after a Stripe redirect (3DS) or refresh.
+ */
+function setPaymentPendingFlag({ paymentIntentId = null, orderId = null, clientSecret = null } = {}) {
+    if (!paymentIntentId && !clientSecret) return;
     try {
-        const response = await fetch("https://api.snagletshop.com/rates");
-        const data = await response.json();
-        console.log("🔍 Raw exchange rate response from server:", data); // 👈 Add this
-        if (data.rates) {
-            for (const [currency, rate] of Object.entries(data.rates)) {
-                exchangeRates[currency] = rate;
-            }
-            console.log("✅ Updated exchange rates from server:", exchangeRates);
-        } else {
-            console.warn("⚠️ No rates found in response. Using default rates.");
-        }
-    } catch (error) {
-        console.error("❌ Failed to fetch exchange rates:", error);
+        localStorage.setItem(
+            PAYMENT_PENDING_KEY,
+            JSON.stringify({
+                ts: Date.now(),
+                paymentIntentId: paymentIntentId ? String(paymentIntentId) : null,
+                orderId: orderId ? String(orderId) : null,
+                clientSecret: clientSecret ? String(clientSecret) : null
+            })
+        );
+    } catch { }
+}
+
+function getPaymentPendingFlag() {
+    try {
+        const raw = localStorage.getItem(PAYMENT_PENDING_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+
+        // Backwards-compatible: tolerate older shapes
+        const paymentIntentId = obj?.paymentIntentId ? String(obj.paymentIntentId) : null;
+        const clientSecret = obj?.clientSecret ? String(obj.clientSecret) : null;
+        const orderId = obj?.orderId ? String(obj.orderId) : null;
+        const ts = Number(obj?.ts || 0) || 0;
+
+        if (!paymentIntentId && !clientSecret) return null;
+
+        return { ts, paymentIntentId, clientSecret, orderId };
+    } catch {
+        return null;
     }
 }
+
+function clearPaymentPendingFlag() {
+    try { localStorage.removeItem(PAYMENT_PENDING_KEY); } catch { }
+}
+
+async function pollPendingPaymentUntilFinal({ paymentIntentId, timeoutMs = 120000, intervalMs = 2500 } = {}) {
+    if (!paymentIntentId) return { status: "unknown" };
+
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+        try {
+            const res = await fetch(
+                `${API_BASE}/payment-intent-status/${encodeURIComponent(paymentIntentId)}`,
+                { cache: "no-store" }
+            );
+            const data = await res.json().catch(() => ({}));
+            const status = String(data?.status || "");
+
+            if (status === "succeeded") return { status };
+            if (status === "requires_payment_method" || status === "canceled") return { status };
+
+            // still pending: processing / requires_capture / requires_action / etc.
+        } catch { }
+
+        await new Promise(r => setTimeout(r, intervalMs));
+    }
+
+    return { status: "timeout" };
+}
+
+async function checkAndHandlePendingPaymentOnLoad() {
+    const pending = getPaymentPendingFlag();
+    if (!pending?.paymentIntentId) return;
+
+    const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pending.paymentIntentId });
+
+    if (status === "succeeded") {
+        clearPaymentPendingFlag();
+        clearBasketCompletely();
+        setPaymentSuccessFlag({ reloadOnOk: true });
+        window.location.replace(window.location.origin);
+        return;
+    }
+
+    if (status === "requires_payment_method" || status === "canceled") {
+        clearPaymentPendingFlag();
+        alert("Payment did not complete. Your cart is still saved—please try again.");
+        return;
+    }
+
+    // timeout/unknown: keep pending flag + keep basket
+    alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+}
+function getStripePublishableKeySafe() {
+    const fallbackPk =
+        "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
+    return window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || fallbackPk;
+}
+
+function ensureStripeInstance() {
+    if (!window.stripeInstance) {
+        if (typeof Stripe !== "function") throw new Error("Stripe.js not loaded");
+        window.stripeInstance = Stripe(getStripePublishableKeySafe());
+    }
+    return window.stripeInstance;
+}
+
+function stripStripeReturnParamsFromUrl(urlObj) {
+    // Stripe appends these on return_url
+    urlObj.searchParams.delete("redirect_status");
+    urlObj.searchParams.delete("payment_intent");
+    urlObj.searchParams.delete("payment_intent_client_secret");
+
+    // your own marker (optional)
+    urlObj.searchParams.delete("stripe_return");
+
+    // legacy flag you used earlier
+    urlObj.searchParams.delete("payment_success");
+}
+document.addEventListener("DOMContentLoaded", () => {
+    // 1) Handle Stripe redirect returns (3DS) safely
+    handleStripeRedirectReturnOnLoad()
+        .catch(e => console.warn("handleStripeRedirectReturnOnLoad failed:", e))
+        .finally(() => {
+            // 2) Show success overlay if flagged
+            checkAndShowPaymentSuccess();
+
+            // 3) If something is pending, poll Stripe via server until final
+            checkAndHandlePendingPaymentOnLoad();
+        });
+});
+
+/**
+ * Handles Stripe "return_url" redirects (3DS) reliably.
+ * - If succeeded: clears basket + sets success flag
+ * - If still processing: stores pending + lets polling finish on load
+ * - If failed/canceled: keeps basket
+ */
+async function handleStripeRedirectReturnOnLoad() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const piIdFromUrl = params.get("payment_intent");
+    const csFromUrl = params.get("payment_intent_client_secret");
+    const hasStripeReturnSignals =
+        !!csFromUrl || !!piIdFromUrl || params.has("redirect_status") || params.has("stripe_return");
+
+    if (!hasStripeReturnSignals) return false;
+
+    // If we have PI id / client secret, persist pending so refreshes are safe
+    if (piIdFromUrl || csFromUrl) {
+        setPaymentPendingFlag({
+            paymentIntentId: piIdFromUrl || null,
+            orderId: window.latestOrderId || null,
+            clientSecret: csFromUrl || null
+        });
+    }
+
+    let finalStatus = null;
+    let finalPiId = piIdFromUrl || null;
+
+    // Try client-side retrieve first (best signal right after redirect)
+    if (csFromUrl) {
+        try {
+            const stripe = ensureStripeInstance();
+            const { paymentIntent, error } = await stripe.retrievePaymentIntent(csFromUrl);
+            if (error) throw error;
+
+            if (paymentIntent?.id) finalPiId = paymentIntent.id;
+            if (paymentIntent?.status) finalStatus = paymentIntent.status;
+
+            if (finalPiId) {
+                setPaymentPendingFlag({
+                    paymentIntentId: finalPiId,
+                    orderId: window.latestOrderId || null,
+                    clientSecret: csFromUrl
+                });
+            }
+        } catch (e) {
+            console.warn("Stripe retrievePaymentIntent failed; will fall back to server polling.", e);
+        }
+    }
+
+    // If we already know the result, apply it now
+    if (finalStatus === "succeeded") {
+        clearPaymentPendingFlag();
+        clearBasketCompletely();
+        setPaymentSuccessFlag({ reloadOnOk: true });
+    } else if (finalStatus === "requires_payment_method" || finalStatus === "canceled") {
+        clearPaymentPendingFlag();
+        alert("Payment did not complete. Your cart is still saved—please try again.");
+    } else {
+        // unknown/processing: keep pending; checkAndHandlePendingPaymentOnLoad() will poll
+        if (finalPiId) {
+            setPaymentPendingFlag({
+                paymentIntentId: finalPiId,
+                orderId: window.latestOrderId || null,
+                clientSecret: csFromUrl || null
+            });
+        }
+    }
+
+    // Always clean URL so reloads don't re-trigger
+    stripStripeReturnParamsFromUrl(url);
+    const q = url.searchParams.toString();
+    const cleaned = url.pathname + (q ? `?${q}` : "");
+    try { window.history.replaceState({}, "", cleaned); } catch { }
+
+    return true;
+}
+
+async function fetchExchangeRatesFromServer() {
+    const res = await fetch(`${API_BASE}/rates`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to fetch exchange rates (${res.status})`);
+    const data = await res.json().catch(() => null);
+    if (!data || !data.rates) throw new Error("Invalid exchange rates payload.");
+    return data;
+}
+
 
 
 
@@ -1373,18 +1569,22 @@ async function populateCountries() {
         return;
     }
 
-    const response = await fetch("https://api.snagletshop.com/countries");
-    const countries = await response.json();
-    console.log(`📦 Loaded ${countries.length} countries`, countries);
+    // Ensure tariffs are loaded (preferred path: preload cache)
+    await fetchTariffs();
 
-    select.innerHTML = ""; // Clear it
+    const countries = window.preloadedData?.countries?.length
+        ? window.preloadedData.countries
+        : tariffsObjectToCountriesArray(tariffMultipliers);
 
-    countries.sort((a, b) => a.code.localeCompare(b.code));
+    console.log(`📦 Loaded ${countries.length} countries from tariffs`, countries);
+
+    select.innerHTML = ""; // clear
 
     for (const c of countries) {
-        const code = c.code.toUpperCase();
+        const code = String(c.code || "").toUpperCase();
+        if (!code) continue;
         const name = countryNames[code] || code;
-        console.log(`🌍 Adding ${code}: ${name}`);
+
         const opt = document.createElement("option");
         opt.value = code;
         opt.textContent = name;
@@ -1392,7 +1592,8 @@ async function populateCountries() {
     }
 
     const detected = localStorage.getItem("detectedCountry") || "US";
-    document.getElementById("detected-country").textContent = detected;
+    const detectedEl = document.getElementById("detected-country");
+    if (detectedEl) detectedEl.textContent = detected;
     select.value = detected;
 
     select.addEventListener("change", () => {
@@ -1411,9 +1612,7 @@ async function populateCountries() {
         updateAllPrices();
     });
 
-    if (select.tomselect) {
-        select.tomselect.destroy();
-    }
+    if (select.tomselect) select.tomselect.destroy();
 
     new TomSelect(select, {
         maxOptions: 1000,
@@ -1424,6 +1623,7 @@ async function populateCountries() {
 
     console.log("✅ TomSelect initialized on countrySelect");
 }
+
 
 
 
@@ -1564,7 +1764,7 @@ async function GoToSettings() {
   
     <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
   `;
-  
+
 
 
     // Append all sections
@@ -1722,23 +1922,31 @@ async function GoToSettings() {
     // Contact form submission logic
     document.getElementById("contact-form").addEventListener("submit", async (event) => {
         event.preventDefault();
-        const email = document.getElementById("email").value.trim();
-        const message = document.getElementById("message").value.trim();
+
+        const email = document.getElementById("contact-email")?.value?.trim();
+        const message = document.getElementById("contact-message")?.value?.trim();
+
+        // Honeypot hidden field (add it to HTML)
+        const website = document.getElementById("contact-website")?.value || "";
+
+        // Turnstile token (Turnstile injects a hidden input named cf-turnstile-response)
+        const turnstileToken =
+            document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
 
         if (!email || !message) {
-            alert("Please fill in both fields.");
+            alert("Please enter your email and a message.");
             return;
         }
 
         try {
-            const response = await fetch("https://api.snagletshop.com/send-message", {
+            const response = await fetch(`${API_BASE}/send-message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, message })
+                body: JSON.stringify({ email, message, turnstileToken, website })
             });
 
-            const result = await response.json();
-            alert(result.message);
+            const result = await response.json().catch(() => ({ message: "Done." }));
+            alert(result.message || "Done.");
         } catch (error) {
             console.error("Failed to send message:", error);
             alert("An error occurred. Try emailing us directly.");
@@ -1910,10 +2118,11 @@ function isDarkModeEnabled() {
 
 
 async function createPaymentModal() {
-
     if (document.getElementById("paymentModal")) return;
-    // Ensure the theme class is applied correctly
-    await preloadSettingsData();
+
+    // Ensure texts/theme data exist (safe even if initPaymentModalLogic calls it again)
+    try { if (typeof preloadSettingsData === "function") await preloadSettingsData(); } catch { }
+
     const savedTheme = localStorage.getItem("themeMode");
     if (savedTheme === "dark") {
         document.documentElement.classList.add("dark-mode");
@@ -1925,461 +2134,263 @@ async function createPaymentModal() {
 
     const modal = document.createElement("div");
     modal.id = "paymentModal";
-    modal.classList.add("modal");
-
     modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>${TEXTS.PAYMENT_MODAL.TITLE}</h2>
-
-            <form id="paymentForm">
-                <div id="Name_Holder">
-                    <div><input type="text" id="Name" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.NAME}" required></div>
-                    <div><input type="text" id="Surname" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.SURNAME}" required></div>
-                </div>
-                <div><input type="email" id="email" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.EMAIL}" required></div>
-                <div id="Address_Holder">
-                    <input type="text" id="Street" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.STREET_HOUSE_NUMBER}" required>
-                    <input type="text" id="City" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.CITY}" required>
-                    <input type="text" id="Postal_Code" placeholder="${TEXTS.PAYMENT_MODAL.FIELDS.POSTAL_CODE}" required>
-                    <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
-<input type="text" id="State" placeholder="State / Province / Region">
-<input type="tel"  id="Phone" placeholder="Phone (for delivery updates)">
-
-                    <label for="Country">${TEXTS.PAYMENT_MODAL.FIELDS.COUNTRY}</label>
-                    <select id="Country" class="tom-hidden" required style="width: 100%"></select>
-                </div>
-                <div id="payment-request-button" style="margin: 20px 0;"></div>
-                <div id="payment-element" style="margin-top: 20px;"></div>
-                <button class="Submit_Button" id="confirm-payment-button" type="button">
-                    ${TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT}
-                </button>
-            </form>
-        </div>
+      <div class="payment-modal-card">
+        <span class="payment-modal-close" onclick="closeModal()">&times;</span>
+        <h2>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.TITLE) ? TEXTS.PAYMENT_MODAL.TITLE : "Checkout"}</h2>
+  
+        <form id="paymentForm">
+          <div id="Name_Holder">
+            <div><input type="text" id="Name" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.NAME || "Name"}" required></div>
+            <div><input type="text" id="Surname" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.SURNAME || "Surname"}" required></div>
+          </div>
+  
+          <div><input type="email" id="email" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.EMAIL || "Email"}" required></div>
+  
+          <div id="Address_Holder">
+            <input type="text" id="Street" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.STREET_HOUSE_NUMBER || "Street + number"}" required>
+            <input type="text" id="City" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.CITY || "City"}" required>
+            <input type="text" id="Postal_Code" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.POSTAL_CODE || "Postal code"}" required>
+            <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
+            <input type="text" id="State" placeholder="State / Province / Region">
+            <input type="tel"  id="Phone" placeholder="Phone (for delivery updates)">
+  
+            <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
+            <select id="Country" class="tom-hidden" required style="width: 100%"></select>
+          </div>
+  
+          <div id="payment-request-button" style="margin: 16px 0;"></div>
+          <div id="payment-element" style="margin-top: 16px;"></div>
+  
+          <button class="Submit_Button" id="confirm-payment-button" type="button">
+            ${TEXTS?.PAYMENT_MODAL?.BUTTONS?.SUBMIT || "Pay"}
+          </button>
+        </form>
+      </div>
     `;
 
     document.body.appendChild(modal);
 
-    // Inject modal-specific dark/light theme styles
-    const modalStyle = document.createElement("style");
-    modalStyle.innerHTML = `
-#paymentModal input,
-#paymentModal select,
-#paymentModal textarea,
-#paymentModal label,
-#paymentModal h2 {
-    color: var(--Default_Text_Colour) !important;
+    // Minimal styling (keeps layout stable; your global CSS can further refine it)
+    const style = document.createElement("style");
+    style.id = "paymentModalStyle";
+    style.textContent = `
+      #paymentModal{
+        position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+        padding:24px 12px; background: rgba(0,0,0,.55);
+      }
+      #paymentModal .payment-modal-card{
+        width:min(520px, 100%); border-radius:20px; padding:18px 16px;
+        background: var(--Card_Background, #fff);
+        box-shadow: 0 12px 40px rgba(0,0,0,.35);
+        color: var(--Default_Text_Colour, #111);
+        position: relative;
+      }
+      #paymentModal .payment-modal-close{
+        position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
+      }
+      #paymentModal input, #paymentModal select{
+        width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
+        border: 1px solid rgba(0,0,0,.15);
+        background: var(--Input_Background, rgba(255,255,255,.9));
+        color: inherit;
+        outline: none;
+      }
+      #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .Submit_Button{
+        width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
+        background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
+      }
+      .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
+    `;
+    document.head.appendChild(style);
 }
-#paymentModal input,
-#paymentModal select,
-#paymentModal textarea {
- 
 
+function resetWalletPaymentRequestButton() {
+    try { window.paymentRequestButtonElement?.unmount?.(); } catch { }
+    window.paymentRequestButtonElement = null;
+    window.paymentRequestInstance = null;
+    window.prElementsInstance = null;
+
+    const c = document.getElementById("payment-request-button");
+    if (c) c.innerHTML = "";
 }
-#paymentModal button {
-    color: var(--Default_Text_Colour) !important;
-    background-color: var(--SearchBar_Background_Colour) !important;
 
+function _isIso2Country(v) {
+    return /^[A-Z]{2}$/.test(String(v || "").trim().toUpperCase());
 }
-`;
 
+function _getWalletButtonTheme() {
+    // Stripe supports: 'dark', 'light', 'light-outline'
+    const isDark = document.documentElement.classList.contains("dark-mode");
+    return isDark ? "dark" : "light";
+}
 
-    document.head.appendChild(modalStyle);
+async function setupWalletPaymentRequestButton({
+    stripe,
+    clientSecret,
+    amountCents,
+    currency,
+    country,
+    orderId,
+    paymentIntentId
+}) {
+    const container = document.getElementById("payment-request-button");
+    if (!container || !stripe || !clientSecret) return;
 
-    modal.addEventListener("click", handleOutsideClick);
-    modal.addEventListener("touchstart", handleOutsideClick);
-    modal.addEventListener("click", function (event) {
-        if (event.target === modal) {
-            closeModal();
-        }
-    });
-    modal.style.display = "flex";
+    resetWalletPaymentRequestButton();
 
-    // Populate country dropdown with TomSelect
-    const countrySelect = document.getElementById("Country");
-    if (countrySelect.tomselect) {
-        countrySelect.tomselect.destroy();
-    }
-    const detectedCountry = localStorage.getItem("detectedCountry") || "US";
+    const cc = _isIso2Country(country) ? String(country).trim().toUpperCase() : "US";
+    const cur = String(currency || "EUR").trim().toLowerCase();
+    const amt = parseInt(amountCents, 10);
 
-    if (countrySelect && window.preloadedData?.countries) {
-        countrySelect.innerHTML = "";
-
-        window.preloadedData.countries
-            .sort((a, b) => a.code.localeCompare(b.code))
-            .forEach(c => {
-                const opt = document.createElement("option");
-                opt.value = c.code;
-                opt.textContent = countryNames[c.code] || c.code;
-                countrySelect.appendChild(opt);
-            });
-
-        countrySelect.value = detectedCountry;
-
-        // Initialize TomSelect
-        new TomSelect("#Country", {
-            maxOptions: 1000,
-            sortField: { field: "text", direction: "asc" },
-            placeholder: "Select a country…",
-            closeAfterSelect: true
-        });
-        // ✅ Inject dark mode styling after TomSelect is initialized
-        if (document.body.classList.contains('dark')) {
-            document.querySelector('.ts-control')?.style.setProperty(
-                'background-color',
-                getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim()
-            );
-            document.querySelector('.ts-control')?.style.setProperty(
-                'color',
-                getComputedStyle(document.body).color
-            );
-        }
-
-        countrySelect.classList.remove("tom-hidden");
-
-        countrySelect.addEventListener("change", async () => {
-            const selected = countrySelect.value;
-            localStorage.setItem("detectedCountry", selected);
-
-            if (!localStorage.getItem("manualCurrencyOverride")) {
-                const newCurrency = countryToCurrency[selected];
-                if (newCurrency) {
-                    selectedCurrency = newCurrency;
-                    localStorage.setItem("selectedCurrency", selectedCurrency);
-                    syncCurrencySelects(selectedCurrency);
-                }
-            }
-
-            updateAllPrices();
-
-            // ✅ RECREATE PAYMENT INTENT based on new country
-            const cartItems = JSON.parse(localStorage.getItem("basket")) || {};
-            const fullCart = Object.values(cartItems).map(item => ({
-                name: item.name,
-                quantity: parseInt(item.quantity) || 1,
-                price: parseFloat(item.price || 1).toFixed(2),
-                expectedPurchasePrice: parseFloat(item.expectedPurchasePrice || item.price || 1).toFixed(2),
-                productLink: item.productLink || "N/A",
-                ...(item.selectedOption && { selectedOption: item.selectedOption })
-            }));
-
-            const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
-            const summarizedCart = stripeCart.map(item => {
-                const name = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
-                const option = item.selectedOption ? ` (${item.selectedOption})` : '';
-                return `${item.quantity}x ${name}${option}`;
-            }).join(", ").slice(0, 499);
-
-            // 🔁 Create new payment intent with new country and currency
-            const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    websiteOrigin: "Dropshipping Website",
-                    products: stripeCart,
-                    currency: selectedCurrency,
-                    country: selected,
-                    metadata: { order_summary: summarizedCart }
-                })
-            });
-
-            const data = await res.json();
-            const newClientSecret = data.clientSecret;
-
-            if (newClientSecret && newClientSecret.includes("_secret_")) {
-                const stripe = stripeInstance || await Stripe('pk_test_...');
-                stripeInstance = stripe;
-                elementsInstance = stripe.elements({ clientSecret: newClientSecret });
-                paymentElementInstance = elementsInstance.create("payment");
-                paymentElementInstance.mount("#payment-element");
-
-                // Update reference to latest client secret
-                window.latestClientSecret = newClientSecret;
-            } else {
-                alert("❌ Failed to update payment intent.");
-            }
-        });
-
-    }
-    const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi');
-    stripeInstance = stripe;
-
-    const cartItems = JSON.parse(localStorage.getItem("basket")) || {};
-    const fullCart = Object.values(cartItems).map(item => ({
-        name: item.name,
-        quantity: parseInt(item.quantity) || 1,
-        price: parseFloat(item.price || 1).toFixed(2),
-        expectedPurchasePrice: parseFloat(item.expectedPurchasePrice || item.price || 1).toFixed(2),
-        productLink: item.productLink || "N/A",
-        ...(item.selectedOption && { selectedOption: item.selectedOption })
-    }));
-
-    const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
-    const summarizedCart = stripeCart.map(item => {
-        const name = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
-        const option = item.selectedOption ? ` (${item.selectedOption})` : '';
-        return `${item.quantity}x ${name}${option}`;
-    }).join(", ").slice(0, 499);
-
-    const res = await fetch("https://api.snagletshop.com/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            websiteOrigin: "Dropshipping Website",
-            products: stripeCart,
-            currency: selectedCurrency,
-            country: localStorage.getItem("detectedCountry") || "US",
-            metadata: { order_summary: summarizedCart }
-        })
-
-    });
-
-    const data = await res.json();
-    const clientSecret = data.clientSecret;
-    if (!clientSecret || !clientSecret.includes("_secret_")) {
-        alert("❌ Could not initialize payment.");
+    if (!Number.isFinite(amt) || amt <= 0) {
+        container.style.display = "none";
         return;
     }
 
-    // 🧩 Initialize Stripe Elements
-    elementsInstance = stripe.elements({
-        clientSecret,
-        appearance: {
-            theme: 'flat',
-            variables: {
-                colorText: getComputedStyle(document.body).color,
-                colorBackground: getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim(),
-                fontFamily: getComputedStyle(document.body).fontFamily,
-            }
-        }
-    });
-    paymentElementInstance = elementsInstance.create("payment");
-    paymentElementInstance.mount("#payment-element");
-
-    // 💳 Apple Pay / Google Pay Button
     const paymentRequest = stripe.paymentRequest({
-        country: "US", // You can dynamically set this based on user
-        currency: selectedCurrency.toLowerCase(),
-        total: {
-            label: "Total",
-            amount: Math.round(fullCart.reduce((sum, i) => sum + i.price * i.quantity, 0) * 100)
-        },
+        country: cc,
+        currency: cur,
+        total: { label: "Total", amount: amt }, // amount is in minor units
         requestPayerName: true,
-        requestPayerEmail: true
+        requestPayerEmail: true,
+        requestPayerPhone: true
+        // requestShipping: false (you use your form fields for shipping)
     });
 
-    function renderPaymentRequestButton() {
-        const container = document.getElementById("payment-request-button");
-        container.innerHTML = ""; // clear previous button
-
-        const isDarkMode = document.documentElement.classList.contains("dark-mode");
-
-        const prButton = elementsInstance.create("paymentRequestButton", {
-            paymentRequest,
-            style: {
-                paymentRequestButton: {
-                    type: "default",
-                    theme: isDarkMode ? "dark" : "light",
-                    height: "45px"
-                }
-            }
-        });
-
-        paymentRequest.canMakePayment().then(result => {
-            if (result) {
-                prButton.mount("#payment-request-button");
-            } else {
-                container.style.display = "none";
-            }
-        });
+    const canMakePayment = await paymentRequest.canMakePayment();
+    if (!canMakePayment) {
+        container.style.display = "none";
+        return;
     }
 
-    // initially render
-    renderPaymentRequestButton();
+    container.style.display = "block";
 
-    // observe theme changes while modal is open
-    const observer = new MutationObserver(() => {
-        renderPaymentRequestButton();
+    // Use a separate Elements instance for the wallet button
+    const prElements = stripe.elements({
+        appearance: { theme: "flat" }
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
-    // 🧾 Apple/Google Pay Checkout Handler
-    paymentRequest.on("paymentmethod", async ev => {
-        const { error: backendErr, clientSecret: freshClientSecret } = await fetch("https://api.snagletshop.com/create-payment-intent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                websiteOrigin: "SnagletShop",
-                products: stripeCart,
-                currency: selectedCurrency,
-                country: document.getElementById("Country")?.value || "US", // ✅ Add this
-                metadata: { order_summary: summarizedCart }
-            })
-        }).then(res => res.json());
-
-
-        if (!freshClientSecret) {
-            ev.complete("fail");
-            return;
-        }
-
-        const { error: confirmError } = await stripe.confirmCardPayment(
-            freshClientSecret,
-            { payment_method: ev.paymentMethod.id },
-            { handleActions: false }
-        );
-
-        if (confirmError) {
-            ev.complete("fail");
-            alert("❌ Payment failed: " + confirmError.message);
-        } else {
-            ev.complete("success");
-            const finalResult = await stripe.confirmCardPayment(freshClientSecret);
-            if (finalResult.error) {
-                alert("❌ Final step failed: " + finalResult.error.message);
-            } else {
-                localStorage.removeItem("basket");
-                await clearBasketCompletely();
-
-                // Flag success and reload so alert appears after reinitialization
-                setPaymentSuccessFlag();
-                window.location.href = window.location.origin;
+    const prButton = prElements.create("paymentRequestButton", {
+        paymentRequest,
+        style: {
+            paymentRequestButton: {
+                type: "buy",
+                theme: _getWalletButtonTheme(),
+                height: "44px"
             }
-
-
         }
     });
 
-    // 🖱️ Manual Payment Button
-    const confirmBtn = document.getElementById("confirm-payment-button");
-    if (!confirmBtn.dataset.listenerAttached) {
-        confirmBtn.addEventListener("click", async () => {
+    prButton.mount("#payment-request-button");
+
+    window.paymentRequestInstance = paymentRequest;
+    window.prElementsInstance = prElements;
+    window.paymentRequestButtonElement = prButton;
+
+    paymentRequest.on("paymentmethod", async (ev) => {
+        try {
+            // Require your form to be valid (so shipping/customer pipeline always has data)
             const form = document.getElementById("paymentForm");
-            if (!form.checkValidity()) {
+            if (form && !form.checkValidity()) {
                 form.reportValidity();
+                ev.complete("fail");
                 return;
             }
 
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = "Processing…";
-
-            const userDetails = {
-                name: document.getElementById("Name").value.trim(),
-                surname: document.getElementById("Surname").value.trim(),
-                email: document.getElementById("email").value.trim(),
-                street: document.getElementById("Street").value.trim(),
-                address2: (document.getElementById("Address_Line2")?.value || "").trim(),
-                city: document.getElementById("City").value.trim(),
-                state: (document.getElementById("State")?.value || "").trim(),
-                postalCode: document.getElementById("Postal_Code").value.trim(),
-                country: document.getElementById("Country").value.trim().toUpperCase(),
-                phone: (document.getElementById("Phone")?.value || "").trim()
-            };
-
-            // Require state/phone for US; extend with CA/AU if you want
-            const needsRegion = ["US"].includes(userDetails.country);
-            if (needsRegion && (!userDetails.state || !userDetails.phone)) {
-                alert("Please provide State and Phone for shipping.");
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
-                return;
+            // Build userDetails from your form, then patch missing fields from wallet
+            const userDetails = (typeof readCheckoutForm === "function") ? readCheckoutForm() : {};
+            if (!userDetails.email && ev.payerEmail) userDetails.email = ev.payerEmail;
+            if (!userDetails.phone && ev.payerPhone) userDetails.phone = ev.payerPhone;
+            if ((!userDetails.name || !userDetails.surname) && ev.payerName) {
+                // naive split; your form already requires both, so this is mostly fallback
+                const parts = String(ev.payerName).trim().split(/\s+/);
+                if (!userDetails.name) userDetails.name = parts[0] || "";
+                if (!userDetails.surname) userDetails.surname = parts.slice(1).join(" ") || "";
             }
+            if (!userDetails.country) userDetails.country = cc;
 
-            // Use the latest PI client secret if the country changed
-            const finalClientSecret = window.latestClientSecret || clientSecret;
-            const paymentIntentId = finalClientSecret.split("_secret")[0];
-
-            // Persist user details (keeps prior PI metadata)
-            await fetch("https://api.snagletshop.com/store-user-details", {
+            // Attach customer details to the SAME order/PI (your pipeline)
+            await fetch(`${API_BASE}/store-user-details`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentIntentId, userDetails })
-            });
+                body: JSON.stringify({
+                    paymentIntentId: paymentIntentId || window.latestPaymentIntentId || null,
+                    orderId: orderId || window.latestOrderId || null,
+                    userDetails
+                })
+            }).catch(() => { });
 
-            // Confirm Stripe payment with full billing details
-            const { error, paymentIntent } = await stripe.confirmPayment({
-                elements: elementsInstance,
-                confirmParams: {
-                    return_url: window.location.href,
-                    payment_method_data: {
-                        billing_details: {
-                            name: `${userDetails.name} ${userDetails.surname}`,
-                            email: userDetails.email,
-                            phone: userDetails.phone || undefined,
-                            address: {
-                                line1: userDetails.street,
-                                line2: userDetails.address2 || undefined,
-                                city: userDetails.city,
-                                state: userDetails.state || undefined,
-                                postal_code: userDetails.postalCode,
-                                country: userDetails.country
-                            }
-                        }
-                    },
-                    // Optional: also attach shipping details for your records
-                    shipping: {
-                        name: `${userDetails.name} ${userDetails.surname}`,
-                        phone: userDetails.phone || undefined,
-                        address: {
-                            line1: userDetails.street,
-                            line2: userDetails.address2 || undefined,
-                            city: userDetails.city,
-                            state: userDetails.state || undefined,
-                            postal_code: userDetails.postalCode,
-                            country: userDetails.country
-                        }
-                    }
-                }
-            });
+            // Confirm the SAME PaymentIntent (do NOT create a new one here)
+            const first = await stripe.confirmCardPayment(
+                clientSecret,
+                { payment_method: ev.paymentMethod.id },
+                { handleActions: false }
+            );
 
-            if (error) {
-                console.error(error);
-                alert(error.message || "Payment could not be completed.");
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
+            if (first.error) {
+                ev.complete("fail");
+                alert(first.error.message || "Payment failed.");
                 return;
             }
 
-            console.log("Stripe paymentIntent result:", paymentIntent);
+            // Close the Apple/Google Pay sheet
+            ev.complete("success");
 
-            if (
-                paymentIntent &&
-                (
-                    paymentIntent.status === "succeeded" ||
-                    paymentIntent.status === "processing" ||
-                    paymentIntent.status === "requires_capture"
-                )
-            ) {
-                // ✅ Clear basket in memory
-                if (typeof basket === "object" && basket !== null) {
-                    for (const key of Object.keys(basket)) {
-                        delete basket[key];
-                    }
+            let pi = first.paymentIntent;
+
+            // Handle next actions (3DS, etc.)
+            if (pi && pi.status === "requires_action") {
+                const second = await stripe.confirmCardPayment(clientSecret);
+                if (second.error) {
+                    alert(second.error.message || "Authentication failed. Your cart is unchanged.");
+                    return;
                 }
+                pi = second.paymentIntent;
+            }
 
-                // ✅ Clear basket in localStorage
-                localStorage.removeItem("basket");
-
-                // ✅ Update basket UI if function exists
-                if (typeof updateBasket === "function") {
-                    updateBasket();
-                }
-
-                // ✅ Set success flag and reload to show message after full init
-                setPaymentSuccessFlag();
+            // Final handling (same policy as your card flow)
+            if (pi?.status === "succeeded") {
+                clearPaymentPendingFlag();
+                clearBasketCompletely();
+                setPaymentSuccessFlag({ reloadOnOk: true });
                 window.location.href = window.location.origin;
-            }
-            else {
-                alert("Payment submitted. Please check your email for updates.");
+                return;
             }
 
+            if (pi?.id) {
+                // processing / requires_capture / etc.: keep cart, poll server for final
+                setPaymentPendingFlag({ paymentIntentId: pi.id, orderId: orderId || window.latestOrderId || null });
 
+                const r = await pollPendingPaymentUntilFinal({ paymentIntentId: pi.id });
+                if (r.status === "succeeded") {
+                    clearPaymentPendingFlag();
+                    clearBasketCompletely();
+                    setPaymentSuccessFlag({ reloadOnOk: true });
+                    window.location.href = window.location.origin;
+                    return;
+                }
 
-        });
+                if (r.status === "requires_payment_method" || r.status === "canceled") {
+                    clearPaymentPendingFlag();
+                    alert("Payment did not complete. Your cart is still saved—please try again.");
+                    return;
+                }
 
-        confirmBtn.dataset.listenerAttached = "true";
-    }
+                alert("Payment is still processing. Your cart is unchanged.");
+                return;
+            }
+
+            alert("Payment submitted. Your cart is unchanged until confirmation.");
+        } catch (e) {
+            try { ev.complete("fail"); } catch { }
+            console.error("Wallet payment failed:", e);
+            alert(e?.message || "Wallet payment failed. Your cart is unchanged.");
+        }
+    });
 }
+
 // --- PAYMENT SUCCESS (non-blocking UI) ---------------------------
 const PAYMENT_SUCCESS_FLAG_KEY = "payment_successful";
 const PAYMENT_SUCCESS_RELOAD_KEY = "payment_successful_reload_on_ok";
@@ -2519,28 +2530,16 @@ function handleOutsideClick(event) {
 // Completely clear basket: in-memory, localStorage, and UI
 function clearBasketCompletely() {
     try {
-        // In-memory basket
-        if (typeof basket === "object" && basket !== null) {
-            for (const key of Object.keys(basket)) {
-                delete basket[key];
-            }
+        // in-memory basket if you use it elsewhere
+        if (typeof basket === "object" && basket) {
+            for (const k of Object.keys(basket)) delete basket[k];
         }
-    } catch (e) {
-        console.warn("Could not clear in-memory basket", e);
-    }
+    } catch { }
+
+    try { localStorage.removeItem("basket"); } catch { }
 
     try {
-        // Persisted basket
-        localStorage.removeItem("basket");
-    } catch (e) {
-        console.warn("Could not remove basket from localStorage", e);
-    }
-
-    try {
-        // Re-render basket UI (if we are on the basket page)
-        if (typeof updateBasket === "function") {
-            updateBasket();
-        }
+        if (typeof updateBasket === "function") updateBasket();
     } catch (e) {
         console.warn("updateBasket failed during clearBasketCompletely", e);
     }
@@ -2555,24 +2554,38 @@ function clearBasketCompletely() {
 
 
 
+
 // Function to show the modal
-function openModal() {
-    createPaymentModal();
-    document.getElementById("paymentModal").style.display = "block";
+async function openModal() {
+    await createPaymentModal();
+
+    const modal = document.getElementById("paymentModal");
+    if (modal) modal.style.display = "flex";
+
     history.pushState({ modalOpen: true }, "", window.location.href);
+
+    // ✅ Re-wire modal logic to the new server-truth flow (tariffs + PI + mismatch handling)
+    await initPaymentModalLogic();
 }
 
-// Function to close the modal
 function closeModal() {
     const modal = document.getElementById("paymentModal");
-    if (modal) {
-        modal.remove();
+    if (modal) modal.remove();
 
-        // 🔁 Reset Stripe elements so they can be remounted on reopen
-        elementsInstance = null;
-        paymentElementInstance = null;
-    }
+    // Reset wallet UI
+    resetWalletPaymentRequestButton();
+
+    // Reset Stripe state so reopen is clean
+    try { window.paymentElementInstance?.unmount?.(); } catch { }
+    window.elementsInstance = null;
+    window.paymentElementInstance = null;
+
+    // Keep stripeInstance (fine), but clear “latest” references
+    window.latestClientSecret = null;
+    window.latestOrderId = null;
+    window.latestPaymentIntentId = null;
 }
+
 
 
 // Format card number (add spaces every 4 digits)
@@ -2609,246 +2622,11 @@ function removeSortContainer() {
     }
 }
 
-async function processPayment(e) {
-    if (e) e.preventDefault();
-
-    const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi');
-    stripeInstance = stripe;
-
-    const userDetails = {
-        name: document.getElementById("Name").value.trim(),
-        surname: document.getElementById("Surname").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        street: document.getElementById("Street").value.trim(),
-        city: document.getElementById("City").value.trim(),
-        postalCode: document.getElementById("Postal_Code").value.trim(),
-        country: document.getElementById("Country").value.trim()
-    };
-
-    const cartItems = JSON.parse(localStorage.getItem("basket")) || {};
-
-    if (Object.keys(cartItems).length === 0) {
-        alert("Your cart is empty.");
-        return;
-    }
-
-    const fullCart = Object.values(cartItems).map(item => {
-        const price = parseFloat(item.price) || 1;
-        const expectedPrice = parseFloat(item.expectedPurchasePrice) || price;
-        return {
-            name: item.name,
-            quantity: parseInt(item.quantity) || 1,
-            price: price.toFixed(2),
-            expectedPurchasePrice: expectedPrice.toFixed(2),
-            productLink: item.productLink || "N/A",
-            ...(item.selectedOption && { selectedOption: item.selectedOption })
-        };
-    });
-
-    // Create a Stripe-safe version (no productLink)
-    const stripeCart = fullCart.map(({ productLink, ...rest }) => rest);
-
-    // Stripe metadata-safe summary (≤ 500 characters)
-    const summarizedCart = stripeCart.map(item => {
-        const shortName = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
-        const option = item.selectedOption ? ` (${item.selectedOption})` : '';
-        return `${item.quantity}x ${shortName}${option}`;
-    }).join(", ").slice(0, 499);
-
-    const websiteOrigin = "Dropshipping Website";
-    console.log("🔍 Sending currency to server:", selectedCurrency);
-
-    try {
-        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                websiteOrigin,
-                products: stripeCart, // ✅ sending productLink-free version
-                currency: selectedCurrency,
-                metadata: { order_summary: summarizedCart }
-            })
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`Server responded with ${response.status}: ${text}`);
-        }
-
-        const data = await response.json();
-        const { clientSecret } = data;
-
-        if (!clientSecret) throw new Error("No client secret received.");
-
-        if (!elementsInstance) {
-            elementsInstance = stripe.elements({
-                clientSecret,
-                appearance: {
-                    theme: 'flat',
-                    variables: {
-                        colorText: getComputedStyle(document.body).color,
-                        colorBackground: getComputedStyle(document.documentElement).getPropertyValue('--Input_Background').trim(),
-                        fontFamily: getComputedStyle(document.body).fontFamily,
-                    }
-                }
-            });
-            paymentElementInstance = elementsInstance.create("payment");
-            paymentElementInstance.mount('#payment-element');
-        }
-
-        const confirmBtn = document.getElementById("confirm-payment-button");
-        if (!confirmBtn) throw new Error("❌ Confirm payment button not found");
-
-        if (!confirmBtn.dataset.listenerAttached) {
-            confirmBtn.addEventListener("click", async () => {
-                const { error, paymentIntent } = await stripe.confirmPayment({
-                    elements: elementsInstance,
-                    confirmParams: {
-                        return_url: window.location.href,
-                        payment_method_data: {
-                            billing_details: {
-                                name: `${userDetails.name} ${userDetails.surname}`,
-                                email: userDetails.email,
-                                address: {
-                                    city: userDetails.city,
-                                    postal_code: userDetails.postalCode,
-                                    country: userDetails.country
-                                }
-                            }
-                        }
-                    },
-                    redirect: "if_required"
-                });
-
-                if (error) {
-                    console.error(error);
-                    alert(error.message || "Payment could not be completed.");
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = TEXTS.PAYMENT_MODAL.BUTTONS.SUBMIT;
-                    return;
-                }
-
-                if (
-                    paymentIntent &&
-                    (
-                        paymentIntent.status === "succeeded" ||
-                        paymentIntent.status === "processing" ||
-                        paymentIntent.status === "requires_capture"
-                    )
-                ) {
-                    // ✅ Empty basket before anything else
-                    clearBasketCompletely();
-
-                    ///   alert(TEXTS.CHECKOUT_SUCCESS || "Thank you! Your payment was successful.");
-
-                    // Optional: if you still want a full reload, keep this line:
-                    ////location.reload();
-                } else {
-                    alert("Payment submitted. Please check your email for updates.");
-                    // You can also reload here if you want, but it’s not required:
-                    ////location.reload();
-                }
-
-            });
-
-            confirmBtn.dataset.listenerAttached = "true";
-        }
-
-    } catch (error) {
-        console.error("❌ Payment Error:", error);
-        alert("An error occurred while processing payment.");
-    }
-}
 
 
-async function initStripePaymentUI(userDetails, formattedCart, metadataSummary) {
-    const stripe = stripeInstance || await Stripe('pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi'); // ✅ Replace with your real publishable key
-    stripeInstance = stripe;
 
-    try {
-        const response = await fetch("https://api.snagletshop.com/create-payment-intent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                websiteOrigin: "Dropshipping Website",
-                products: formattedCart,
-                userDetails,
-                currency: selectedCurrency,
-                metadata: { order_summary: metadataSummary }
-            })
-        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("❌ Stripe server error:", errorText);
-            alert("Server error while creating payment intent.");
-            return;
-        }
 
-        const data = await response.json();
-        const clientSecret = data.clientSecret;
-
-        console.log("✅ Received clientSecret:", clientSecret);
-
-        if (!clientSecret || !clientSecret.includes("_secret_")) {
-            throw new Error("Invalid or missing clientSecret from server.");
-        }
-
-        if (!elementsInstance) {
-            elementsInstance = stripe.elements({ clientSecret });
-            paymentElementInstance = elementsInstance.create("payment");
-            paymentElementInstance.mount("#payment-element");
-        }
-
-    } catch (error) {
-        console.error("❌ Stripe UI Init Error:", error);
-        alert("Failed to initialize Stripe payment.");
-    }
-}
-
-async function confirmStripePayment(userDetails) {
-    const stripe = stripeInstance;
-    if (!stripe || !elementsInstance) return;
-
-    const { error, paymentIntent } = await stripe.confirmPayment({
-        elements: elementsInstance,
-        confirmParams: {
-            return_url: window.location.href,
-            payment_method_data: {
-                billing_details: {
-                    name: `${userDetails.name} ${userDetails.surname}`,
-                    email: userDetails.email,
-                    address: {
-                        city: userDetails.city,
-                        postal_code: userDetails.postalCode,
-                        country: userDetails.country
-                    }
-                }
-            }
-        },
-        redirect: "if_required"
-    });
-
-    if (error) {
-        alert("❌ Payment failed: " + error.message);
-        return;
-    }
-
-    // If it didn’t redirect and completed instantly:
-    if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_capture")) {
-        clearBasketCompletely();
-        setPaymentSuccessFlag({ reloadOnOk: true });
-
-        // Close your payment modal if it exists
-        if (typeof closeModal === "function") closeModal();
-
-        // Show non-blocking success message now; OK will reload to origin
-        checkAndShowPaymentSuccess();
-        return;
-    }
-
-    // Otherwise Stripe handled redirect; your DOMContentLoaded handler will show success after return.
-}
 
 
 
@@ -2894,37 +2672,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Normal loads: if a previous flow set the flag, show it now
     checkAndShowPaymentSuccess();
+    checkAndHandlePendingPaymentOnLoad();
+
 });
 
 
 
-// Ask the user and, if confirmed, reload the shop to the origin URL
-// Ask the user to reload to the origin URL after a successful payment
-function askUserAndMaybeReloadToOrigin(messageOverride) {
-    let msg;
-
-    if (messageOverride != null) {
-        msg = messageOverride;
-    } else if (typeof TEXTS === "object" && TEXTS && TEXTS.CHECKOUT_SUCCESS) {
-        msg = TEXTS.CHECKOUT_SUCCESS + "\n\nClick OK to reload the shop.";
-    } else {
-        msg = "Payment successful. Click OK to reload the shop.";
-    }
-
-    const shouldReload = window.confirm(msg);
-
-    if (shouldReload) {
-        try {
-            // Reload to your main shop URL
-            window.location.href = window.location.origin;
-        } catch (e) {
-            window.location.href = "/";
-        }
-        return true;
-    }
-
-    return false;
-}
 
 
 
@@ -3979,19 +3732,7 @@ function _val(id) {
 }
 
 // Build a sanitized snapshot of the cart you already send to the server
-// Expected shape is your current "stripeCart": [{name, price, quantity, selectedOption?}, ...]
-function buildStripeCartFromLocalStorage() {
-    const basket = JSON.parse(localStorage.getItem("basket") || "{}");
-    // Basket is a map of id -> { name, price, quantity, selectedOption? }
-    return Object.values(basket)
-        .filter(x => x && !isNaN(parseFloat(x.price)))
-        .map(x => ({
-            name: String(x.name || "").slice(0, 80),
-            price: Number(parseFloat(x.price).toFixed(2)),
-            quantity: Number(x.quantity || 1),
-            selectedOption: x.selectedOption ? String(x.selectedOption).slice(0, 40) : undefined
-        }));
-}
+
 
 // Helper for safe value access by ID (modal fields)
 
@@ -4018,188 +3759,262 @@ function collectUserDetails() {
     return { name, surname, email, phone, street, address2, city, region, postalCode, country, orderNote };
 }
 
-// Mount Stripe Elements exactly once for a given clientSecret
-async function mountStripeElementsOnce(stripe, clientSecret) {
-    if (!window.elementsInstance) {
-        window.elementsInstance = stripe.elements({
-            clientSecret,
-            appearance: {
-                theme: "flat",
-                variables: {
-                    colorText: getComputedStyle(document.body).color,
-                    colorBackground: getComputedStyle(document.documentElement)
-                        .getPropertyValue("--Input_Background")
-                        .trim(),
-                    fontFamily: getComputedStyle(document.body).fontFamily
-                }
+
+
+
+function readCheckoutForm() {
+    const get = (...ids) => {
+        for (const id of ids) {
+            const el = document.getElementById(id);
+            if (el && typeof el.value === "string") {
+                const v = el.value.trim();
+                if (v) return v;
             }
-        });
-        window.paymentElementInstance = window.elementsInstance.create("payment");
-        window.paymentElementInstance.mount("#payment-element");
+        }
+        return "";
+    };
+
+    // Prefer your existing collector if it exists, but still fallback robustly
+    let d = null;
+    try { if (typeof collectUserDetails === "function") d = collectUserDetails(); } catch { d = null; }
+
+    return {
+        name: (d?.name || get("Name")) || "",
+        surname: (d?.surname || get("Surname")) || "",
+        email: (d?.email || get("email")) || "",
+        phone: (d?.phone || get("Phone")) || "",
+        street: (d?.street || get("Street")) || "",
+        address2: (d?.address2 || get("Address_Line2", "AddressLine2")) || "",
+        city: (d?.city || get("City")) || "",
+        state: (d?.region || d?.state || get("State", "Region")) || "",
+        postalCode: (d?.postalCode || get("Postal_Code", "PostalCode")) || "",
+        country: (d?.country || get("Country")) || "" // should be ISO-2 if your select uses ISO codes
+    };
+}
+
+
+
+
+
+
+
+// ---- Stripe globals (keep only one set of these in the whole file) ----
+
+function getApiBase() {
+    // Uses your existing API_BASE if you have it, otherwise falls back to same-origin.
+    return (typeof API_BASE !== "undefined" && API_BASE) ? API_BASE : "";
+}
+
+function readBasket() {
+    try {
+        const raw = localStorage.getItem("basket");
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
     }
 }
 
 
-// Creates the PI on your Node server and mounts the Payment Element
-async function initStripePaymentUI() {
-    const stripe = window.stripeInstance || await Stripe(window.STRIPE_PUBLISHABLE_KEY);
-    window.stripeInstance = stripe;
 
-    // Build cart snapshot from basket/localStorage
-    const basket = JSON.parse(localStorage.getItem("basket") || "{}");
-    const stripeCart = Object.values(basket)
-        .filter(x => x && !isNaN(parseFloat(x.price)))
-        .map(x => ({
-            name: String(x.name || "").slice(0, 80),
-            price: Number(parseFloat(x.price).toFixed(2)),
-            quantity: Number(x.quantity || 1),
-            selectedOption: x.selectedOption ? String(x.selectedOption).slice(0, 40) : undefined,
-            productLink: x.productLink || x.url || undefined
-        }));
+function buildStripeSafeCart(fullCart) {
+    return (fullCart || []).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        price: Number(i.unitPriceEUR || 0),              // server uses price/unitPriceEUR fallback for amount calc
+        selectedOption: i.selectedOption || ""
+    }));
+}
 
-    if (!stripeCart.length) {
-        alert("Your cart is empty.");
-        return;
+function buildFullCartFromBasket() {
+    const basketObj = readBasket();
+    const items = Object.values(basketObj || {});
+    return items
+        .map((item) => {
+            const unitEUR = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
+            const expected = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+
+            const out = {
+                name: String(item?.name || "").slice(0, 120),
+                quantity: qty,
+                // keep server-compatible keys
+                unitPriceEUR: Number(unitEUR.toFixed(2)),
+                price: Number(unitEUR.toFixed(2)),
+                expectedPurchasePrice: Number((expected || unitEUR).toFixed(2)),
+                productLink: String(item?.productLink || "N/A").slice(0, 800),
+                image: String(item?.image || "").slice(0, 800),
+                description: String(item?.description || "").slice(0, 2000)
+            };
+
+            if (item?.selectedOption) out.selectedOption = String(item.selectedOption).slice(0, 120);
+            return out;
+        })
+        .filter((i) => i.name && i.quantity > 0 && Number(i.price) > 0);
+}
+
+function getSelectedCountryCode() {
+    const v =
+        document.getElementById("countrySelect")?.value ||
+        localStorage.getItem("detectedCountry") ||
+        "US";
+    return String(v).trim().toUpperCase();
+}
+
+function getApplyTariffFlag() {
+    return localStorage.getItem("applyTariff") === "true";
+}
+
+function round2(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 0;
+    return Math.round(x * 100) / 100;
+}
+
+function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
+    const cur = String(currency || "EUR").toUpperCase();
+    const cc = String(countryCode || "").toUpperCase();
+
+    const baseEUR = (fullCart || []).reduce((sum, i) => {
+        const qty = Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1);
+        const unit = Number(i?.unitPriceEUR ?? i?.price ?? 0) || 0;
+        return sum + unit * qty;
+    }, 0);
+
+    let totalEUR = baseEUR;
+
+    // NOTE: your tariffs.json values are decimals like 0.2 (= +20%), so use (1 + tariff).
+    if (getApplyTariffFlag()) {
+        const tariff = Number(tariffMultipliers?.[cc] ?? 0) || 0;
+        totalEUR = totalEUR * (1 + tariff);
     }
 
-    const usedCurrency = (window.selectedCurrency || "EUR").toUpperCase();
+    const rate = cur === "EUR" ? 1 : (Number(exchangeRates?.[cur] ?? 0) || 0);
+    const totalInCurrency = cur === "EUR" ? totalEUR : (rate ? totalEUR * rate : 0);
 
-    // Collect user details early so we can pass COUNTRY for tariff
-    const ud = collectUserDetails();
+    return round2(totalInCurrency);
+}
 
-    const summarizedCart = stripeCart.map(item => {
-        const n = item.name.length > 30 ? item.name.slice(0, 30) + "…" : item.name;
-        const o = item.selectedOption ? ` (${item.selectedOption})` : "";
-        return `${item.quantity}x ${n}${o}`;
-    }).join(", ").slice(0, 499);
+function buildStripeOrderSummary(stripeCart) {
+    return (stripeCart || [])
+        .map((item) => {
+            const name = String(item?.name || "");
+            const shortName = name.length > 30 ? name.slice(0, 30) + "…" : name;
+            const option = item?.selectedOption ? ` (${String(item.selectedOption).slice(0, 40)})` : "";
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+            return `${qty}x ${shortName}${option}`;
+        })
+        .join(", ")
+        .slice(0, 499);
+}
 
-    const res = await fetch("/create-payment-intent", {
+async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
+    // Ensure tariffs + rates are loaded before computing expected total
+    await preloadSettingsData();
+
+    const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
+    const order_summary = buildStripeOrderSummary(stripeCart);
+
+    const res = await fetch(`${API_BASE}/create-payment-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            websiteOrigin: "SnagletShop",
+            websiteOrigin,
+            currency,
+            country,
             products: stripeCart,
-            currency: usedCurrency,
-            country: ud.country || "",                // important for tariffs
-            metadata: { order_summary: summarizedCart }
+            productsFull: fullCart,
+            expectedClientTotal,
+            applyTariff: getApplyTariffFlag(),
+            metadata: { order_summary }
         })
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Failed to create payment intent: ${res.status} ${text}`);
-    }
-
-    const { clientSecret } = await res.json();
-    if (!clientSecret) throw new Error("No clientSecret from server");
-
-    await mountStripeElementsOnce(stripe, clientSecret);
-    window.latestClientSecret = clientSecret;
-}
-
-
-// Reads and validates the checkout modal fields into a userDetails object
-function readCheckoutForm() {
-    const get = id => (document.getElementById(id)?.value || "").trim();
-
-    const userDetails = {
-        name: get("firstName"),
-        surname: get("lastName"),
-        email: get("email"),
-        emailConfirm: get("email2"),
-        phone: get("phone"),
-        street: get("address1"),
-        address2: get("address2"),
-        city: get("city"),
-        state: get("state"),                // US: state, elsewhere: region/province
-        postalCode: get("postalCode"),
-        country: (get("country") || "US").toUpperCase(),
-        company: get("company"),
-        taxId: get("taxId"),
-        shippingNotes: get("shippingNotes"),
-        acceptedTerms: document.getElementById("acceptTerms")?.checked === true
-    };
-
-    // Minimal validation
-    if (!userDetails.name || !userDetails.surname) throw new Error("Missing name/surname");
-    if (!userDetails.email || userDetails.email !== userDetails.emailConfirm) throw new Error("Emails do not match");
-    if (!userDetails.street || !userDetails.city || !userDetails.postalCode || !userDetails.country) throw new Error("Missing address");
-    if (!userDetails.acceptedTerms) throw new Error("Please accept terms");
-
-    // Country-specific: enforce state for US/CA/BR/AU
-    if (["US", "CA", "BR", "AU"].includes(userDetails.country) && !userDetails.state) {
-        throw new Error("State/Province required");
-    }
-
-    return userDetails;
-}
-// Assumes you have: selectedCurrency, stripeInstance/elementsInstance/paymentElementInstance already created
-async function attachConfirmHandler(stripe, elementsInstance, paymentElementInstance, websiteOrigin, formattedCart, summarizedCart) {
-    const confirmBtn = document.getElementById("confirm-payment-button");
-    if (!confirmBtn) throw new Error("Confirm payment button not found");
-    if (confirmBtn.dataset.listenerAttached) return;
-
-    confirmBtn.dataset.listenerAttached = "true";
-
-    confirmBtn.addEventListener("click", async () => {
-        const originalText = confirmBtn.textContent;
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = "Processing…";
-
-        try {
-            const userDetails = readCheckoutForm();
-
-            const createRes = await fetch("https://api.snagletshop.com/create-payment-intent", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    websiteOrigin,
-                    products: formattedCart,
-                    currency: selectedCurrency,
-                    country: userDetails.country,
-                    metadata: { order_summary: summarizedCart }
-                })
-            });
-            if (!createRes.ok) throw new Error(`Create PI failed: ${await createRes.text()}`);
-            const { clientSecret } = await createRes.json();
-
-            const piId = clientSecret.split("_secret_")[0];
-            await fetch("https://api.snagletshop.com/store-user-details", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentIntentId: piId, userDetails })
-            });
-
-            const { error, paymentIntent } = await stripe.confirmPayment({
-                elements: elementsInstance,
-                confirmParams: { return_url: window.location.href },
-                redirect: "if_required"
-            });
-
-            if (error) throw new Error(error.message);
-
-            if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_capture")) {
-                clearBasketCompletely();
-                setPaymentSuccessFlag({ reloadOnOk: true });
-                if (typeof closeModal === "function") closeModal();
-                checkAndShowPaymentSuccess();
-            }
-        } catch (err) {
-            console.error("Payment flow error:", err);
-            alert(err.message || "Payment could not be completed");
-        } finally {
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = originalText;
+        // Pricing mismatch (server should respond 409 with TOTAL_MISMATCH)
+        if (res.status === 409 && (data?.error === "TOTAL_MISMATCH" || data?.code === "TOTAL_MISMATCH")) {
+            const err = new Error(data?.message || "Pricing changed. Please refresh and try again.");
+            err.code = "TOTAL_MISMATCH";
+            err.details = data;
+            throw err;
         }
+        throw new Error(data?.error || data?.message || `Failed to create payment intent (${res.status})`);
+    }
+
+    if (!data?.clientSecret) throw new Error("No client secret received.");
+    return data;
+}
+
+async function initStripePaymentUI(selectedCurrency) {
+    // Ensure catalog data is loaded before rehydrating basket prices
+    try {
+        if (typeof initProducts === "function") await initProducts();
+    } catch { }
+
+    const fullCart = buildFullCartFromBasket();
+    const stripeCart = buildStripeSafeCart(fullCart);
+
+    if (!stripeCart.length) throw new Error("Basket is empty.");
+
+    const country = getSelectedCountryCode();
+
+    const fallbackPk =
+        "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
+
+    const publishableKey =
+        window.STRIPE_PUBLISHABLE_KEY ||
+        window.STRIPE_PUBLISHABLE ||
+        fallbackPk;
+
+    if (!window.stripeInstance) window.stripeInstance = Stripe(publishableKey);
+
+    const websiteOrigin = window.location.origin;
+
+    const data = await createPaymentIntentOnServer({
+        websiteOrigin,
+        currency: selectedCurrency,
+        country,
+        fullCart,
+        stripeCart
+    });
+
+    const { clientSecret, orderId, paymentIntentId, amountCents, currency } = data;
+
+    window.latestClientSecret = clientSecret;
+    window.latestOrderId = orderId || null;
+    window.latestPaymentIntentId = paymentIntentId || null;
+
+    try { window.paymentElementInstance?.unmount?.(); } catch { }
+    const paymentElContainer = document.getElementById("payment-element");
+    if (paymentElContainer) paymentElContainer.innerHTML = "";
+
+    window.elementsInstance = window.stripeInstance.elements({
+        clientSecret,
+        appearance: { theme: "flat" }
+    });
+
+    window.paymentElementInstance = window.elementsInstance.create("payment");
+    window.paymentElementInstance.mount("#payment-element");
+
+    await setupWalletPaymentRequestButton({
+        stripe: window.stripeInstance,
+        clientSecret,
+        amountCents,
+        currency: (currency || selectedCurrency),
+        country,
+        orderId,
+        paymentIntentId
     });
 }
 
 
-// Attaches the confirm handler exactly once; validates form; stores user details; confirms payment.
-// Attaches the confirm handler exactly once; validates form; stores user details; confirms payment.
+
+
 function attachConfirmHandlerOnce() {
     const btn = document.getElementById("confirm-payment-button");
     if (!btn || btn.dataset.listenerAttached === "true") return;
+
     btn.dataset.listenerAttached = "true";
 
     btn.addEventListener("click", async () => {
@@ -4209,59 +4024,91 @@ function attachConfirmHandlerOnce() {
             return;
         }
 
-        const userDetails = collectUserDetails();
-        btn.disabled = true;
         const originalText = btn.textContent;
+        btn.disabled = true;
         btn.textContent = "Processing…";
 
         try {
-            const clientSecret = window.latestClientSecret;
-            if (!clientSecret) throw new Error("Missing client secret");
-            const paymentIntentId = clientSecret.split("_secret")[0];
+            // Best-effort user details attach (same as your current pipeline)
+            const userDetails = readCheckoutForm?.() || {};
+            if (window.latestPaymentIntentId || window.latestOrderId) {
+                await fetch(`${API_BASE}/store-user-details`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        paymentIntentId: window.latestPaymentIntentId,
+                        orderId: window.latestOrderId,
+                        userDetails
+                    })
+                }).catch(() => { });
+            }
 
-            // Persist user details onto the PaymentIntent (merge on server)
-            await fetch("/store-user-details", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentIntentId, userDetails })
-            });
+            const clientSecret = window.latestClientSecret || null;
+            const orderId = window.latestOrderId || null;
+            const paymentIntentId = window.latestPaymentIntentId || null;
 
-            // Confirm the payment with full billing_details
+            // CRITICAL FIX: set pending BEFORE confirmPayment so redirects are safe
+            setPaymentPendingFlag({ paymentIntentId, orderId, clientSecret });
+
+            // return_url must be stable; Stripe will append redirect_status + PI params
+            const returnUrl = new URL(window.location.href);
+            stripStripeReturnParamsFromUrl(returnUrl);
+            returnUrl.searchParams.set("stripe_return", "1");
+
             const { error, paymentIntent } = await window.stripeInstance.confirmPayment({
                 elements: window.elementsInstance,
-                confirmParams: {
-                    return_url: window.location.href,
-                    payment_method_data: {
-                        billing_details: {
-                            name: `${userDetails.name} ${userDetails.surname}`,
-                            email: userDetails.email,
-                            phone: userDetails.phone || undefined,
-                            address: {
-                                line1: userDetails.street,
-                                line2: userDetails.address2 || undefined,
-                                city: userDetails.city,
-                                state: userDetails.region || undefined,
-                                postal_code: userDetails.postalCode,
-                                country: userDetails.country
-                            }
-                        }
-                    }
-                },
+                confirmParams: { return_url: returnUrl.toString() },
                 redirect: "if_required"
             });
 
             if (error) {
-                alert("Payment failed: " + error.message);
+                // confirm not submitted successfully
+                clearPaymentPendingFlag();
+                throw error;
+            }
+
+            // If Stripe did NOT redirect, we may get a PI back
+            if (paymentIntent?.status === "succeeded") {
+                clearPaymentPendingFlag();
+                clearBasketCompletely();
+                setPaymentSuccessFlag({ reloadOnOk: true });
+                window.location.replace(window.location.origin);
                 return;
             }
-            if (paymentIntent && paymentIntent.status === "succeeded") {
-                localStorage.removeItem("basket");
-                alert("Payment succeeded!");
-                ////location.reload();
+
+            if (paymentIntent?.id) {
+                // Keep pending + poll server until final (processing, etc.)
+                setPaymentPendingFlag({
+                    paymentIntentId: paymentIntent.id,
+                    orderId: orderId || null,
+                    clientSecret
+                });
+
+                const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: paymentIntent.id });
+
+                if (status === "succeeded") {
+                    clearPaymentPendingFlag();
+                    clearBasketCompletely();
+                    setPaymentSuccessFlag({ reloadOnOk: true });
+                    window.location.replace(window.location.origin);
+                    return;
+                }
+
+                if (status === "requires_payment_method" || status === "canceled") {
+                    clearPaymentPendingFlag();
+                    alert("Payment did not complete. Your cart is still saved—please try again.");
+                    return;
+                }
+
+                alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+                return;
             }
-        } catch (err) {
-            console.error("Payment flow error:", err);
-            alert(err.message || "Payment could not be completed");
+
+            // If Stripe redirected, this code path usually won’t run.
+            // Pending flag is already set; the return handler will resolve it.
+        } catch (e) {
+            console.error("confirmPayment failed:", e);
+            alert(e?.message || "Payment could not be completed.");
         } finally {
             btn.disabled = false;
             btn.textContent = originalText;
@@ -4271,8 +4118,130 @@ function attachConfirmHandlerOnce() {
 
 
 
-// Call these from your “Pay Now” flow after you render/open the modal:
-async function setupCheckoutFlow() {
-    await initStripePaymentUI();  // creates PI and mounts Payment Element
-    attachConfirmHandlerOnce();   // attaches confirm listener only once
+
+async function setupCheckoutFlow(selectedCurrency) {
+    try {
+        await initStripePaymentUI(selectedCurrency);
+        attachConfirmHandlerOnce();
+    } catch (e) {
+        // Server-truth mismatch (409) should surface as TOTAL_MISMATCH from your earlier changes
+        if (e?.code === "TOTAL_MISMATCH") {
+            alert(e?.message || "Pricing changed. Please refresh and try again.");
+            return;
+        }
+        console.error("setupCheckoutFlow failed:", e);
+        alert(e?.message || "Checkout initialization failed. Please try again.");
+    }
 }
+
+function _replaceWithClone(el) {
+    if (!el || !el.parentNode) return el;
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    return clone;
+}
+
+function _getDetectedCountry() {
+    return String(localStorage.getItem("detectedCountry") || "US").toUpperCase();
+}
+
+function _syncSelectedCurrencyFromCountry(countryCode) {
+    if (localStorage.getItem("manualCurrencyOverride")) return;
+
+    const cc = String(countryCode || "").toUpperCase();
+    const next = countryToCurrency?.[cc];
+    if (next) {
+        selectedCurrency = next;
+        localStorage.setItem("selectedCurrency", selectedCurrency);
+        if (typeof syncCurrencySelects === "function") syncCurrencySelects(selectedCurrency);
+    }
+}
+
+function _fillCountrySelectOptions(selectEl) {
+    // Prefer preloadedData (built from /tariffs in your earlier changes)
+    const arr =
+        (window.preloadedData?.countries?.length && window.preloadedData.countries) ||
+        (typeof tariffsObjectToCountriesArray === "function"
+            ? tariffsObjectToCountriesArray(tariffMultipliers)
+            : []);
+
+    selectEl.innerHTML = "";
+    for (const c of arr) {
+        const code = String(c.code || "").toUpperCase();
+        if (!code) continue;
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = (typeof countryNames === "object" && countryNames?.[code]) ? countryNames[code] : code;
+        selectEl.appendChild(opt);
+    }
+}
+
+function _setupTomSelectCountry(selectEl) {
+    try { if (selectEl.tomselect) selectEl.tomselect.destroy(); } catch { }
+    if (typeof TomSelect !== "function") return;
+
+    new TomSelect(selectEl, {
+        maxOptions: 1000,
+        sortField: { field: "text", direction: "asc" },
+        closeAfterSelect: true,
+        placeholder: "Select a country…"
+    });
+}
+
+async function initPaymentModalLogic() {
+    // Ensure tariffs + rates exist (from your earlier preloadSettingsData rewrite)
+    if (typeof preloadSettingsData === "function") {
+        await preloadSettingsData();
+    }
+    if (typeof fetchTariffs === "function") {
+        await fetchTariffs();
+    }
+
+    // Remove legacy listeners that may still exist inside createPaymentModal()
+    let confirmBtn = document.getElementById("confirm-payment-button");
+    if (confirmBtn) confirmBtn = _replaceWithClone(confirmBtn);
+
+    let countrySelect = document.getElementById("Country");
+    if (countrySelect) countrySelect = _replaceWithClone(countrySelect);
+
+    // Populate + initialize Country select (modal)
+    if (countrySelect) {
+        _fillCountrySelectOptions(countrySelect);
+
+        const detected = _getDetectedCountry();
+        countrySelect.value = detected;
+        localStorage.setItem("detectedCountry", detected);
+
+        _setupTomSelectCountry(countrySelect);
+
+        countrySelect.addEventListener("change", async () => {
+            const cc = String(countrySelect.value || "").toUpperCase();
+            localStorage.setItem("detectedCountry", cc);
+
+            _syncSelectedCurrencyFromCountry(cc);
+
+            if (typeof updateAllPrices === "function") updateAllPrices();
+
+            // Recreate PI + remount Stripe Elements (server-truth)
+            await setupCheckoutFlow(selectedCurrency);
+        });
+    }
+
+    // Initialize Stripe UI once on open (server-truth)
+    selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
+    await setupCheckoutFlow(selectedCurrency);
+}
+
+
+
+
+
+try {
+    const raw = localStorage.getItem("basket");
+    return raw ? JSON.parse(raw) : {};
+} catch {
+    return {};
+}
+
+
+
