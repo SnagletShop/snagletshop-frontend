@@ -3337,7 +3337,7 @@ function preloadProductImages(category) {
     if (!list.length) return;
 
     // Tune these:
-    const MAX_PRODUCTS = 30;     // how many product thumbnails to warm up
+    const MAX_PRODUCTS = 20;     // how many product thumbnails to warm up
     const CONCURRENCY = 4;       // how many simultaneous image requests
 
     // Pick ONE thumbnail URL per product (not the whole images[] array)
