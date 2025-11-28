@@ -4236,12 +4236,3 @@ async function initPaymentModalLogic() {
 
 
 
-try {
-    const raw = localStorage.getItem("basket");
-    return raw ? JSON.parse(raw) : {};
-} catch {
-    return {};
-}
-
-
-
