@@ -17,30 +17,50 @@ if (typeof window !== "undefined" && window.products && typeof window.products =
     console.log("ℹ️ Seeded productsDatabase from legacy window.products.");
 }
 
-async function initProducts() {
-    try {
-        const r = await fetch(`${API_BASE}/products`);
-        if (!r.ok) {
-            throw new Error(`Products request failed: ${r.status}`);
+let initProductsPromise = null;
+
+/**
+ * Loads product catalog from the backend and normalizes globals:
+ * - productsDatabase (this file)
+ * - window.products (legacy global used throughout the UI)
+ *
+ * Returns a Promise that resolves to the loaded products object.
+ * Safe to call multiple times (memoized).
+ */
+function initProducts() {
+    if (initProductsPromise) return initProductsPromise;
+
+    initProductsPromise = (async () => {
+        try {
+            const r = await fetch(`${API_BASE}/products`);
+            if (!r.ok) {
+                throw new Error(`Products request failed: ${r.status}`);
+            }
+
+            productsDatabase = await r.json();
+
+            // Keep legacy code that still uses `products` working
+            window.products = productsDatabase;
+
+            console.log("✅ Products data loaded.");
+        } catch (err) {
+            console.error("❌ Failed to load products from server, falling back to window.products:", err);
+
+            // Fallback to whatever is already on window.products (e.g. from products.js)
+            productsDatabase = window.products || {};
+            window.products = productsDatabase;
         }
 
-        productsDatabase = await r.json();
+        return window.products;
+    })();
 
-        // Keep legacy code that still uses `products` working
-        window.products = productsDatabase;
-
-        console.log("✅ Products data loaded.");
-    } catch (err) {
-        console.error("❌ Failed to load products from server, falling back to window.products:", err);
-
-        // Fallback to whatever is already on window.products (e.g. from products.js)
-        productsDatabase = window.products || {};
-        window.products = productsDatabase;
-    }
+    return initProductsPromise;
 }
 
 // Kick off loading immediately when the script is loaded
 initProducts();
+
+
 
 
 
@@ -767,10 +787,180 @@ function trackSearch(query) {
         navigate('searchQuery', [query]);
     }
 }
+/* =========================
+   APP BOOT LOADER (Products)
+   ========================= */
+const APP_LOADER_STYLE_ID = "appBootLoaderStyles";
+const APP_LOADER_ID = "appBootLoaderOverlay";
 
-// Call this on page load
-initializeHistory();
+let __appBootPrevBodyOverflow = null;
+let __appBootPrevTitle = null;
 
+function ensureAppLoaderStyles() {
+    if (document.getElementById(APP_LOADER_STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = APP_LOADER_STYLE_ID;
+    style.textContent = `
+         @keyframes appLoaderSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+   
+         #${APP_LOADER_ID}{
+           position:fixed; inset:0; z-index:90000;
+           display:flex; align-items:center; justify-content:center;
+           padding:16px;
+           background:rgba(0,0,0,.45);
+           backdrop-filter: blur(8px);
+           -webkit-backdrop-filter: blur(8px);
+         }
+         #${APP_LOADER_ID} .card{
+           width:min(520px, calc(100vw - 32px));
+           border-radius:16px;
+           border:1px solid rgba(255,255,255,0.12);
+           background:rgba(20,20,20,0.9);
+           box-shadow:0 20px 60px rgba(0,0,0,.65);
+           padding:16px;
+           font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+           color:#fff;
+         }
+         #${APP_LOADER_ID} .row{
+           display:flex; align-items:center; gap:12px;
+         }
+         #${APP_LOADER_ID} .spinner{
+           width:22px; height:22px; border-radius:999px;
+           border:3px solid rgba(255,255,255,0.22);
+           border-top-color: rgba(255,255,255,0.95);
+           animation: appLoaderSpin 900ms linear infinite;
+           flex:0 0 auto;
+         }
+         #${APP_LOADER_ID} .title{
+           font-weight:700; font-size:15px; line-height:1.2;
+         }
+         #${APP_LOADER_ID} .sub{
+           margin-top:6px;
+           font-size:13px;
+           opacity:.85;
+           line-height:1.35;
+         }
+       `;
+    document.head.appendChild(style);
+}
+
+function showAppLoader(text = "Loading…") {
+    try { ensureAppLoaderStyles(); } catch { }
+
+    let overlay = document.getElementById(APP_LOADER_ID);
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = APP_LOADER_ID;
+        overlay.setAttribute("role", "status");
+        overlay.setAttribute("aria-live", "polite");
+        overlay.innerHTML = `
+             <div class="card">
+               <div class="row">
+                 <div class="spinner" aria-hidden="true"></div>
+                 <div class="title">Loading SnagletShop</div>
+               </div>
+               <div class="sub" id="${APP_LOADER_ID}_text"></div>
+             </div>
+           `;
+        (document.body || document.documentElement).appendChild(overlay);
+    }
+
+    const textEl = document.getElementById(`${APP_LOADER_ID}_text`);
+    if (textEl) textEl.textContent = String(text || "Loading…");
+
+    // small UX touches
+    document.documentElement.style.cursor = "progress";
+    document.documentElement.setAttribute("aria-busy", "true");
+
+    try {
+        if (__appBootPrevTitle === null) __appBootPrevTitle = document.title;
+        if (!/Loading/i.test(document.title)) document.title = `Loading…`;
+    } catch { }
+
+    try {
+        if (document.body) {
+            if (__appBootPrevBodyOverflow === null) __appBootPrevBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+        }
+    } catch { }
+}
+
+function hideAppLoader() {
+    const overlay = document.getElementById(APP_LOADER_ID);
+    if (overlay) overlay.remove();
+
+    document.documentElement.style.cursor = "";
+    document.documentElement.removeAttribute("aria-busy");
+
+    try {
+        if (document.body && __appBootPrevBodyOverflow !== null) {
+            document.body.style.overflow = __appBootPrevBodyOverflow;
+        }
+    } catch { }
+    __appBootPrevBodyOverflow = null;
+
+    try {
+        if (__appBootPrevTitle !== null) document.title = __appBootPrevTitle;
+    } catch { }
+    __appBootPrevTitle = null;
+}
+
+// Boot after DOM is ready and products are available.
+// This prevents the early history/render call from throwing and aborting the rest of the script.
+let __bootAppStarted = false;
+
+async function bootApp() {
+    if (__bootAppStarted) return;
+    __bootAppStarted = true;
+
+    showAppLoader("Loading products…");
+
+    try {
+        // Ensure catalog is ready before the first render
+        try { await initProducts(); } catch { }
+        showAppLoader("Preparing store…");
+
+        // Ensure global `products` exists for legacy code paths
+        if (!window.products || typeof window.products !== "object") {
+            window.products = productsDatabase || {};
+        }
+
+        // Hydrate basket early
+        try {
+            basket = JSON.parse(localStorage.getItem("basket")) || {};
+        } catch {
+            basket = {};
+            try { localStorage.setItem("basket", JSON.stringify(basket)); } catch { }
+        }
+
+        // Defaults used throughout the UI
+        if (typeof window.currentCategory === "undefined") window.currentCategory = "Default_Page";
+        if (typeof window.currentSortOrder === "undefined") window.currentSortOrder = "asc";
+
+        // Initial render (history-aware)
+        try {
+            initializeHistory();
+        } catch (e) {
+            console.warn("⚠️ initializeHistory failed on boot, falling back to Default_Page:", e);
+            loadProducts("Default_Page", localStorage.getItem("defaultSort") || "NameFirst", "asc");
+            CategoryButtons();
+        }
+
+        // Let the render paint, then remove overlay
+        requestAnimationFrame(() => setTimeout(hideAppLoader, 0));
+    } catch (e) {
+        console.warn("⚠️ bootApp error:", e);
+        hideAppLoader(); // never get stuck behind the loader
+    }
+}
+
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => void bootApp());
+} else {
+    void bootApp();
+}
 
 
 
@@ -2683,34 +2873,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
-    let checkProductsLoaded = setInterval(() => {
-        if (typeof products !== "undefined") {
-            clearInterval(checkProductsLoaded); // Stop checking
-            const params = new URLSearchParams(window.location.search);
-            if (!params.has("product")) {
-                const params = new URLSearchParams(window.location.search);
-                if (!params.has("product")) {
-                    loadProducts("Default_Page", "NameFirst", "asc");
-                }
-
-            }
-
-        } else {
-            console.error("⚠️ Waiting for products to load...");
-        }
-    }, 100);
-});
-// Ensure sorting dropdown exists when the page loads
-document.addEventListener("DOMContentLoaded", () => {
-    if (typeof window.currentCategory === "undefined") {
-        window.currentCategory = "Default_Page"; // Set default category
-    }
-    if (typeof window.currentSortOrder === "undefined") {
-        window.currentSortOrder = "asc"; // Set default order
-    }
-    loadProducts(window.currentCategory);
-});
 
 
 
