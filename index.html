@@ -20,20 +20,104 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style id="appBootLoaderStyles">
+        @keyframes appLoaderSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #appBootLoaderOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 90000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, .45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #appBootLoaderOverlay .card {
+            width: min(520px, calc(100vw - 32px));
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(20, 20, 20, 0.9);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .65);
+            padding: 16px;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            color: #fff;
+        }
+
+        #appBootLoaderOverlay .row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #appBootLoaderOverlay .spinner {
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.22);
+            border-top-color: rgba(255, 255, 255, 0.95);
+            animation: appLoaderSpin 900ms linear infinite;
+            flex: 0 0 auto;
+        }
+
+        #appBootLoaderOverlay .title {
+            font-weight: 700;
+            font-size: 15px;
+            line-height: 1.2;
+        }
+
+        #appBootLoaderOverlay .sub {
+            margin-top: 6px;
+            font-size: 13px;
+            opacity: .85;
+            line-height: 1.35;
+        }
+    </style>
 
     <style>
         :root {
-            --body_Background_Colour: #1A1A1A;
-            --TopBar_Background_Colour: #1a1919;
-            --SideBar_Background_Colour: #181818;
-            --SearchBar_Background_Colour: #1C1C1C;
+            --body_Background_Colour: #FFFCF7;
+            /* Warm off-white background */
+            --TopBar_Background_Colour: #F4F1EB;
+            /* Matches soft beige tone */
+            --SideBar_Background_Colour: #FFFFFF;
+            --SearchBar_Background_Colour: #EFECE8;
+            --Modal_Background_Colour: #FFFFFF;
+            --BasketReceipt_Background_Colour: #F4F1EB;
+            /* Same soft beige */
+            --Thumbnail_Active_Border: #FF5722;
+            --ButtonHoverState_Background_Colour: #59a3f2;
 
-            --Modal_Background_Colour: #14171a;
-            --BasketReceipt_Background_Colour: #22222200;
+            --Default_Text_Colour: #2A2A2A;
+            --Muted_Text_Colour: #777777;
+            /* Slightly softer muted text */
 
-            --ButtonHoverState_Background_Colour: #0056b3;
-            --Default_Text_Colour: #ffffff;
-            --Borders_Colour: #232D34;
+            --Primary_Button_Colour: #59a3f2;
+            /* Blue buttons */
+            --Primary_Button_Hover: #0056b3;
+
+            --Input_Background: #FFFFFF;
+            --Input_Border: #DDDDDD;
+
+            --Option_Button_Border: #DDDDDD;
+            /* For +/- and quantity selectors */
+
+            --Danger_Colour: #D9534F;
+            --Info_Link_Colour: #5BC0DE;
+            --Category_Button_Text_Colour: #2A2A2A;
+            /* or white for dark mode */
+
         }
 
         .light-mode {
@@ -770,7 +854,7 @@
             #mainImage {
                 position: relative;
                 overflow: hidden;
-border-radius:5px;
+                border-radius: 5px;
                 top: 0;
                 left: 0;
                 width: 100%;
@@ -791,7 +875,7 @@ border-radius:5px;
                 width: 80px;
                 height: 80px;
                 border: 1px solid var(--Borders_Colour);
-                border-radius:5px;
+                border-radius: 5px;
             }
 
             .Thumbnail.active {
@@ -4176,6 +4260,16 @@ border-radius:5px;
 
 
 <body>
+    <div id="appBootLoaderOverlay" role="status" aria-live="polite">
+        <div class="card">
+            <div class="row">
+                <div class="spinner" aria-hidden="true"></div>
+                <div class="title">Loading SnagletShop</div>
+            </div>
+            <div class="sub" id="appBootLoaderOverlay_text">Loading products…</div>
+        </div>
+    </div>
+
     <!-- Container for both rows -->
     <div class="mobileHeaderWrapper">
         <!-- First row -->
