@@ -463,6 +463,31 @@ const currencySymbols = {
     BRL: "R$", ARS: "$", CLP: "$", COP: "$", PEN: "S/", VES: "Bs"
 };
 
+
+function showAppLoader(text = "Loading…") {
+    const overlay = document.getElementById(APP_LOADER_ID);
+    if (overlay) {
+        const textEl = document.getElementById(`${APP_LOADER_ID}_text`);
+        if (textEl) textEl.textContent = String(text || "Loading…");
+        overlay.style.display = "flex";
+    }
+
+    document.documentElement.style.cursor = "progress";
+    document.documentElement.setAttribute("aria-busy", "true");
+
+    try { if (document.body) document.body.style.overflow = "hidden"; } catch { }
+}
+
+function hideAppLoader() {
+    const overlay = document.getElementById(APP_LOADER_ID);
+    if (overlay) overlay.remove(); // remove entirely so it can’t reflash
+
+    document.documentElement.style.cursor = "";
+    document.documentElement.removeAttribute("aria-busy");
+
+    try { if (document.body) document.body.style.overflow = ""; } catch { }
+}
+
 const preloadedImages = new Set();
 
 
@@ -3075,13 +3100,14 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         productDiv.appendChild(card);
         viewer.appendChild(productDiv);
     });
-    let checkProductsLoaded = setInterval(() => {
-        if (typeof products !== "undefined" && Object.keys(products).length > 0) {
-            clearInterval(checkProductsLoaded);
-            preloadProductImages();  // ✅ Preload images
-            CategoryButtons();       // Efxisting function
-        }
-    }, 100);
+    try {
+        preloadProductImages(category); // only current category thumbnails, throttled
+    } catch (e) {
+        console.warn("⚠️ preloadProductImages failed:", e);
+    }
+
+    CategoryButtons();
+
 
 }
 
@@ -3290,21 +3316,97 @@ function GoToProductPage(productName, productPrice, productDescription) {
 }
 
 
-function preloadProductImages() {
-    if (typeof products === "undefined") return;
+function preloadProductImages(category) {
+    if (typeof products === "undefined" || !products) return;
 
-    Object.values(products).flat().forEach(product => {
-        const urls = Array.isArray(product.images) ? product.images : [product.image];
+    // Default to the current/last category so we DON'T preload the entire catalog.
+    const cat =
+        category ||
+        (typeof lastCategory !== "undefined" && lastCategory) ||
+        window.currentCategory ||
+        "Default_Page";
 
-        urls.forEach(url => {
-            if (url && !preloadedImages.has(url)) {
+    const list = Array.isArray(products[cat]) ? products[cat] : [];
+    if (!list.length) return;
+
+    // Tune these:
+    const MAX_PRODUCTS = 30;     // how many product thumbnails to warm up
+    const CONCURRENCY = 4;       // how many simultaneous image requests
+
+    // Pick ONE thumbnail URL per product (not the whole images[] array)
+    const urls = [];
+    for (let i = 0; i < Math.min(MAX_PRODUCTS, list.length); i++) {
+        const p = list[i];
+        let url = "";
+
+        if (p && typeof p.image === "string" && p.image.trim()) {
+            url = p.image.trim();
+        } else if (p && Array.isArray(p.images)) {
+            const first = p.images.find(u => typeof u === "string" && u.trim());
+            if (first) url = first.trim();
+        }
+
+        if (!url) continue;
+
+        // Basic relative handling (keeps current behavior from breaking if some are relative)
+        if (!/^https?:\/\//i.test(url) && !/^data:/i.test(url) && !/^blob:/i.test(url)) {
+            if (url.startsWith("/")) url = `${window.location.origin}${url}`;
+            else url = `${window.location.origin}/${url}`;
+        }
+
+        if (!preloadedImages.has(url)) urls.push(url);
+    }
+
+    if (!urls.length) return;
+
+    // Avoid restarting the same preload repeatedly
+    const key = `${cat}::${urls.length}`;
+    if (preloadProductImages.__lastKey === key && preloadProductImages.__running) return;
+    preloadProductImages.__lastKey = key;
+
+    const run = () => {
+        preloadProductImages.__running = true;
+
+        let idx = 0;
+        let active = 0;
+
+        const pump = () => {
+            while (active < CONCURRENCY && idx < urls.length) {
+                const url = urls[idx++];
+                if (!url || preloadedImages.has(url)) continue;
+
+                active++;
+
                 const img = new Image();
+                img.decoding = "async";
+
+                const done = () => {
+                    active--;
+                    preloadedImages.add(url);
+                    if (idx >= urls.length && active === 0) {
+                        preloadProductImages.__running = false;
+                        return;
+                    }
+                    pump();
+                };
+
+                img.onload = done;
+                img.onerror = done;
                 img.src = url;
-                preloadedImages.add(url); // ✅ Mark as preloaded
             }
-        });
-    });
+        };
+
+        pump();
+    };
+
+    // Don’t fight the initial render
+    if ("requestIdleCallback" in window) {
+        requestIdleCallback(run, { timeout: 1200 });
+    } else {
+        setTimeout(run, 0);
+    }
 }
+
 
 
 function renderProductPage(product, validImages, productName, productPrice, productDescription) {
