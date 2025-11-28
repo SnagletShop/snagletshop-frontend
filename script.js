@@ -7,10 +7,7 @@ const APPLY_TARIFF = true; // 🔁 You can toggle this manually
 localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
 
 // early in boot:
-const API_BASE =
-    (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-        ? "http://localhost:5500"
-        : "https://api.snagletshop.com";
+const API_BASE = "https://api.snagletshop.com";
 
 const WS_BASE =
     (location.protocol === "https:" ? "wss://" : "ws://") +
@@ -595,46 +592,70 @@ function tariffsObjectToCountriesArray(tariffsObj) {
         .map(code => ({ code, tariff: Number(tariffsObj[code]) || 0 }))
         .sort((a, b) => a.code.localeCompare(b.code));
 }
+let _preloadSettingsPromise = null;
+
 async function preloadSettingsData() {
-    try {
-        const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
-        if (cached && isSettingsCacheValid(cached)) {
-            tariffMultipliers = cached.tariffs || {};
-            exchangeRates = cached.rates || {};
-            handlesTariffsDropdown(cached.countries || []);
-            console.log("⚡ Using cached settings data.");
-            return;
+    if (_preloadSettingsPromise) return _preloadSettingsPromise;
+
+    _preloadSettingsPromise = (async () => {
+        try {
+            window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
+
+            const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
+            if (cached && isSettingsCacheValid(cached.timestamp)) {
+                tariffMultipliers = cached.tariffs || {};
+                exchangeRates = cached.rates || {};
+
+                window.preloadedData.tariffs = tariffMultipliers;
+                window.preloadedData.exchangeRates = exchangeRates;
+                window.preloadedData.countries = cached.countries || tariffsObjectToCountriesArray(tariffMultipliers);
+
+                handlesTariffsDropdown(window.preloadedData.countries || []);
+                console.log("⚡ Using cached settings data.");
+                return;
+            }
+
+            // Fetch fresh settings (NO fetchTariffs() here -> breaks recursion)
+            const [tariffsObj, ratesData] = await Promise.all([
+                fetchTariffsFromServer(),
+                fetchExchangeRatesFromServer()
+            ]);
+
+            const safeTariffs =
+                (tariffsObj && typeof tariffsObj === "object" && !Array.isArray(tariffsObj)) ? tariffsObj : {};
+            const safeRates =
+                (ratesData && typeof ratesData.rates === "object") ? ratesData.rates : {};
+
+            tariffMultipliers = { ...safeTariffs };
+            exchangeRates = { ...safeRates };
+
+            const countriesList = tariffsObjectToCountriesArray(tariffMultipliers);
+            handlesTariffsDropdown(countriesList);
+
+            // keep global preloadedData coherent
+            window.preloadedData.tariffs = tariffMultipliers;
+            window.preloadedData.exchangeRates = exchangeRates;
+            window.preloadedData.countries = countriesList;
+
+            lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
+                tariffs: tariffMultipliers,
+                rates: exchangeRates,
+                countries: countriesList,
+                timestamp: Date.now()
+            }));
+
+            console.log("✅ Settings data loaded & cached.");
+        } catch (err) {
+            console.warn("⚠️ preloadSettingsData failed:", err?.message || err);
+            tariffMultipliers = (tariffMultipliers && typeof tariffMultipliers === "object") ? tariffMultipliers : {};
+            exchangeRates = (exchangeRates && typeof exchangeRates === "object") ? exchangeRates : {};
         }
+    })();
 
-        // Fetch fresh settings
-        const [tariffsData, ratesData] = await Promise.all([
-            fetchTariffs(),
-            fetchExchangeRatesFromServer()
-        ]);
-
-        const safeTariffs = (tariffsData && typeof tariffsData.tariffs === "object") ? tariffsData.tariffs : {};
-        const safeRates = (ratesData && typeof ratesData.rates === "object") ? ratesData.rates : {};
-
-        tariffMultipliers = { ...safeTariffs };
-        exchangeRates = { ...safeRates };
-
-        const countriesList = tariffsObjectToCountriesArray(tariffMultipliers);
-        handlesTariffsDropdown(countriesList);
-
-        lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
-            tariffs: tariffMultipliers,
-            rates: exchangeRates,
-            countries: countriesList,
-            timestamp: Date.now()
-        }));
-
-        console.log("✅ Settings data loaded & cached.");
-    } catch (err) {
-        console.warn("⚠️ preloadSettingsData failed:", err?.message || err);
-
-        // last-resort fallback: keep whatever is already in-memory; do not crash checkout
-        tariffMultipliers = tariffMultipliers && typeof tariffMultipliers === "object" ? tariffMultipliers : {};
-        exchangeRates = exchangeRates && typeof exchangeRates === "object" ? exchangeRates : {};
+    try {
+        return await _preloadSettingsPromise;
+    } finally {
+        _preloadSettingsPromise = null;
     }
 }
 
@@ -1007,35 +1028,52 @@ const debounce = (func, delay) => {
         timeout = setTimeout(() => func.apply(this, args), delay);
     };
 };
+async function fetchTariffsFromServer() {
+    const res = await fetch(`${API_BASE}/tariffs`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to fetch tariffs (${res.status})`);
+    const data = await res.json().catch(() => null);
+
+    // Accept either { ... } or { tariffs: { ... } }
+    const obj =
+        (data && typeof data === "object" && !Array.isArray(data))
+            ? (data.tariffs && typeof data.tariffs === "object" ? data.tariffs : data)
+            : null;
+
+    if (!obj) throw new Error("Invalid tariffs payload.");
+    return obj;
+}
+
 async function fetchTariffs() {
     try {
-        // If preload already filled it, use it
-        if (window.preloadedData?.tariffs && Object.keys(window.preloadedData.tariffs).length) {
+        window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
+
+        // If already loaded, use it
+        if (window.preloadedData.tariffs && Object.keys(window.preloadedData.tariffs).length) {
             tariffMultipliers = { ...window.preloadedData.tariffs };
             return tariffMultipliers;
         }
 
-        // Otherwise preload (which fetches /tariffs)
+        // Load via settings preload (safe now; no recursion)
         await preloadSettingsData();
 
-        if (window.preloadedData?.tariffs) {
+        if (window.preloadedData.tariffs && Object.keys(window.preloadedData.tariffs).length) {
             tariffMultipliers = { ...window.preloadedData.tariffs };
             return tariffMultipliers;
         }
 
         // Last resort direct fetch
-        const response = await fetch(`${API_BASE}/tariffs`, { cache: "no-store" });
-        const tariffsObj = await response.json();
-        tariffMultipliers = (tariffsObj && typeof tariffsObj === "object" && !Array.isArray(tariffsObj)) ? tariffsObj : {};
+        const tariffsObj = await fetchTariffsFromServer();
+        tariffMultipliers = { ...tariffsObj };
         window.preloadedData.tariffs = tariffMultipliers;
         window.preloadedData.countries = tariffsObjectToCountriesArray(tariffMultipliers);
         return tariffMultipliers;
     } catch (e) {
         console.warn("⚠️ fetchTariffs failed; keeping existing tariffMultipliers:", e);
-        tariffMultipliers = tariffMultipliers || {};
+        tariffMultipliers = (tariffMultipliers && typeof tariffMultipliers === "object") ? tariffMultipliers : {};
         return tariffMultipliers;
     }
 }
+
 
 
 function setupSearchInputs() {
@@ -2189,6 +2227,66 @@ async function GoToSettings() {
 // helper function for countries
 
 
+function handlesTariffsDropdown(countriesList = []) {
+    try {
+        // Always keep preloadedData coherent, even if Settings UI isn't open
+        window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
+        if (!Array.isArray(countriesList)) countriesList = [];
+        window.preloadedData.countries = countriesList;
+
+        // If the Settings page isn't rendered, stop here (preload must not crash)
+        const select = document.getElementById("countrySelect");
+        if (!select) return;
+
+        // Populate options
+        select.innerHTML = "";
+        const sorted = countriesList
+            .slice()
+            .sort((a, b) => String(a?.code || "").localeCompare(String(b?.code || "")));
+
+        for (const c of sorted) {
+            const code = String(c?.code || "").toUpperCase();
+            if (!code) continue;
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = (typeof countryNames !== "undefined" && countryNames?.[code]) ? countryNames[code] : code;
+            select.appendChild(opt);
+        }
+
+        // Detected label + default value
+        let detected = "US";
+        try { detected = localStorage.getItem("detectedCountry") || "US"; } catch { }
+        const detectedEl = document.getElementById("detected-country");
+        if (detectedEl) detectedEl.textContent = detected;
+        select.value = detected;
+
+        // Attach the change handler once
+        if (!select.dataset.listenerAttached) {
+            select.addEventListener("change", () => {
+                const newCountry = select.value;
+
+                try { localStorage.setItem("detectedCountry", newCountry); } catch { }
+
+                if (typeof AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE !== "undefined"
+                    && AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE
+                    && !localStorage.getItem("manualCurrencyOverride")) {
+                    const newCurrency = (typeof countryToCurrency !== "undefined") ? countryToCurrency?.[newCountry] : null;
+                    if (newCurrency) {
+                        selectedCurrency = newCurrency;
+                        try { localStorage.setItem("selectedCurrency", selectedCurrency); } catch { }
+                        if (typeof syncCurrencySelects === "function") syncCurrencySelects(selectedCurrency);
+                    }
+                }
+
+                if (typeof updateAllPrices === "function") updateAllPrices();
+            });
+
+            select.dataset.listenerAttached = "true";
+        }
+    } catch (e) {
+        console.warn("⚠️ handlesTariffsDropdown failed:", e);
+    }
+}
 
 
 function syncCurrencySelects(newCurrency) {
@@ -4502,7 +4600,6 @@ async function initPaymentModalLogic() {
     selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
     await setupCheckoutFlow(selectedCurrency);
 }
-
 
 
 
