@@ -22,7 +22,7 @@ if (typeof window !== "undefined" && window.products && typeof window.products =
 }
 
 let initProductsPromise = null;
-
+let exchangeRatesFetchedAt = 0;
 /**
  * Loads product catalog from the backend and normalizes globals:
  * - productsDatabase (this file)
@@ -597,18 +597,39 @@ let _preloadSettingsPromise = null;
 async function preloadSettingsData() {
     if (_preloadSettingsPromise) return _preloadSettingsPromise;
 
+    const setRatesFetchedAt = (ts) => {
+        const safeTs = Number(ts || 0) || 0;
+        window.exchangeRatesFetchedAt = safeTs; // always available to other code
+        if (typeof exchangeRatesFetchedAt !== "undefined") {
+            exchangeRatesFetchedAt = safeTs; // only if you declared it somewhere
+        }
+        window.preloadedData = window.preloadedData || {};
+        window.preloadedData.ratesFetchedAt = safeTs;
+    };
+
     _preloadSettingsPromise = (async () => {
         try {
-            window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
+            window.preloadedData = window.preloadedData || {
+                exchangeRates: null,
+                countries: null,
+                tariffs: null,
+                ratesFetchedAt: 0
+            };
 
             const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
             if (cached && isSettingsCacheValid(cached.timestamp)) {
                 tariffMultipliers = cached.tariffs || {};
                 exchangeRates = cached.rates || {};
 
+
+                setRatesFetchedAt(cached.ratesFetchedAt || 0);
+                // Restore FX snapshot timestamp (0 if older cache format)
+                setRatesFetchedAt(cached.ratesFetchedAt || 0);
+
                 window.preloadedData.tariffs = tariffMultipliers;
                 window.preloadedData.exchangeRates = exchangeRates;
-                window.preloadedData.countries = cached.countries || tariffsObjectToCountriesArray(tariffMultipliers);
+                window.preloadedData.countries =
+                    cached.countries || tariffsObjectToCountriesArray(tariffMultipliers);
 
                 handlesTariffsDropdown(window.preloadedData.countries || []);
                 console.log("⚡ Using cached settings data.");
@@ -623,11 +644,20 @@ async function preloadSettingsData() {
 
             const safeTariffs =
                 (tariffsObj && typeof tariffsObj === "object" && !Array.isArray(tariffsObj)) ? tariffsObj : {};
+
+            // ratesData is expected to be { rates: {...}, fetchedAt: <ms> }
+            // but tolerate older shapes too.
             const safeRates =
-                (ratesData && typeof ratesData.rates === "object") ? ratesData.rates : {};
+                (ratesData && typeof ratesData.rates === "object" && ratesData.rates && !Array.isArray(ratesData.rates))
+                    ? ratesData.rates
+                    : ((ratesData && typeof ratesData === "object" && !Array.isArray(ratesData)) ? ratesData : {});
+
+            const fetchedAt =
+                (ratesData && Number(ratesData.fetchedAt || 0)) ? Number(ratesData.fetchedAt) : 0;
 
             tariffMultipliers = { ...safeTariffs };
             exchangeRates = { ...safeRates };
+            setRatesFetchedAt(fetchedAt);
 
             const countriesList = tariffsObjectToCountriesArray(tariffMultipliers);
             handlesTariffsDropdown(countriesList);
@@ -640,6 +670,7 @@ async function preloadSettingsData() {
             lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
                 tariffs: tariffMultipliers,
                 rates: exchangeRates,
+                ratesFetchedAt: Number(window.exchangeRatesFetchedAt || 0) || 0,
                 countries: countriesList,
                 timestamp: Date.now()
             }));
@@ -649,6 +680,7 @@ async function preloadSettingsData() {
             console.warn("⚠️ preloadSettingsData failed:", err?.message || err);
             tariffMultipliers = (tariffMultipliers && typeof tariffMultipliers === "object") ? tariffMultipliers : {};
             exchangeRates = (exchangeRates && typeof exchangeRates === "object") ? exchangeRates : {};
+            setRatesFetchedAt(window.exchangeRatesFetchedAt || 0);
         }
     })();
 
@@ -658,6 +690,7 @@ async function preloadSettingsData() {
         _preloadSettingsPromise = null;
     }
 }
+
 
 
 
@@ -4289,7 +4322,8 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
             productsFull: fullCart,
             expectedClientTotal,
             applyTariff: getApplyTariffFlag(),
-            metadata: { order_summary }
+            metadata: { order_summary },
+            fxFetchedAt: exchangeRatesFetchedAt || null,
         })
     });
 
