@@ -3693,9 +3693,7 @@ const carousel = document.getElementById("imageCarousel");
 const images = carousel ? carousel.querySelectorAll(".carousel-image") : [];
 
 
-carousel.addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
-});
+
 
 carousel.addEventListener("touchend", (e) => {
     const endX = e.changedTouches[0].clientX;
@@ -3999,12 +3997,6 @@ function updateBasket() {
     receiptDiv.innerHTML = receiptContent;
     basketContainer.appendChild(receiptDiv);
 
-    document.body.addEventListener("click", function (event) {
-        if (event.target.classList.contains("PayButton")) {
-            createPaymentModal();
-        }
-    });
-
     document.querySelectorAll(".Basket_Image").forEach((img) => {
         img.addEventListener("click", function () {
             const productName = this.dataset.name;
@@ -4020,9 +4012,12 @@ function updateBasket() {
         });
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
 }
 
 
+
+// Attach once: open the checkout modal + mount Stripe Elements
 
 
 
@@ -4489,19 +4484,45 @@ function attachConfirmHandlerOnce() {
 
 
 async function setupCheckoutFlow(selectedCurrency) {
+    const payBtn = document.getElementById("confirm-payment-button");
+    const paymentSlot = document.getElementById("payment-element");
+    const walletSlot = document.getElementById("payment-request-button");
+
     try {
-        await initStripePaymentUI(selectedCurrency);
-        attachConfirmHandlerOnce();
-    } catch (e) {
-        // Server-truth mismatch (409) should surface as TOTAL_MISMATCH from your earlier changes
-        if (e?.code === "TOTAL_MISMATCH") {
-            alert(e?.message || "Pricing changed. Please refresh and try again.");
-            return;
+        if (payBtn) payBtn.disabled = true;
+        if (walletSlot) walletSlot.innerHTML = "";
+
+        if (paymentSlot) {
+            paymentSlot.innerHTML = `
+          <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
+            Loading payment options…
+          </div>`;
         }
+
+        // Mounts Stripe elements into #payment-element
+        await initStripePaymentUI(selectedCurrency);
+
+        attachConfirmHandlerOnce();
+
+        if (payBtn) payBtn.disabled = false;
+    } catch (e) {
         console.error("setupCheckoutFlow failed:", e);
+
+        if (payBtn) payBtn.disabled = true;
+
+        if (paymentSlot) {
+            const msg = String(e?.message || "Checkout initialization failed.");
+            paymentSlot.innerHTML = `
+          <div style="padding:10px 12px;border:1px solid rgba(255,0,0,.35);border-radius:12px">
+            <strong>Payment UI could not load.</strong><br>${msg}<br><br>
+            Common causes: Stripe.js blocked, API error, or empty cart.
+          </div>`;
+        }
+
         alert(e?.message || "Checkout initialization failed. Please try again.");
     }
 }
+
 
 function _replaceWithClone(el) {
     if (!el || !el.parentNode) return el;
@@ -4604,3 +4625,21 @@ async function initPaymentModalLogic() {
 
 
 
+(function attachPayButtonHandlerOnce() {
+    if (window.__payButtonHandlerAttached) return;
+    window.__payButtonHandlerAttached = true;
+
+    document.body.addEventListener("click", async (event) => {
+        const btn = event.target.closest?.(".PayButton");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        try {
+            await openModal(); // <-- IMPORTANT: NOT createPaymentModal()
+        } catch (e) {
+            console.error("openModal() failed:", e);
+            alert("Could not initialize checkout. Please try again.");
+        }
+    });
+})();
