@@ -599,10 +599,15 @@ async function preloadSettingsData() {
 
     const setRatesFetchedAt = (ts) => {
         const safeTs = Number(ts || 0) || 0;
-        window.exchangeRatesFetchedAt = safeTs; // always available to other code
+
+        // always publish timestamp globally so other functions can read it safely
+        window.exchangeRatesFetchedAt = safeTs;
+
+        // if you have a global variable declared, keep it in sync (no ReferenceError)
         if (typeof exchangeRatesFetchedAt !== "undefined") {
-            exchangeRatesFetchedAt = safeTs; // only if you declared it somewhere
+            exchangeRatesFetchedAt = safeTs;
         }
+
         window.preloadedData = window.preloadedData || {};
         window.preloadedData.ratesFetchedAt = safeTs;
     };
@@ -618,13 +623,11 @@ async function preloadSettingsData() {
 
             const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
             if (cached && isSettingsCacheValid(cached.timestamp)) {
-                tariffMultipliers = cached.tariffs || {};
-                exchangeRates = cached.rates || {};
+                tariffMultipliers = (cached.tariffs && typeof cached.tariffs === "object") ? cached.tariffs : {};
+                exchangeRates = (cached.rates && typeof cached.rates === "object") ? cached.rates : {};
 
-
-                setRatesFetchedAt(cached.ratesFetchedAt || 0);
-                // Restore FX snapshot timestamp (0 if older cache format)
-                setRatesFetchedAt(cached.ratesFetchedAt || 0);
+                // restore FX snapshot timestamp (0 if older cache format)
+                setRatesFetchedAt(cached.ratesFetchedAt || cached.fetchedAt || 0);
 
                 window.preloadedData.tariffs = tariffMultipliers;
                 window.preloadedData.exchangeRates = exchangeRates;
@@ -645,8 +648,7 @@ async function preloadSettingsData() {
             const safeTariffs =
                 (tariffsObj && typeof tariffsObj === "object" && !Array.isArray(tariffsObj)) ? tariffsObj : {};
 
-            // ratesData is expected to be { rates: {...}, fetchedAt: <ms> }
-            // but tolerate older shapes too.
+            // ratesData expected: { rates: {...}, fetchedAt: <ms> }, but tolerate older shapes too
             const safeRates =
                 (ratesData && typeof ratesData.rates === "object" && ratesData.rates && !Array.isArray(ratesData.rates))
                     ? ratesData.rates
@@ -690,6 +692,7 @@ async function preloadSettingsData() {
         _preloadSettingsPromise = null;
     }
 }
+
 
 
 
@@ -4029,6 +4032,30 @@ function updateBasket() {
 
     receiptDiv.innerHTML = receiptContent;
     basketContainer.appendChild(receiptDiv);
+    // ✅ Ensure the basket "Pay" button always works (even if delegated handlers weren't attached yet)
+    const payBtn = receiptDiv.querySelector(".PayButton");
+    if (payBtn) {
+        payBtn.type = "button"; // prevent accidental form submit
+        if (!payBtn.dataset.bound) {
+            payBtn.dataset.bound = "1";
+            payBtn.addEventListener("click", async (event) => {
+                event.preventDefault();
+                event.stopPropagation(); // prevent the delegated handler from firing too
+
+                const wasDisabled = payBtn.disabled;
+                payBtn.disabled = true;
+
+                try {
+                    await openModal(); // creates & opens the payment modal
+                } catch (e) {
+                    console.error("openModal() failed:", e);
+                    alert("Could not initialize checkout. Please try again.");
+                } finally {
+                    payBtn.disabled = wasDisabled;
+                }
+            });
+        }
+    }
 
     document.querySelectorAll(".Basket_Image").forEach((img) => {
         img.addEventListener("click", function () {
@@ -4311,6 +4338,12 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
     const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
     const order_summary = buildStripeOrderSummary(stripeCart);
 
+    // Always read FX snapshot timestamp safely (avoid ReferenceError)
+    const fxFetchedAt =
+        (typeof exchangeRatesFetchedAt !== "undefined" && Number(exchangeRatesFetchedAt) > 0)
+            ? Number(exchangeRatesFetchedAt)
+            : (Number(window.exchangeRatesFetchedAt || 0) > 0 ? Number(window.exchangeRatesFetchedAt) : null);
+
     const res = await fetch(`${API_BASE}/create-payment-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -4318,25 +4351,36 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
             websiteOrigin,
             currency,
             country,
-            products: stripeCart,
-            productsFull: fullCart,
+            products: Array.isArray(stripeCart) ? stripeCart : [],
+            productsFull: Array.isArray(fullCart) ? fullCart : [],
             expectedClientTotal,
             applyTariff: getApplyTariffFlag(),
             metadata: { order_summary },
-            fxFetchedAt: exchangeRatesFetchedAt || null,
+            fxFetchedAt
         })
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-        // Pricing mismatch (server should respond 409 with TOTAL_MISMATCH)
+        // The two expected "refresh" cases:
+        // - TOTAL_MISMATCH: still doesn't match even with allowed FX snapshots
+        // - FX_SNAPSHOT_NOT_FOUND: client used a snapshot the server no longer retains
         if (res.status === 409 && (data?.error === "TOTAL_MISMATCH" || data?.code === "TOTAL_MISMATCH")) {
             const err = new Error(data?.message || "Pricing changed. Please refresh and try again.");
             err.code = "TOTAL_MISMATCH";
             err.details = data;
             throw err;
         }
+
+        if (res.status === 409 && (data?.error === "FX_SNAPSHOT_NOT_FOUND" || data?.code === "FX_SNAPSHOT_NOT_FOUND")) {
+            const err = new Error(data?.message || "Exchange rate snapshot expired. Please refresh and try again.");
+            err.code = "FX_SNAPSHOT_NOT_FOUND";
+            err.details = data;
+            throw err;
+        }
+
+        // Generic error
         throw new Error(data?.error || data?.message || `Failed to create payment intent (${res.status})`);
     }
 
@@ -4663,17 +4707,26 @@ async function initPaymentModalLogic() {
     if (window.__payButtonHandlerAttached) return;
     window.__payButtonHandlerAttached = true;
 
-    document.body.addEventListener("click", async (event) => {
-        const btn = event.target.closest?.(".PayButton");
+    const onClick = async (event) => {
+        const btn = event?.target?.closest?.(".PayButton");
         if (!btn) return;
 
         event.preventDefault();
 
+        // Avoid double-clicks creating multiple modals
+        const wasDisabled = btn.disabled;
+        btn.disabled = true;
+
         try {
-            await openModal(); // <-- IMPORTANT: NOT createPaymentModal()
+            await openModal();
         } catch (e) {
             console.error("openModal() failed:", e);
             alert("Could not initialize checkout. Please try again.");
+        } finally {
+            btn.disabled = wasDisabled;
         }
-    });
+    };
+
+    // Safer than `document.body` if the script runs in <head>
+    document.addEventListener("click", onClick);
 })();
