@@ -593,6 +593,92 @@ function tariffsObjectToCountriesArray(tariffsObj) {
         .sort((a, b) => a.code.localeCompare(b.code));
 }
 let _preloadSettingsPromise = null;
+// ======================
+// Cross-tab basket sync
+// ======================
+const BASKET_STORAGE_KEY = "basket";
+const BASKET_REV_KEY = "basket_rev"; // forces an event even if JSON string doesn't change
+const TAB_SYNC_ID = (() => {
+    try { return crypto.randomUUID(); } catch { return String(Date.now()) + "-" + Math.random().toString(16).slice(2); }
+})();
+const basketBC = ("BroadcastChannel" in window) ? new BroadcastChannel("snagletshop:basket") : null;
+
+function readBasketFromStorageSafe() {
+    try {
+        const raw = localStorage.getItem(BASKET_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
+// Mutate in-place to keep references stable
+function replaceBasketInMemory(next) {
+    try {
+        if (typeof basket !== "object" || !basket) basket = {};
+        for (const k of Object.keys(basket)) delete basket[k];
+        if (next && typeof next === "object") {
+            for (const k of Object.keys(next)) basket[k] = next[k];
+        }
+    } catch {
+        basket = next && typeof next === "object" ? next : {};
+    }
+}
+
+function refreshBasketUIIfOpen() {
+    // Only re-render if the basket view already exists; don't “force open” it.
+    if (document.getElementById("Basket_Viewer") && typeof updateBasket === "function") {
+        updateBasket();
+    }
+}
+
+function syncBasketFromStorage(reason = "external") {
+    replaceBasketInMemory(readBasketFromStorageSafe());
+    refreshBasketUIIfOpen();
+
+    // If checkout modal is open and cart changed in another tab, close it to avoid stale checkout state.
+    const modal = document.getElementById("paymentModal");
+    const modalOpen = modal && modal.style && modal.style.display && modal.style.display !== "none";
+    if (modalOpen && typeof closeModal === "function") {
+        try { closeModal(); } catch { }
+    }
+}
+
+function persistBasket(reason = "update") {
+    try { localStorage.setItem(BASKET_STORAGE_KEY, JSON.stringify(basket)); } catch { }
+    try { localStorage.setItem(BASKET_REV_KEY, String(Date.now())); } catch { }
+
+    if (basketBC) {
+        try { basketBC.postMessage({ type: "basket_changed", from: TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
+    }
+}
+
+function clearBasketStorage(reason = "clear") {
+    try { localStorage.removeItem(BASKET_STORAGE_KEY); } catch { }
+    try { localStorage.setItem(BASKET_REV_KEY, String(Date.now())); } catch { }
+
+    if (basketBC) {
+        try { basketBC.postMessage({ type: "basket_changed", from: TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
+    }
+}
+
+// Other tabs: localStorage events
+window.addEventListener("storage", (e) => {
+    if (e.storageArea !== localStorage) return;
+    if (e.key === BASKET_STORAGE_KEY || e.key === BASKET_REV_KEY || e.key === null) {
+        syncBasketFromStorage("storage");
+    }
+});
+
+// Other tabs: BroadcastChannel (faster/more reliable on some browsers)
+if (basketBC) {
+    basketBC.onmessage = (ev) => {
+        const msg = ev?.data;
+        if (!msg || msg.type !== "basket_changed") return;
+        if (msg.from === TAB_SYNC_ID) return;
+        syncBasketFromStorage("broadcast");
+    };
+}
 
 async function preloadSettingsData() {
     if (_preloadSettingsPromise) return _preloadSettingsPromise;
@@ -839,6 +925,12 @@ function handleStateChange(state) {
 }
 
 window.addEventListener('popstate', (event) => {
+    const modal = document.getElementById("paymentModal");
+    if (modal && typeof closeModal === "function") {
+        closeModal();
+        return;
+    }
+
     const index = event.state?.index;
     if (typeof index === 'number' && userHistoryStack[index]) {
         isReplaying = true;
@@ -1435,20 +1527,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-// === POPSTATE HANDLER ===
-window.addEventListener("popstate", function (event) {
-    // ✅ Close modal if open
-    const modal = document.getElementById("paymentModal");
-    if (modal && typeof closeModal === "function") {
-        console.log("🔙 Back button pressed — closing modal...");
-        closeModal();
-        return;
-    }
-
-    // 🔁 Existing replay logic can go here
-    const index = event.state?.index;
-
-});
 
 
 // === KEYBOARD SHORTCUTS (Alt + Arrow) ===
@@ -1682,23 +1760,6 @@ document.addEventListener("click", function (event) {
 });
 
 
-document.addEventListener("click", function (event) {
-    const img = event.target.closest(".Clickable_Image, .Basket_Image");
-    if (!img) return;
-
-    const name = img.dataset.name;
-    const price = img.dataset.price;
-    const description = img.dataset.description;
-    if (!name || !price) {
-        console.warn("⚠️ Missing data-name or data-price on image.");
-        return;
-    }
-
-    console.debug(`🖼️ Product image clicked - GoToProductPage("${name}", "${price}", "${description}")`);
-
-
-    GoToProductPage(name, price, description);
-});
 
 
 
@@ -2882,24 +2943,17 @@ function handleOutsideClick(event) {
         closeModal();
     }
 }
-// Completely clear basket: in-memory, localStorage, and UI
-// Completely clear basket: in-memory, localStorage, and UI
 function clearBasketCompletely() {
     try {
-        // in-memory basket if you use it elsewhere
         if (typeof basket === "object" && basket) {
             for (const k of Object.keys(basket)) delete basket[k];
         }
     } catch { }
 
-    try { localStorage.removeItem("basket"); } catch { }
-
-    try {
-        if (typeof updateBasket === "function") updateBasket();
-    } catch (e) {
-        console.warn("updateBasket failed during clearBasketCompletely", e);
-    }
+    clearBasketStorage("clear_basket");
+    refreshBasketUIIfOpen();
 }
+
 
 
 
@@ -3424,6 +3478,16 @@ function GoToProductPage(productName, productPrice, productDescription) {
                 </div>
             </div>
         `;
+        productDiv.querySelectorAll(".BasketChangeQuantityButton").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const k = decodeURIComponent(btn.dataset.key || "");
+                const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+                changeQuantity(k, delta);
+            });
+        });
+
         const existingProductViewer = document.getElementById("Product_Viewer");
         if (existingProductViewer) {
             existingProductViewer.remove(); // 👈 ensures no duplicates
@@ -3750,7 +3814,6 @@ carousel.addEventListener("touchend", (e) => {
         images[currentImageIndex].style.display = "block";
     }
 });
-
 function selectProductOption(button, optionValue) {
     document.querySelectorAll(".Product_Option_Button").forEach(btn => btn.classList.remove("selected"));
     button.classList.add("selected");
@@ -3760,10 +3823,12 @@ function selectProductOption(button, optionValue) {
     const productName = document.querySelector(".Product_Name_Heading")?.textContent?.trim();
     if (productName && basket[productName]) {
         basket[productName].selectedOption = optionValue;
-        localStorage.setItem("basket", JSON.stringify(basket));
+        persistBasket("option_change");
         console.log(`🟢 Saved selected option "${optionValue}" for "${productName}"`);
     }
 }
+
+
 
 
 
@@ -3774,7 +3839,8 @@ function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, prod
     console.log(productName, productPrice, imageUrl, selectedOption);
     let quantity = parseInt(document.getElementById(`quantity-${productName}`).innerText) || 1;
     addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption);
-    GoToCart();
+    navigate("GoToCart");
+
 }
 
 // Function to update the displayed image
@@ -3990,17 +4056,22 @@ function updateBasket() {
                     ${selectedOptionHTML}
                 </div>
             </div>
-            <div class="Quantity-Controls-Basket">
-                <button class="BasketChangeQuantityButton" onclick="changeQuantity('${key}', -1)">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-                <span class="BasketChangeQuantityText">${item.quantity}</span>
-                <button class="BasketChangeQuantityButton" onclick="changeQuantity('${key}', 1)">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
-            </div>
+<div class="Quantity-Controls-Basket">
+  <button class="BasketChangeQuantityButton" type="button"
+          data-key="${encodeURIComponent(key)}" data-delta="-1">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
+  <span class="BasketChangeQuantityText">${item.quantity}</span>
+  <button class="BasketChangeQuantityButton" type="button"
+          data-key="${encodeURIComponent(key)}" data-delta="1">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
+</div>
+
         </div>
     `;
+
 
         basketContainer.appendChild(productDiv);
         BasketTotalPrice += value * item.quantity;
     });
+
 
     let totalSum = 0;
     let receiptDiv = document.createElement("div");
@@ -4058,7 +4129,9 @@ function updateBasket() {
     }
 
     document.querySelectorAll(".Basket_Image").forEach((img) => {
-        img.addEventListener("click", function () {
+        img.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
             const productName = this.dataset.name;
             const productPrice = this.dataset.price;
             let productDescription = this.dataset.description;
@@ -4070,6 +4143,7 @@ function updateBasket() {
 
             navigate("GoToProductPage", [productName, productPrice, productDescription]);
         });
+
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -4080,18 +4154,55 @@ function updateBasket() {
 // Attach once: open the checkout modal + mount Stripe Elements
 
 
-
-
 function changeQuantity(itemKey, amount) {
-    if (basket[itemKey]) {
-        basket[itemKey].quantity += amount;
+    if (!basket || !basket[itemKey]) return;
 
-        if (basket[itemKey].quantity <= 0) {
-            delete basket[itemKey];
+    const currentQty = Number(basket[itemKey].quantity) || 0;
+    const nextQty = currentQty + (Number(amount) || 0);
+
+    if (nextQty <= 0) {
+        delete basket[itemKey];
+    } else {
+        basket[itemKey].quantity = nextQty;
+    }
+
+    // keep your multi-tab sync working
+    if (typeof persistBasket === "function") {
+        persistBasket("qty_change");
+    } else {
+        localStorage.setItem("basket", JSON.stringify(basket));
+    }
+
+    updateBasket();
+}
+
+
+function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {
+    let quantity = cart[productName] || 1;
+    cart[productName] = 1;
+
+    const key = selectedOption ? `${productName} - ${selectedOption}` : productName;
+
+    if (quantity > 0) {
+        if (basket[key]) {
+            basket[key].quantity += quantity;
+        } else {
+            basket[key] = {
+                name: productName,
+                price,
+                image: imageUrl,
+                quantity,
+                expectedPurchasePrice,
+                productLink,
+                description: productDescription,
+                ...(selectedOption && { selectedOption })
+            };
         }
 
-        localStorage.setItem("basket", JSON.stringify(basket));
-        updateBasket();
+        persistBasket("add_to_cart");
+        alert(`${quantity} x ${productName}${selectedOption ? ' (' + selectedOption + ')' : ''} added to cart!`);
+    } else {
+        alert("Please select at least one item.");
     }
 }
 
