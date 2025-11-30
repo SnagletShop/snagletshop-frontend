@@ -545,8 +545,57 @@ let currentIndex = -1;
 if (location.pathname !== "/" && !location.pathname.includes(".")) {
     history.replaceState(null, "", "/");
 }
+function normalizeProductKey(s) {
+    return String(s || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function getAllProductsFlatSafe() {
+    const db =
+        (window.products && typeof window.products === "object" && window.products) ||
+        (typeof products !== "undefined" && products) ||
+        {};
+
+    const out = [];
+    for (const v of Object.values(db)) {
+        if (Array.isArray(v)) out.push(...v);
+    }
+
+    // filter out the per-category "icon" objects etc.
+    return out.filter(p => p && typeof p === "object" && typeof p.name === "string" && p.name.trim());
+}
+
+function findProductByNameParam(productParam) {
+    const target = normalizeProductKey(productParam);
+    const all = getAllProductsFlatSafe();
+
+    // exact normalized match first
+    let p = all.find(x => normalizeProductKey(x.name) === target);
+    if (p) return p;
+
+    // fallback: handle common slug-ish links
+    p = all.find(x => normalizeProductKey(x.name).includes(target) || target.includes(normalizeProductKey(x.name)));
+    return p || null;
+}
+
+function buildUrlForState(state) {
+    try {
+        if (state?.action === "GoToProductPage") {
+            const name = state?.data?.[0];
+            if (name) return `/?product=${encodeURIComponent(name)}`;
+        }
+    } catch { }
+    // for every other state, keep URL clean (important so product param doesn't “stick”)
+    return "/";
+}
+
 function navigate(action, data = null) {
     if (isReplaying) return;
+
     const newState = { action, data };
 
     // Trim future if navigating from mid-history
@@ -558,17 +607,10 @@ function navigate(action, data = null) {
     userHistoryStack.push(newState);
     currentIndex = userHistoryStack.length - 1;
 
-    // Save to sessionStorage
-    try {
-
-
-    } catch (err) {
-        console.warn("⚠️ Could not save history:", err);
-    }
-
-    history.pushState({ index: currentIndex }, '', '');
+    history.pushState({ index: currentIndex }, "", buildUrlForState(newState));
     handleStateChange(newState);
 }
+
 function isSettingsCacheValid(timestamp) {
     if (!timestamp) return false;
     const ageInHours = (Date.now() - timestamp) / (1000 * 60 * 60);
@@ -942,14 +984,43 @@ window.addEventListener('popstate', (event) => {
         console.warn("⚠️ Invalid popstate index:", event.state);
     }
 });
-
 function initializeHistory() {
+    // Deep link: /?product=...
+    const params = new URLSearchParams(window.location.search);
+    const productParam = params.get("product");
 
+    if (productParam) {
+        const prod = findProductByNameParam(productParam);
 
+        if (prod) {
+            const desc =
+                prod.description ||
+                TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER ||
+                "No description available.";
+
+            const state = {
+                action: "GoToProductPage",
+                data: [prod.name, prod.price, desc]
+            };
+
+            userHistoryStack = [state];
+            currentIndex = 0;
+
+            // Keep the URL as product link and render the product page
+            history.replaceState({ index: 0 }, "", buildUrlForState(state));
+            handleStateChange(state);
+            return;
+        }
+
+        // Invalid product link: clean it so refresh doesn't keep retrying
+        history.replaceState({ index: 0 }, "", "/");
+    }
+
+    // Normal boot path
     if (currentIndex >= 0 && userHistoryStack[currentIndex]) {
         handleStateChange(userHistoryStack[currentIndex]);
     } else {
-        navigate('loadProducts', ['Default_Page', 'NameFirst', 'asc']);
+        navigate("loadProducts", ["Default_Page", "NameFirst", "asc"]);
     }
 }
 
