@@ -3915,6 +3915,38 @@
 
             }
         }
+
+        #paymentModal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 12px;
+            background: rgba(0, 0, 0, .55);
+
+            /* key: allow scrolling when content is taller than screen */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #paymentModal .payment-modal-card {
+            width: min(520px, 100%);
+            border-radius: 20px;
+            padding: 18px 16px;
+            background: var(--Card_Background, #fff);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+            color: var(--Default_Text_Colour, #111);
+            position: relative;
+
+            /* key: cap height + scroll inside the card */
+            max-height: calc(100vh - 48px);
+            max-height: calc(100dvh - 48px);
+            /* better on mobile browser UI */
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
     </style>
 </head>
 
