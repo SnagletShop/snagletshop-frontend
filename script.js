@@ -4174,6 +4174,22 @@ function updateBasket() {
 
     receiptDiv.innerHTML = receiptContent;
     basketContainer.appendChild(receiptDiv);
+    // Bind once per Basket_Viewer (works across re-renders)
+    if (!basketContainer.dataset.qtyBound) {
+        basketContainer.dataset.qtyBound = "1";
+        basketContainer.addEventListener("click", (e) => {
+            const btn = e.target.closest(".BasketChangeQuantityButton");
+            if (!btn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const k = decodeURIComponent(btn.dataset.key || "");
+            const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+            changeQuantity(k, delta);
+        });
+    }
+
     // ✅ Ensure the basket "Pay" button always works (even if delegated handlers weren't attached yet)
     const payBtn = receiptDiv.querySelector(".PayButton");
     if (payBtn) {
