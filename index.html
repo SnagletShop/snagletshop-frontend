@@ -3947,6 +3947,37 @@
             overflow-y: auto;
             overscroll-behavior: contain;
         }
+
+        @media (min-width: 681px) {
+            .ImageControl {
+                width: 100%;
+                /* match the 650px parent */
+                max-width: 650px;
+                padding-right: 0;
+                /* remove vh-based shifting */
+                box-sizing: border-box;
+                justify-content: center;
+                gap: 16px;
+                /* or whatever you want */
+            }
+
+            .ImageControl {
+                width: 650px;
+                padding: 0 16px;
+                /* symmetric padding */
+                box-sizing: border-box;
+                justify-content: space-between;
+            }
+
+            .ImageControl {
+                display: grid;
+                grid-template-columns: 60px 500px 60px;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                width: 650px;
+            }
+        }
     </style>
 </head>
 
