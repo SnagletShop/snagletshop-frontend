@@ -1,17 +1,224 @@
+async function ensureStripePublishableKey() {
+    // 1) Prefer explicitly injected key (e.g. in index.html or Netlify env replacement)
+    if (window.STRIPE_PUBLISHABLE_KEY && String(window.STRIPE_PUBLISHABLE_KEY).trim()) {
+        return String(window.STRIPE_PUBLISHABLE_KEY).trim();
+    }
+    // 2) Fetch from backend public-config (no secrets)
+    try {
+        const res = await fetch(`${API_BASE}/public-config`, { method: "GET" });
+        const data = await res.json().catch(()=> ({}));
+        const k = data && data.stripePublishableKey ? String(data.stripePublishableKey).trim() : "";
+        if (k) {
+            window.STRIPE_PUBLISHABLE_KEY = k;
+            return k;
+        }
+    } catch {}
+    return "";
+}
+
+function showStripeConfigError(msg) {
+    try {
+        alert(msg);
+    } catch {}
+    const payBtn = document.getElementById("payButton") || document.getElementById("payBtn");
+    if (payBtn) payBtn.disabled = true;
+}
+
 
 window.functionBlacklist = new Set([
 
 ]);
 const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = true;
-const APPLY_TARIFF = true; // 🔁 You can toggle this manually
-localStorage.setItem("applyTariff", APPLY_TARIFF.toString());
-
+// applyTariff is controlled by the backend (see /products payload: applyTariff).
+// We keep a local fallback for offline/backwards compatibility.
+let serverApplyTariff = null;
+if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTariff", "true");
 // early in boot:
-const API_BASE = "https://api.snagletshop.com";
+// API base is configurable for local/staging.
+// You can override by setting window.__API_BASE__ before this script loads,
+// or by setting <meta name="api-base" content="https://..."> in index.html.
+const API_BASE = String(
+  (window && window.__API_BASE__) ||
+  (document.querySelector('meta[name="api-base"]')?.getAttribute('content')) ||
+  "https://api.snagletshop.com"
+).trim().replace(/\/+$/, "");;
 
-const WS_BASE =
-    (location.protocol === "https:" ? "wss://" : "ws://") +
-    (location.hostname === "localhost" ? "localhost:5500" : "91.99.147.194");
+function canonicalizeProductLink(link) {
+    const raw = String(link || "").trim();
+    if (!raw) return "";
+    try {
+        const u = new URL(raw);
+        u.search = "";
+        u.hash = "";
+        const path = u.pathname.replace(/\/+$/, "");
+        return `${u.protocol}//${u.host}${path}`;
+    } catch {
+        return raw.split("?")[0].split("#")[0].replace(/\/+$/, "");
+    }
+}
+
+function extractProductIdFromLink(link) {
+    const s = canonicalizeProductLink(link);
+    if (!s) return "";
+    const m = s.match(/\/item\/(\d+)\.html/i) || s.match(/\/i\/(\d+)\.html/i);
+    if (m && m[1]) return String(m[1]);
+    const m2 = s.match(/(\d{10,16})/);
+    if (m2 && m2[1]) return String(m2[1]);
+    return "";
+}
+
+function normalizeCartItemsForServer(items) {
+    const arr = Array.isArray(items) ? items : [];
+    return arr.map((it) => {
+        const productLink = String(it?.productLink || it?.link || "").trim();
+        const canonicalLink = canonicalizeProductLink(productLink);
+        const productId = String(it?.productId || extractProductIdFromLink(productLink) || extractProductIdFromLink(canonicalLink) || "").trim();
+        return {
+            ...it,
+            productLink: canonicalLink || productLink,
+            productId
+        };
+    });
+}
+
+
+
+
+// ---------------- Turnstile (Cloudflare) token helper ----------------
+// Requirements:
+//  - index.html must include Turnstile api.js?render=explicit
+//  - set <meta name="turnstile-sitekey" content="...">
+//  - an element with id="snaglet-turnstile" exists (created in index.html; fallback created here)
+const __snagletTurnstile = {
+    widgetId: null,
+    lastToken: "",
+    pending: null
+};
+
+function __snagletGetTurnstileSiteKey() {
+    const key = document.querySelector('meta[name="turnstile-sitekey"]')?.content?.trim() || "";
+    // Keep default placeholder inert (prevents accidental broken builds)
+    if (!key || key === "__TURNSTILE_SITE_KEY__") return "";
+    return key;
+}
+
+function __snagletEnsureTurnstileContainer() {
+    let el = document.getElementById("snaglet-turnstile");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "snaglet-turnstile";
+        el.style.cssText = "position:fixed;bottom:12px;right:12px;width:150px;min-height:140px;z-index:2147483647;";
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
+function __snagletWaitForTurnstile(timeoutMs = 10000) {
+    return new Promise((resolve) => {
+        const started = Date.now();
+        const tick = () => {
+            if (window.turnstile && typeof window.turnstile.render === "function") return resolve(true);
+            if (Date.now() - started > timeoutMs) return resolve(false);
+            setTimeout(tick, 50);
+        };
+        tick();
+    });
+}
+
+async function __snagletInitTurnstileOnce() {
+    if (__snagletTurnstile.widgetId != null) return true;
+
+    const sitekey = __snagletGetTurnstileSiteKey();
+    if (!sitekey) return false;
+
+    // Make sure container exists
+    __snagletEnsureTurnstileContainer();
+
+    const ok = await __snagletWaitForTurnstile(12000);
+    if (!ok) return false;
+
+    try {
+        window.turnstile.ready(() => {
+            try {
+                __snagletTurnstile.widgetId = window.turnstile.render("#snaglet-turnstile", {
+                    sitekey,
+                        size: "compact",
+                        appearance: "interaction-only",
+                        execution: "execute", // token is generated only when we call turnstile.execute()
+                    callback: (token) => {
+                        __snagletTurnstile.lastToken = token || "";
+                        if (__snagletTurnstile.pending) {
+                            clearTimeout(__snagletTurnstile.pending.timer);
+                            __snagletTurnstile.pending.resolve(__snagletTurnstile.lastToken);
+                            __snagletTurnstile.pending = null;
+                        }
+                    },
+                    "expired-callback": () => {
+                        __snagletTurnstile.lastToken = "";
+                    },
+                    "error-callback": () => {
+                        __snagletTurnstile.lastToken = "";
+                        if (__snagletTurnstile.pending) {
+                            clearTimeout(__snagletTurnstile.pending.timer);
+                            __snagletTurnstile.pending.resolve("");
+                            __snagletTurnstile.pending = null;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn("[turnstile] render failed:", e?.message || e);
+            }
+        });
+        return true;
+    } catch (e) {
+        console.warn("[turnstile] init failed:", e?.message || e);
+        return false;
+    }
+}
+
+async function snagletGetTurnstileToken({ forceFresh = true, timeoutMs = 12000 } = {}) {
+    const inited = await __snagletInitTurnstileOnce();
+    if (!inited || !window.turnstile || __snagletTurnstile.widgetId == null) return "";
+
+    const wid = __snagletTurnstile.widgetId;
+
+    // If caller doesn't require fresh token, reuse current one if present
+    try {
+        if (!forceFresh) {
+            const existing = window.turnstile.getResponse(wid);
+            if (existing) return String(existing);
+        }
+
+        // Reset + execute to get a single-use, fresh token
+        window.turnstile.reset(wid);
+
+        const token = await new Promise((resolve) => {
+            const timer = setTimeout(() => resolve(""), timeoutMs);
+            __snagletTurnstile.pending = { resolve, timer };
+            try {
+                try {
+                    window.turnstile.execute(wid);
+                } catch (e2) {
+                    // Fallback for older API signatures
+                    window.turnstile.execute("#snaglet-turnstile");
+                }
+            } catch (e) {
+                clearTimeout(timer);
+                __snagletTurnstile.pending = null;
+                resolve("");
+            }
+        });
+
+        return String(token || window.turnstile.getResponse(wid) || __snagletTurnstile.lastToken || "");
+    } catch (e) {
+        console.warn("[turnstile] token failed:", e?.message || e);
+        return "";
+    }
+}
+
+// Initialize early so the widget is ready when user checks out
+document.addEventListener("DOMContentLoaded", () => { __snagletInitTurnstileOnce(); });
+// ----------------------------------------------------------------------
 
 let productsDatabase = {};
 
@@ -36,15 +243,71 @@ function initProducts() {
 
     initProductsPromise = (async () => {
         try {
-            const r = await fetch(`${API_BASE}/products`);
+            const r = await fetch(`${API_BASE}/catalog`);
             if (!r.ok) {
                 throw new Error(`Products request failed: ${r.status}`);
             }
 
-            productsDatabase = await r.json();
+            const productsPayload = await r.json();
 
-            // Keep legacy code that still uses `products` working
+// New shape (canonical): { productsById: {...}, categories: {...}, config: {...} }
+if (productsPayload && typeof productsPayload === "object" && productsPayload.productsById && productsPayload.categories) {
+    const productsById = productsPayload.productsById || {};
+    const categories = productsPayload.categories || {};
+    window.productsById = productsById;
+    window.categoryIdLists = categories;
+
+    const resolvedCatalog = {};
+    for (const [cat, ids] of Object.entries(categories)) {
+        const arr = [];
+        for (const id of (ids || [])) {
+            if (productsById[id]) arr.push(productsById[id]);
+        }
+        resolvedCatalog[cat] = arr;
+    }
+
+    productsDatabase = resolvedCatalog;
+
+    const cfg2 = productsPayload.config || {};
+    if (typeof cfg2.applyTariff === "boolean") {
+        serverApplyTariff = cfg2.applyTariff;
+        localStorage.setItem("applyTariff", String(serverApplyTariff));
+    }
+} else {
+
+            // New shape: { catalog: {..}, config: { applyTariff } }
+            }
+
+            const catalog = (productsPayload && typeof productsPayload === "object" && productsPayload.catalog && typeof productsPayload.catalog === "object")
+                ? productsPayload.catalog
+                : productsPayload;
+
+            const cfg = (productsPayload && typeof productsPayload === "object" && productsPayload.config && typeof productsPayload.config === "object")
+                ? productsPayload.config
+                : {};
+
+            productsDatabase = catalog;
+
+            // Backend-provided config (authoritative)
+            if (typeof cfg.applyTariff === "boolean") {
+                serverApplyTariff = cfg.applyTariff;
+                localStorage.setItem("applyTariff", String(serverApplyTariff));
+            } else if (productsPayload && typeof productsPayload === "object" && typeof productsPayload.applyTariff === "boolean") {
+                // Legacy compatibility
+                serverApplyTariff = productsPayload.applyTariff;
+                localStorage.setItem("applyTariff", String(serverApplyTariff));
+            }
+// Keep legacy code that still uses `products` working
             window.products = productsDatabase;
+
+            // Also fetch the server-provided flat catalog list (exercises GET /products/flat).
+            try {
+                const rf = await fetch(`${API_BASE}/products/flat`, { cache: "no-store" });
+                if (rf.ok) {
+                    window.productsFlatFromServer = await rf.json().catch(() => null);
+                }
+            } catch { }
+
 
             console.log("✅ Products data loaded.");
         } catch (err) {
@@ -542,8 +805,9 @@ let debounceTimeout;
 let userHistoryStack = [];
 let currentIndex = -1;
 
-if (location.pathname !== "/" && !location.pathname.includes(".")) {
-    history.replaceState(null, "", "/");
+if (location.pathname !== "/" && !location.pathname.includes(".") && !location.pathname.startsWith("/order-status/") && !location.pathname.startsWith("/p/")) {
+    // Allow deep links for product slugs and /p/<id>.
+    // Do not force redirect to '/'.
 }
 function normalizeProductKey(s) {
     return String(s || "")
@@ -586,6 +850,8 @@ function buildUrlForState(state) {
     try {
         if (state?.action === "GoToProductPage") {
             const name = state?.data?.[0];
+            const pid = state?.data?.[4];
+            if (pid) return `/p/${encodeURIComponent(pid)}`;
             if (name) return `/?product=${encodeURIComponent(name)}`;
         }
     } catch { }
@@ -768,9 +1034,10 @@ async function preloadSettingsData() {
             }
 
             // Fetch fresh settings (NO fetchTariffs() here -> breaks recursion)
-            const [tariffsObj, ratesData] = await Promise.all([
+            const [tariffsObj, ratesData, countriesArr] = await Promise.all([
                 fetchTariffsFromServer(),
-                fetchExchangeRatesFromServer()
+                fetchExchangeRatesFromServer(),
+                fetchCountriesFromServer().catch(() => null)
             ]);
 
             const safeTariffs =
@@ -789,7 +1056,9 @@ async function preloadSettingsData() {
             exchangeRates = { ...safeRates };
             setRatesFetchedAt(fetchedAt);
 
-            const countriesList = tariffsObjectToCountriesArray(tariffMultipliers);
+            const countriesList = (Array.isArray(countriesArr) && countriesArr.length)
+                ? countriesArr
+                : tariffsObjectToCountriesArray(tariffMultipliers);
             handlesTariffsDropdown(countriesList);
 
             // keep global preloadedData coherent
@@ -824,6 +1093,325 @@ async function preloadSettingsData() {
 
 
 
+
+
+function installApiHealthIndicator() {
+    try {
+        const navDiv = document.querySelector(".NavButtonDiv");
+        if (!navDiv) return;
+
+        // Insert a small status dot
+        let dot = document.getElementById("ApiHealthDot");
+        if (!dot) {
+            dot = document.createElement("span");
+            dot.id = "ApiHealthDot";
+            dot.title = "API status";
+            dot.style.cssText = [
+                "display:inline-block",
+                "width:10px",
+                "height:10px",
+                "border-radius:50%",
+                "margin-left:10px",
+                "margin-right:6px",
+                "background:#9ca3af",
+                "box-shadow:0 0 0 2px rgba(0,0,0,0.08) inset"
+            ].join(";");
+            // Put dot at the end of NavButtonDiv
+            navDiv.appendChild(dot);
+        }
+
+        fetch(`${API_BASE}/healthz`, { cache: "no-store" })
+            .then(r => r.ok)
+            .then(ok => { dot.style.background = ok ? "#22c55e" : "#ef4444"; })
+            .catch(() => { dot.style.background = "#ef4444"; });
+    } catch { }
+}
+
+function installOrderTrackingButton() {
+    try {
+        const navDiv = document.querySelector(".NavButtonDiv");
+        if (!navDiv) return;
+
+        if (document.getElementById("TrackOrderButton")) return;
+
+        const btn = document.createElement("button");
+        btn.id = "TrackOrderButton";
+        btn.type = "button";
+        btn.textContent = "Track order";
+        btn.className = "TrackOrderButton";
+        btn.onclick = () => openOrderStatusModal();
+
+        // Basic styling (kept inline to avoid CSS collisions)
+        btn.style.cssText = [
+            "margin-left:10px",
+            "padding:10px 12px",
+            "border-radius:12px",
+            "border:1px solid rgba(0,0,0,0.08)",
+            "background:var(--SearchBar_Background_Colour)",
+            "color:var(--Default_Text_Colour)",
+            "cursor:pointer",
+            "font-weight:600",
+            "font-family:inherit",
+            "white-space:nowrap"
+        ].join(";");
+
+        // Insert before basket button if present
+        const basketBtn = document.getElementById("BasketButton");
+        if (basketBtn && basketBtn.parentElement === navDiv) {
+            navDiv.insertBefore(btn, basketBtn);
+        } else {
+            navDiv.appendChild(btn);
+        }
+    } catch { }
+}
+
+function openOrderStatusModal(prefill = {}) {
+    // Avoid duplicates
+    if (document.getElementById("orderStatusModal")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "orderStatusModal";
+    overlay.style.cssText = [
+        "position:fixed",
+        "inset:0",
+        "z-index:999999",
+        "background:rgba(0,0,0,0.55)",
+        "display:flex",
+        "align-items:center",
+        "justify-content:center",
+        "padding:12px"
+    ].join(";");
+
+    const card = document.createElement("div");
+    card.style.cssText = [
+        "width:min(720px,100%)",
+        "max-height:calc(100vh - 24px)",
+        "overflow:auto",
+        "background:var(--Modal_Background_Colour)",
+        "border-radius:18px",
+        "padding:18px 18px 14px",
+        "box-shadow:0 20px 70px rgba(0,0,0,0.35)",
+        "border:1px solid rgba(0,0,0,0.08)",
+        "color:var(--Default_Text_Colour)",
+        "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
+    ].join(";");
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;";
+
+    const h = document.createElement("div");
+    h.textContent = "Track your order";
+    h.style.cssText = "font-size:18px;font-weight:800;";
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "×";
+    close.style.cssText = "font-size:22px;line-height:1;border:none;background:transparent;cursor:pointer;padding:6px 10px;border-radius:10px;";
+    close.onclick = () => overlay.remove();
+
+    header.appendChild(h);
+    header.appendChild(close);
+
+    const form = document.createElement("div");
+    form.style.cssText = "display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px;";
+
+    const oidWrap = document.createElement("div");
+    const oidLabel = document.createElement("div");
+    oidLabel.textContent = "Order ID";
+    oidLabel.style.cssText = "font-size:12px;opacity:0.75;margin-bottom:4px;";
+    const oidInput = document.createElement("input");
+    oidInput.type = "text";
+    oidInput.placeholder = "e.g. SS-2026-000123";
+    oidInput.value = prefill.orderId ? String(prefill.orderId) : "";
+    oidInput.style.cssText = "width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);";
+    oidWrap.appendChild(oidLabel);
+    oidWrap.appendChild(oidInput);
+
+    const tokWrap = document.createElement("div");
+    const tokLabel = document.createElement("div");
+    tokLabel.textContent = "Token";
+    tokLabel.style.cssText = "font-size:12px;opacity:0.75;margin-bottom:4px;";
+    const tokInput = document.createElement("input");
+    tokInput.type = "text";
+    tokInput.placeholder = "public token";
+    tokInput.value = prefill.token ? String(prefill.token) : "";
+    tokInput.style.cssText = "width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);";
+    tokWrap.appendChild(tokLabel);
+    tokWrap.appendChild(tokInput);
+
+    const go = document.createElement("button");
+    go.type = "button";
+    go.textContent = "Check";
+    go.style.cssText = "padding:10px 14px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+
+    form.appendChild(oidWrap);
+    form.appendChild(tokWrap);
+    form.appendChild(go);
+
+    const out = document.createElement("div");
+    out.style.cssText = "border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:12px;background:rgba(0,0,0,0.03);min-height:90px;white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:12px;";
+
+    function render(obj) {
+        try {
+            const lines = [];
+            if (obj?.ok) {
+                lines.push(`ok: true`);
+                lines.push(`orderId: ${obj.orderId || ""}`);
+                lines.push(`status: ${obj.status || ""}`);
+                if (obj.createdAt) lines.push(`createdAt: ${_formatDateMaybe(obj.createdAt)}`);
+                if (obj.paidAt) lines.push(`paidAt: ${_formatDateMaybe(obj.paidAt)}`);
+                if (obj.procurementStatus) lines.push(`procurementStatus: ${obj.procurementStatus}`);
+                if (obj.deliveredAt) lines.push(`deliveredAt: ${_formatDateMaybe(obj.deliveredAt)}`);
+                if (Array.isArray(obj.tracking) && obj.tracking.length) {
+                    lines.push(`tracking:`);
+                    for (const t of obj.tracking) {
+                        const carrier = t?.carrier ? ` ${t.carrier}` : "";
+                        const num = t?.number ? ` ${t.number}` : "";
+                        const url = t?.url ? ` ${t.url}` : "";
+                        lines.push(`  -${carrier}${num}${url}`);
+                    }
+                }
+                if (Array.isArray(obj.items) && obj.items.length) {
+                    lines.push(`items:`);
+                    for (const it of obj.items) {
+                        const opts = Array.isArray(it.selectedOptions) && it.selectedOptions.length ? ` [${it.selectedOptions.join(" | ")}]` : "";
+                        const opt1 = it.selectedOption ? ` (${it.selectedOption})` : "";
+                        lines.push(`  - ${it.quantity}x ${it.name}${opt1}${opts}`);
+                    }
+                }
+                out.textContent = lines.join("\n");
+            } else {
+                out.textContent = JSON.stringify(obj, null, 2);
+            }
+        } catch {
+            out.textContent = String(obj || "");
+        }
+    }
+
+    async function run() {
+        go.disabled = true;
+        go.textContent = "Checking...";
+        out.textContent = "Loading...";
+        try {
+            const data = await fetchOrderStatus({ orderId: oidInput.value, token: tokInput.value });
+            render(data);
+        } catch (e) {
+            out.textContent = `Error: ${e?.message || e}`;
+        } finally {
+            go.disabled = false;
+            go.textContent = "Check";
+        }
+    }
+
+    go.onclick = run;
+    oidInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+    tokInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+
+    const recent = document.createElement("div");
+    recent.style.cssText = "margin-top:12px;";
+
+    const recentTitle = document.createElement("div");
+    recentTitle.textContent = "Recent orders on this device";
+    recentTitle.style.cssText = "font-weight:800;margin-bottom:8px;font-size:13px;opacity:0.9;";
+
+    const recentList = document.createElement("div");
+    recentList.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+
+    function renderRecent() {
+        recentList.innerHTML = "";
+        const items = getRecentOrders();
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.textContent = "No recent orders stored yet.";
+            empty.style.cssText = "font-size:12px;opacity:0.75;";
+            recentList.appendChild(empty);
+            return;
+        }
+
+        for (const it of items) {
+            const row = document.createElement("div");
+            row.style.cssText = "display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:10px 12px;background:rgba(0,0,0,0.02);";
+
+            const left = document.createElement("div");
+            left.style.cssText = "display:flex;flex-direction:column;gap:2px;min-width:0;";
+
+            const a = document.createElement("div");
+            a.textContent = String(it.orderId);
+            a.style.cssText = "font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+
+            const b = document.createElement("div");
+            b.textContent = _formatDateMaybe(it.ts);
+            b.style.cssText = "font-size:11px;opacity:0.72;";
+
+            left.appendChild(a);
+            left.appendChild(b);
+
+            const actions = document.createElement("div");
+            actions.style.cssText = "display:flex;gap:8px;align-items:center;";
+
+            const view = document.createElement("button");
+            view.type = "button";
+            view.textContent = "View";
+            view.style.cssText = "padding:8px 10px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+            view.onclick = () => {
+                oidInput.value = String(it.orderId);
+                tokInput.value = String(it.token);
+                run();
+            };
+
+            const open = document.createElement("button");
+            open.type = "button";
+            open.textContent = "Open link";
+            open.style.cssText = "padding:8px 10px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:transparent;cursor:pointer;font-weight:700;";
+            open.onclick = () => {
+                let url = it.orderStatusUrl || `${API_BASE}/order-status-view/${encodeURIComponent(it.orderId)}#token=${encodeURIComponent(it.token)}`;
+
+                // Backward compatibility: convert old ?token= links to the fragment-based view.
+                if (typeof url === "string" && url.includes("/order-status/") && url.includes("?token=")) {
+                    try {
+                        const u = new URL(url, window.location.origin);
+                        const tok = u.searchParams.get("token") || "";
+                        u.pathname = u.pathname.replace(/\/order-status\//, "/order-status-view/");
+                        u.search = "";
+                        u.hash = tok ? `token=${encodeURIComponent(tok)}` : "";
+                        url = u.toString();
+                    } catch { }
+                }
+                window.open(url, "_blank", "noopener,noreferrer");
+            };
+
+            actions.appendChild(view);
+            actions.appendChild(open);
+
+            row.appendChild(left);
+            row.appendChild(actions);
+            recentList.appendChild(row);
+        }
+    }
+
+    renderRecent();
+
+    // Auto-run when opened from a direct link (orderId + token present)
+    if (oidInput.value && tokInput.value) {
+        setTimeout(() => { try { run(); } catch { } }, 0);
+    }
+
+    recent.appendChild(recentTitle);
+    recent.appendChild(recentList);
+
+    card.appendChild(header);
+    card.appendChild(form);
+    card.appendChild(out);
+    card.appendChild(recent);
+
+    overlay.appendChild(card);
+
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    document.body.appendChild(overlay);
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
@@ -934,6 +1522,39 @@ function sendAnalyticsEvent(type, payload = {}, options = {}) {
         });
     } catch (e) {
         // swallow; analytics must never break the page
+    }
+}
+
+function buildAnalyticsProductPayload(productName, override = {}) {
+    const p = findProductByNameParam(productName) || {};
+    const name = override.name || p.name || String(productName || "");
+    const productId = override.productId || p.productId || null;
+    const productLink = override.productLink || p.productLink || p.canonicalLink || null;
+    const priceEUR =
+        override.priceEUR != null ? override.priceEUR :
+        (p.price != null ? Number(p.price) : null);
+
+    return {
+        product: {
+            name,
+            productId,
+            category: (typeof currentCategory !== "undefined" ? currentCategory : null),
+            productLink,
+            priceEUR
+        }
+    };
+}
+
+function buildAnalyticsCartItems(stripeCart) {
+    try {
+        return (stripeCart || []).map(it => ({
+            productId: it.productId || null,
+            name: it.name || it.productName || "",
+            qty: Number(it.quantity || it.qty || 1),
+            priceEUR: it.priceEUR != null ? Number(it.priceEUR) : (it.price != null ? Number(it.price) : null)
+        }));
+    } catch {
+        return [];
     }
 }
 
@@ -1242,6 +1863,21 @@ async function fetchTariffsFromServer() {
     return obj;
 }
 
+async function fetchCountriesFromServer() {
+    const res = await fetch(`${API_BASE}/countries`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to fetch countries (${res.status})`);
+    const data = await res.json().catch(() => null);
+    if (!Array.isArray(data)) throw new Error("Invalid countries payload.");
+
+    // Normalize expected shape: [{ code, tariff }]
+    return data
+        .filter(x => x && typeof x === "object" && x.code)
+        .map(x => ({
+            code: String(x.code).toUpperCase(),
+            tariff: Number(x.tariff || 0) || 0
+        }));
+}
+
 async function fetchTariffs() {
     try {
         window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
@@ -1357,6 +1993,78 @@ function invokeFunctionByName(functionName, args = []) {
 // --- PAYMENT PENDING (covers 3DS redirects) --------------------------
 const PAYMENT_PENDING_KEY = "payment_pending_v1";
 
+const RECENT_ORDERS_KEY = "recentOrders_v1";
+
+function _safeJsonParse(raw) {
+    try { return JSON.parse(raw); } catch { return null; }
+}
+
+function getRecentOrders() {
+    const raw = localStorage.getItem(RECENT_ORDERS_KEY);
+    const arr = Array.isArray(_safeJsonParse(raw)) ? _safeJsonParse(raw) : [];
+    return (arr || [])
+        .filter(o => o && typeof o === "object" && o.orderId && o.token)
+        .sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0))
+        .slice(0, 25);
+}
+
+function addRecentOrder({ orderId, token, orderStatusUrl = null, paymentIntentId = null } = {}) {
+    if (!orderId || !token) return;
+    const now = Date.now();
+
+    const entry = {
+        ts: now,
+        orderId: String(orderId),
+        token: String(token),
+        orderStatusUrl: orderStatusUrl ? String(orderStatusUrl) : null,
+        paymentIntentId: paymentIntentId ? String(paymentIntentId) : null
+    };
+
+    const current = getRecentOrders();
+    // de-dup by orderId
+    const next = [entry, ...current.filter(o => String(o.orderId) !== String(orderId))].slice(0, 25);
+
+    try { localStorage.setItem(RECENT_ORDERS_KEY, JSON.stringify(next)); } catch { }
+}
+
+async function fetchOrderStatus({ orderId, token } = {}) {
+    const oid = String(orderId || "").trim();
+    const t = String(token || "").trim();
+    if (!oid || !t) throw new Error("Missing orderId or token.");
+
+    const url = `${API_BASE}/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        // Turnstile specific guidance
+        if (data && (data.error === "TURNSTILE_FAILED" || data.error === "TURNSTILE_REQUIRED" || String(data.message || "").toUpperCase().includes("TURNSTILE"))) {
+            const configured = Boolean(__snagletGetTurnstileSiteKey());
+            const hint = configured
+                ? "Turnstile verification failed. Please refresh the page and try again."
+                : "Bot protection (Turnstile) is not configured on this site. Set <meta name=\"turnstile-sitekey\" content=\"YOUR_SITE_KEY\"> in index.html (and ensure the backend TURNSTILE_SECRET_KEY matches).";
+            alert(hint);
+        }
+
+        const msg = data?.error || data?.message || `Order status failed (${res.status})`;
+        const err = new Error(msg);
+        err.status = res.status;
+        err.details = data;
+        throw err;
+    }
+    return data;
+}
+
+function _formatDateMaybe(v) {
+    try {
+        if (!v) return "";
+        const d = (typeof v === "string" || typeof v === "number") ? new Date(v) : new Date(String(v));
+        if (Number.isNaN(d.getTime())) return String(v);
+        return d.toLocaleString();
+    } catch {
+        return String(v || "");
+    }
+}
+
 /**
  * Stores enough info to recover after a Stripe redirect (3DS) or refresh.
  */
@@ -1399,22 +2107,34 @@ function clearPaymentPendingFlag() {
     try { localStorage.removeItem(PAYMENT_PENDING_KEY); } catch { }
 }
 
-async function pollPendingPaymentUntilFinal({ paymentIntentId, timeoutMs = 120000, intervalMs = 2500 } = {}) {
+async function pollPendingPaymentUntilFinal({ paymentIntentId, clientSecret, timeoutMs = 120000, intervalMs = 2500 } = {}) {
     if (!paymentIntentId) return { status: "unknown" };
+
+    const cs =
+        (clientSecret ? String(clientSecret) : null) ||
+        (getPaymentPendingFlag()?.clientSecret ? String(getPaymentPendingFlag().clientSecret) : null) ||
+        (window.latestClientSecret ? String(window.latestClientSecret) : null);
+
+    const baseUrl = `${API_BASE}/payment-intent-status/${encodeURIComponent(paymentIntentId)}`;
+    const url = cs ? `${baseUrl}?clientSecret=${encodeURIComponent(cs)}` : baseUrl;
 
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
         try {
-            const res = await fetch(
-                `${API_BASE}/payment-intent-status/${encodeURIComponent(paymentIntentId)}`,
-                { cache: "no-store" }
-            );
+            const res = await fetch(url, { cache: "no-store" });
             const data = await res.json().catch(() => ({}));
-            const status = String(data?.status || "");
 
-            if (status === "succeeded") return { status };
-            if (status === "requires_payment_method" || status === "canceled") return { status };
+            if (!res.ok) {
+                // If clientSecret is missing, backend returns 400; stop early to avoid spamming.
+                if (res.status === 400 && !cs) return { status: "missing_client_secret" };
+                // Otherwise keep polling a bit (transient errors)
+            } else {
+                const status = String(data?.status || "");
+
+                if (status === "succeeded") return { status };
+                if (status === "requires_payment_method" || status === "canceled") return { status };
+            }
 
             // still pending: processing / requires_capture / requires_action / etc.
         } catch { }
@@ -1429,7 +2149,7 @@ async function checkAndHandlePendingPaymentOnLoad() {
     const pending = getPaymentPendingFlag();
     if (!pending?.paymentIntentId) return;
 
-    const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pending.paymentIntentId });
+    const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pending.paymentIntentId, clientSecret: pending.clientSecret });
 
     if (status === "succeeded") {
         clearPaymentPendingFlag();
@@ -1449,11 +2169,24 @@ async function checkAndHandlePendingPaymentOnLoad() {
     alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
 }
 function getStripePublishableKeySafe() {
-    const fallbackPk =
-        "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
-    return window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || fallbackPk;
-}
+    // Preferred sources (in order):
+    //  1) window.STRIPE_PUBLISHABLE_KEY / window.STRIPE_PUBLISHABLE (runtime injection)
+    //  2) <meta name="stripe-publishable-key" content="pk_live_...">
+    const fromMeta = document.querySelector('meta[name="stripe-publishable-key"]')?.content?.trim() || "";
+    const pk = (window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || fromMeta || "").trim();
 
+    if (!pk || pk === "__STRIPE_PUBLISHABLE_KEY__") {
+        throw new Error("Stripe publishable key is not configured. Set <meta name=\"stripe-publishable-key\" content=\"pk_live_...\"/> or define window.STRIPE_PUBLISHABLE_KEY before script.js.");
+    }
+
+    // Prevent accidental production deploy with a test key.
+    const host = String(location.hostname || "").toLowerCase();
+    const isLocal = (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local"));
+    if (!isLocal && pk.startsWith("pk_test_")) {
+        throw new Error("Refusing to run checkout with a Stripe TEST publishable key on a non-localhost domain. Use a pk_live_... key.");
+    }
+    return pk;
+}
 function ensureStripeInstance() {
     if (!window.stripeInstance) {
         if (typeof Stripe !== "function") throw new Error("Stripe.js not loaded");
@@ -1475,6 +2208,28 @@ function stripStripeReturnParamsFromUrl(urlObj) {
     urlObj.searchParams.delete("payment_success");
 }
 document.addEventListener("DOMContentLoaded", () => {
+    try { installApiHealthIndicator(); } catch { }
+    try { installOrderTrackingButton(); } catch { }
+
+    // Support direct customer links produced by backend: /order-status/:orderId?token=...
+    try {
+        const sp = new URLSearchParams(window.location.search || "");
+        const path = String(window.location.pathname || "");
+
+        let orderIdFromPath = "";
+        if (path.startsWith("/order-status/")) {
+            orderIdFromPath = decodeURIComponent(path.slice("/order-status/".length).split("/")[0] || "");
+        }
+
+        const orderId = orderIdFromPath || (sp.get("orderId") || "");
+        const token = sp.get("token") || "";
+
+        if (orderId && token && (orderIdFromPath || sp.has("orderId"))) {
+            openOrderStatusModal({ orderId, token });
+        }
+    } catch { }
+
+
     // 1) Handle Stripe redirect returns (3DS) safely
     handleStripeRedirectReturnOnLoad()
         .catch(e => console.warn("handleStripeRedirectReturnOnLoad failed:", e))
@@ -1567,7 +2322,21 @@ async function handleStripeRedirectReturnOnLoad() {
 }
 
 async function fetchExchangeRatesFromServer() {
-    const res = await fetch(`${API_BASE}/rates`, { cache: "no-store" });
+    // Prefer the backend proxy endpoint (so the frontend exercises /api/proxy-rates),
+    // but fall back to the direct /rates endpoint if needed.
+    let res = null;
+
+    try {
+        res = await fetch(`${API_BASE}/api/proxy-rates`, { cache: "no-store" });
+        if (!res.ok) res = null;
+    } catch {
+        res = null;
+    }
+
+    if (!res) {
+        res = await fetch(`${API_BASE}/rates`, { cache: "no-store" });
+    }
+
     if (!res.ok) throw new Error(`Failed to fetch exchange rates (${res.status})`);
     const data = await res.json().catch(() => null);
     if (!data || !data.rates) throw new Error("Invalid exchange rates payload.");
@@ -1884,7 +2653,7 @@ function convertPrice(priceInEur) {
     const selectedCountry = localStorage.getItem("detectedCountry") || "US";
     const tariff = tariffMultipliers[selectedCountry] || 0;
 
-    const applyTariff = localStorage.getItem("applyTariff") === "true";
+    const applyTariff = getApplyTariffFlag();
     if (applyTariff) {
         converted *= (1 + tariff);
     }
@@ -2358,8 +3127,9 @@ async function GoToSettings() {
         const website = document.getElementById("contact-website")?.value || "";
 
         // Turnstile token (Turnstile injects a hidden input named cf-turnstile-response)
-        const turnstileToken =
+        const turnstileToken = (await snagletGetTurnstileToken({ forceFresh: true })) ||
             document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
+
 
         if (!email || !message) {
             alert("Please enter your email and a message.");
@@ -2374,8 +3144,16 @@ async function GoToSettings() {
             });
 
             const result = await response.json().catch(() => ({ message: "Done." }));
-            alert(result.message || "Done.");
-        } catch (error) {
+if (!response.ok && result && (result.error === "TURNSTILE_FAILED" || result.error === "TURNSTILE_REQUIRED" || String(result.message || "").toUpperCase().includes("TURNSTILE"))) {
+    const configured = Boolean(__snagletGetTurnstileSiteKey());
+    const hint = configured
+        ? "Turnstile verification failed. Please refresh the page and try again."
+        : "Bot protection (Turnstile) is not configured on this site. Set <meta name=\"turnstile-sitekey\" content=\"YOUR_SITE_KEY\"> in index.html (and ensure the backend TURNSTILE_SECRET_KEY matches).";
+    alert(hint);
+    return;
+}
+alert(result.message || "Done.");
+} catch (error) {
             console.error("Failed to send message:", error);
             alert("An error occurred. Try emailing us directly.");
         }
@@ -2545,8 +3323,8 @@ function CategoryButtons() {
         }
 
         // ✅ Rebuild category buttons
-        Object.keys(productsDatabase).forEach(category => {
-            if (category !== "Default_Page") {
+        Object.entries(productsDatabase).forEach(([category, catArray]) => {
+            if (category !== "Default_Page" && Array.isArray(catArray)) {
                 const button = document.createElement("button");
                 button.className = "Category_Button";
 
@@ -2565,24 +3343,40 @@ function CategoryButtons() {
                 const heading = document.createElement("h3");
                 heading.classList.add("Category_Button_Heading");
 
-                const catArray = productsDatabase[category];
-                const iconPath = catArray.length > 0 && catArray[0].icon ? catArray[0].icon : null;
+                const iconValue = (catArray.length > 0) ? (catArray[0].iconPng || catArray[0].iconPngUrl || catArray[0].iconUrl || catArray[0].icon || null) : null;
+                const iconPath = iconValue;
                 const displayName = category.replace(/_/g, ' ');
 
-                if (iconPath) {
-                    heading.innerHTML = `
-                        <span class="category-icon-wrapper">
-                            <svg viewBox="0 0 24 24" class="category-icon-svg">
-                                <path d="${iconPath}" />
-                            </svg>
-                        </span>
-                        <span class="category-label">${displayName}</span>
-                    `;
-                } else {
-                    heading.textContent = displayName;
-                }
+                
+if (iconPath) {
+    const isImageIcon =
+        typeof iconPath === "string" &&
+        (iconPath.startsWith("http://") ||
+         iconPath.startsWith("https://") ||
+         iconPath.startsWith("data:image/") ||
+         /\.(png|jpg|jpeg|webp|gif|svg)(\?.*)?$/i.test(iconPath));
 
-                button.appendChild(heading);
+    if (isImageIcon) {
+        heading.innerHTML = `
+            <span class="category-icon-wrapper">
+                <img class="category-icon-img" src="${iconPath}" alt="${displayName} icon" />
+            </span>
+            <span class="category-label">${displayName}</span>
+        `;
+    } else {
+        heading.innerHTML = `
+            <span class="category-icon-wrapper">
+                <svg viewBox="0 0 24 24" class="category-icon-svg">
+                    <path d="${iconPath}" />
+                </svg>
+            </span>
+            <span class="category-label">${displayName}</span>
+        `;
+    }
+} else {
+    heading.textContent = displayName;
+}
+button.appendChild(heading);
                 categoryContainer.appendChild(button);
             }
         });
@@ -2806,6 +3600,9 @@ async function setupWalletPaymentRequestButton({
                 body: JSON.stringify({
                     paymentIntentId: paymentIntentId || window.latestPaymentIntentId || null,
                     orderId: orderId || window.latestOrderId || null,
+                    // Backend requires either token OR clientSecret; send both for robustness
+                    clientSecret: (typeof clientSecret !== "undefined" && clientSecret) ? clientSecret : (window.latestClientSecret || null),
+                    token: window.latestOrderPublicToken || null,
                     userDetails
                 })
             }).catch(() => { });
@@ -2934,6 +3731,28 @@ function showPaymentSuccessOverlay(message) {
     const actions = document.createElement("div");
     actions.style.cssText = "display:flex;justify-content:flex-end;gap:10px;";
 
+    const track = document.createElement("button");
+    track.type = "button";
+    track.textContent = "Track order";
+    track.style.cssText = [
+        "padding:10px 14px",
+        "border-radius:10px",
+        "border:1px solid rgba(255,255,255,0.18)",
+        "background:rgba(255,255,255,0.14)",
+        "color:#fff",
+        "cursor:pointer",
+        "font-weight:700"
+    ].join(";");
+
+    track.onclick = () => {
+        try {
+            openOrderStatusModal({
+                orderId: window.latestOrderId || "",
+                token: window.latestOrderPublicToken || ""
+            });
+        } catch { }
+    };
+
     const ok = document.createElement("button");
     ok.type = "button";
     ok.textContent = "OK";
@@ -2947,6 +3766,9 @@ function showPaymentSuccessOverlay(message) {
         "font-weight:600"
     ].join(";");
 
+    if (window.latestOrderId && window.latestOrderPublicToken) {
+        actions.appendChild(track);
+    }
     actions.appendChild(ok);
     card.appendChild(title);
     card.appendChild(body);
@@ -3409,189 +4231,6 @@ window.lastProductPrice = null;
 window.lastProductDescription = null;
 
 
-function GoToProductPage(productName, productPrice, productDescription) {
-    console.log("Product clicked:", productName);
-    clearCategoryHighlight();
-
-    const viewer = document.getElementById("Viewer");
-    if (!viewer) {
-        console.error(TEXTS.ERRORS.PRODUCTS_NOT_LOADED);
-        return;
-    }
-
-    viewer.innerHTML = ""; // Clear any previous content
-    removeSortContainer();
-
-    const product = Object.values(products || {}).flat().find(p => p.name === productName);
-    if (!product || !Array.isArray(product.images) || product.images.length === 0) {
-        console.error("❌ Product not found or no images:", productName);
-        return;
-    }
-
-    // ✅ Preload & validate images before rendering ANYTHING
-    const imagePromises = product.images.map(src => new Promise(resolve => {
-        const img = new Image();
-        img.src = src;
-        img.onload = () => resolve(src);
-        img.onerror = () => resolve(null);
-    }));
-
-    Promise.all(imagePromises).then(loadedImages => {
-        const validImages = loadedImages.filter(Boolean);
-        if (validImages.length === 0) {
-            console.error("❌ No valid images loaded for:", productName);
-            viewer.innerHTML = `<p>${TEXTS.ERRORS.PRODUCTS_NOT_LOADED}</p>`;
-            return;
-        }
-
-        // Proceed to render product only once
-        window.currentProductImages = validImages;
-        window.currentIndex = 0;
-        cart[productName] = 1;
-
-        const Product_Viewer = document.createElement("div");
-        Product_Viewer.id = "Product_Viewer";
-        Product_Viewer.className = "Product_Viewer";
-
-        const thumbnailsHTML = validImages.map((img, index) =>
-            `<img class="Thumbnail${index === 0 ? ' active' : ''}" src="${img}" onclick="changeImage('${img}')">`
-        ).join("");
-
-        let productOptionLabel = '';
-        let productOptionButtons = '';
-        let selectedOption = '';
-
-        if (Array.isArray(product.productOptions) && product.productOptions.length > 1) {
-            const [label, ...options] = product.productOptions;
-            selectedOption = options[0];
-            productOptionLabel = `<div class="Product_Option_Label"><strong>${label}</strong></div>`;
-            productOptionButtons = options.map((opt, index) => `
-                <button 
-                    class="Product_Option_Button${index === 0 ? ' selected' : ''}" 
-                    onclick="selectProductOption(this, '${opt}')">${opt}</button>
-            `).join('');
-        }
-
-        window.selectedProductOption = selectedOption;
-
-        const productDiv = document.createElement("div");
-        productDiv.className = "Product_Detail_Page";
-
-        productDiv.innerHTML = `
-            <div class="Product_Details">
-                <div class="Product_Images">
-                    <div class="ImageControl">
-                        <button class="ImageControlButtonPrevious" onclick="prevImage()">
-                            <div class="ImageControlButtonText">${TEXTS.PRODUCT_SECTION.IMAGE_NAV.PREVIOUS}</div>
-                        </button>
-                        <div class="image-slider-wrapper">
-                            <img id="mainImage" class="mainImage slide-image" src="${validImages[0]}" alt="${productName}">
-                        </div>
-                        <button class="ImageControlButtonNext" onclick="nextImage()">
-                            <div class="ImageControlButtonText">${TEXTS.PRODUCT_SECTION.IMAGE_NAV.NEXT}</div>
-                        </button>
-                    </div>
-                    <div class="ThumbnailsHolder">${thumbnailsHTML}</div>
-                </div>
-
-                <div class="Product_Info">
-                    <div class="Product_Name_Heading">${productName}</div>
-                    <div class="Product_Description">${productDescription || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER}</div>
-
-                    ${productOptionLabel ? `
-                        <div class="Product_Options_Container">
-                            ${productOptionLabel}
-                            <div class="Product_Option_Buttons">${productOptionButtons}</div>
-                        </div>` : ''}
-
-                    <div class="Product_Price_Label">
-                        <strong>${TEXTS.PRODUCT_SECTION.PRICE_LABEL}</strong> 
-                        <span id="product-page-price" class="productPrice" data-eur="${productPrice}">
-                            ${productPrice} ${TEXTS.CURRENCIES.EUR}
-                        </span>
-                    </div>
-
-                    <div class="ProductPageQuantityContainer">
-                        <div class="Quantity_Controls_ProductPage">
-                            <button class="Button" onclick="decreaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-                            <span class="WhiteText" id="quantity-${productName}">1</span>
-                            <button class="Button" onclick="increaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
-                        </div>
-<button class="add-to-cart-product" onclick="addToCart(
-    '${productName}',
-    ${parseFloat(productPrice)},
-    '${validImages[0]}',
-    '${product.expectedPurchasePrice}',
-    '${product.productLink}',
-    \`${productDescription}\`,
-    window.selectedProductOption || ''
-)">
-  <span style='display: flex; align-items: center; gap: 6px;'>
-    ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
-    <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-      <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </span>
-</button>
-
-                    </div>
-
-                    <button class="ProductPageBuyButton" onclick="buyNow(
-                        '${productName}',
-                        ${parseFloat(productPrice)},
-                        '${validImages[0]}',
-                        '${product.expectedPurchasePrice}',
-                        '${product.productLink}',
-                        \`${productDescription}\`,
-                        window.selectedProductOption || ''
-                    )">${TEXTS.PRODUCT_SECTION.BUY_NOW}</button>
-                </div>
-            </div>
-        `;
-        productDiv.querySelectorAll(".BasketChangeQuantityButton").forEach((btn) => {
-            btn.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const k = decodeURIComponent(btn.dataset.key || "");
-                const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
-                changeQuantity(k, delta);
-            });
-        });
-
-        const existingProductViewer = document.getElementById("Product_Viewer");
-        if (existingProductViewer) {
-            existingProductViewer.remove(); // 👈 ensures no duplicates
-        }
-
-        Product_Viewer.appendChild(productDiv);
-        viewer.appendChild(Product_Viewer); // ✅ Only once, after build is complete
-
-        // Swipe support
-        const mainImageElement = document.getElementById("mainImage");
-        if (mainImageElement) {
-            let touchStartX = 0;
-            let touchEndX = 0;
-
-            mainImageElement.addEventListener("touchstart", e => {
-                touchStartX = e.changedTouches[0].screenX;
-            });
-
-            mainImageElement.addEventListener("touchend", e => {
-                touchEndX = e.changedTouches[0].screenX;
-                const threshold = 50;
-                if (touchEndX < touchStartX - threshold) nextImage();
-                else if (touchEndX > touchStartX + threshold) prevImage();
-            });
-        }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        updateAllPrices();
-        updateImage();
-    });
-}
-
-
 function preloadProductImages(category) {
     if (typeof products === "undefined" || !products) return;
 
@@ -3681,139 +4320,6 @@ function preloadProductImages(category) {
     } else {
         setTimeout(run, 0);
     }
-}
-
-
-
-function renderProductPage(product, validImages, productName, productPrice, productDescription) {
-    const viewer = document.getElementById("Viewer");
-
-    const Product_Viewer = document.createElement("div");
-    Product_Viewer.id = "Product_Viewer";
-    Product_Viewer.className = "Product_Viewer";
-
-    window.currentProductImages = validImages;
-    window.currentIndex = 0;
-    cart[productName] = 1;
-
-    const thumbnailsHTML = validImages.map((img, index) =>
-        `<img class="Thumbnail${index === 0 ? ' active' : ''}" src="${img}" onclick="changeImage('${img}')">`).join("");
-
-    let productOptionLabel = '';
-    let productOptionButtons = '';
-    let selectedOption = '';
-
-    if (Array.isArray(product.productOptions) && product.productOptions.length > 1) {
-        const [label, ...options] = product.productOptions;
-        selectedOption = options[0];
-        productOptionLabel = `<div class="Product_Option_Label"><strong>${label}</strong></div>`;
-        productOptionButtons = options.map((opt, index) => `
-            <button 
-                class="Product_Option_Button${index === 0 ? ' selected' : ''}" 
-                onclick="selectProductOption(this, '${opt}')">${opt}</button>
-        `).join('');
-    }
-
-    window.selectedProductOption = selectedOption;
-
-    const productDiv = document.createElement("div");
-    productDiv.className = "Product_Detail_Page";
-
-    productDiv.innerHTML = `
-        <div class="Product_Details">
-            <div class="Product_Images">
-                <div class="ImageControl">
-                    <button class="ImageControlButtonPrevious" onclick="prevImage()">
-                        <div class="ImageControlButtonText">${TEXTS.PRODUCT_SECTION.IMAGE_NAV.PREVIOUS}</div>
-                    </button>
-                    <div class="image-slider-wrapper">
-                        <img id="mainImage" class="mainImage slide-image" src="${validImages[0]}" alt="${productName}">
-                    </div>
-                    <button class="ImageControlButtonNext" onclick="nextImage()">
-                        <div class="ImageControlButtonText">${TEXTS.PRODUCT_SECTION.IMAGE_NAV.NEXT}</div>
-                    </button>
-                </div>
-                <div class="ThumbnailsHolder">${thumbnailsHTML}</div>
-            </div>
-
-            <div class="Product_Info">
-                <div class="Product_Name_Heading">${productName}</div>
-                <div class="Product_Description">${productDescription || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER}</div>
-
-                ${productOptionLabel ? `
-                    <div class="Product_Options_Container">
-                        ${productOptionLabel}
-                        <div class="Product_Option_Buttons">${productOptionButtons}</div>
-                    </div>` : ''}
-
-                <div class="Product_Price_Label">
-                    <strong>${TEXTS.PRODUCT_SECTION.PRICE_LABEL}</strong> 
-                    <span id="product-page-price" class="productPrice" data-eur="${productPrice}">
-                        ${productPrice} ${TEXTS.CURRENCIES.EUR}
-                    </span>
-                </div>
-
-                <div class="ProductPageQuantityContainer">
-                    <div class="Quantity_Controls_ProductPage">
-                        <button class="Button" onclick="decreaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-                        <span class="WhiteText" id="quantity-${productName}">1</span>
-                        <button class="Button" onclick="increaseQuantity('${productName}')">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
-                    </div>
-                    <button class="add-to-cart-product" onclick="addToCart(
-                        '${productName}',
-                        ${parseFloat(productPrice)},
-                        '${validImages[0]}',
-                        '${product.expectedPurchasePrice}',
-                        '${product.productLink}',
-                        \`${productDescription}\`,
-                        window.selectedProductOption || ''
-                    )">${TEXTS.PRODUCT_SECTION.ADD_TO_CART}</button>
-                </div>
-
-                <button class="ProductPageBuyButton" onclick="buyNow(
-                    '${productName}',
-                    ${parseFloat(productPrice)},
-                    '${validImages[0]}',
-                    '${product.expectedPurchasePrice}',
-                    '${product.productLink}',
-                    \`${productDescription}\`,
-                    window.selectedProductOption || ''
-                )">${TEXTS.PRODUCT_SECTION.BUY_NOW}</button>
-            </div>
-        </div>
-    `;
-    Product_Viewer.appendChild(productDiv);
-    viewer.appendChild(Product_Viewer);
-
-
-    const mainImageElement = document.getElementById("mainImage");
-
-    if (mainImageElement) {
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        mainImageElement.addEventListener("touchstart", (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-
-        mainImageElement.addEventListener("touchend", (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            const threshold = 50;
-            if (touchEndX < touchStartX - threshold) nextImage();
-            else if (touchEndX > touchStartX + threshold) prevImage();
-        });
-    }
-
-    updateAllPrices();
-    updateImage(); // set initial state
-    sendAnalyticsEvent('product_view', {
-        product: {
-            name: product.name,
-            category: product.category || '',
-            productLink: product.productLink || product.url || '',
-            priceEUR: Number(product.price) || 0
-        }
-    });
 }
 
 
@@ -3992,7 +4498,13 @@ function decreaseQuantity(productName) {
     }
 }
 
-function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {
+function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {// analytics: add to cart
+try {
+    const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink });
+    payload.extra = { selectedOption: selectedOption || "" };
+    sendAnalyticsEvent('add_to_cart', payload);
+} catch { }
+
     let quantity = cart[productName] || 1;
     cart[productName] = 1;
 
@@ -4264,7 +4776,7 @@ function changeQuantity(itemKey, amount) {
 }
 
 
-function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {
+function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {
     let quantity = cart[productName] || 1;
     cart[productName] = 1;
 
@@ -4331,8 +4843,91 @@ function filterProducts(searchTerm) {
 
 
 // ✅ Function to Navigate to a Product & Update URL
+
+
+function slugifyName(name) {
+    return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+}
+
+function findProductById(productId) {
+    const id = String(productId || "").trim();
+    if (!id) return null;
+    const byId = window.productsById || null;
+    if (byId && byId[id]) return byId[id];
+    // fallback: scan catalog
+    try {
+        const cats = window.products || productsDatabase || {};
+        for (const arr of Object.values(cats)) {
+            for (const p of (arr || [])) {
+                if (String(p?.productId || "") === id) return p;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+function findProductBySlug(slug) {
+    const s = String(slug || "").trim().toLowerCase();
+    if (!s) return null;
+    try {
+        const cats = window.products || productsDatabase || {};
+        for (const arr of Object.values(cats)) {
+            for (const p of (arr || [])) {
+                const n = p?.name || "";
+                if (slugifyName(n) === s) return p;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+function findProductByName(name) {
+    const nrm = normalizeProductKey(name);
+    try {
+        const cats = window.products || productsDatabase || {};
+        for (const arr of Object.values(cats)) {
+            for (const p of (arr || [])) {
+                if (normalizeProductKey(p?.name || "") === nrm) return p;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+function parseIncomingProductRef() {
+    const sp = new URLSearchParams(window.location.search || "");
+    const pid = sp.get("pid") || "";
+    const pname = sp.get("product") || "";
+    const path = String(window.location.pathname || "");
+
+    // /p/<id>
+    if (path.startsWith("/p/")) {
+        const id = decodeURIComponent(path.slice(3).split("/")[0] || "");
+        return { type: "id", value: id };
+    }
+
+    // /<slug> (ignore root and known routes)
+    if (path && path !== "/" && !path.includes(".") && !path.startsWith("/order-status/")) {
+        const slug = decodeURIComponent(path.slice(1).split("/")[0] || "");
+        if (slug) return { type: "slug", value: slug };
+    }
+
+    if (pid) return { type: "id", value: pid };
+    if (pname) return { type: "name", value: pname };
+    return null;
+}
+
 function navigateToProduct(productName) {
     const formattedName = productName.toLowerCase().replace(/\s+/g, "-");
+
+    // analytics: product clicked
+    sendAnalyticsEvent('product_click', buildAnalyticsProductPayload(productName));
 
     history.pushState({}, "", `/${formattedName}`);
     GoToProductPage(productName, getProductPrice(productName), getProductDescription(productName));
@@ -4483,7 +5078,10 @@ function getSelectedCountryCode() {
 }
 
 function getApplyTariffFlag() {
-    return localStorage.getItem("applyTariff") === "true";
+    if (typeof serverApplyTariff === "boolean") return serverApplyTariff;
+    const v = localStorage.getItem("applyTariff");
+    if (v == null) return true;
+    return v === "true";
 }
 
 function round2(n) {
@@ -4541,6 +5139,8 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
         (typeof exchangeRatesFetchedAt !== "undefined" && Number(exchangeRatesFetchedAt) > 0)
             ? Number(exchangeRatesFetchedAt)
             : (Number(window.exchangeRatesFetchedAt || 0) > 0 ? Number(window.exchangeRatesFetchedAt) : null);
+    const turnstileToken = await snagletGetTurnstileToken({ forceFresh: true });
+
 
     const res = await fetch(`${API_BASE}/create-payment-intent`, {
         method: "POST",
@@ -4549,12 +5149,13 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
             websiteOrigin,
             currency,
             country,
-            products: Array.isArray(stripeCart) ? stripeCart : [],
-            productsFull: Array.isArray(fullCart) ? fullCart : [],
+            products: normalizeCartItemsForServer(stripeCart),
+            productsFull: normalizeCartItemsForServer(fullCart),
             expectedClientTotal,
             applyTariff: getApplyTariffFlag(),
             metadata: { order_summary },
-            fxFetchedAt
+            fxFetchedAt,
+            turnstileToken
         })
     });
 
@@ -4597,7 +5198,19 @@ async function initStripePaymentUI(selectedCurrency) {
 
     if (!stripeCart.length) throw new Error("Basket is empty.");
 
-    const country = getSelectedCountryCode();
+    // analytics: begin checkout
+try {
+    const items = buildAnalyticsCartItems(stripeCart);
+    sendAnalyticsEvent('begin_checkout', {
+        extra: {
+            currency: selectedCurrency,
+            country: getSelectedCountryCode(),
+            itemsCount: items.length,
+            items
+        }
+    });
+} catch { }
+const country = getSelectedCountryCode();
 
     const fallbackPk =
         "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
@@ -4619,11 +5232,35 @@ async function initStripePaymentUI(selectedCurrency) {
         stripeCart
     });
 
-    const { clientSecret, orderId, paymentIntentId, amountCents, currency } = data;
+    const { clientSecret, orderId, paymentIntentId, amountCents, currency, orderPublicToken, orderStatusUrl } = data;
 
-    window.latestClientSecret = clientSecret;
+    // analytics: payment intent created (checkout progressing)
+try {
+    sendAnalyticsEvent('checkout_intent_created', {
+        extra: {
+            orderId: data?.orderId || null,
+            paymentIntentId: data?.paymentIntentId || null,
+            amountCents: data?.amountCents || null,
+            currency: data?.currency || null
+        }
+    });
+} catch { }
+window.latestClientSecret = clientSecret;
     window.latestOrderId = orderId || null;
     window.latestPaymentIntentId = paymentIntentId || null;
+
+    window.latestOrderPublicToken = orderPublicToken || window.latestOrderPublicToken || null;
+    window.latestOrderStatusUrl = orderStatusUrl || window.latestOrderStatusUrl || null;
+
+    // Persist for customer self-service tracking (exercises GET /order-status)
+    if (orderId && (orderPublicToken || window.latestOrderPublicToken)) {
+        addRecentOrder({
+            orderId,
+            token: orderPublicToken || window.latestOrderPublicToken,
+            orderStatusUrl: orderStatusUrl || null,
+            paymentIntentId: paymentIntentId || null
+        });
+    }
 
     try { window.paymentElementInstance?.unmount?.(); } catch { }
     const paymentElContainer = document.getElementById("payment-element");
@@ -4678,6 +5315,8 @@ function attachConfirmHandlerOnce() {
                     body: JSON.stringify({
                         paymentIntentId: window.latestPaymentIntentId,
                         orderId: window.latestOrderId,
+                        clientSecret: window.latestClientSecret || null,
+                        token: window.latestOrderPublicToken || null,
                         userDetails
                     })
                 }).catch(() => { });
@@ -4928,3 +5567,772 @@ async function initPaymentModalLogic() {
     // Safer than `document.body` if the script runs in <head>
     document.addEventListener("click", onClick);
 })();
+
+
+/* ===== PATCH 2026-01-29: Storefront security + multi-options + option→image =====
+   - Eliminates stored XSS vectors on product page rendering (no innerHTML for product fields)
+   - Supports multiple option groups (productOptions, productOptions2, ... OR optionGroups[])
+   - Supports option→image mapping (productOptionImageMap, productOptionImageMap2, ... OR optionGroups[].imageByOption)
+   - Persists selectedOptions[] into basket + checkout payload for backend/admin
+*/
+function __ssEscHtml(input) {
+  const s = String(input ?? "");
+  return s.replace(/[&<>"'`]/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+    "`": "&#96;"
+  }[ch] || ch));
+}
+
+function __ssGetCatalogFlat() {
+  try {
+    if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) {
+      return window.productsFlatFromServer;
+    }
+
+    const base =
+      (typeof products !== "undefined" && products) ? products :
+      ((typeof productsDatabase !== "undefined" && productsDatabase) ? productsDatabase : (window.products || {}));
+    return Object.values(base || {}).flat();
+  } catch {
+    return [];
+  }
+}
+
+function __ssExtractOptionGroups(product) {
+  const p = product || {};
+  // Preferred: optionGroups
+  if (Array.isArray(p.optionGroups) && p.optionGroups.length) {
+    return p.optionGroups
+      .map((g, idx) => {
+        const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
+        const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
+        const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
+        const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
+        return { key, label, options, imageByOption };
+      })
+      .filter(g => g.options.length > 0);
+  }
+
+  // Legacy: productOptions / productOptions2 / ...
+  const groups = [];
+  for (let i = 1; i <= 10; i++) {
+    const k = (i === 1) ? "productOptions" : `productOptions${i}`;
+    const arr = p[k];
+    if (!Array.isArray(arr) || arr.length < 2) continue;
+
+    const [labelRaw, ...optsRaw] = arr;
+    const label = String(labelRaw ?? `Option ${i}`).trim().replace(/:$/, "");
+    const options = optsRaw.map(x => String(x).trim()).filter(Boolean);
+    if (!options.length) continue;
+
+    const map =
+      (i === 1)
+        ? (p.productOptionImageMap || p.productOptionImageMap1 || null)
+        : (p[`productOptionImageMap${i}`] || null);
+
+    groups.push({
+      key: label.toLowerCase().replace(/\s+/g, "_") || `opt${i}`,
+      label,
+      options,
+      imageByOption: (map && typeof map === "object") ? map : null
+    });
+  }
+  return groups;
+}
+
+function __ssNormalizeSelectedOptions(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const x of raw) {
+    const label = String(x?.label ?? "").trim().replace(/:$/, "");
+    const value = String(x?.value ?? "").trim();
+    if (!label || !value) continue;
+    out.push({ label, value });
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+function __ssDefaultSelectedOptions(groups) {
+  return (groups || [])
+    .map(g => ({ label: String(g.label || "Option").trim().replace(/:$/, ""), value: String(g.options?.[0] ?? "").trim() }))
+    .filter(o => o.label && o.value);
+}
+
+function __ssFormatSelectedOptionsDisplay(selectedOptions) {
+  const sel = __ssNormalizeSelectedOptions(selectedOptions);
+  return sel.map(o => `${o.label}: ${o.value}`).join(", ");
+}
+
+function __ssFormatSelectedOptionsKey(selectedOptions) {
+  const sel = __ssNormalizeSelectedOptions(selectedOptions);
+  return sel.map(o => `${o.label}=${o.value}`).join(" | ");
+}
+
+function __ssApplyOptionImageMapping(group, optionValue, validImages) {
+  const map = (group && typeof group.imageByOption === "object" && group.imageByOption) ? group.imageByOption : null;
+  if (!map) return false;
+  const mapped = map[optionValue];
+  if (mapped === undefined || mapped === null || mapped === "") return false;
+
+  const imgs = Array.isArray(validImages) ? validImages : (window.currentProductImages || []);
+  const main = document.getElementById("mainImage");
+
+  if (typeof mapped === "number" && Number.isFinite(mapped)) {
+    const idx = Math.max(0, Math.min(imgs.length - 1, Math.floor(mapped)));
+    if (imgs[idx]) {
+      window.currentIndex = idx;
+      updateImage();
+      return true;
+    }
+    return false;
+  }
+
+  const url = String(mapped).trim();
+  if (!url) return false;
+
+  const idx = imgs.indexOf(url);
+  if (idx !== -1) {
+    window.currentIndex = idx;
+    updateImage();
+    return true;
+  }
+
+  if (main) {
+    main.src = url;
+    return true;
+  }
+  return false;
+}
+
+function __ssSetSelectedOptions(sel) {
+  const norm = __ssNormalizeSelectedOptions(sel);
+  window.selectedProductOptions = norm;
+  window.selectedProductOption = norm?.[0]?.value || "";
+}
+
+function __ssGetSelectedOptions() {
+  return __ssNormalizeSelectedOptions(window.selectedProductOptions || []);
+}
+
+/* Override: safer thumbnail active handling */
+function updateImage(direction = "none") {
+  const imageElement = document.getElementById("mainImage");
+  const imgs = window.currentProductImages || [];
+  const idx = Number(window.currentIndex || 0);
+
+  if (imageElement && imgs[idx]) {
+    if (direction === "right") {
+      imageElement.style.transform = "translateX(100vw)";
+      setTimeout(() => {
+        imageElement.src = imgs[idx];
+        imageElement.style.transition = "none";
+        imageElement.style.transform = "translateX(-100vw)";
+        void imageElement.offsetWidth;
+        imageElement.style.transition = "transform 0.4s ease";
+        imageElement.style.transform = "translateX(0)";
+      }, 100);
+    } else if (direction === "left") {
+      imageElement.style.transform = "translateX(-100vw)";
+      setTimeout(() => {
+        imageElement.src = imgs[idx];
+        imageElement.style.transition = "none";
+        imageElement.style.transform = "translateX(100vw)";
+        void imageElement.offsetWidth;
+        imageElement.style.transition = "transform 0.4s ease";
+        imageElement.style.transform = "translateX(0)";
+      }, 100);
+    } else {
+      imageElement.src = imgs[idx];
+    }
+  }
+
+  const thumbs = document.querySelectorAll(".Thumbnail");
+  thumbs.forEach(t => t.classList.remove("active"));
+  if (thumbs[idx]) thumbs[idx].classList.add("active");
+}
+
+/* Override: safe product page with multi-options + option→image mapping */
+function GoToProductPage(productName, productPrice, productDescription) {
+  console.log("Product clicked:", productName);
+  // analytics: product opened (viewer)
+  sendAnalyticsEvent('product_open', buildAnalyticsProductPayload(productName, { priceEUR: productPrice }));
+  try { clearCategoryHighlight(); } catch { }
+
+  const viewer = document.getElementById("Viewer");
+  if (!viewer) {
+    console.error(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Viewer not found.");
+    return;
+  }
+
+  viewer.innerHTML = "";
+  try { removeSortContainer(); } catch { }
+
+  const product = __ssGetCatalogFlat().find(p => p?.name === productName);
+  if (!product || !Array.isArray(product.images) || product.images.length === 0) {
+    console.error("❌ Product not found or no images:", productName);
+    return;
+  }
+
+  const imagePromises = product.images.map(src => new Promise(resolve => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve(src);
+    img.onerror = () => resolve(null);
+  }));
+
+  Promise.all(imagePromises).then(loadedImages => {
+    const validImages = loadedImages.filter(Boolean);
+    if (validImages.length === 0) {
+      console.error("❌ No valid images loaded for:", productName);
+      viewer.innerHTML = `<p>${__ssEscHtml(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Products not loaded")}</p>`;
+      return;
+    }
+    renderProductPage(product, validImages, productName, productPrice, productDescription);
+  });
+}
+
+function renderProductPage(product, validImages, productName, productPrice, productDescription) {
+  const viewer = document.getElementById("Viewer");
+  if (!viewer) return;
+
+  const existing = document.getElementById("Product_Viewer");
+  if (existing) existing.remove();
+
+  const Product_Viewer = document.createElement("div");
+  Product_Viewer.id = "Product_Viewer";
+  Product_Viewer.className = "Product_Viewer";
+
+  window.currentProductImages = Array.isArray(validImages) ? validImages : [];
+  window.currentIndex = 0;
+
+  if (typeof cart === "object" && cart) cart[productName] = 1;
+
+  const productDiv = document.createElement("div");
+  productDiv.className = "Product_Detail_Page";
+
+  const details = document.createElement("div");
+  details.className = "Product_Details";
+
+  // ----- Images column -----
+  const imagesCol = document.createElement("div");
+  imagesCol.className = "Product_Images";
+
+  const imageControl = document.createElement("div");
+  imageControl.className = "ImageControl";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "ImageControlButtonPrevious";
+  prevBtn.type = "button";
+  prevBtn.addEventListener("click", (e) => { e.preventDefault(); try { prevImage(); } catch { } });
+
+  const prevTxt = document.createElement("div");
+  prevTxt.className = "ImageControlButtonText";
+  prevTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.PREVIOUS || "Prev";
+  prevBtn.appendChild(prevTxt);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-slider-wrapper";
+
+  const mainImg = document.createElement("img");
+  mainImg.id = "mainImage";
+  mainImg.className = "mainImage slide-image";
+  mainImg.src = window.currentProductImages[0] || "";
+  mainImg.alt = productName || "";
+  wrapper.appendChild(mainImg);
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "ImageControlButtonNext";
+  nextBtn.type = "button";
+  nextBtn.addEventListener("click", (e) => { e.preventDefault(); try { nextImage(); } catch { } });
+
+  const nextTxt = document.createElement("div");
+  nextTxt.className = "ImageControlButtonText";
+  nextTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.NEXT || "Next";
+  nextBtn.appendChild(nextTxt);
+
+  imageControl.append(prevBtn, wrapper, nextBtn);
+
+  const thumbsHolder = document.createElement("div");
+  thumbsHolder.className = "ThumbnailsHolder";
+
+  (window.currentProductImages || []).forEach((src, idx) => {
+    const t = document.createElement("img");
+    t.className = `Thumbnail${idx === 0 ? " active" : ""}`;
+    t.src = src;
+    t.alt = `${productName || "image"} ${idx + 1}`;
+    t.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.currentIndex = idx;
+      updateImage();
+    });
+    thumbsHolder.appendChild(t);
+  });
+
+  imagesCol.append(imageControl, thumbsHolder);
+
+  // ----- Info column -----
+  const infoCol = document.createElement("div");
+  infoCol.className = "Product_Info";
+
+  const heading = document.createElement("div");
+  heading.className = "Product_Name_Heading";
+  heading.textContent = productName || "";
+
+  const desc = document.createElement("div");
+  desc.className = "Product_Description";
+  desc.textContent = (productDescription && String(productDescription).trim())
+    ? String(productDescription)
+    : (TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || "");
+
+  infoCol.append(heading, desc);
+
+  // Options (multi)
+  const groups = __ssExtractOptionGroups(product);
+  const defaultSel = __ssDefaultSelectedOptions(groups);
+  __ssSetSelectedOptions(defaultSel);
+
+  if (groups.length) {
+    groups.forEach((g, gIdx) => {
+      const container = document.createElement("div");
+      container.className = "Product_Options_Container";
+      container.dataset.groupIndex = String(gIdx);
+
+      const labelWrap = document.createElement("div");
+      labelWrap.className = "Product_Option_Label";
+
+      const strong = document.createElement("strong");
+      strong.textContent = `${g.label}:`;
+      labelWrap.appendChild(strong);
+
+      const btnWrap = document.createElement("div");
+      btnWrap.className = "Product_Option_Buttons";
+
+      const selVal = defaultSel?.[gIdx]?.value || g.options[0];
+
+      g.options.forEach((opt) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `Product_Option_Button${opt === selVal ? " selected" : ""}`;
+        b.textContent = opt;
+
+        b.addEventListener("click", (e) => {
+          e.preventDefault();
+
+          // toggle selected class within this group only
+          btnWrap.querySelectorAll(".Product_Option_Button").forEach(x => x.classList.remove("selected"));
+          b.classList.add("selected");
+
+          const current = __ssGetSelectedOptions();
+          while (current.length < groups.length) {
+            const gg = groups[current.length];
+            current.push({ label: gg.label, value: gg.options[0] });
+          }
+          current[gIdx] = { label: g.label, value: opt };
+          __ssSetSelectedOptions(current);
+
+          // Option→image mapping (if configured)
+          __ssApplyOptionImageMapping(g, opt, window.currentProductImages);
+        });
+
+        btnWrap.appendChild(b);
+      });
+
+      container.append(labelWrap, btnWrap);
+      infoCol.appendChild(container);
+    });
+
+    // Apply mapping for default selections (first group that has a mapping hit)
+    for (let i = 0; i < groups.length; i++) {
+      const sel = __ssGetSelectedOptions();
+      const v = sel?.[i]?.value;
+      if (__ssApplyOptionImageMapping(groups[i], v, window.currentProductImages)) break;
+    }
+  }
+
+  // Price
+  const priceLabel = document.createElement("div");
+  priceLabel.className = "Product_Price_Label";
+
+  const pStrong = document.createElement("strong");
+  pStrong.textContent = `${TEXTS?.PRODUCT_SECTION?.PRICE_LABEL || "Price"} `;
+  const pSpan = document.createElement("span");
+  pSpan.id = "product-page-price";
+  pSpan.className = "productPrice";
+  pSpan.dataset.eur = String(productPrice ?? "");
+  pSpan.textContent = `${productPrice} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
+
+  priceLabel.append(pStrong, pSpan);
+  infoCol.appendChild(priceLabel);
+
+  // Quantity + Add to cart
+  const qtyWrap = document.createElement("div");
+  qtyWrap.className = "ProductPageQuantityContainer";
+
+  const qtyControls = document.createElement("div");
+  qtyControls.className = "Quantity_Controls_ProductPage";
+
+  const dec = document.createElement("button");
+  dec.className = "Button";
+  dec.type = "button";
+  dec.textContent = TEXTS?.BASKET?.BUTTONS?.DECREASE || "-";
+  dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(productName); } catch { } });
+
+  const qtySpan = document.createElement("span");
+  qtySpan.className = "WhiteText";
+  qtySpan.id = `quantity-${productName}`;
+  qtySpan.textContent = "1";
+
+  const inc = document.createElement("button");
+  inc.className = "Button";
+  inc.type = "button";
+  inc.textContent = TEXTS?.BASKET?.BUTTONS?.INCREASE || "+";
+  inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(productName); } catch { } });
+
+  qtyControls.append(dec, qtySpan, inc);
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-to-cart-product";
+  addBtn.type = "button";
+  addBtn.innerHTML = `
+    <span style="display:flex;align-items:center;gap:6px;">
+      ${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
+      <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+        <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  `;
+
+  addBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
+    const sel = __ssGetSelectedOptions();
+    const legacy = sel?.[0]?.value || "";
+    addToCart(
+      productName,
+      parseFloat(productPrice) || Number(productPrice) || 0,
+      mainSrc,
+      product.expectedPurchasePrice,
+      product.productLink,
+      productDescription,
+      legacy,
+      sel
+    );
+  });
+
+  qtyWrap.append(qtyControls, addBtn);
+  infoCol.appendChild(qtyWrap);
+
+  const buyBtn = document.createElement("button");
+  buyBtn.className = "ProductPageBuyButton";
+  buyBtn.type = "button";
+  buyBtn.textContent = TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now";
+  buyBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
+    const sel = __ssGetSelectedOptions();
+    const legacy = sel?.[0]?.value || "";
+    buyNow(
+      productName,
+      parseFloat(productPrice) || Number(productPrice) || 0,
+      mainSrc,
+      product.expectedPurchasePrice,
+      product.productLink,
+      productDescription,
+      legacy,
+      sel
+    );
+  });
+
+  infoCol.appendChild(buyBtn);
+
+  // Assemble
+  details.append(imagesCol, infoCol);
+  productDiv.appendChild(details);
+  Product_Viewer.appendChild(productDiv);
+  viewer.appendChild(Product_Viewer);
+
+  // Swipe support (non-breaking)
+  try {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    mainImg.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].screenX; });
+    mainImg.addEventListener("touchend", (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const threshold = 50;
+      if (touchEndX < touchStartX - threshold) nextImage();
+      else if (touchEndX > touchStartX + threshold) prevImage();
+    });
+  } catch { }
+
+  try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { }
+  try { updateAllPrices(); } catch { }
+  try { updateImage(); } catch { }
+}
+
+/* Override: buyNow forwards selectedOptions */
+function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
+  const qtyEl = document.getElementById(`quantity-${productName}`);
+  const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
+  if (typeof cart === "object" && cart) cart[productName] = quantity;
+  addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption, selectedOptions);
+  try { navigate("GoToCart"); } catch { try { GoToCart(); } catch { } }
+}
+
+/* Override: addToCart stores selectedOptions and uses option-combo key */
+function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {const _pRef = findProductByNameParam(productName) || {};
+const productIdForCart = String(_pRef.productId || "").trim() || String(extractProductIdFromLink(productLink) || "").trim() || null;
+
+  const qty = (typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1;
+  if (typeof cart === "object" && cart) cart[productName] = 1;
+
+  // Normalize selected options
+  let selOpts = __ssNormalizeSelectedOptions(selectedOptions);
+
+  // Back-compat: if only legacy selectedOption provided, wrap it
+  if (!selOpts.length && selectedOption) {
+    const p = __ssGetCatalogFlat().find(pp => pp?.name === productName) || {};
+    const groups = __ssExtractOptionGroups(p);
+    const label = (groups?.[0]?.label) ? groups[0].label : "Option";
+    selOpts = [{ label, value: String(selectedOption).trim() }];
+  }
+
+  // Ensure legacy selectedOption reflects first group
+  if (!selectedOption && selOpts.length) selectedOption = selOpts[0].value;
+
+  const key = selOpts.length ? `${productName} - ${__ssFormatSelectedOptionsKey(selOpts)}` : (selectedOption ? `${productName} - ${selectedOption}` : productName);
+
+  if (qty > 0) {
+    if (basket && basket[key]) {
+      basket[key].quantity += qty;
+      // keep latest selections
+      if (selOpts.length) basket[key].selectedOptions = selOpts;
+      if (selectedOption) basket[key].selectedOption = selectedOption;
+    } else {
+      basket[key] = {
+        name: productName,
+        price,
+        image: imageUrl,
+        quantity: qty,
+        productId: productIdForCart,
+        expectedPurchasePrice,
+        productLink,
+        description: productDescription,
+        ...(selectedOption ? { selectedOption } : {}),
+        ...(selOpts.length ? { selectedOptions: selOpts } : {})
+      };
+    }
+
+    try {
+      if (typeof persistBasket === "function") persistBasket("add_to_cart");
+      else localStorage.setItem("basket", JSON.stringify(basket));
+    } catch {
+      try { localStorage.setItem("basket", JSON.stringify(basket)); } catch { }
+    }
+
+    // analytics: add to cart
+try {
+  const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink, productId: productIdForCart });
+  payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
+  sendAnalyticsEvent('add_to_cart', payload);
+} catch { }
+const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
+    alert(`${qty} x ${productName}${optMsg} added to cart!`);
+  } else {
+    alert("Please select at least one item.");
+  }
+}
+
+/* Override: checkout cart builders include selectedOptions */
+function buildStripeSafeCart(fullCart) {
+  return (fullCart || []).map((i) => ({
+    name: i.name,
+    quantity: i.quantity,
+    price: Number(i.unitPriceEUR || i.price || 0),
+    selectedOption: i.selectedOption || "",
+    selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
+  }));
+}
+
+function buildFullCartFromBasket() {
+  const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
+    try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
+  })();
+
+  const items = Object.values(basketObj || {});
+  return items
+    .map((item) => {
+      const unitEUR = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
+      const expected = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
+      const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+
+      const out = {
+        name: String(item?.name || "").slice(0, 120),
+        quantity: qty,
+        unitPriceEUR: Number(unitEUR.toFixed(2)),
+        price: Number(unitEUR.toFixed(2)),
+        expectedPurchasePrice: Number((expected || unitEUR).toFixed(2)),
+        productLink: String(item?.productLink || "N/A").slice(0, 800),
+        image: String(item?.image || "").slice(0, 800),
+        description: String(item?.description || "").slice(0, 2000)
+      };
+
+      if (item?.selectedOption) out.selectedOption = String(item.selectedOption).slice(0, 120);
+      const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+      if (sel.length) out.selectedOptions = sel;
+
+      return out;
+    })
+    .filter((i) => i.name && i.quantity > 0 && Number(i.price) > 0);
+}
+
+function buildStripeOrderSummary(stripeCart) {
+  return (stripeCart || [])
+    .map((item) => {
+      const name = String(item?.name || "");
+      const shortName = name.length > 30 ? name.slice(0, 30) + "…" : name;
+      const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+      const opt = sel.length ? ` (${__ssFormatSelectedOptionsDisplay(sel).slice(0, 80)})` :
+        (item?.selectedOption ? ` (${String(item.selectedOption).slice(0, 40)})` : "");
+      const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+      return `${qty}x ${shortName}${opt}`;
+    })
+    .join(", ")
+    .slice(0, 499);
+}
+
+/* Override: basket rendering escapes user/product strings and shows multi-options */
+function updateBasket() {
+  let basketContainer = document.getElementById("Basket_Viewer");
+
+  if (!basketContainer) {
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) return;
+    basketContainer = document.createElement("div");
+    basketContainer.id = "Basket_Viewer";
+    basketContainer.classList.add("Basket_Viewer");
+    viewer.appendChild(basketContainer);
+  }
+
+  basketContainer.innerHTML = "";
+
+  if (!basket || Object.keys(basket).length === 0) {
+    basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
+    return;
+  }
+
+  let totalSum = 0;
+
+  Object.entries(basket).forEach(([key, item]) => {
+    const productDiv = document.createElement("div");
+    productDiv.classList.add("Basket_Item_Container");
+
+    const value = Number(parseFloat(item?.price) || 0);
+    const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+    const itemTotal = (value * qty);
+    totalSum += itemTotal;
+
+    const encName = encodeURIComponent(String(item?.name || ""));
+    const safeName = __ssEscHtml(item?.name || "");
+    const safeDesc = __ssEscHtml(item?.description || "");
+    const safeImg = __ssEscHtml(item?.image || "");
+
+    let optionText = "";
+    const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+    if (sel.length) optionText = `Selected: ${__ssFormatSelectedOptionsDisplay(sel)}`;
+    else if (item?.selectedOption) optionText = `Selected option: ${String(item.selectedOption)}`;
+
+    const selectedOptionHTML = optionText
+      ? `<span class="BasketSelectedOption">${__ssEscHtml(optionText)}</span>`
+      : "";
+
+    productDiv.innerHTML = `
+      <div class="Basket-Item">
+        <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer">
+          <img class="Basket_Image"
+               src="${safeImg}"
+               alt="${safeName}"
+               data-name="${safeName}"
+               data-price="${__ssEscHtml(item?.price ?? "")}"
+               data-description="${safeDesc}"
+               data-imageurl="${safeImg}">
+        </a>
+        <div class="Item-Details">
+          <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer" class="BasketText">
+            <strong class="BasketText">${safeName.length > 15 ? safeName.slice(0, 15) + "…" : safeName}</strong>
+          </a>
+          <p class="BasketTextDescription">${safeDesc}</p>
+          <div class="PriceAndOptionRow">
+            <p class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</p>
+            ${selectedOptionHTML}
+          </div>
+        </div>
+        <div class="Quantity-Controls-Basket">
+          <button class="BasketChangeQuantityButton" type="button"
+                  data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
+          <span class="BasketChangeQuantityText">${qty}</span>
+          <button class="BasketChangeQuantityButton" type="button"
+                  data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
+        </div>
+      </div>
+    `;
+
+    basketContainer.appendChild(productDiv);
+  });
+
+  const receiptDiv = document.createElement("div");
+  receiptDiv.classList.add("BasketReceipt");
+
+  let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
+
+  Object.entries(basket).forEach(([k, item]) => {
+    const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+    const unit = Number(parseFloat(item?.price) || 0);
+    const itemTotal = unit * qty;
+
+    const name = __ssEscHtml(item?.name || "");
+    const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+    const opt = sel.length ? ` (${__ssEscHtml(__ssFormatSelectedOptionsDisplay(sel))})` :
+      (item?.selectedOption ? ` (${__ssEscHtml(String(item.selectedOption))})` : "");
+
+    receiptContent += `
+      <tr>
+        <td>${qty} ×</td>
+        <td>${name}${opt}</td>
+        <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+      </tr>
+    `;
+  });
+
+  receiptContent += `</table></div>`;
+  receiptContent += `
+    <div class="ReceiptFooter">
+      <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
+      <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
+    </div>
+  `;
+
+  receiptDiv.innerHTML = receiptContent;
+  basketContainer.appendChild(receiptDiv);
+
+  // Keep existing event delegation behavior for qty buttons
+  if (!basketContainer.dataset.qtyBound) {
+    basketContainer.dataset.qtyBound = "1";
+    basketContainer.addEventListener("click", (e) => {
+      const btn = e.target.closest(".BasketChangeQuantityButton");
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const k = decodeURIComponent(btn.dataset.key || "");
+      const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+      try { changeQuantity(k, delta); } catch { }
+    });
+  }
+
+  try { updateAllPrices(); } catch { }
+}
