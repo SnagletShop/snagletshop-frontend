@@ -6,20 +6,20 @@ async function ensureStripePublishableKey() {
     // 2) Fetch from backend public-config (no secrets)
     try {
         const res = await fetch(`${API_BASE}/public-config`, { method: "GET" });
-        const data = await res.json().catch(()=> ({}));
+        const data = await res.json().catch(() => ({}));
         const k = data && data.stripePublishableKey ? String(data.stripePublishableKey).trim() : "";
         if (k) {
             window.STRIPE_PUBLISHABLE_KEY = k;
             return k;
         }
-    } catch {}
+    } catch { }
     return "";
 }
 
 function showStripeConfigError(msg) {
     try {
         alert(msg);
-    } catch {}
+    } catch { }
     const payBtn = document.getElementById("payButton") || document.getElementById("payBtn");
     if (payBtn) payBtn.disabled = true;
 }
@@ -38,9 +38,9 @@ if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTari
 // You can override by setting window.__API_BASE__ before this script loads,
 // or by setting <meta name="api-base" content="https://..."> in index.html.
 const API_BASE = String(
-  (window && window.__API_BASE__) ||
-  (document.querySelector('meta[name="api-base"]')?.getAttribute('content')) ||
-  "https://api.snagletshop.com"
+    (window && window.__API_BASE__) ||
+    (document.querySelector('meta[name="api-base"]')?.getAttribute('content')) ||
+    "https://api.snagletshop.com"
 ).trim().replace(/\/+$/, "");;
 
 function canonicalizeProductLink(link) {
@@ -142,9 +142,9 @@ async function __snagletInitTurnstileOnce() {
             try {
                 __snagletTurnstile.widgetId = window.turnstile.render("#snaglet-turnstile", {
                     sitekey,
-                        size: "compact",
-                        appearance: "interaction-only",
-                        execution: "execute", // token is generated only when we call turnstile.execute()
+                    size: "compact",
+                    appearance: "interaction-only",
+                    execution: "execute", // token is generated only when we call turnstile.execute()
                     callback: (token) => {
                         __snagletTurnstile.lastToken = token || "";
                         if (__snagletTurnstile.pending) {
@@ -250,32 +250,32 @@ function initProducts() {
 
             const productsPayload = await r.json();
 
-// New shape (canonical): { productsById: {...}, categories: {...}, config: {...} }
-if (productsPayload && typeof productsPayload === "object" && productsPayload.productsById && productsPayload.categories) {
-    const productsById = productsPayload.productsById || {};
-    const categories = productsPayload.categories || {};
-    window.productsById = productsById;
-    window.categoryIdLists = categories;
+            // New shape (canonical): { productsById: {...}, categories: {...}, config: {...} }
+            if (productsPayload && typeof productsPayload === "object" && productsPayload.productsById && productsPayload.categories) {
+                const productsById = productsPayload.productsById || {};
+                const categories = productsPayload.categories || {};
+                window.productsById = productsById;
+                window.categoryIdLists = categories;
 
-    const resolvedCatalog = {};
-    for (const [cat, ids] of Object.entries(categories)) {
-        const arr = [];
-        for (const id of (ids || [])) {
-            if (productsById[id]) arr.push(productsById[id]);
-        }
-        resolvedCatalog[cat] = arr;
-    }
+                const resolvedCatalog = {};
+                for (const [cat, ids] of Object.entries(categories)) {
+                    const arr = [];
+                    for (const id of (ids || [])) {
+                        if (productsById[id]) arr.push(productsById[id]);
+                    }
+                    resolvedCatalog[cat] = arr;
+                }
 
-    productsDatabase = resolvedCatalog;
+                productsDatabase = resolvedCatalog;
 
-    const cfg2 = productsPayload.config || {};
-    if (typeof cfg2.applyTariff === "boolean") {
-        serverApplyTariff = cfg2.applyTariff;
-        localStorage.setItem("applyTariff", String(serverApplyTariff));
-    }
-} else {
+                const cfg2 = productsPayload.config || {};
+                if (typeof cfg2.applyTariff === "boolean") {
+                    serverApplyTariff = cfg2.applyTariff;
+                    localStorage.setItem("applyTariff", String(serverApplyTariff));
+                }
+            } else {
 
-            // New shape: { catalog: {..}, config: { applyTariff } }
+                // New shape: { catalog: {..}, config: { applyTariff } }
             }
 
             const catalog = (productsPayload && typeof productsPayload === "object" && productsPayload.catalog && typeof productsPayload.catalog === "object")
@@ -297,7 +297,7 @@ if (productsPayload && typeof productsPayload === "object" && productsPayload.pr
                 serverApplyTariff = productsPayload.applyTariff;
                 localStorage.setItem("applyTariff", String(serverApplyTariff));
             }
-// Keep legacy code that still uses `products` working
+            // Keep legacy code that still uses `products` working
             window.products = productsDatabase;
 
             // Also fetch the server-provided flat catalog list (exercises GET /products/flat).
@@ -1095,75 +1095,7 @@ async function preloadSettingsData() {
 
 
 
-function installApiHealthIndicator() {
-    try {
-        const navDiv = document.querySelector(".NavButtonDiv");
-        if (!navDiv) return;
 
-        // Insert a small status dot
-        let dot = document.getElementById("ApiHealthDot");
-        if (!dot) {
-            dot = document.createElement("span");
-            dot.id = "ApiHealthDot";
-            dot.title = "API status";
-            dot.style.cssText = [
-                "display:inline-block",
-                "width:10px",
-                "height:10px",
-                "border-radius:50%",
-                "margin-left:10px",
-                "margin-right:6px",
-                "background:#9ca3af",
-                "box-shadow:0 0 0 2px rgba(0,0,0,0.08) inset"
-            ].join(";");
-            // Put dot at the end of NavButtonDiv
-            navDiv.appendChild(dot);
-        }
-
-        fetch(`${API_BASE}/healthz`, { cache: "no-store" })
-            .then(r => r.ok)
-            .then(ok => { dot.style.background = ok ? "#22c55e" : "#ef4444"; })
-            .catch(() => { dot.style.background = "#ef4444"; });
-    } catch { }
-}
-
-function installOrderTrackingButton() {
-    try {
-        const navDiv = document.querySelector(".NavButtonDiv");
-        if (!navDiv) return;
-
-        if (document.getElementById("TrackOrderButton")) return;
-
-        const btn = document.createElement("button");
-        btn.id = "TrackOrderButton";
-        btn.type = "button";
-        btn.textContent = "Track order";
-        btn.className = "TrackOrderButton";
-        btn.onclick = () => openOrderStatusModal();
-
-        // Basic styling (kept inline to avoid CSS collisions)
-        btn.style.cssText = [
-            "margin-left:10px",
-            "padding:10px 12px",
-            "border-radius:12px",
-            "border:1px solid rgba(0,0,0,0.08)",
-            "background:var(--SearchBar_Background_Colour)",
-            "color:var(--Default_Text_Colour)",
-            "cursor:pointer",
-            "font-weight:600",
-            "font-family:inherit",
-            "white-space:nowrap"
-        ].join(";");
-
-        // Insert before basket button if present
-        const basketBtn = document.getElementById("BasketButton");
-        if (basketBtn && basketBtn.parentElement === navDiv) {
-            navDiv.insertBefore(btn, basketBtn);
-        } else {
-            navDiv.appendChild(btn);
-        }
-    } catch { }
-}
 
 function openOrderStatusModal(prefill = {}) {
     // Avoid duplicates
@@ -1532,7 +1464,7 @@ function buildAnalyticsProductPayload(productName, override = {}) {
     const productLink = override.productLink || p.productLink || p.canonicalLink || null;
     const priceEUR =
         override.priceEUR != null ? override.priceEUR :
-        (p.price != null ? Number(p.price) : null);
+            (p.price != null ? Number(p.price) : null);
 
     return {
         product: {
@@ -3144,16 +3076,16 @@ async function GoToSettings() {
             });
 
             const result = await response.json().catch(() => ({ message: "Done." }));
-if (!response.ok && result && (result.error === "TURNSTILE_FAILED" || result.error === "TURNSTILE_REQUIRED" || String(result.message || "").toUpperCase().includes("TURNSTILE"))) {
-    const configured = Boolean(__snagletGetTurnstileSiteKey());
-    const hint = configured
-        ? "Turnstile verification failed. Please refresh the page and try again."
-        : "Bot protection (Turnstile) is not configured on this site. Set <meta name=\"turnstile-sitekey\" content=\"YOUR_SITE_KEY\"> in index.html (and ensure the backend TURNSTILE_SECRET_KEY matches).";
-    alert(hint);
-    return;
-}
-alert(result.message || "Done.");
-} catch (error) {
+            if (!response.ok && result && (result.error === "TURNSTILE_FAILED" || result.error === "TURNSTILE_REQUIRED" || String(result.message || "").toUpperCase().includes("TURNSTILE"))) {
+                const configured = Boolean(__snagletGetTurnstileSiteKey());
+                const hint = configured
+                    ? "Turnstile verification failed. Please refresh the page and try again."
+                    : "Bot protection (Turnstile) is not configured on this site. Set <meta name=\"turnstile-sitekey\" content=\"YOUR_SITE_KEY\"> in index.html (and ensure the backend TURNSTILE_SECRET_KEY matches).";
+                alert(hint);
+                return;
+            }
+            alert(result.message || "Done.");
+        } catch (error) {
             console.error("Failed to send message:", error);
             alert("An error occurred. Try emailing us directly.");
         }
@@ -3347,24 +3279,24 @@ function CategoryButtons() {
                 const iconPath = iconValue;
                 const displayName = category.replace(/_/g, ' ');
 
-                
-if (iconPath) {
-    const isImageIcon =
-        typeof iconPath === "string" &&
-        (iconPath.startsWith("http://") ||
-         iconPath.startsWith("https://") ||
-         iconPath.startsWith("data:image/") ||
-         /\.(png|jpg|jpeg|webp|gif|svg)(\?.*)?$/i.test(iconPath));
 
-    if (isImageIcon) {
-        heading.innerHTML = `
+                if (iconPath) {
+                    const isImageIcon =
+                        typeof iconPath === "string" &&
+                        (iconPath.startsWith("http://") ||
+                            iconPath.startsWith("https://") ||
+                            iconPath.startsWith("data:image/") ||
+                            /\.(png|jpg|jpeg|webp|gif|svg)(\?.*)?$/i.test(iconPath));
+
+                    if (isImageIcon) {
+                        heading.innerHTML = `
             <span class="category-icon-wrapper">
                 <img class="category-icon-img" src="${iconPath}" alt="${displayName} icon" />
             </span>
             <span class="category-label">${displayName}</span>
         `;
-    } else {
-        heading.innerHTML = `
+                    } else {
+                        heading.innerHTML = `
             <span class="category-icon-wrapper">
                 <svg viewBox="0 0 24 24" class="category-icon-svg">
                     <path d="${iconPath}" />
@@ -3372,11 +3304,11 @@ if (iconPath) {
             </span>
             <span class="category-label">${displayName}</span>
         `;
-    }
-} else {
-    heading.textContent = displayName;
-}
-button.appendChild(heading);
+                    }
+                } else {
+                    heading.textContent = displayName;
+                }
+                button.appendChild(heading);
                 categoryContainer.appendChild(button);
             }
         });
@@ -4499,11 +4431,11 @@ function decreaseQuantity(productName) {
 }
 
 function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {// analytics: add to cart
-try {
-    const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink });
-    payload.extra = { selectedOption: selectedOption || "" };
-    sendAnalyticsEvent('add_to_cart', payload);
-} catch { }
+    try {
+        const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink });
+        payload.extra = { selectedOption: selectedOption || "" };
+        sendAnalyticsEvent('add_to_cart', payload);
+    } catch { }
 
     let quantity = cart[productName] || 1;
     cart[productName] = 1;
@@ -5199,18 +5131,18 @@ async function initStripePaymentUI(selectedCurrency) {
     if (!stripeCart.length) throw new Error("Basket is empty.");
 
     // analytics: begin checkout
-try {
-    const items = buildAnalyticsCartItems(stripeCart);
-    sendAnalyticsEvent('begin_checkout', {
-        extra: {
-            currency: selectedCurrency,
-            country: getSelectedCountryCode(),
-            itemsCount: items.length,
-            items
-        }
-    });
-} catch { }
-const country = getSelectedCountryCode();
+    try {
+        const items = buildAnalyticsCartItems(stripeCart);
+        sendAnalyticsEvent('begin_checkout', {
+            extra: {
+                currency: selectedCurrency,
+                country: getSelectedCountryCode(),
+                itemsCount: items.length,
+                items
+            }
+        });
+    } catch { }
+    const country = getSelectedCountryCode();
 
     const fallbackPk =
         "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
@@ -5235,17 +5167,17 @@ const country = getSelectedCountryCode();
     const { clientSecret, orderId, paymentIntentId, amountCents, currency, orderPublicToken, orderStatusUrl } = data;
 
     // analytics: payment intent created (checkout progressing)
-try {
-    sendAnalyticsEvent('checkout_intent_created', {
-        extra: {
-            orderId: data?.orderId || null,
-            paymentIntentId: data?.paymentIntentId || null,
-            amountCents: data?.amountCents || null,
-            currency: data?.currency || null
-        }
-    });
-} catch { }
-window.latestClientSecret = clientSecret;
+    try {
+        sendAnalyticsEvent('checkout_intent_created', {
+            extra: {
+                orderId: data?.orderId || null,
+                paymentIntentId: data?.paymentIntentId || null,
+                amountCents: data?.amountCents || null,
+                currency: data?.currency || null
+            }
+        });
+    } catch { }
+    window.latestClientSecret = clientSecret;
     window.latestOrderId = orderId || null;
     window.latestPaymentIntentId = paymentIntentId || null;
 
@@ -5576,429 +5508,429 @@ async function initPaymentModalLogic() {
    - Persists selectedOptions[] into basket + checkout payload for backend/admin
 */
 function __ssEscHtml(input) {
-  const s = String(input ?? "");
-  return s.replace(/[&<>"'`]/g, (ch) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "\"": "&quot;",
-    "'": "&#39;",
-    "`": "&#96;"
-  }[ch] || ch));
+    const s = String(input ?? "");
+    return s.replace(/[&<>"'`]/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+        "`": "&#96;"
+    }[ch] || ch));
 }
 
 function __ssGetCatalogFlat() {
-  try {
-    if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) {
-      return window.productsFlatFromServer;
-    }
+    try {
+        if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) {
+            return window.productsFlatFromServer;
+        }
 
-    const base =
-      (typeof products !== "undefined" && products) ? products :
-      ((typeof productsDatabase !== "undefined" && productsDatabase) ? productsDatabase : (window.products || {}));
-    return Object.values(base || {}).flat();
-  } catch {
-    return [];
-  }
+        const base =
+            (typeof products !== "undefined" && products) ? products :
+                ((typeof productsDatabase !== "undefined" && productsDatabase) ? productsDatabase : (window.products || {}));
+        return Object.values(base || {}).flat();
+    } catch {
+        return [];
+    }
 }
 
 function __ssExtractOptionGroups(product) {
-  const p = product || {};
-  // Preferred: optionGroups
-  if (Array.isArray(p.optionGroups) && p.optionGroups.length) {
-    return p.optionGroups
-      .map((g, idx) => {
-        const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
-        const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
-        const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
-        const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
-        return { key, label, options, imageByOption };
-      })
-      .filter(g => g.options.length > 0);
-  }
+    const p = product || {};
+    // Preferred: optionGroups
+    if (Array.isArray(p.optionGroups) && p.optionGroups.length) {
+        return p.optionGroups
+            .map((g, idx) => {
+                const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
+                const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
+                const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
+                const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
+                return { key, label, options, imageByOption };
+            })
+            .filter(g => g.options.length > 0);
+    }
 
-  // Legacy: productOptions / productOptions2 / ...
-  const groups = [];
-  for (let i = 1; i <= 10; i++) {
-    const k = (i === 1) ? "productOptions" : `productOptions${i}`;
-    const arr = p[k];
-    if (!Array.isArray(arr) || arr.length < 2) continue;
+    // Legacy: productOptions / productOptions2 / ...
+    const groups = [];
+    for (let i = 1; i <= 10; i++) {
+        const k = (i === 1) ? "productOptions" : `productOptions${i}`;
+        const arr = p[k];
+        if (!Array.isArray(arr) || arr.length < 2) continue;
 
-    const [labelRaw, ...optsRaw] = arr;
-    const label = String(labelRaw ?? `Option ${i}`).trim().replace(/:$/, "");
-    const options = optsRaw.map(x => String(x).trim()).filter(Boolean);
-    if (!options.length) continue;
+        const [labelRaw, ...optsRaw] = arr;
+        const label = String(labelRaw ?? `Option ${i}`).trim().replace(/:$/, "");
+        const options = optsRaw.map(x => String(x).trim()).filter(Boolean);
+        if (!options.length) continue;
 
-    const map =
-      (i === 1)
-        ? (p.productOptionImageMap || p.productOptionImageMap1 || null)
-        : (p[`productOptionImageMap${i}`] || null);
+        const map =
+            (i === 1)
+                ? (p.productOptionImageMap || p.productOptionImageMap1 || null)
+                : (p[`productOptionImageMap${i}`] || null);
 
-    groups.push({
-      key: label.toLowerCase().replace(/\s+/g, "_") || `opt${i}`,
-      label,
-      options,
-      imageByOption: (map && typeof map === "object") ? map : null
-    });
-  }
-  return groups;
+        groups.push({
+            key: label.toLowerCase().replace(/\s+/g, "_") || `opt${i}`,
+            label,
+            options,
+            imageByOption: (map && typeof map === "object") ? map : null
+        });
+    }
+    return groups;
 }
 
 function __ssNormalizeSelectedOptions(raw) {
-  if (!Array.isArray(raw)) return [];
-  const out = [];
-  for (const x of raw) {
-    const label = String(x?.label ?? "").trim().replace(/:$/, "");
-    const value = String(x?.value ?? "").trim();
-    if (!label || !value) continue;
-    out.push({ label, value });
-    if (out.length >= 10) break;
-  }
-  return out;
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const x of raw) {
+        const label = String(x?.label ?? "").trim().replace(/:$/, "");
+        const value = String(x?.value ?? "").trim();
+        if (!label || !value) continue;
+        out.push({ label, value });
+        if (out.length >= 10) break;
+    }
+    return out;
 }
 
 function __ssDefaultSelectedOptions(groups) {
-  return (groups || [])
-    .map(g => ({ label: String(g.label || "Option").trim().replace(/:$/, ""), value: String(g.options?.[0] ?? "").trim() }))
-    .filter(o => o.label && o.value);
+    return (groups || [])
+        .map(g => ({ label: String(g.label || "Option").trim().replace(/:$/, ""), value: String(g.options?.[0] ?? "").trim() }))
+        .filter(o => o.label && o.value);
 }
 
 function __ssFormatSelectedOptionsDisplay(selectedOptions) {
-  const sel = __ssNormalizeSelectedOptions(selectedOptions);
-  return sel.map(o => `${o.label}: ${o.value}`).join(", ");
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    return sel.map(o => `${o.label}: ${o.value}`).join(", ");
 }
 
 function __ssFormatSelectedOptionsKey(selectedOptions) {
-  const sel = __ssNormalizeSelectedOptions(selectedOptions);
-  return sel.map(o => `${o.label}=${o.value}`).join(" | ");
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    return sel.map(o => `${o.label}=${o.value}`).join(" | ");
 }
 
 function __ssApplyOptionImageMapping(group, optionValue, validImages) {
-  const map = (group && typeof group.imageByOption === "object" && group.imageByOption) ? group.imageByOption : null;
-  if (!map) return false;
-  const mapped = map[optionValue];
-  if (mapped === undefined || mapped === null || mapped === "") return false;
+    const map = (group && typeof group.imageByOption === "object" && group.imageByOption) ? group.imageByOption : null;
+    if (!map) return false;
+    const mapped = map[optionValue];
+    if (mapped === undefined || mapped === null || mapped === "") return false;
 
-  const imgs = Array.isArray(validImages) ? validImages : (window.currentProductImages || []);
-  const main = document.getElementById("mainImage");
+    const imgs = Array.isArray(validImages) ? validImages : (window.currentProductImages || []);
+    const main = document.getElementById("mainImage");
 
-  if (typeof mapped === "number" && Number.isFinite(mapped)) {
-    const idx = Math.max(0, Math.min(imgs.length - 1, Math.floor(mapped)));
-    if (imgs[idx]) {
-      window.currentIndex = idx;
-      updateImage();
-      return true;
+    if (typeof mapped === "number" && Number.isFinite(mapped)) {
+        const idx = Math.max(0, Math.min(imgs.length - 1, Math.floor(mapped)));
+        if (imgs[idx]) {
+            window.currentIndex = idx;
+            updateImage();
+            return true;
+        }
+        return false;
+    }
+
+    const url = String(mapped).trim();
+    if (!url) return false;
+
+    const idx = imgs.indexOf(url);
+    if (idx !== -1) {
+        window.currentIndex = idx;
+        updateImage();
+        return true;
+    }
+
+    if (main) {
+        main.src = url;
+        return true;
     }
     return false;
-  }
-
-  const url = String(mapped).trim();
-  if (!url) return false;
-
-  const idx = imgs.indexOf(url);
-  if (idx !== -1) {
-    window.currentIndex = idx;
-    updateImage();
-    return true;
-  }
-
-  if (main) {
-    main.src = url;
-    return true;
-  }
-  return false;
 }
 
 function __ssSetSelectedOptions(sel) {
-  const norm = __ssNormalizeSelectedOptions(sel);
-  window.selectedProductOptions = norm;
-  window.selectedProductOption = norm?.[0]?.value || "";
+    const norm = __ssNormalizeSelectedOptions(sel);
+    window.selectedProductOptions = norm;
+    window.selectedProductOption = norm?.[0]?.value || "";
 }
 
 function __ssGetSelectedOptions() {
-  return __ssNormalizeSelectedOptions(window.selectedProductOptions || []);
+    return __ssNormalizeSelectedOptions(window.selectedProductOptions || []);
 }
 
 /* Override: safer thumbnail active handling */
 function updateImage(direction = "none") {
-  const imageElement = document.getElementById("mainImage");
-  const imgs = window.currentProductImages || [];
-  const idx = Number(window.currentIndex || 0);
+    const imageElement = document.getElementById("mainImage");
+    const imgs = window.currentProductImages || [];
+    const idx = Number(window.currentIndex || 0);
 
-  if (imageElement && imgs[idx]) {
-    if (direction === "right") {
-      imageElement.style.transform = "translateX(100vw)";
-      setTimeout(() => {
-        imageElement.src = imgs[idx];
-        imageElement.style.transition = "none";
-        imageElement.style.transform = "translateX(-100vw)";
-        void imageElement.offsetWidth;
-        imageElement.style.transition = "transform 0.4s ease";
-        imageElement.style.transform = "translateX(0)";
-      }, 100);
-    } else if (direction === "left") {
-      imageElement.style.transform = "translateX(-100vw)";
-      setTimeout(() => {
-        imageElement.src = imgs[idx];
-        imageElement.style.transition = "none";
-        imageElement.style.transform = "translateX(100vw)";
-        void imageElement.offsetWidth;
-        imageElement.style.transition = "transform 0.4s ease";
-        imageElement.style.transform = "translateX(0)";
-      }, 100);
-    } else {
-      imageElement.src = imgs[idx];
+    if (imageElement && imgs[idx]) {
+        if (direction === "right") {
+            imageElement.style.transform = "translateX(100vw)";
+            setTimeout(() => {
+                imageElement.src = imgs[idx];
+                imageElement.style.transition = "none";
+                imageElement.style.transform = "translateX(-100vw)";
+                void imageElement.offsetWidth;
+                imageElement.style.transition = "transform 0.4s ease";
+                imageElement.style.transform = "translateX(0)";
+            }, 100);
+        } else if (direction === "left") {
+            imageElement.style.transform = "translateX(-100vw)";
+            setTimeout(() => {
+                imageElement.src = imgs[idx];
+                imageElement.style.transition = "none";
+                imageElement.style.transform = "translateX(100vw)";
+                void imageElement.offsetWidth;
+                imageElement.style.transition = "transform 0.4s ease";
+                imageElement.style.transform = "translateX(0)";
+            }, 100);
+        } else {
+            imageElement.src = imgs[idx];
+        }
     }
-  }
 
-  const thumbs = document.querySelectorAll(".Thumbnail");
-  thumbs.forEach(t => t.classList.remove("active"));
-  if (thumbs[idx]) thumbs[idx].classList.add("active");
+    const thumbs = document.querySelectorAll(".Thumbnail");
+    thumbs.forEach(t => t.classList.remove("active"));
+    if (thumbs[idx]) thumbs[idx].classList.add("active");
 }
 
 /* Override: safe product page with multi-options + option→image mapping */
 function GoToProductPage(productName, productPrice, productDescription) {
-  console.log("Product clicked:", productName);
-  // analytics: product opened (viewer)
-  sendAnalyticsEvent('product_open', buildAnalyticsProductPayload(productName, { priceEUR: productPrice }));
-  try { clearCategoryHighlight(); } catch { }
+    console.log("Product clicked:", productName);
+    // analytics: product opened (viewer)
+    sendAnalyticsEvent('product_open', buildAnalyticsProductPayload(productName, { priceEUR: productPrice }));
+    try { clearCategoryHighlight(); } catch { }
 
-  const viewer = document.getElementById("Viewer");
-  if (!viewer) {
-    console.error(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Viewer not found.");
-    return;
-  }
-
-  viewer.innerHTML = "";
-  try { removeSortContainer(); } catch { }
-
-  const product = __ssGetCatalogFlat().find(p => p?.name === productName);
-  if (!product || !Array.isArray(product.images) || product.images.length === 0) {
-    console.error("❌ Product not found or no images:", productName);
-    return;
-  }
-
-  const imagePromises = product.images.map(src => new Promise(resolve => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => resolve(src);
-    img.onerror = () => resolve(null);
-  }));
-
-  Promise.all(imagePromises).then(loadedImages => {
-    const validImages = loadedImages.filter(Boolean);
-    if (validImages.length === 0) {
-      console.error("❌ No valid images loaded for:", productName);
-      viewer.innerHTML = `<p>${__ssEscHtml(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Products not loaded")}</p>`;
-      return;
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) {
+        console.error(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Viewer not found.");
+        return;
     }
-    renderProductPage(product, validImages, productName, productPrice, productDescription);
-  });
+
+    viewer.innerHTML = "";
+    try { removeSortContainer(); } catch { }
+
+    const product = __ssGetCatalogFlat().find(p => p?.name === productName);
+    if (!product || !Array.isArray(product.images) || product.images.length === 0) {
+        console.error("❌ Product not found or no images:", productName);
+        return;
+    }
+
+    const imagePromises = product.images.map(src => new Promise(resolve => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => resolve(src);
+        img.onerror = () => resolve(null);
+    }));
+
+    Promise.all(imagePromises).then(loadedImages => {
+        const validImages = loadedImages.filter(Boolean);
+        if (validImages.length === 0) {
+            console.error("❌ No valid images loaded for:", productName);
+            viewer.innerHTML = `<p>${__ssEscHtml(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Products not loaded")}</p>`;
+            return;
+        }
+        renderProductPage(product, validImages, productName, productPrice, productDescription);
+    });
 }
 
 function renderProductPage(product, validImages, productName, productPrice, productDescription) {
-  const viewer = document.getElementById("Viewer");
-  if (!viewer) return;
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) return;
 
-  const existing = document.getElementById("Product_Viewer");
-  if (existing) existing.remove();
+    const existing = document.getElementById("Product_Viewer");
+    if (existing) existing.remove();
 
-  const Product_Viewer = document.createElement("div");
-  Product_Viewer.id = "Product_Viewer";
-  Product_Viewer.className = "Product_Viewer";
+    const Product_Viewer = document.createElement("div");
+    Product_Viewer.id = "Product_Viewer";
+    Product_Viewer.className = "Product_Viewer";
 
-  window.currentProductImages = Array.isArray(validImages) ? validImages : [];
-  window.currentIndex = 0;
+    window.currentProductImages = Array.isArray(validImages) ? validImages : [];
+    window.currentIndex = 0;
 
-  if (typeof cart === "object" && cart) cart[productName] = 1;
+    if (typeof cart === "object" && cart) cart[productName] = 1;
 
-  const productDiv = document.createElement("div");
-  productDiv.className = "Product_Detail_Page";
+    const productDiv = document.createElement("div");
+    productDiv.className = "Product_Detail_Page";
 
-  const details = document.createElement("div");
-  details.className = "Product_Details";
+    const details = document.createElement("div");
+    details.className = "Product_Details";
 
-  // ----- Images column -----
-  const imagesCol = document.createElement("div");
-  imagesCol.className = "Product_Images";
+    // ----- Images column -----
+    const imagesCol = document.createElement("div");
+    imagesCol.className = "Product_Images";
 
-  const imageControl = document.createElement("div");
-  imageControl.className = "ImageControl";
+    const imageControl = document.createElement("div");
+    imageControl.className = "ImageControl";
 
-  const prevBtn = document.createElement("button");
-  prevBtn.className = "ImageControlButtonPrevious";
-  prevBtn.type = "button";
-  prevBtn.addEventListener("click", (e) => { e.preventDefault(); try { prevImage(); } catch { } });
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "ImageControlButtonPrevious";
+    prevBtn.type = "button";
+    prevBtn.addEventListener("click", (e) => { e.preventDefault(); try { prevImage(); } catch { } });
 
-  const prevTxt = document.createElement("div");
-  prevTxt.className = "ImageControlButtonText";
-  prevTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.PREVIOUS || "Prev";
-  prevBtn.appendChild(prevTxt);
+    const prevTxt = document.createElement("div");
+    prevTxt.className = "ImageControlButtonText";
+    prevTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.PREVIOUS || "Prev";
+    prevBtn.appendChild(prevTxt);
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "image-slider-wrapper";
+    const wrapper = document.createElement("div");
+    wrapper.className = "image-slider-wrapper";
 
-  const mainImg = document.createElement("img");
-  mainImg.id = "mainImage";
-  mainImg.className = "mainImage slide-image";
-  mainImg.src = window.currentProductImages[0] || "";
-  mainImg.alt = productName || "";
-  wrapper.appendChild(mainImg);
+    const mainImg = document.createElement("img");
+    mainImg.id = "mainImage";
+    mainImg.className = "mainImage slide-image";
+    mainImg.src = window.currentProductImages[0] || "";
+    mainImg.alt = productName || "";
+    wrapper.appendChild(mainImg);
 
-  const nextBtn = document.createElement("button");
-  nextBtn.className = "ImageControlButtonNext";
-  nextBtn.type = "button";
-  nextBtn.addEventListener("click", (e) => { e.preventDefault(); try { nextImage(); } catch { } });
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "ImageControlButtonNext";
+    nextBtn.type = "button";
+    nextBtn.addEventListener("click", (e) => { e.preventDefault(); try { nextImage(); } catch { } });
 
-  const nextTxt = document.createElement("div");
-  nextTxt.className = "ImageControlButtonText";
-  nextTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.NEXT || "Next";
-  nextBtn.appendChild(nextTxt);
+    const nextTxt = document.createElement("div");
+    nextTxt.className = "ImageControlButtonText";
+    nextTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.NEXT || "Next";
+    nextBtn.appendChild(nextTxt);
 
-  imageControl.append(prevBtn, wrapper, nextBtn);
+    imageControl.append(prevBtn, wrapper, nextBtn);
 
-  const thumbsHolder = document.createElement("div");
-  thumbsHolder.className = "ThumbnailsHolder";
+    const thumbsHolder = document.createElement("div");
+    thumbsHolder.className = "ThumbnailsHolder";
 
-  (window.currentProductImages || []).forEach((src, idx) => {
-    const t = document.createElement("img");
-    t.className = `Thumbnail${idx === 0 ? " active" : ""}`;
-    t.src = src;
-    t.alt = `${productName || "image"} ${idx + 1}`;
-    t.addEventListener("click", (e) => {
-      e.preventDefault();
-      window.currentIndex = idx;
-      updateImage();
+    (window.currentProductImages || []).forEach((src, idx) => {
+        const t = document.createElement("img");
+        t.className = `Thumbnail${idx === 0 ? " active" : ""}`;
+        t.src = src;
+        t.alt = `${productName || "image"} ${idx + 1}`;
+        t.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.currentIndex = idx;
+            updateImage();
+        });
+        thumbsHolder.appendChild(t);
     });
-    thumbsHolder.appendChild(t);
-  });
 
-  imagesCol.append(imageControl, thumbsHolder);
+    imagesCol.append(imageControl, thumbsHolder);
 
-  // ----- Info column -----
-  const infoCol = document.createElement("div");
-  infoCol.className = "Product_Info";
+    // ----- Info column -----
+    const infoCol = document.createElement("div");
+    infoCol.className = "Product_Info";
 
-  const heading = document.createElement("div");
-  heading.className = "Product_Name_Heading";
-  heading.textContent = productName || "";
+    const heading = document.createElement("div");
+    heading.className = "Product_Name_Heading";
+    heading.textContent = productName || "";
 
-  const desc = document.createElement("div");
-  desc.className = "Product_Description";
-  desc.textContent = (productDescription && String(productDescription).trim())
-    ? String(productDescription)
-    : (TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || "");
+    const desc = document.createElement("div");
+    desc.className = "Product_Description";
+    desc.textContent = (productDescription && String(productDescription).trim())
+        ? String(productDescription)
+        : (TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || "");
 
-  infoCol.append(heading, desc);
+    infoCol.append(heading, desc);
 
-  // Options (multi)
-  const groups = __ssExtractOptionGroups(product);
-  const defaultSel = __ssDefaultSelectedOptions(groups);
-  __ssSetSelectedOptions(defaultSel);
+    // Options (multi)
+    const groups = __ssExtractOptionGroups(product);
+    const defaultSel = __ssDefaultSelectedOptions(groups);
+    __ssSetSelectedOptions(defaultSel);
 
-  if (groups.length) {
-    groups.forEach((g, gIdx) => {
-      const container = document.createElement("div");
-      container.className = "Product_Options_Container";
-      container.dataset.groupIndex = String(gIdx);
+    if (groups.length) {
+        groups.forEach((g, gIdx) => {
+            const container = document.createElement("div");
+            container.className = "Product_Options_Container";
+            container.dataset.groupIndex = String(gIdx);
 
-      const labelWrap = document.createElement("div");
-      labelWrap.className = "Product_Option_Label";
+            const labelWrap = document.createElement("div");
+            labelWrap.className = "Product_Option_Label";
 
-      const strong = document.createElement("strong");
-      strong.textContent = `${g.label}:`;
-      labelWrap.appendChild(strong);
+            const strong = document.createElement("strong");
+            strong.textContent = `${g.label}:`;
+            labelWrap.appendChild(strong);
 
-      const btnWrap = document.createElement("div");
-      btnWrap.className = "Product_Option_Buttons";
+            const btnWrap = document.createElement("div");
+            btnWrap.className = "Product_Option_Buttons";
 
-      const selVal = defaultSel?.[gIdx]?.value || g.options[0];
+            const selVal = defaultSel?.[gIdx]?.value || g.options[0];
 
-      g.options.forEach((opt) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = `Product_Option_Button${opt === selVal ? " selected" : ""}`;
-        b.textContent = opt;
+            g.options.forEach((opt) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = `Product_Option_Button${opt === selVal ? " selected" : ""}`;
+                b.textContent = opt;
 
-        b.addEventListener("click", (e) => {
-          e.preventDefault();
+                b.addEventListener("click", (e) => {
+                    e.preventDefault();
 
-          // toggle selected class within this group only
-          btnWrap.querySelectorAll(".Product_Option_Button").forEach(x => x.classList.remove("selected"));
-          b.classList.add("selected");
+                    // toggle selected class within this group only
+                    btnWrap.querySelectorAll(".Product_Option_Button").forEach(x => x.classList.remove("selected"));
+                    b.classList.add("selected");
 
-          const current = __ssGetSelectedOptions();
-          while (current.length < groups.length) {
-            const gg = groups[current.length];
-            current.push({ label: gg.label, value: gg.options[0] });
-          }
-          current[gIdx] = { label: g.label, value: opt };
-          __ssSetSelectedOptions(current);
+                    const current = __ssGetSelectedOptions();
+                    while (current.length < groups.length) {
+                        const gg = groups[current.length];
+                        current.push({ label: gg.label, value: gg.options[0] });
+                    }
+                    current[gIdx] = { label: g.label, value: opt };
+                    __ssSetSelectedOptions(current);
 
-          // Option→image mapping (if configured)
-          __ssApplyOptionImageMapping(g, opt, window.currentProductImages);
+                    // Option→image mapping (if configured)
+                    __ssApplyOptionImageMapping(g, opt, window.currentProductImages);
+                });
+
+                btnWrap.appendChild(b);
+            });
+
+            container.append(labelWrap, btnWrap);
+            infoCol.appendChild(container);
         });
 
-        btnWrap.appendChild(b);
-      });
-
-      container.append(labelWrap, btnWrap);
-      infoCol.appendChild(container);
-    });
-
-    // Apply mapping for default selections (first group that has a mapping hit)
-    for (let i = 0; i < groups.length; i++) {
-      const sel = __ssGetSelectedOptions();
-      const v = sel?.[i]?.value;
-      if (__ssApplyOptionImageMapping(groups[i], v, window.currentProductImages)) break;
+        // Apply mapping for default selections (first group that has a mapping hit)
+        for (let i = 0; i < groups.length; i++) {
+            const sel = __ssGetSelectedOptions();
+            const v = sel?.[i]?.value;
+            if (__ssApplyOptionImageMapping(groups[i], v, window.currentProductImages)) break;
+        }
     }
-  }
 
-  // Price
-  const priceLabel = document.createElement("div");
-  priceLabel.className = "Product_Price_Label";
+    // Price
+    const priceLabel = document.createElement("div");
+    priceLabel.className = "Product_Price_Label";
 
-  const pStrong = document.createElement("strong");
-  pStrong.textContent = `${TEXTS?.PRODUCT_SECTION?.PRICE_LABEL || "Price"} `;
-  const pSpan = document.createElement("span");
-  pSpan.id = "product-page-price";
-  pSpan.className = "productPrice";
-  pSpan.dataset.eur = String(productPrice ?? "");
-  pSpan.textContent = `${productPrice} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
+    const pStrong = document.createElement("strong");
+    pStrong.textContent = `${TEXTS?.PRODUCT_SECTION?.PRICE_LABEL || "Price"} `;
+    const pSpan = document.createElement("span");
+    pSpan.id = "product-page-price";
+    pSpan.className = "productPrice";
+    pSpan.dataset.eur = String(productPrice ?? "");
+    pSpan.textContent = `${productPrice} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
 
-  priceLabel.append(pStrong, pSpan);
-  infoCol.appendChild(priceLabel);
+    priceLabel.append(pStrong, pSpan);
+    infoCol.appendChild(priceLabel);
 
-  // Quantity + Add to cart
-  const qtyWrap = document.createElement("div");
-  qtyWrap.className = "ProductPageQuantityContainer";
+    // Quantity + Add to cart
+    const qtyWrap = document.createElement("div");
+    qtyWrap.className = "ProductPageQuantityContainer";
 
-  const qtyControls = document.createElement("div");
-  qtyControls.className = "Quantity_Controls_ProductPage";
+    const qtyControls = document.createElement("div");
+    qtyControls.className = "Quantity_Controls_ProductPage";
 
-  const dec = document.createElement("button");
-  dec.className = "Button";
-  dec.type = "button";
-  dec.textContent = TEXTS?.BASKET?.BUTTONS?.DECREASE || "-";
-  dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(productName); } catch { } });
+    const dec = document.createElement("button");
+    dec.className = "Button";
+    dec.type = "button";
+    dec.textContent = TEXTS?.BASKET?.BUTTONS?.DECREASE || "-";
+    dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(productName); } catch { } });
 
-  const qtySpan = document.createElement("span");
-  qtySpan.className = "WhiteText";
-  qtySpan.id = `quantity-${productName}`;
-  qtySpan.textContent = "1";
+    const qtySpan = document.createElement("span");
+    qtySpan.className = "WhiteText";
+    qtySpan.id = `quantity-${productName}`;
+    qtySpan.textContent = "1";
 
-  const inc = document.createElement("button");
-  inc.className = "Button";
-  inc.type = "button";
-  inc.textContent = TEXTS?.BASKET?.BUTTONS?.INCREASE || "+";
-  inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(productName); } catch { } });
+    const inc = document.createElement("button");
+    inc.className = "Button";
+    inc.type = "button";
+    inc.textContent = TEXTS?.BASKET?.BUTTONS?.INCREASE || "+";
+    inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(productName); } catch { } });
 
-  qtyControls.append(dec, qtySpan, inc);
+    qtyControls.append(dec, qtySpan, inc);
 
-  const addBtn = document.createElement("button");
-  addBtn.className = "add-to-cart-product";
-  addBtn.type = "button";
-  addBtn.innerHTML = `
+    const addBtn = document.createElement("button");
+    addBtn.className = "add-to-cart-product";
+    addBtn.type = "button";
+    addBtn.innerHTML = `
     <span style="display:flex;align-items:center;gap:6px;">
       ${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
       <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
@@ -6008,250 +5940,251 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     </span>
   `;
 
-  addBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
-    const sel = __ssGetSelectedOptions();
-    const legacy = sel?.[0]?.value || "";
-    addToCart(
-      productName,
-      parseFloat(productPrice) || Number(productPrice) || 0,
-      mainSrc,
-      product.expectedPurchasePrice,
-      product.productLink,
-      productDescription,
-      legacy,
-      sel
-    );
-  });
-
-  qtyWrap.append(qtyControls, addBtn);
-  infoCol.appendChild(qtyWrap);
-
-  const buyBtn = document.createElement("button");
-  buyBtn.className = "ProductPageBuyButton";
-  buyBtn.type = "button";
-  buyBtn.textContent = TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now";
-  buyBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
-    const sel = __ssGetSelectedOptions();
-    const legacy = sel?.[0]?.value || "";
-    buyNow(
-      productName,
-      parseFloat(productPrice) || Number(productPrice) || 0,
-      mainSrc,
-      product.expectedPurchasePrice,
-      product.productLink,
-      productDescription,
-      legacy,
-      sel
-    );
-  });
-
-  infoCol.appendChild(buyBtn);
-
-  // Assemble
-  details.append(imagesCol, infoCol);
-  productDiv.appendChild(details);
-  Product_Viewer.appendChild(productDiv);
-  viewer.appendChild(Product_Viewer);
-
-  // Swipe support (non-breaking)
-  try {
-    let touchStartX = 0;
-    let touchEndX = 0;
-    mainImg.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].screenX; });
-    mainImg.addEventListener("touchend", (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      const threshold = 50;
-      if (touchEndX < touchStartX - threshold) nextImage();
-      else if (touchEndX > touchStartX + threshold) prevImage();
+    addBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
+        const sel = __ssGetSelectedOptions();
+        const legacy = sel?.[0]?.value || "";
+        addToCart(
+            productName,
+            parseFloat(productPrice) || Number(productPrice) || 0,
+            mainSrc,
+            product.expectedPurchasePrice,
+            product.productLink,
+            productDescription,
+            legacy,
+            sel
+        );
     });
-  } catch { }
 
-  try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { }
-  try { updateAllPrices(); } catch { }
-  try { updateImage(); } catch { }
+    qtyWrap.append(qtyControls, addBtn);
+    infoCol.appendChild(qtyWrap);
+
+    const buyBtn = document.createElement("button");
+    buyBtn.className = "ProductPageBuyButton";
+    buyBtn.type = "button";
+    buyBtn.textContent = TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now";
+    buyBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
+        const sel = __ssGetSelectedOptions();
+        const legacy = sel?.[0]?.value || "";
+        buyNow(
+            productName,
+            parseFloat(productPrice) || Number(productPrice) || 0,
+            mainSrc,
+            product.expectedPurchasePrice,
+            product.productLink,
+            productDescription,
+            legacy,
+            sel
+        );
+    });
+
+    infoCol.appendChild(buyBtn);
+
+    // Assemble
+    details.append(imagesCol, infoCol);
+    productDiv.appendChild(details);
+    Product_Viewer.appendChild(productDiv);
+    viewer.appendChild(Product_Viewer);
+
+    // Swipe support (non-breaking)
+    try {
+        let touchStartX = 0;
+        let touchEndX = 0;
+        mainImg.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].screenX; });
+        mainImg.addEventListener("touchend", (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const threshold = 50;
+            if (touchEndX < touchStartX - threshold) nextImage();
+            else if (touchEndX > touchStartX + threshold) prevImage();
+        });
+    } catch { }
+
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { }
+    try { updateAllPrices(); } catch { }
+    try { updateImage(); } catch { }
 }
 
 /* Override: buyNow forwards selectedOptions */
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
-  const qtyEl = document.getElementById(`quantity-${productName}`);
-  const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
-  if (typeof cart === "object" && cart) cart[productName] = quantity;
-  addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption, selectedOptions);
-  try { navigate("GoToCart"); } catch { try { GoToCart(); } catch { } }
+    const qtyEl = document.getElementById(`quantity-${productName}`);
+    const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
+    if (typeof cart === "object" && cart) cart[productName] = quantity;
+    addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption, selectedOptions);
+    try { navigate("GoToCart"); } catch { try { GoToCart(); } catch { } }
 }
 
 /* Override: addToCart stores selectedOptions and uses option-combo key */
-function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {const _pRef = findProductByNameParam(productName) || {};
-const productIdForCart = String(_pRef.productId || "").trim() || String(extractProductIdFromLink(productLink) || "").trim() || null;
+function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
+    const _pRef = findProductByNameParam(productName) || {};
+    const productIdForCart = String(_pRef.productId || "").trim() || String(extractProductIdFromLink(productLink) || "").trim() || null;
 
-  const qty = (typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1;
-  if (typeof cart === "object" && cart) cart[productName] = 1;
+    const qty = (typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1;
+    if (typeof cart === "object" && cart) cart[productName] = 1;
 
-  // Normalize selected options
-  let selOpts = __ssNormalizeSelectedOptions(selectedOptions);
+    // Normalize selected options
+    let selOpts = __ssNormalizeSelectedOptions(selectedOptions);
 
-  // Back-compat: if only legacy selectedOption provided, wrap it
-  if (!selOpts.length && selectedOption) {
-    const p = __ssGetCatalogFlat().find(pp => pp?.name === productName) || {};
-    const groups = __ssExtractOptionGroups(p);
-    const label = (groups?.[0]?.label) ? groups[0].label : "Option";
-    selOpts = [{ label, value: String(selectedOption).trim() }];
-  }
+    // Back-compat: if only legacy selectedOption provided, wrap it
+    if (!selOpts.length && selectedOption) {
+        const p = __ssGetCatalogFlat().find(pp => pp?.name === productName) || {};
+        const groups = __ssExtractOptionGroups(p);
+        const label = (groups?.[0]?.label) ? groups[0].label : "Option";
+        selOpts = [{ label, value: String(selectedOption).trim() }];
+    }
 
-  // Ensure legacy selectedOption reflects first group
-  if (!selectedOption && selOpts.length) selectedOption = selOpts[0].value;
+    // Ensure legacy selectedOption reflects first group
+    if (!selectedOption && selOpts.length) selectedOption = selOpts[0].value;
 
-  const key = selOpts.length ? `${productName} - ${__ssFormatSelectedOptionsKey(selOpts)}` : (selectedOption ? `${productName} - ${selectedOption}` : productName);
+    const key = selOpts.length ? `${productName} - ${__ssFormatSelectedOptionsKey(selOpts)}` : (selectedOption ? `${productName} - ${selectedOption}` : productName);
 
-  if (qty > 0) {
-    if (basket && basket[key]) {
-      basket[key].quantity += qty;
-      // keep latest selections
-      if (selOpts.length) basket[key].selectedOptions = selOpts;
-      if (selectedOption) basket[key].selectedOption = selectedOption;
+    if (qty > 0) {
+        if (basket && basket[key]) {
+            basket[key].quantity += qty;
+            // keep latest selections
+            if (selOpts.length) basket[key].selectedOptions = selOpts;
+            if (selectedOption) basket[key].selectedOption = selectedOption;
+        } else {
+            basket[key] = {
+                name: productName,
+                price,
+                image: imageUrl,
+                quantity: qty,
+                productId: productIdForCart,
+                expectedPurchasePrice,
+                productLink,
+                description: productDescription,
+                ...(selectedOption ? { selectedOption } : {}),
+                ...(selOpts.length ? { selectedOptions: selOpts } : {})
+            };
+        }
+
+        try {
+            if (typeof persistBasket === "function") persistBasket("add_to_cart");
+            else localStorage.setItem("basket", JSON.stringify(basket));
+        } catch {
+            try { localStorage.setItem("basket", JSON.stringify(basket)); } catch { }
+        }
+
+        // analytics: add to cart
+        try {
+            const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink, productId: productIdForCart });
+            payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
+            sendAnalyticsEvent('add_to_cart', payload);
+        } catch { }
+        const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
+        alert(`${qty} x ${productName}${optMsg} added to cart!`);
     } else {
-      basket[key] = {
-        name: productName,
-        price,
-        image: imageUrl,
-        quantity: qty,
-        productId: productIdForCart,
-        expectedPurchasePrice,
-        productLink,
-        description: productDescription,
-        ...(selectedOption ? { selectedOption } : {}),
-        ...(selOpts.length ? { selectedOptions: selOpts } : {})
-      };
+        alert("Please select at least one item.");
     }
-
-    try {
-      if (typeof persistBasket === "function") persistBasket("add_to_cart");
-      else localStorage.setItem("basket", JSON.stringify(basket));
-    } catch {
-      try { localStorage.setItem("basket", JSON.stringify(basket)); } catch { }
-    }
-
-    // analytics: add to cart
-try {
-  const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink, productId: productIdForCart });
-  payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
-  sendAnalyticsEvent('add_to_cart', payload);
-} catch { }
-const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
-    alert(`${qty} x ${productName}${optMsg} added to cart!`);
-  } else {
-    alert("Please select at least one item.");
-  }
 }
 
 /* Override: checkout cart builders include selectedOptions */
 function buildStripeSafeCart(fullCart) {
-  return (fullCart || []).map((i) => ({
-    name: i.name,
-    quantity: i.quantity,
-    price: Number(i.unitPriceEUR || i.price || 0),
-    selectedOption: i.selectedOption || "",
-    selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
-  }));
+    return (fullCart || []).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        price: Number(i.unitPriceEUR || i.price || 0),
+        selectedOption: i.selectedOption || "",
+        selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
+    }));
 }
 
 function buildFullCartFromBasket() {
-  const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
-    try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
-  })();
+    const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
+        try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
+    })();
 
-  const items = Object.values(basketObj || {});
-  return items
-    .map((item) => {
-      const unitEUR = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
-      const expected = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
-      const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+    const items = Object.values(basketObj || {});
+    return items
+        .map((item) => {
+            const unitEUR = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
+            const expected = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
 
-      const out = {
-        name: String(item?.name || "").slice(0, 120),
-        quantity: qty,
-        unitPriceEUR: Number(unitEUR.toFixed(2)),
-        price: Number(unitEUR.toFixed(2)),
-        expectedPurchasePrice: Number((expected || unitEUR).toFixed(2)),
-        productLink: String(item?.productLink || "N/A").slice(0, 800),
-        image: String(item?.image || "").slice(0, 800),
-        description: String(item?.description || "").slice(0, 2000)
-      };
+            const out = {
+                name: String(item?.name || "").slice(0, 120),
+                quantity: qty,
+                unitPriceEUR: Number(unitEUR.toFixed(2)),
+                price: Number(unitEUR.toFixed(2)),
+                expectedPurchasePrice: Number((expected || unitEUR).toFixed(2)),
+                productLink: String(item?.productLink || "N/A").slice(0, 800),
+                image: String(item?.image || "").slice(0, 800),
+                description: String(item?.description || "").slice(0, 2000)
+            };
 
-      if (item?.selectedOption) out.selectedOption = String(item.selectedOption).slice(0, 120);
-      const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-      if (sel.length) out.selectedOptions = sel;
+            if (item?.selectedOption) out.selectedOption = String(item.selectedOption).slice(0, 120);
+            const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+            if (sel.length) out.selectedOptions = sel;
 
-      return out;
-    })
-    .filter((i) => i.name && i.quantity > 0 && Number(i.price) > 0);
+            return out;
+        })
+        .filter((i) => i.name && i.quantity > 0 && Number(i.price) > 0);
 }
 
 function buildStripeOrderSummary(stripeCart) {
-  return (stripeCart || [])
-    .map((item) => {
-      const name = String(item?.name || "");
-      const shortName = name.length > 30 ? name.slice(0, 30) + "…" : name;
-      const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-      const opt = sel.length ? ` (${__ssFormatSelectedOptionsDisplay(sel).slice(0, 80)})` :
-        (item?.selectedOption ? ` (${String(item.selectedOption).slice(0, 40)})` : "");
-      const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
-      return `${qty}x ${shortName}${opt}`;
-    })
-    .join(", ")
-    .slice(0, 499);
+    return (stripeCart || [])
+        .map((item) => {
+            const name = String(item?.name || "");
+            const shortName = name.length > 30 ? name.slice(0, 30) + "…" : name;
+            const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+            const opt = sel.length ? ` (${__ssFormatSelectedOptionsDisplay(sel).slice(0, 80)})` :
+                (item?.selectedOption ? ` (${String(item.selectedOption).slice(0, 40)})` : "");
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+            return `${qty}x ${shortName}${opt}`;
+        })
+        .join(", ")
+        .slice(0, 499);
 }
 
 /* Override: basket rendering escapes user/product strings and shows multi-options */
 function updateBasket() {
-  let basketContainer = document.getElementById("Basket_Viewer");
+    let basketContainer = document.getElementById("Basket_Viewer");
 
-  if (!basketContainer) {
-    const viewer = document.getElementById("Viewer");
-    if (!viewer) return;
-    basketContainer = document.createElement("div");
-    basketContainer.id = "Basket_Viewer";
-    basketContainer.classList.add("Basket_Viewer");
-    viewer.appendChild(basketContainer);
-  }
+    if (!basketContainer) {
+        const viewer = document.getElementById("Viewer");
+        if (!viewer) return;
+        basketContainer = document.createElement("div");
+        basketContainer.id = "Basket_Viewer";
+        basketContainer.classList.add("Basket_Viewer");
+        viewer.appendChild(basketContainer);
+    }
 
-  basketContainer.innerHTML = "";
+    basketContainer.innerHTML = "";
 
-  if (!basket || Object.keys(basket).length === 0) {
-    basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
-    return;
-  }
+    if (!basket || Object.keys(basket).length === 0) {
+        basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
+        return;
+    }
 
-  let totalSum = 0;
+    let totalSum = 0;
 
-  Object.entries(basket).forEach(([key, item]) => {
-    const productDiv = document.createElement("div");
-    productDiv.classList.add("Basket_Item_Container");
+    Object.entries(basket).forEach(([key, item]) => {
+        const productDiv = document.createElement("div");
+        productDiv.classList.add("Basket_Item_Container");
 
-    const value = Number(parseFloat(item?.price) || 0);
-    const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
-    const itemTotal = (value * qty);
-    totalSum += itemTotal;
+        const value = Number(parseFloat(item?.price) || 0);
+        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+        const itemTotal = (value * qty);
+        totalSum += itemTotal;
 
-    const encName = encodeURIComponent(String(item?.name || ""));
-    const safeName = __ssEscHtml(item?.name || "");
-    const safeDesc = __ssEscHtml(item?.description || "");
-    const safeImg = __ssEscHtml(item?.image || "");
+        const encName = encodeURIComponent(String(item?.name || ""));
+        const safeName = __ssEscHtml(item?.name || "");
+        const safeDesc = __ssEscHtml(item?.description || "");
+        const safeImg = __ssEscHtml(item?.image || "");
 
-    let optionText = "";
-    const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-    if (sel.length) optionText = `Selected: ${__ssFormatSelectedOptionsDisplay(sel)}`;
-    else if (item?.selectedOption) optionText = `Selected option: ${String(item.selectedOption)}`;
+        let optionText = "";
+        const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+        if (sel.length) optionText = `Selected: ${__ssFormatSelectedOptionsDisplay(sel)}`;
+        else if (item?.selectedOption) optionText = `Selected option: ${String(item.selectedOption)}`;
 
-    const selectedOptionHTML = optionText
-      ? `<span class="BasketSelectedOption">${__ssEscHtml(optionText)}</span>`
-      : "";
+        const selectedOptionHTML = optionText
+            ? `<span class="BasketSelectedOption">${__ssEscHtml(optionText)}</span>`
+            : "";
 
-    productDiv.innerHTML = `
+        productDiv.innerHTML = `
       <div class="Basket-Item">
         <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer">
           <img class="Basket_Image"
@@ -6282,57 +6215,57 @@ function updateBasket() {
       </div>
     `;
 
-    basketContainer.appendChild(productDiv);
-  });
+        basketContainer.appendChild(productDiv);
+    });
 
-  const receiptDiv = document.createElement("div");
-  receiptDiv.classList.add("BasketReceipt");
+    const receiptDiv = document.createElement("div");
+    receiptDiv.classList.add("BasketReceipt");
 
-  let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
+    let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
 
-  Object.entries(basket).forEach(([k, item]) => {
-    const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
-    const unit = Number(parseFloat(item?.price) || 0);
-    const itemTotal = unit * qty;
+    Object.entries(basket).forEach(([k, item]) => {
+        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+        const unit = Number(parseFloat(item?.price) || 0);
+        const itemTotal = unit * qty;
 
-    const name = __ssEscHtml(item?.name || "");
-    const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-    const opt = sel.length ? ` (${__ssEscHtml(__ssFormatSelectedOptionsDisplay(sel))})` :
-      (item?.selectedOption ? ` (${__ssEscHtml(String(item.selectedOption))})` : "");
+        const name = __ssEscHtml(item?.name || "");
+        const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+        const opt = sel.length ? ` (${__ssEscHtml(__ssFormatSelectedOptionsDisplay(sel))})` :
+            (item?.selectedOption ? ` (${__ssEscHtml(String(item.selectedOption))})` : "");
 
-    receiptContent += `
+        receiptContent += `
       <tr>
         <td>${qty} ×</td>
         <td>${name}${opt}</td>
         <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
       </tr>
     `;
-  });
+    });
 
-  receiptContent += `</table></div>`;
-  receiptContent += `
+    receiptContent += `</table></div>`;
+    receiptContent += `
     <div class="ReceiptFooter">
       <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
       <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
     </div>
   `;
 
-  receiptDiv.innerHTML = receiptContent;
-  basketContainer.appendChild(receiptDiv);
+    receiptDiv.innerHTML = receiptContent;
+    basketContainer.appendChild(receiptDiv);
 
-  // Keep existing event delegation behavior for qty buttons
-  if (!basketContainer.dataset.qtyBound) {
-    basketContainer.dataset.qtyBound = "1";
-    basketContainer.addEventListener("click", (e) => {
-      const btn = e.target.closest(".BasketChangeQuantityButton");
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const k = decodeURIComponent(btn.dataset.key || "");
-      const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
-      try { changeQuantity(k, delta); } catch { }
-    });
-  }
+    // Keep existing event delegation behavior for qty buttons
+    if (!basketContainer.dataset.qtyBound) {
+        basketContainer.dataset.qtyBound = "1";
+        basketContainer.addEventListener("click", (e) => {
+            const btn = e.target.closest(".BasketChangeQuantityButton");
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const k = decodeURIComponent(btn.dataset.key || "");
+            const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+            try { changeQuantity(k, delta); } catch { }
+        });
+    }
 
-  try { updateAllPrices(); } catch { }
+    try { updateAllPrices(); } catch { }
 }
