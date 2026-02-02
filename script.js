@@ -3551,8 +3551,8 @@ function _getWalletButtonTheme() {
 
 function _getStripeAppearanceTheme() {
     // Stripe Appearance supports: 'flat', 'stripe', 'night'
-    const isDark = document.documentElement.classList.contains(\"dark-mode\") || localStorage.getItem(\"themeMode\") === \"dark\";
-    return isDark ? \"night\" : \"flat\";
+    const isDark = document.documentElement.classList.contains("dark-mode") || localStorage.getItem("themeMode") === "dark";
+    return isDark ? "night" : "flat";
 }
 
 async function setupWalletPaymentRequestButton({
