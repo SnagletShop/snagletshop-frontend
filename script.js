@@ -5040,64 +5040,66 @@ function buildStripeOrderSummary(stripeCart) {
 }
 
 async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
-    // Ensure tariffs + rates are loaded before computing expected total
-    await preloadSettingsData();
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        await preloadSettingsData();
 
-    const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
-    const order_summary = buildStripeOrderSummary(stripeCart);
+        const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
+        const order_summary = buildStripeOrderSummary(stripeCart);
 
-    // Always read FX snapshot timestamp safely (avoid ReferenceError)
-    const fxFetchedAt =
-        (typeof exchangeRatesFetchedAt !== "undefined" && Number(exchangeRatesFetchedAt) > 0)
-            ? Number(exchangeRatesFetchedAt)
-            : (Number(window.exchangeRatesFetchedAt || 0) > 0 ? Number(window.exchangeRatesFetchedAt) : null);
-    const turnstileToken = await snagletGetTurnstileToken({ forceFresh: true });
+        const fxFetchedAt =
+            (typeof exchangeRatesFetchedAt !== "undefined" && Number(exchangeRatesFetchedAt) > 0)
+                ? Number(exchangeRatesFetchedAt)
+                : (Number(window.exchangeRatesFetchedAt || 0) > 0 ? Number(window.exchangeRatesFetchedAt) : null);
 
+        const turnstileToken = await snagletGetTurnstileToken({ forceFresh: true });
 
-    const res = await fetch(`${API_BASE}/create-payment-intent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            websiteOrigin,
-            currency,
-            country,
-            products: normalizeCartItemsForServer(stripeCart),
-            productsFull: normalizeCartItemsForServer(fullCart),
-            expectedClientTotal,
-            applyTariff: getApplyTariffFlag(),
-            metadata: { order_summary },
-            fxFetchedAt,
-            turnstileToken
-        })
-    });
+        const res = await fetch(`${API_BASE}/create-payment-intent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                websiteOrigin,
+                currency,
+                country,
+                fullCart,
+                expectedClientTotal,
+                applyTariff: getApplyTariffFlag(),
+                metadata: { order_summary },
+                fxFetchedAt,
+                turnstileToken
+            })
+        });
 
-    const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) return data;
 
-    if (!res.ok) {
-        // The two expected "refresh" cases:
-        // - TOTAL_MISMATCH: still doesn't match even with allowed FX snapshots
-        // - FX_SNAPSHOT_NOT_FOUND: client used a snapshot the server no longer retains
-        if (res.status === 409 && (data?.error === "TOTAL_MISMATCH" || data?.code === "TOTAL_MISMATCH")) {
-            const err = new Error(data?.message || "Pricing changed. Please refresh and try again.");
-            err.code = "TOTAL_MISMATCH";
-            err.details = data;
-            throw err;
+        const code = data?.error || data?.code;
+
+        // Retry once: cache may be stale vs server FX history (especially after backend restart)
+        if (res.status === 409 && attempt === 1 && (code === "FX_SNAPSHOT_NOT_FOUND" || code === "TOTAL_MISMATCH")) {
+            localStorage.removeItem(SETTINGS_CACHE_KEY);        // "preloadedSettings"
+            window.exchangeRatesFetchedAt = 0;
+            continue;
         }
 
-        if (res.status === 409 && (data?.error === "FX_SNAPSHOT_NOT_FOUND" || data?.code === "FX_SNAPSHOT_NOT_FOUND")) {
+        // existing error handling
+        if (res.status === 409 && code === "FX_SNAPSHOT_NOT_FOUND") {
             const err = new Error(data?.message || "Exchange rate snapshot expired. Please refresh and try again.");
             err.code = "FX_SNAPSHOT_NOT_FOUND";
             err.details = data;
             throw err;
         }
 
-        // Generic error
+        if (res.status === 409 && code === "TOTAL_MISMATCH") {
+            const err = new Error(data?.message || "Pricing changed. Please refresh and try again.");
+            err.code = "TOTAL_MISMATCH";
+            err.details = data;
+            throw err;
+        }
+
         throw new Error(data?.error || data?.message || `Failed to create payment intent (${res.status})`);
     }
-
-    if (!data?.clientSecret) throw new Error("No client secret received.");
-    return data;
 }
+
 
 async function initStripePaymentUI(selectedCurrency) {
     // Ensure catalog data is loaded before rehydrating basket prices
