@@ -3458,6 +3458,77 @@ async function createPaymentModal() {
     } catch { }
 }
 
+function getStripeAppearanceForModal() {
+    const dark = document.documentElement.classList.contains("dark-mode");
+
+    if (dark) {
+        return {
+            theme: "night",
+            variables: {
+                fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+                fontSizeBase: "14px",
+
+                colorBackground: "#0b1220",
+                colorText: "rgba(255,255,255,.92)",
+                colorTextSecondary: "rgba(229,231,235,.70)",
+                colorPrimary: "#3b82f6",
+                colorDanger: "#ef4444",
+                colorSuccess: "#22c55e",
+                colorBorder: "rgba(255,255,255,.14)",
+
+                borderRadius: "14px",
+                spacingUnit: "6px",
+                focusBoxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+            },
+            rules: {
+                ".Block": {
+                    backgroundColor: "transparent",
+                    borderColor: "rgba(255,255,255,.10)"
+                },
+                ".Input": {
+                    backgroundColor: "rgba(255,255,255,.06)",
+                    borderColor: "rgba(255,255,255,.14)",
+                    color: "rgba(255,255,255,.92)",
+                    boxShadow: "none"
+                },
+                ".Input:focus": {
+                    borderColor: "rgba(59,130,246,.55)",
+                    boxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+                },
+                ".Label": {
+                    color: "rgba(229,231,235,.85)"
+                },
+                ".Tab": {
+                    backgroundColor: "rgba(255,255,255,.06)",
+                    borderColor: "rgba(255,255,255,.12)",
+                    color: "rgba(229,231,235,.90)"
+                },
+                ".Tab--selected": {
+                    backgroundColor: "rgba(255,255,255,.12)",
+                    borderColor: "rgba(255,255,255,.22)",
+                    color: "rgba(255,255,255,.98)"
+                }
+
+            }
+        };
+    }
+
+    // Light mode (optional: match your light UI too)
+    return {
+        theme: "flat",
+        variables: {
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+            fontSizeBase: "14px",
+            colorBackground: "#ffffff",
+            colorText: "#111827",
+            colorTextSecondary: "#4b5563",
+            colorPrimary: "#2563eb",
+            colorBorder: "rgba(17,24,39,.15)",
+            borderRadius: "14px",
+            spacingUnit: "6px"
+        }
+    };
+}
 
 // ----------------------------------------------------------------------------
 // Checkout draft persistence (name/address/email only)
@@ -3543,11 +3614,79 @@ function _getWalletButtonTheme() {
     return isDark ? "dark" : "light";
 }
 
-function _getStripeAppearanceTheme() {
-    // Stripe Appearance supports: 'flat', 'stripe', 'night'
-    const isDark = document.documentElement.classList.contains("dark-mode") || localStorage.getItem("themeMode") === "dark";
-    return isDark ? "night" : "flat";
+function _getStripeAppearance() {
+    // Stripe Appearance API supports theme + variables + rules.
+    // We use a dark palette aligned with the payment modal styling.
+    const isDark =
+        document.documentElement.classList.contains("dark-mode") ||
+        localStorage.getItem("themeMode") === "dark";
+
+    if (!isDark) {
+        return {
+            theme: "flat",
+            variables: {
+                fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+                fontSizeBase: "14px",
+                colorBackground: "#ffffff",
+                colorText: "#111827",
+                colorTextSecondary: "#4b5563",
+                colorPrimary: "#2563eb",
+                colorBorder: "rgba(17,24,39,.15)",
+                borderRadius: "14px",
+                spacingUnit: "6px"
+            }
+        };
+    }
+
+    return {
+        theme: "night",
+        variables: {
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+            fontSizeBase: "14px",
+
+            colorBackground: "#0b1220",
+            colorText: "rgba(255,255,255,.92)",
+            colorTextSecondary: "rgba(229,231,235,.70)",
+            colorPrimary: "#3b82f6",
+            colorDanger: "#ef4444",
+            colorSuccess: "#22c55e",
+            colorBorder: "rgba(255,255,255,.14)",
+
+            borderRadius: "14px",
+            spacingUnit: "6px",
+            focusBoxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+        },
+        rules: {
+            ".Block": {
+                backgroundColor: "transparent",
+                borderColor: "rgba(255,255,255,.10)"
+            },
+            ".Input": {
+                backgroundColor: "rgba(255,255,255,.06)",
+                borderColor: "rgba(255,255,255,.14)",
+                color: "rgba(255,255,255,.92)",
+                boxShadow: "none"
+            },
+            ".Input:focus": {
+                borderColor: "rgba(59,130,246,.55)",
+                boxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+            },
+            ".Label": {
+                color: "rgba(229,231,235,.85)"
+            },
+            ".Tab": {
+                backgroundColor: "rgba(255,255,255,.06)",
+                borderColor: "rgba(255,255,255,.12)",
+                color: "rgba(229,231,235,.90)"
+            },
+            ".Tab--selected": {
+                backgroundColor: "rgba(255,255,255,.10)",
+                borderColor: "rgba(59,130,246,.45)"
+            }
+        }
+    };
 }
+
 
 async function setupWalletPaymentRequestButton({
     stripe,
@@ -3592,7 +3731,7 @@ async function setupWalletPaymentRequestButton({
 
     // Use a separate Elements instance for the wallet button
     const prElements = stripe.elements({
-        appearance: { theme: _getStripeAppearanceTheme() }
+        appearance: _getStripeAppearance()
     });
 
     const prButton = prElements.create("paymentRequestButton", {
@@ -5348,7 +5487,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
     window.elementsInstance = window.stripeInstance.elements({
         clientSecret,
-        appearance: { theme: _getStripeAppearanceTheme() }
+        appearance: _getStripeAppearance()
     });
 
     window.paymentElementInstance = window.elementsInstance.create("payment");
