@@ -3006,7 +3006,8 @@ async function GoToSettings() {
 
             const email = document.getElementById("contact-email")?.value?.trim() || "";
             const message = document.getElementById("contact-message")?.value?.trim() || "";
-            const website = document.getElementById("contact-website")?.value || "";
+const website = ""; // prevent autofill false-positives
+
 
             if (!isValidEmailClient(email)) {
                 alert("Please enter a valid email address (e.g., name@example.com).");
@@ -6558,3 +6559,4 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
