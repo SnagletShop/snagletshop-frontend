@@ -8,15 +8,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta name="turnstile-sitekey" content="__TURNSTILE_SITE_KEY__">
-        <meta name="stripe-publishable-key" content="__STRIPE_PUBLISHABLE_KEY__">
-<link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
+    <meta name="stripe-publishable-key" content="__STRIPE_PUBLISHABLE_KEY__">
+    <link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
     <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/Logo_I.png"
         type="image/png">
     <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/favicon.png"
         type="image/png">
 
     <title>SnagletShop</title>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
     <script src="script.js" defer></script>
     <script src="https://js.stripe.com/v3/"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -188,6 +188,56 @@
 
 
 
+        /* ===== Payment modal dark mode ===== */
+        .dark-mode #paymentModal {
+            background: rgba(0, 0, 0, .72);
+        }
+
+        .dark-mode #paymentModal .payment-modal-card {
+            background: #0b1220;
+            color: #e5e7eb;
+            border: 1px solid rgba(255, 255, 255, .10);
+        }
+
+        .dark-mode #paymentModal .payment-modal-close {
+            color: rgba(229, 231, 235, .90);
+        }
+
+        .dark-mode #paymentModal label {
+            color: rgba(229, 231, 235, .90);
+        }
+
+        .dark-mode #paymentModal input,
+        .dark-mode #paymentModal select,
+        .dark-mode #paymentModal textarea {
+            background: rgba(255, 255, 255, .06);
+            border-color: rgba(255, 255, 255, .14);
+            color: #e5e7eb;
+        }
+
+        .dark-mode #paymentModal input::placeholder,
+        .dark-mode #paymentModal textarea::placeholder {
+            color: rgba(229, 231, 235, .55);
+        }
+
+        .dark-mode #paymentModal input:focus,
+        .dark-mode #paymentModal select:focus,
+        .dark-mode #paymentModal textarea:focus {
+            border-color: rgba(59, 130, 246, .55);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .20);
+        }
+
+        /* TomSelect inside the modal (Country) */
+        .dark-mode #paymentModal .ts-control,
+        .dark-mode #paymentModal .ts-dropdown {
+            background: #0b1220;
+            color: #e5e7eb;
+            border-color: rgba(255, 255, 255, .14);
+        }
+
+        .dark-mode #paymentModal .ts-dropdown .option.active {
+            background: rgba(59, 130, 246, .22);
+        }
 
         @media (min-width: 680px) {
 
@@ -244,14 +294,16 @@
 
             }
 
-            
 
-.category-icon-img {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-    display: block;
-}.Button {
+
+            .category-icon-img {
+                width: 24px;
+                height: 24px;
+                object-fit: contain;
+                display: block;
+            }
+
+            .Button {
                 color: var(--Default_Text_Colour);
                 width: 100%;
                 font-size: 14px;
@@ -3986,7 +4038,7 @@
                 grid-template-columns: 60px 500px 60px;
                 align-items: center;
                 justify-content: center;
-                    padding-right: 175px;
+                padding-right: 175px;
                 width: 650px;
             }
         }
@@ -4342,8 +4394,9 @@
         }
         // ]]>
     </script>
-<!-- Offscreen Turnstile widget (used to protect API actions like /create-payment-intent) -->
-<div id="snaglet-turnstile" style="position:fixed; bottom:12px; right:12px; width:150px; min-height:140px; z-index:2147483647;"></div>
+    <!-- Offscreen Turnstile widget (used to protect API actions like /create-payment-intent) -->
+    <div id="snaglet-turnstile"
+        style="position:fixed; bottom:12px; right:12px; width:150px; min-height:140px; z-index:2147483647;"></div>
 
 </body>
 
@@ -4635,6 +4688,4 @@
             observer.observe(document.body, { childList: true, subtree: true });
         });
     </script>
- 
-
-
+    <!-- Code injected by live-s
