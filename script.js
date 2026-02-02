@@ -37,11 +37,30 @@ if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTari
 // API base is configurable for local/staging.
 // You can override by setting window.__API_BASE__ before this script loads,
 // or by setting <meta name="api-base" content="https://..."> in index.html.
-const API_BASE = String(
-    (window && window.__API_BASE__) ||
-    (document.querySelector('meta[name="api-base"]')?.getAttribute('content')) ||
-    "https://api.snagletshop.com"
-).trim().replace(/\/+$/, "");;
+const DEFAULT_BACKEND_PORT = 8080; // server.js default
+
+const API_BASE = (() => {
+  const injected = (typeof window !== "undefined" && window.__API_BASE__) ? String(window.__API_BASE__) : "";
+  const meta = String(document.querySelector('meta[name="api-base"]')?.getAttribute("content") || "");
+
+  const chosen = (injected || meta).trim();
+  if (chosen) return chosen.replace(/\/+$/, "");
+
+  // Production default (no explicit port -> https/443)
+  const host = window.location.hostname || "";
+  const isProd =
+    host === "snagletshop.com" ||
+    host === "www.snagletshop.com" ||
+    host === "api.snagletshop.com" ||
+    host.endsWith(".snagletshop.com");
+
+  if (isProd) return "https://api.snagletshop.com";
+
+  // Dev / direct-IP default -> same host on :8080
+  const proto = window.location.protocol || "http:";
+  return `${proto}//${host}:${DEFAULT_BACKEND_PORT}`;
+})().replace(/\/+$/, "");
+
 
 function canonicalizeProductLink(link) {
     const raw = String(link || "").trim();
@@ -6559,4 +6578,5 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
 
