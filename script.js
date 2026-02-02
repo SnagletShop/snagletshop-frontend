@@ -1627,6 +1627,7 @@ function ensureAppLoaderStyles() {
          }
        `;
     document.head.appendChild(style);
+
 }
 
 function showAppLoader(text = "Loading…") {
@@ -2065,6 +2066,7 @@ async function checkAndHandlePendingPaymentOnLoad() {
     if (status === "succeeded") {
         clearPaymentPendingFlag();
         clearBasketCompletely();
+        try { clearCheckoutDraft(); } catch { }
         setPaymentSuccessFlag({ reloadOnOk: true });
         window.location.replace(window.location.origin);
         return;
@@ -2208,6 +2210,7 @@ async function handleStripeRedirectReturnOnLoad() {
     if (finalStatus === "succeeded") {
         clearPaymentPendingFlag();
         clearBasketCompletely();
+        try { clearCheckoutDraft(); } catch { }
         setPaymentSuccessFlag({ reloadOnOk: true });
     } else if (finalStatus === "requires_payment_method" || finalStatus === "canceled") {
         clearPaymentPendingFlag();
@@ -3350,25 +3353,180 @@ async function createPaymentModal() {
         box-shadow: 0 12px 40px rgba(0,0,0,.35);
         color: var(--Default_Text_Colour, #111);
         position: relative;
+        border: 1px solid rgba(0,0,0,.08);
       }
+      #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
+      #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
       #paymentModal .payment-modal-close{
         position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
       }
       #paymentModal input, #paymentModal select{
         width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
         border: 1px solid rgba(0,0,0,.15);
-        background: var(--Input_Background, rgba(255,255,255,.9));
+        background: var(--Input_Background, rgba(255,255,255,.92));
         color: inherit;
         outline: none;
       }
+      #paymentModal input::placeholder{ color: rgba(0,0,0,.45); }
+      #paymentModal input:focus, #paymentModal select:focus{
+        border-color: rgba(0,0,0,.28);
+        box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      }
+      #paymentModal #payment-element{
+        margin-top: 16px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,.15);
+        background: var(--Input_Background, rgba(255,255,255,.92));
+      }
+      #paymentModal #payment-request-button{ margin: 16px 0; }
       #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+      /* TomSelect (country dropdown) */
+      #paymentModal .ts-control, 
+      #paymentModal .ts-dropdown{
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,.15);
+        background: var(--Input_Background, rgba(255,255,255,.92));
+        color: inherit;
+      }
+      #paymentModal .ts-dropdown .option{ padding: 10px 12px; }
+      #paymentModal .ts-dropdown .active{ background: rgba(0,0,0,.06); }
+
       .Submit_Button{
         width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
         background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
       }
       .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
+
+      /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
+      html.dark-mode #paymentModal{ background: rgba(0,0,0,.72); }
+      html.dark-mode #paymentModal .payment-modal-card{
+        background: rgba(17,24,39,.98);
+        color: rgba(255,255,255,.92);
+        border: 1px solid rgba(255,255,255,.10);
+        box-shadow: 0 12px 44px rgba(0,0,0,.55);
+      }
+      html.dark-mode #paymentModal input,
+      html.dark-mode #paymentModal select,
+      html.dark-mode #paymentModal #payment-element{
+        border: 1px solid rgba(255,255,255,.16);
+        background: rgba(255,255,255,.06);
+        color: inherit;
+      }
+      html.dark-mode #paymentModal input::placeholder{ color: rgba(255,255,255,.45); }
+      html.dark-mode #paymentModal input:focus,
+      html.dark-mode #paymentModal select:focus{
+        border-color: rgba(255,255,255,.28);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.20);
+      }
+      html.dark-mode #paymentModal .payment-modal-close{ opacity:.9; }
+
+      html.dark-mode #paymentModal .ts-control,
+      html.dark-mode #paymentModal .ts-dropdown{
+        border: 1px solid rgba(255,255,255,.16);
+        background: rgba(255,255,255,.06);
+        color: inherit;
+      }
+      html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
     `;
     document.head.appendChild(style);
+
+    // Restore any draft customer data (name/address/email) saved when closing the modal.
+    // Note: Stripe PaymentElement details (card, etc.) cannot be persisted for compliance reasons.
+    try { restoreCheckoutDraftToModal(); } catch { }
+
+    // Autosave draft while typing (helps when closing by clicking outside / back button)
+    try {
+        const form = document.getElementById("paymentForm");
+        if (form && form.dataset.draftListenerAttached !== "true") {
+            form.dataset.draftListenerAttached = "true";
+            let t;
+            form.addEventListener("input", () => {
+                clearTimeout(t);
+                t = setTimeout(() => saveCheckoutDraftFromModal(), 250);
+            });
+        }
+    } catch { }
+
+    // Close modal when clicking on the overlay (outside the card)
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal({ preserveDraft: true });
+    });
+
+    // Close on Escape key
+    try {
+        const escHandler = (e) => {
+            if (e.key === "Escape") closeModal({ preserveDraft: true });
+        };
+        window.__snagletPaymentModalEscHandler = escHandler;
+        document.addEventListener("keydown", escHandler);
+    } catch { }
+}
+
+
+// ----------------------------------------------------------------------------
+// Checkout draft persistence (name/address/email only)
+// Stripe Payment Element details cannot be persisted.
+// ----------------------------------------------------------------------------
+const CHECKOUT_DRAFT_STORAGE_KEY = "snaglet_checkout_draft_v1";
+
+function saveCheckoutDraftFromModal() {
+    try {
+        const modal = document.getElementById("paymentModal");
+        if (!modal) return;
+
+        const ids = [
+            "Name",
+            "Surname",
+            "email",
+            "Street",
+            "City",
+            "Postal_Code",
+            "Address_Line2",
+            "State",
+            "Phone"
+        ];
+
+        const draft = {};
+        let any = false;
+
+        for (const id of ids) {
+            const el = modal.querySelector(`#${id}`);
+            const val = (el && typeof el.value === "string") ? el.value.trim() : "";
+            if (val) {
+                draft[id] = val;
+                any = true;
+            }
+        }
+
+        if (any) {
+            sessionStorage.setItem(CHECKOUT_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        } else {
+            sessionStorage.removeItem(CHECKOUT_DRAFT_STORAGE_KEY);
+        }
+    } catch { }
+}
+
+function restoreCheckoutDraftToModal() {
+    try {
+        const raw = sessionStorage.getItem(CHECKOUT_DRAFT_STORAGE_KEY);
+        if (!raw) return;
+
+        const draft = JSON.parse(raw);
+        if (!draft || typeof draft !== "object") return;
+
+        for (const [id, val] of Object.entries(draft)) {
+            const el = document.getElementById(id);
+            if (el && typeof val === "string" && !el.value) {
+                el.value = val;
+            }
+        }
+    } catch { }
+}
+
+function clearCheckoutDraft() {
+    try { sessionStorage.removeItem(CHECKOUT_DRAFT_STORAGE_KEY); } catch { }
 }
 
 function resetWalletPaymentRequestButton() {
@@ -3389,6 +3547,12 @@ function _getWalletButtonTheme() {
     // Stripe supports: 'dark', 'light', 'light-outline'
     const isDark = document.documentElement.classList.contains("dark-mode");
     return isDark ? "dark" : "light";
+}
+
+function _getStripeAppearanceTheme() {
+    // Stripe Appearance supports: 'flat', 'stripe', 'night'
+    const isDark = document.documentElement.classList.contains(\"dark-mode\") || localStorage.getItem(\"themeMode\") === \"dark\";
+    return isDark ? \"night\" : \"flat\";
 }
 
 async function setupWalletPaymentRequestButton({
@@ -3434,7 +3598,7 @@ async function setupWalletPaymentRequestButton({
 
     // Use a separate Elements instance for the wallet button
     const prElements = stripe.elements({
-        appearance: { theme: "flat" }
+        appearance: { theme: _getStripeAppearanceTheme() }
     });
 
     const prButton = prElements.create("paymentRequestButton", {
@@ -3522,6 +3686,7 @@ async function setupWalletPaymentRequestButton({
             if (pi?.status === "succeeded") {
                 clearPaymentPendingFlag();
                 clearBasketCompletely();
+                try { clearCheckoutDraft(); } catch { }
                 setPaymentSuccessFlag({ reloadOnOk: true });
                 window.location.href = window.location.origin;
                 return;
@@ -3535,6 +3700,7 @@ async function setupWalletPaymentRequestButton({
                 if (r.status === "succeeded") {
                     clearPaymentPendingFlag();
                     clearBasketCompletely();
+                    try { clearCheckoutDraft(); } catch { }
                     setPaymentSuccessFlag({ reloadOnOk: true });
                     window.location.href = window.location.origin;
                     return;
@@ -3714,11 +3880,11 @@ function checkAndShowPaymentSuccess() {
 function handleOutsideClick(event) {
     const modal = document.getElementById("paymentModal");
     if (!modal) return;
-    const modalContent = modal.querySelector(".modal-content");
-    if (modalContent && !modalContent.contains(event.target)) {
-        closeModal();
-    }
+
+    // Close only when clicking the overlay itself (outside the card)
+    if (event.target === modal) closeModal({ preserveDraft: true });
 }
+
 function clearBasketCompletely() {
     try {
         if (typeof basket === "object" && basket) {
@@ -3754,7 +3920,22 @@ async function openModal() {
     await initPaymentModalLogic();
 }
 
-function closeModal() {
+function closeModal(opts = {}) {
+    const options = (opts && typeof opts === "object") ? opts : {};
+    const preserveDraft = options.preserveDraft !== false; // default true
+    const clearDraft = options.clearDraft === true;
+
+    if (preserveDraft) saveCheckoutDraftFromModal();
+    if (clearDraft) clearCheckoutDraft();
+
+    // Remove ESC handler if it was attached while the modal was open
+    try {
+        if (window.__snagletPaymentModalEscHandler) {
+            document.removeEventListener("keydown", window.__snagletPaymentModalEscHandler);
+            window.__snagletPaymentModalEscHandler = null;
+        }
+    } catch { }
+
     const modal = document.getElementById("paymentModal");
     if (modal) modal.remove();
 
@@ -3771,6 +3952,8 @@ function closeModal() {
     window.latestOrderId = null;
     window.latestPaymentIntentId = null;
 }
+
+
 
 
 
@@ -3835,6 +4018,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Clear basket and mark success
         clearBasketCompletely();
+        try { clearCheckoutDraft(); } catch { }
         setPaymentSuccessFlag({ reloadOnOk: true }); // OK will reload to origin
 
         // Clean Stripe params so refresh doesn't re-trigger
@@ -5170,7 +5354,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
     window.elementsInstance = window.stripeInstance.elements({
         clientSecret,
-        appearance: { theme: "flat" }
+        appearance: { theme: _getStripeAppearanceTheme() }
     });
 
     window.paymentElementInstance = window.elementsInstance.create("payment");
@@ -5252,6 +5436,7 @@ function attachConfirmHandlerOnce() {
             if (paymentIntent?.status === "succeeded") {
                 clearPaymentPendingFlag();
                 clearBasketCompletely();
+                try { clearCheckoutDraft(); } catch { }
                 setPaymentSuccessFlag({ reloadOnOk: true });
                 window.location.replace(window.location.origin);
                 return;
@@ -5270,6 +5455,7 @@ function attachConfirmHandlerOnce() {
                 if (status === "succeeded") {
                     clearPaymentPendingFlag();
                     clearBasketCompletely();
+                    try { clearCheckoutDraft(); } catch { }
                     setPaymentSuccessFlag({ reloadOnOk: true });
                     window.location.replace(window.location.origin);
                     return;
