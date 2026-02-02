@@ -37,7 +37,7 @@ if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTari
 // API base is configurable for local/staging.
 // You can override by setting window.__API_BASE__ before this script loads,
 // or by setting <meta name="api-base" content="https://..."> in index.html.
-const DEFAULT_BACKEND_PORT = 8080; // server.js default
+const DEFAULT_BACKEND_PORT = 5500; // server.js default
 
 const API_BASE = (() => {
   const injected = (typeof window !== "undefined" && window.__API_BASE__) ? String(window.__API_BASE__) : "";
@@ -6578,5 +6578,6 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
