@@ -2748,63 +2748,59 @@ async function GoToSettings() {
         return;
     }
 
-    if (typeof removeSortContainer === "function") {
-        removeSortContainer();
-    }
+    if (typeof removeSortContainer === "function") removeSortContainer();
 
     viewer.innerHTML = "";
+
     const wrapper = document.createElement("div");
     wrapper.classList.add("settings-panel");
     wrapper.style.backgroundColor = "var(--SearchBar_Background_Colour)";
     wrapper.style.color = "var(--Default_Text_Colour)";
 
-
     // Theme Toggle
     const themeSection = document.createElement("div");
     themeSection.classList.add("settings-section");
     themeSection.innerHTML = `
-        <h3>Theme</h3>
-        <label for="themeToggle">${TEXTS.GENERAL.DARK_MODE_LABEL}</label>
-        <label class="switch">
-            <input type="checkbox" id="themeToggle">
-            <span class="slider"></span>
-        </label>
+      <h3>Theme</h3>
+      <label for="themeToggle">${TEXTS.GENERAL.DARK_MODE_LABEL}</label>
+      <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider"></span>
+      </label>
     `;
 
     // Currency Selector
     const currencySection = document.createElement("div");
     currencySection.classList.add("settings-section");
     currencySection.innerHTML = `
-        <h3>Currency</h3>
-        <label for="currencySelect">Preferred currency:</label>
-<select id="currencySelect" class="currencySelect tom-hidden"></select>
-        </select>
+      <h3>Currency</h3>
+      <label for="currencySelect">Preferred currency:</label>
+      <select id="currencySelect" class="currencySelect tom-hidden" style="width: 100%"></select>
     `;
 
-    // 🚀 Country Selector (added right under currency)
+    // Country Selector
     const countrySection = document.createElement("div");
     countrySection.classList.add("settings-section");
     countrySection.innerHTML = `
-        <h3>Shipping Country</h3>
-        <label for="countrySelect">Detected: <span id="detected-country"></span></label>
-<select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
-
+      <h3>Shipping Country</h3>
+      <label for="countrySelect">Detected: <span id="detected-country"></span></label>
+      <select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
     `;
 
     // Clear Data Button
     const clearSection = document.createElement("div");
     clearSection.classList.add("settings-section");
     clearSection.innerHTML = `
-        <h3>Reset</h3>
-        <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
+      <h3>Reset</h3>
+      <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
     `;
 
     // Contact Form
     const contactSection = document.createElement("div");
     contactSection.classList.add("settings-section");
     contactSection.innerHTML = `
-    <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
-    <form id="contact-form">
+      <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
+      <form id="contact-form">
         <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
         <input type="email" id="contact-email" required>
   
@@ -2816,277 +2812,247 @@ async function GoToSettings() {
                style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
   
         <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
-    </form>
-    <p class="contact-note">If the form doesn't work, email us at
-       <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a></p>
-  `;
-
+      </form>
+      <p class="contact-note">If the form doesn't work, email us at
+        <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
+      </p>
+    `;
 
     // Legal Notice
     const legalSection = document.createElement("div");
     legalSection.classList.add("settings-section");
     legalSection.innerHTML = `
-    <h3>Legal Notice &amp; Store Policies</h3>
-    <p><strong>Legal Notice:</strong><br>
-    Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
+      <h3>Legal Notice &amp; Store Policies</h3>
+      <p><strong>Legal Notice:</strong><br>
+      Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
   
-    <h4>Shipping Policy</h4>
-    <p>
-    We operate on a dropshipping model. Most items ship from global suppliers and logistics partners. Estimated delivery: <strong>2&nbsp;weeks to several weeks</strong>, depending on destination, carrier performance, customs processing, and product availability. Estimated dates are <strong>not guaranteed</strong>.<br><br>
-    We are not responsible for delays caused by customs, carriers, labor actions, natural disasters, or other events outside our direct control. If your order exceeds the maximum timeframe shown at checkout/product page, contact us so we can investigate and, where required by law, offer an appropriate remedy.
-    </p>
+      <h4>Shipping Policy</h4>
+      <p>
+        We operate on a dropshipping model. Most items ship from global suppliers and logistics partners.
+        Estimated delivery: <strong>2&nbsp;weeks to several weeks</strong>, depending on destination, carrier performance,
+        customs processing, and product availability. Estimated dates are <strong>not guaranteed</strong>.<br><br>
+        We are not responsible for delays caused by customs, carriers, labor actions, natural disasters, or other events outside our direct control.
+      </p>
   
-    <h4>Returns, Cancellations &amp; Refunds</h4>
-    <p><strong>Before shipment:</strong> We may be able to cancel an order if it has not yet been processed; this is not guaranteed.</p>
-    <p><strong>After shipment (general rule):</strong> We do not accept cancellations or “change-of-mind” returns once an order has been handed to a carrier, <strong>except</strong> where mandatory consumer law grants you a right to withdraw.</p>
-    <p><strong>EU/EEA/UK consumers (cooling-off):</strong> For most physical goods, you have a statutory right to withdraw from a distance contract within <strong>14 days</strong> after delivery without giving a reason (exceptions apply, e.g., custom-made or sealed hygiene items once unsealed). If you exercise this right, you must return the goods in accordance with our instructions; unless we state otherwise, you bear the direct cost of return, which may involve shipping outside your country. This paragraph prevails over any conflicting term in these policies.</p>
+      <h4>Returns, Cancellations &amp; Refunds</h4>
+      <p><strong>Before shipment:</strong> We may be able to cancel an order if it has not yet been processed; this is not guaranteed.</p>
+      <p><strong>After shipment (general rule):</strong> We do not accept cancellations or “change-of-mind” returns once an order has been handed to a carrier, <strong>except</strong> where mandatory consumer law grants you a right to withdraw.</p>
+      <p><strong>EU/EEA/UK consumers (cooling-off):</strong> For most physical goods, you have a statutory right to withdraw from a distance contract within <strong>14 days</strong> after delivery without giving a reason (exceptions apply). This paragraph prevails over any conflicting term in these policies.</p>
   
-    <h4>Items Damaged, Defective, or Not-as-Described</h4>
-    <p>
-    If your item arrives damaged, defective, or significantly different from its description, contact us <strong>promptly</strong> (ideally within 5 days) with your order number and clear photos/videos so we can assist, arrange a replacement, repair, or refund as appropriate. Any request for early notice does not limit your <strong>non-waivable statutory rights</strong>.
-    </p>
+      <h4>Items Damaged, Defective, or Not-as-Described</h4>
+      <p>
+        If your item arrives damaged, defective, or significantly different from its description, contact us <strong>promptly</strong>
+        with your order number and clear photos/videos so we can assist. Any request for early notice does not limit your
+        <strong>non-waivable statutory rights</strong>.
+      </p>
   
-    <h4>Warranty / Legal Guarantee</h4>
-    <p>
-    Unless a manufacturer warranty is explicitly provided with the product, we do not offer a separate commercial warranty. <strong>This does not affect your statutory rights</strong> (e.g., the legal guarantee for lack of conformity for consumers in the EU/EEA/UK). Claims under any manufacturer warranty must be made directly with the manufacturer unless we state we handle them.
-    </p>
+      <h4>Warranty / Legal Guarantee</h4>
+      <p>
+        Unless a manufacturer warranty is explicitly provided with the product, we do not offer a separate commercial warranty.
+        <strong>This does not affect your statutory rights</strong>.
+      </p>
   
-    <h4>Customs, Duties &amp; Taxes</h4>
-    <p>
-    Prices may or may not include taxes and import fees depending on your destination and the shipping method:
-    <ul>
-      <li><strong>Taxes collected at checkout (e.g., VAT/IOSS, DDP):</strong> If stated at checkout, we or our logistics partner collect/handle these and they are included in your final price.</li>
-      <li><strong>Taxes due on delivery (DDU/DAP):</strong> If not shown as included, you are responsible for any applicable import duties, VAT/GST, and clearance fees charged by your customs authority or carrier.</li>
-    </ul>
-    We are not responsible for packages held, delayed, or confiscated by customs where the product is lawful to import but subject to duties or restrictions.
-    </p>
+      <h4>Customs, Duties &amp; Taxes</h4>
+      <p>
+        Prices may or may not include taxes and import fees depending on your destination and the shipping method:
+        <ul>
+          <li><strong>Taxes collected at checkout (e.g., VAT/IOSS, DDP):</strong> If stated at checkout, these are included in your final price.</li>
+          <li><strong>Taxes due on delivery (DDU/DAP):</strong> If not shown as included, you are responsible for any applicable import duties/VAT/GST/fees.</li>
+        </ul>
+      </p>
   
-    <h4>Delivery Issues &amp; Risk of Loss</h4>
-    <p>
-    Ensure your shipping address and contact details are accurate. We are not responsible for loss, delay, or misdelivery arising from incorrect or incomplete addresses provided by you. If tracking shows “delivered” but you cannot locate the package, notify us promptly so we can open a carrier investigation; resolutions (e.g., replacement or refund) may depend on the carrier’s findings.
-    </p>
+      <h4>Delivery Issues &amp; Risk of Loss</h4>
+      <p>
+        Ensure your shipping address and contact details are accurate. We are not responsible for loss, delay, or misdelivery
+        arising from incorrect or incomplete addresses provided by you.
+      </p>
   
-    <h4>Exclusions</h4>
-    <ul>
-      <li>We do not accept returns for buyer’s remorse where not required by law.</li>
-      <li>We do not accept returns for incorrect size/color/variant chosen by the customer, unless required by law.</li>
-      <li>Minor variations in color, packaging, or appearance that do not affect basic function are not considered defects.</li>
-    </ul>
+      <h4>Exclusions</h4>
+      <ul>
+        <li>We do not accept returns for buyer’s remorse where not required by law.</li>
+        <li>We do not accept returns for incorrect size/color/variant chosen by the customer, unless required by law.</li>
+        <li>Minor variations in color, packaging, or appearance that do not affect basic function are not considered defects.</li>
+      </ul>
   
-    <h4>Contact</h4>
-    <p>
-    To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email. We will provide return instructions (including the return address, which may be outside your country) and, where applicable, an estimate of return shipping costs before you confirm a withdrawal.
-    </p>
+      <h4>Contact</h4>
+      <p>
+        To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email.
+      </p>
   
-    <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
-  `;
+      <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
+    `;
 
-
-
-    // Append all sections
     wrapper.append(themeSection, currencySection, countrySection, clearSection, contactSection, legalSection);
     viewer.appendChild(wrapper);
-    document.getElementById("clearDataButton").addEventListener("click", () => {
-        if (confirm("Are you sure you want to reset all saved data?")) {
-            localStorage.clear();
-            sessionStorage.clear();
-            alert("All data cleared. Reloading page...");
-            ////location.reload();
-        }
+
+    // Reset button
+    document.getElementById("clearDataButton")?.addEventListener("click", () => {
+        if (!confirm("Are you sure you want to reset all saved data?")) return;
+        localStorage.clear();
+        sessionStorage.clear();
+        alert("All data cleared. Reloading page...");
+        // location.reload();
     });
 
     // Theme toggle logic
     const themeToggle = document.getElementById("themeToggle");
-    themeToggle.checked = localStorage.getItem("themeMode") === "dark";
-    themeToggle.addEventListener("change", (e) => {
-        const darkMode = e.target.checked;
-        document.documentElement.classList.toggle("dark-mode", darkMode);
-        document.documentElement.classList.toggle("light-mode", !darkMode);
-        localStorage.setItem("themeMode", darkMode ? "dark" : "light");
-    });
-
-    // Currency selector logic
-    const currencySelect = document.getElementById("currencySelect");
-    currencySelect.value = localStorage.getItem("selectedCurrency") || "EUR";
-    if (!currencySelect.dataset.listenerAttached) {
-        currencySelect.addEventListener("change", () => {
-            localStorage.setItem("selectedCurrency", currencySelect.value);
-            localStorage.setItem("manualCurrencyOverride", "true");
-            syncCurrencySelects(currencySelect.value);
-            updateAllPrices();
+    if (themeToggle) {
+        themeToggle.checked = localStorage.getItem("themeMode") === "dark";
+        themeToggle.addEventListener("change", (e) => {
+            const darkMode = !!e.target.checked;
+            document.documentElement.classList.toggle("dark-mode", darkMode);
+            document.documentElement.classList.toggle("light-mode", !darkMode);
+            localStorage.setItem("themeMode", darkMode ? "dark" : "light");
         });
-        currencySelect.dataset.listenerAttached = "true";
     }
 
+    // Populate selects
+    const currencySelect = document.getElementById("currencySelect");
+    const countrySelect = document.getElementById("countrySelect");
+    const detectedCountry = (localStorage.getItem("detectedCountry") || "US").toUpperCase();
+    const detectedSpan = document.getElementById("detected-country");
+    if (detectedSpan) detectedSpan.textContent = detectedCountry;
 
-    const currencyDropdown = document.getElementById("currencySelect");
-    if (currencyDropdown) {
-        currencyDropdown.innerHTML = ""; // Clear existing
-
-        Object.keys(exchangeRates).sort().forEach(code => {
+    // Currency options
+    if (currencySelect) {
+        currencySelect.innerHTML = "";
+        const codes = Object.keys(exchangeRates || {}).sort();
+        for (const code of codes) {
             const opt = document.createElement("option");
             opt.value = code;
-            opt.textContent = `${currencySymbols[code] || ''} ${code}`;
-            currencyDropdown.appendChild(opt);
-        });
+            opt.textContent = `${currencySymbols?.[code] || ""} ${code}`.trim();
+            currencySelect.appendChild(opt);
+        }
 
-        currencyDropdown.value = selectedCurrency;
+        selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
+        currencySelect.value = selectedCurrency;
+    }
 
-        // ✅ Destroy previous instances of TomSelect if they exist
-        const existingCurrency = currencyDropdown.tomselect;
-        if (existingCurrency) existingCurrency.destroy();
-
-        const existingCountry = document.querySelector("#countrySelect")?.tomselect;
-        if (existingCountry) existingCountry.destroy();
-
-        // ✅ Populate countries before enhancing
-        const countrySelect = document.getElementById("countrySelect");
+    // Country options
+    if (countrySelect) {
         countrySelect.innerHTML = "";
-        const detected = localStorage.getItem("detectedCountry") || "US";
-        document.getElementById("detected-country").textContent = detected;
-
-        window.preloadedData.countries
-            ?.sort((a, b) => a.code.localeCompare(b.code))
-            .forEach(c => {
-                const code = c.code.toUpperCase();
-                const name = countryNames[code] || code;
+        (window.preloadedData?.countries || [])
+            .slice()
+            .sort((a, b) => String(a.code || "").localeCompare(String(b.code || "")))
+            .forEach((c) => {
+                const code = String(c.code || "").toUpperCase();
+                if (!code) return;
                 const opt = document.createElement("option");
                 opt.value = code;
-                opt.textContent = name;
+                opt.textContent = countryNames?.[code] || code;
                 countrySelect.appendChild(opt);
             });
 
-        countrySelect.value = detected;
-        countrySelect.addEventListener("change", () => {
-            const newCountry = countrySelect.value;
-            localStorage.setItem("detectedCountry", newCountry);
+        countrySelect.value = detectedCountry;
+    }
 
-            if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
-                const newCurrency = countryToCurrency[newCountry];
-                if (newCurrency) {
-                    selectedCurrency = newCurrency;
-                    localStorage.setItem("selectedCurrency", selectedCurrency);
-                    syncCurrencySelects(selectedCurrency);
-                }
-            }
+    // Destroy previous TomSelect instances (if any)
+    if (currencySelect?.tomselect) currencySelect.tomselect.destroy();
+    if (countrySelect?.tomselect) countrySelect.tomselect.destroy();
 
-            updateAllPrices();
-        });
-
-
-        // ✅ Enhance both selects with TomSelect
-
+    // Attach logic via TomSelect onChange (more reliable than select change)
+    if (currencySelect) {
         new TomSelect("#currencySelect", {
             maxOptions: 200,
             sortField: { field: "text", direction: "asc" },
             placeholder: "Select a currency…",
-            closeAfterSelect: true
+            closeAfterSelect: true,
+            onChange: (val) => {
+                if (!val) return;
+                selectedCurrency = val;
+                localStorage.setItem("selectedCurrency", selectedCurrency);
+                localStorage.setItem("manualCurrencyOverride", "true");
+                syncCurrencySelects(selectedCurrency);
+                updateAllPrices();
+            }
         });
+        currencySelect.classList.remove("tom-hidden");
+    }
 
+    if (countrySelect) {
         new TomSelect("#countrySelect", {
             maxOptions: 1000,
             sortField: { field: "text", direction: "asc" },
             placeholder: "Select a country…",
-            closeAfterSelect: true
+            closeAfterSelect: true,
+            onChange: (val) => {
+                if (!val) return;
+                const newCountry = String(val).toUpperCase();
+                localStorage.setItem("detectedCountry", newCountry);
+                if (detectedSpan) detectedSpan.textContent = newCountry;
+
+                if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+                    const newCurrency = countryToCurrency?.[newCountry];
+                    if (newCurrency) {
+                        selectedCurrency = newCurrency;
+                        localStorage.setItem("selectedCurrency", selectedCurrency);
+                        syncCurrencySelects(selectedCurrency);
+                    }
+                }
+                updateAllPrices();
+            }
         });
-
-        document.getElementById("currencySelect").classList.remove("tom-hidden");
-        document.getElementById("countrySelect").classList.remove("tom-hidden");
-
+        countrySelect.classList.remove("tom-hidden");
     }
 
-    // 🚀 Country selector logic
-    const countrySelect = document.getElementById("countrySelect");
-    countrySelect.innerHTML = "";
-    const detected = localStorage.getItem("detectedCountry") || "US";
-    document.getElementById("detected-country").textContent = detected;
+    // Contact form submission logic (matches backend rules: valid email + message length >= 5)
+    const isValidEmailClient = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || "").trim());
 
-    window.preloadedData.countries
-        ?.sort((a, b) => a.code.localeCompare(b.code))
-        .forEach(c => {
-            const code = c.code.toUpperCase();
-            const name = countryNames[code] || code;
-            const opt = document.createElement("option");
-            opt.value = code;
-            opt.textContent = name;
-            countrySelect.appendChild(opt);
-        });
+    const cf = document.getElementById("contact-form");
+    if (cf) {
+        cf.addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-    countrySelect.value = detected;
-    countrySelect.addEventListener("change", () => {
-        const newCountry = countrySelect.value;
-        localStorage.setItem("detectedCountry", newCountry);
+            const email = document.getElementById("contact-email")?.value?.trim() || "";
+            const message = document.getElementById("contact-message")?.value?.trim() || "";
+            const website = document.getElementById("contact-website")?.value || "";
 
-        if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
-            const newCurrency = countryToCurrency[newCountry];
-            if (newCurrency) {
-                selectedCurrency = newCurrency;
-                localStorage.setItem("selectedCurrency", selectedCurrency);
-                syncCurrencySelects(selectedCurrency);
-            }
-        }
-
-        updateAllPrices();
-    });
-
-
-
-
-    // Clear data logic
-
-
-    // Contact form submission logic
-    document.getElementById("contact-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const email = document.getElementById("contact-email")?.value?.trim();
-        const message = document.getElementById("contact-message")?.value?.trim();
-
-        // Honeypot hidden field (add it to HTML)
-        const website = document.getElementById("contact-website")?.value || "";
-
-        // Turnstile token (Turnstile injects a hidden input named cf-turnstile-response)
-        const turnstileToken = (await snagletGetTurnstileToken({ forceFresh: true })) ||
-            document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
-
-
-        if (!email || !message) {
-            alert("Please enter your email and a message.");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE}/send-message`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, message, turnstileToken, website })
-            });
-
-            const result = await response.json().catch(() => ({ message: "Done." }));
-            if (!response.ok && result && (result.error === "TURNSTILE_FAILED" || result.error === "TURNSTILE_REQUIRED" || String(result.message || "").toUpperCase().includes("TURNSTILE"))) {
-                const configured = Boolean(__snagletGetTurnstileSiteKey());
-                const hint = configured
-                    ? "Turnstile verification failed. Please refresh the page and try again."
-                    : "Bot protection (Turnstile) is not configured on this site. Set <meta name=\"turnstile-sitekey\" content=\"YOUR_SITE_KEY\"> in index.html (and ensure the backend TURNSTILE_SECRET_KEY matches).";
-                alert(hint);
+            if (!isValidEmailClient(email)) {
+                alert("Please enter a valid email address (e.g., name@example.com).");
                 return;
             }
-            alert(result.message || "Done.");
-        } catch (error) {
-            console.error("Failed to send message:", error);
-            alert("An error occurred. Try emailing us directly.");
-        }
-    });
+            if (message.length < 5) {
+                alert("Please enter a message (at least 5 characters).");
+                return;
+            }
 
-    syncCurrencySelects(currencySelect.value);
-    const settingsStyle = document.createElement("style");
+            let turnstileToken = "";
+            try {
+                turnstileToken =
+                    (await snagletGetTurnstileToken({ forceFresh: true })) ||
+                    document.querySelector('input[name="cf-turnstile-response"]')?.value ||
+                    "";
+            } catch {
+                turnstileToken = document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
+            }
 
-    // Inject one-line Tom Select CSS fix
-    const dropdownStyle = document.createElement("style");
+            try {
+                const response = await fetch(`${API_BASE}/send-message`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, message, turnstileToken, website })
+                });
 
-    document.head.appendChild(dropdownStyle);
+                const result = await response.json().catch(() => ({}));
 
+                if (!response.ok) {
+                    const msg = result?.message || result?.error || `Failed (${response.status}).`;
+                    alert(msg);
+                    return;
+                }
 
+                alert(result.message || "Message sent.");
+                const msgEl = document.getElementById("contact-message");
+                if (msgEl) msgEl.value = "";
+            } catch (error) {
+                console.error("Failed to send message:", error);
+                alert("An error occurred. Try emailing us directly.");
+            }
+        });
+    }
+
+    // Keep selects in sync + update prices
+    if (currencySelect) syncCurrencySelects(currencySelect.value || selectedCurrency || "EUR");
 }
 
 // helper function for countries
@@ -6259,3 +6225,4 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
