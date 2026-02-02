@@ -970,9 +970,6 @@ if (basketBC) {
 async function preloadSettingsData() {
     if (_preloadSettingsPromise) return _preloadSettingsPromise;
 
-    const forceFresh = Boolean(window.__forceFreshSettingsOnNextPreload);
-    if (forceFresh) window.__forceFreshSettingsOnNextPreload = false;
-
     const setRatesFetchedAt = (ts) => {
         const safeTs = Number(ts || 0) || 0;
 
@@ -998,7 +995,7 @@ async function preloadSettingsData() {
             };
 
             const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
-            if (!forceFresh && cached && isSettingsCacheValid(cached.timestamp)) {
+            if (cached && isSettingsCacheValid(cached.timestamp)) {
                 tariffMultipliers = (cached.tariffs && typeof cached.tariffs === "object") ? cached.tariffs : {};
                 exchangeRates = (cached.rates && typeof cached.rates === "object") ? cached.rates : {};
 
@@ -2533,13 +2530,12 @@ try {
 
 // Detect user's currency via IP API (if no saved preference)
 function detectUserCurrency() {
-    // Detect user's currency via IP API (best effort). If blocked (ad-blockers / tracking protection),
-    // fall back to existing localStorage/default values without breaking the app.
+    // Detect user's currency via IP API (best-effort). Never throw.
     return fetch("https://ipapi.co/json/")
         .then(response => response.json())
         .then(data => {
             const userCountry = String(data?.country_code || "").toUpperCase();
-            if (!userCountry) return null;
+            if (!userCountry) return;
 
             selectedCurrency = countryToCurrency[userCountry] || (localStorage.getItem("selectedCurrency") || "EUR");
             localStorage.setItem("selectedCurrency", selectedCurrency);
@@ -2552,18 +2548,13 @@ function detectUserCurrency() {
             console.log("💱 Currency set to:", selectedCurrency);
             console.log("📦 Tariff applied:", localStorage.getItem("applyTariff"));
 
-            if (typeof updateAllPrices === "function") updateAllPrices();
-            return { userCountry, selectedCurrency };
+            updateAllPrices();
         })
-        .catch(err => {
-            console.warn("⚠️ Currency detection skipped/blocked:", err);
-            // Keep current selection and proceed
-            if (!localStorage.getItem("selectedCurrency")) localStorage.setItem("selectedCurrency", selectedCurrency || "EUR");
-            if (typeof updateAllPrices === "function") updateAllPrices();
-            return null;
+        .catch((err) => {
+            console.warn("Currency detect blocked/failed; keeping saved currency.", err);
+            // Keep existing selectedCurrency (saved/manual)
         });
 }
-
 
 function convertPrice(priceInEur) {
     let converted = priceInEur * exchangeRates[selectedCurrency];
@@ -3759,57 +3750,8 @@ async function openModal() {
 
     history.pushState({ modalOpen: true }, "", window.location.href);
 
-    // Re-wire modal logic to the new server-truth flow (tariffs + PI + mismatch handling)
-    try {
-        await initPaymentModalLogic();
-    } catch (e) {
-        console.error("initPaymentModalLogic failed:", e);
-
-        const pe = document.getElementById("payment-element");
-        if (pe) {
-            const msg = (e && e.message) ? String(e.message) : "Checkout could not initialize.";
-
-            // Render a simple, safe (textContent) error panel with a retry button.
-            pe.innerHTML = "";
-            const box = document.createElement("div");
-            box.style.padding = "12px";
-            box.style.border = "1px solid rgba(255,0,0,.25)";
-            box.style.borderRadius = "12px";
-
-            const title = document.createElement("div");
-            title.style.fontWeight = "600";
-            title.style.marginBottom = "8px";
-            title.textContent = "Checkout error";
-
-            const body = document.createElement("div");
-            body.style.opacity = ".9";
-            body.style.marginBottom = "10px";
-            body.textContent = msg;
-
-            const btn = document.createElement("button");
-            btn.id = "retry-checkout-init";
-            btn.style.padding = "10px 12px";
-            btn.style.borderRadius = "10px";
-            btn.style.cursor = "pointer";
-            btn.textContent = "Retry";
-
-            box.append(title, body, btn);
-            pe.appendChild(box);
-
-            btn.addEventListener("click", async () => {
-                try {
-                    // Force fresh settings on retry (helps after backend restarts).
-                    window.__forceFreshSettingsOnNextPreload = true;
-                    await initPaymentModalLogic();
-                } catch (err2) {
-                    console.error("Retry initPaymentModalLogic failed:", err2);
-                    alert("Checkout still failed. Please refresh the page and try again.");
-                }
-            });
-        } else {
-            alert("Checkout could not initialize. Please refresh and try again.");
-        }
-    }
+    // ✅ Re-wire modal logic to the new server-truth flow (tariffs + PI + mismatch handling)
+    await initPaymentModalLogic();
 }
 
 function closeModal() {
@@ -4308,61 +4250,42 @@ function attachSwipeListeners() {
 let currentImageIndex = 0;
 let startX = 0;
 
-/**
- * Legacy/optional image carousel swipe support.
- * IMPORTANT: This must never throw if the carousel is not present (most pages).
- */
-function attachImageCarouselSwipeIfPresent() {
-    const carousel = document.getElementById("imageCarousel");
-    if (!carousel) return;
+const carousel = document.getElementById("imageCarousel");
+const images = carousel ? carousel.querySelectorAll(".carousel-image") : [];
 
-    const images = carousel.querySelectorAll(".carousel-image");
-    if (!images || images.length === 0) return;
-
-    // Prevent duplicate listeners
-    if (carousel.dataset.swipeAttached === "true") return;
-    carousel.dataset.swipeAttached = "true";
-
-    // Best-effort: ensure a sane initial state
-    try {
-        images.forEach((img, idx) => {
-            if (!img || !img.style) return;
-            if (!img.style.display) {
-                img.style.display = (idx === currentImageIndex) ? "block" : "none";
-            }
-        });
-    } catch { }
+if (carousel && images && images.length) {
+    // Ensure the first image is visible (best-effort)
+    try { images[0].style.display = "block"; } catch { }
 
     carousel.addEventListener("touchstart", (e) => {
-        try {
-            startX = e.changedTouches[0].clientX;
-        } catch {
-            startX = 0;
-        }
+        startX = e.changedTouches[0].clientX;
     }, { passive: true });
 
     carousel.addEventListener("touchend", (e) => {
-        const endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
+        const endX = e.changedTouches[0].clientX;
         const diff = startX - endX;
 
-        if (Math.abs(diff) <= 50) return;
+        if (Math.abs(diff) > 50) {
+            // Guard against empty list
+            if (!images[currentImageIndex]) return;
 
-        try { images[currentImageIndex].style.display = "none"; } catch { }
+            images[currentImageIndex].style.display = "none";
 
-        if (diff > 0) {
-            // Swipe left
-            currentImageIndex = (currentImageIndex + 1) % images.length;
-        } else {
-            // Swipe right
-            currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+            if (diff > 0) {
+                // Swipe left
+                currentImageIndex = (currentImageIndex + 1) % images.length;
+            } else {
+                // Swipe right
+                currentImageIndex =
+                    (currentImageIndex - 1 + images.length) % images.length;
+            }
+
+            if (images[currentImageIndex]) {
+                images[currentImageIndex].style.display = "block";
+            }
         }
-
-        try { images[currentImageIndex].style.display = "block"; } catch { }
     }, { passive: true });
 }
-
-// Safe to register; runs only if the carousel exists.
-try { document.addEventListener("DOMContentLoaded", attachImageCarouselSwipeIfPresent); } catch { }
 function selectProductOption(button, optionValue) {
     document.querySelectorAll(".Product_Option_Button").forEach(btn => btn.classList.remove("selected"));
     button.classList.add("selected");
@@ -5120,7 +5043,8 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
                 websiteOrigin,
                 currency,
                 country,
-                fullCart,
+                products: stripeCart,
+                productsFull: fullCart,
                 expectedClientTotal,
                 applyTariff: getApplyTariffFlag(),
                 metadata: { order_summary },
@@ -5137,23 +5061,11 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
         // Retry once: cache may be stale vs server FX history (especially after backend restart)
         if (res.status === 409 && attempt === 1 && (code === "FX_SNAPSHOT_NOT_FOUND" || code === "TOTAL_MISMATCH")) {
             // Backend may have restarted and forgotten the FX snapshot we cached.
-            // Force a fresh settings preload (tariffs + rates) and retry once.
+            // Force a fresh settings preload and retry once.
             try { localStorage.removeItem(SETTINGS_CACHE_KEY); } catch { }
-            window.__forceFreshSettingsOnNextPreload = true;
-
-            // Ensure we don't re-send an old snapshot timestamp
             window.exchangeRatesFetchedAt = 0;
-            if (typeof exchangeRatesFetchedAt !== "undefined") exchangeRatesFetchedAt = 0;
-
-            // Best-effort: clear in-memory mirrors
-            try {
-                if (window.preloadedData) {
-                    window.preloadedData.exchangeRates = null;
-                    window.preloadedData.tariffs = null;
-                    window.preloadedData.ratesFetchedAt = 0;
-                }
-            } catch { }
-
+            try { if (typeof exchangeRatesFetchedAt !== "undefined") exchangeRatesFetchedAt = 0; } catch { }
+            try { _preloadSettingsPromise = null; } catch { }
             continue;
         }
 
