@@ -244,76 +244,55 @@ function initProducts() {
     initProductsPromise = (async () => {
         try {
             const r = await fetch(`${API_BASE}/catalog`);
-            if (!r.ok) {
-                throw new Error(`Products request failed: ${r.status}`);
-            }
+            if (!r.ok) throw new Error(`Products request failed: ${r.status}`);
 
             const productsPayload = await r.json();
 
-            // New shape (canonical): { productsById: {...}, categories: {...}, config: {...} }
-            if (productsPayload && typeof productsPayload === "object" && productsPayload.productsById && productsPayload.categories) {
+            // ---- canonical shape (/catalog) ----
+            if (productsPayload && productsPayload.productsById && productsPayload.categories) {
                 const productsById = productsPayload.productsById || {};
                 const categories = productsPayload.categories || {};
-                window.productsById = productsById;
-                window.categoryIdLists = categories;
 
                 const resolvedCatalog = {};
                 for (const [cat, ids] of Object.entries(categories)) {
-                    const arr = [];
-                    for (const id of (ids || [])) {
-                        if (productsById[id]) arr.push(productsById[id]);
-                    }
-                    resolvedCatalog[cat] = arr;
+                    resolvedCatalog[cat] = (ids || []).map(id => productsById[id]).filter(Boolean);
                 }
 
                 productsDatabase = resolvedCatalog;
+                window.products = productsDatabase;
 
-                const cfg2 = productsPayload.config || {};
-                if (typeof cfg2.applyTariff === "boolean") {
-                    serverApplyTariff = cfg2.applyTariff;
+                const cfg = productsPayload.config || {};
+                if (typeof cfg.applyTariff === "boolean") {
+                    serverApplyTariff = cfg.applyTariff;
                     localStorage.setItem("applyTariff", String(serverApplyTariff));
                 }
-            } else {
 
-                // New shape: { catalog: {..}, config: { applyTariff } }
+                console.log("✅ Products data loaded (canonical).");
+                return window.products; // IMPORTANT: stop here
             }
 
-            const catalog = (productsPayload && typeof productsPayload === "object" && productsPayload.catalog && typeof productsPayload.catalog === "object")
-                ? productsPayload.catalog
-                : productsPayload;
+            // ---- legacy shapes (if ever used) ----
+            const catalog =
+                (productsPayload && typeof productsPayload === "object" && productsPayload.catalog && typeof productsPayload.catalog === "object")
+                    ? productsPayload.catalog
+                    : productsPayload;
 
-            const cfg = (productsPayload && typeof productsPayload === "object" && productsPayload.config && typeof productsPayload.config === "object")
-                ? productsPayload.config
-                : {};
+            const cfg =
+                (productsPayload && typeof productsPayload === "object" && productsPayload.config && typeof productsPayload.config === "object")
+                    ? productsPayload.config
+                    : {};
 
-            productsDatabase = catalog;
+            productsDatabase = catalog || {};
+            window.products = productsDatabase;
 
-            // Backend-provided config (authoritative)
             if (typeof cfg.applyTariff === "boolean") {
                 serverApplyTariff = cfg.applyTariff;
                 localStorage.setItem("applyTariff", String(serverApplyTariff));
-            } else if (productsPayload && typeof productsPayload === "object" && typeof productsPayload.applyTariff === "boolean") {
-                // Legacy compatibility
-                serverApplyTariff = productsPayload.applyTariff;
-                localStorage.setItem("applyTariff", String(serverApplyTariff));
             }
-            // Keep legacy code that still uses `products` working
-            window.products = productsDatabase;
-
-            // Also fetch the server-provided flat catalog list (exercises GET /products/flat).
-            try {
-                const rf = await fetch(`${API_BASE}/products/flat`, { cache: "no-store" });
-                if (rf.ok) {
-                    window.productsFlatFromServer = await rf.json().catch(() => null);
-                }
-            } catch { }
-
 
             console.log("✅ Products data loaded.");
         } catch (err) {
             console.error("❌ Failed to load products from server, falling back to window.products:", err);
-
-            // Fallback to whatever is already on window.products (e.g. from products.js)
             productsDatabase = window.products || {};
             window.products = productsDatabase;
         }
@@ -3954,7 +3933,8 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
 
     sortBy = sortBy || "NameFirst";
     sortOrder = sortOrder || "asc";
-    category = category || "Default_Page";
+    category = category || Object.keys(productsDatabase).find(k => Array.isArray(productsDatabase[k]) && productsDatabase[k].length) || "Default_Page";
+
     document.getElementById('Viewer').innerHTML = '';
 
     if (category === "Default_Page") {
