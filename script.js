@@ -3400,13 +3400,7 @@ async function createPaymentModal() {
       .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
 
       /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
-      html.dark-mode #paymentModal{ background: rgba(0,0,0,.72); }
-      html.dark-mode #paymentModal .payment-modal-card{
-        background: rgba(17,24,39,.98);
-        color: rgba(255,255,255,.92);
-        border: 1px solid rgba(255,255,255,.10);
-        box-shadow: 0 12px 44px rgba(0,0,0,.55);
-      }
+
       html.dark-mode #paymentModal input,
       html.dark-mode #paymentModal select,
       html.dark-mode #paymentModal #payment-element{
