@@ -2803,16 +2803,24 @@ async function GoToSettings() {
     const contactSection = document.createElement("div");
     contactSection.classList.add("settings-section");
     contactSection.innerHTML = `
-        <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
-        <form id="contact-form">
-            <label for="email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
-            <input type="email" id="email" required>
-            <label for="message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
-            <textarea id="message" class="MessageTextArea" required></textarea>
-            <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
-        </form>
-        <p class="contact-note">If the form doesn't work, email us at <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a></p>
-    `;
+    <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
+    <form id="contact-form">
+        <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
+        <input type="email" id="contact-email" required>
+  
+        <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
+        <textarea id="contact-message" class="MessageTextArea" required></textarea>
+  
+        <!-- honeypot -->
+        <input type="text" id="contact-website" autocomplete="off" tabindex="-1"
+               style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
+  
+        <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
+    </form>
+    <p class="contact-note">If the form doesn't work, email us at
+       <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a></p>
+  `;
+
 
     // Legal Notice
     const legalSection = document.createElement("div");
