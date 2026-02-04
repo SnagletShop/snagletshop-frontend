@@ -2816,27 +2816,51 @@ async function GoToSettings() {
     `;
 
     // Contact Form
-    const contactSection = document.createElement("div");
-    contactSection.classList.add("settings-section");
-    contactSection.innerHTML = `
-      <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
-      <form id="contact-form">
-        <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
-        <input type="email" id="contact-email" required>
-  
-        <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
-        <textarea id="contact-message" class="MessageTextArea" required></textarea>
-  
-        <!-- honeypot -->
-        <input type="text" id="contact-website" autocomplete="off" tabindex="-1"
-               style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
-  
-        <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
-      </form>
-      <p class="contact-note">If the form doesn't work, email us at
-        <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
-      </p>
-    `;
+contactSection.innerHTML = `
+  <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
+  <form id="contact-form" autocomplete="off">
+    <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
+    <input
+      type="email"
+      id="contact-email"
+      name="email"
+      autocomplete="email"
+      required
+    >
+
+    <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
+    <textarea
+      id="contact-message"
+      name="message"
+      class="MessageTextArea"
+      autocomplete="off"
+      required
+    ></textarea>
+
+    <!-- honeypot (do not autofill) -->
+    <div aria-hidden="true"
+         style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+      <label for="contact-website">Website</label>
+      <input
+        type="text"
+        id="contact-website"
+        name="contact_website_do_not_fill"
+        autocomplete="new-password"
+        tabindex="-1"
+        inputmode="none"
+        value=""
+        readonly
+      >
+    </div>
+
+    <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
+  </form>
+
+  <p class="contact-note">If the form doesn't work, email us at
+    <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
+  </p>
+`;
+
 
     // Legal Notice
     const legalSection = document.createElement("div");
@@ -6578,6 +6602,7 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
