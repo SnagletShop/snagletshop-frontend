@@ -2816,6 +2816,10 @@ async function GoToSettings() {
     `;
 
     // Contact Form
+
+// Contact Form
+const contactSection = document.createElement("div");
+contactSection.classList.add("settings-section");
 contactSection.innerHTML = `
   <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
   <form id="contact-form" autocomplete="off">
@@ -6602,6 +6606,7 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
