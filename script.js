@@ -3034,63 +3034,62 @@ contactSection.innerHTML = `
     // Contact form submission logic (matches backend rules: valid email + message length >= 5)
     const isValidEmailClient = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || "").trim());
 
-    const cf = document.getElementById("contact-form");
-    if (cf) {
-        cf.addEventListener("submit", async (event) => {
-            event.preventDefault();
+   const cf = document.getElementById("contact-form");
+if (cf) {
+  cf.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-            const email = document.getElementById("contact-email")?.value?.trim() || "";
-            const message = document.getElementById("contact-message")?.value?.trim() || "";
-const website = ""; // prevent autofill false-positives
+    const email = document.getElementById("contact-email")?.value?.trim() || "";
+    const message = document.getElementById("contact-message")?.value?.trim() || "";
 
-const response = await fetch(`${API_BASE}/send-message`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email, message, turnstileToken, website }),
-});
-            if (!isValidEmailClient(email)) {
-                alert("Please enter a valid email address (e.g., name@example.com).");
-                return;
-            }
-            if (message.length < 5) {
-                alert("Please enter a message (at least 5 characters).");
-                return;
-            }
+    const website = ""; // prevent autofill false-positives (do NOT read #contact-website)
 
-            let turnstileToken = "";
-            try {
-                turnstileToken =
-                    (await snagletGetTurnstileToken({ forceFresh: true })) ||
-                    document.querySelector('input[name="cf-turnstile-response"]')?.value ||
-                    "";
-            } catch {
-                turnstileToken = document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
-            }
-
-            try {
-                const response = await fetch(`${API_BASE}/send-message`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, message, turnstileToken, website })
-                });
-
-                const result = await response.json().catch(() => ({}));
-
-                if (!response.ok) {
-                    const msg = result?.message || result?.error || `Failed (${response.status}).`;
-                    alert(msg);
-                    return;
-                }
-
-                alert(result.message || "Message sent.");
-                const msgEl = document.getElementById("contact-message");
-                if (msgEl) msgEl.value = "";
-            } catch (error) {
-                console.error("Failed to send message:", error);
-                alert("An error occurred. Try emailing us directly.");
-            }
-        });
+    if (!isValidEmailClient(email)) {
+      alert("Please enter a valid email address (e.g., name@example.com).");
+      return;
     }
+    if (message.length < 5) {
+      alert("Please enter a message (at least 5 characters).");
+      return;
+    }
+
+    // IMPORTANT: declare BEFORE using it anywhere
+    let turnstileToken = "";
+    try {
+      turnstileToken =
+        (await snagletGetTurnstileToken({ forceFresh: true })) ||
+        document.querySelector('input[name="cf-turnstile-response"]')?.value ||
+        "";
+    } catch {
+      turnstileToken =
+        document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/send-message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, message, turnstileToken, website }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const msg = result?.message || result?.error || `Failed (${response.status}).`;
+        alert(msg);
+        return;
+      }
+
+      alert(result.message || "Message sent.");
+      const msgEl = document.getElementById("contact-message");
+      if (msgEl) msgEl.value = "";
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      alert("An error occurred. Try emailing us directly.");
+    }
+  });
+}
+
 
     // Keep selects in sync + update prices
     if (currencySelect) syncCurrencySelects(currencySelect.value || selectedCurrency || "EUR");
@@ -6598,6 +6597,7 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
