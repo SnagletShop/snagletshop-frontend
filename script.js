@@ -2080,6 +2080,14 @@ async function checkAndHandlePendingPaymentOnLoad() {
     const pending = getPaymentPendingFlag();
     if (!pending?.paymentIntentId) return;
 
+    // Avoid stale "pending payment" flags causing random alerts during normal browsing.
+    // If the flag is older than 15 minutes, clear it silently.
+    const MAX_AGE_MS = 15 * 60 * 1000;
+    if (pending?.ts && (Date.now() - Number(pending.ts) > MAX_AGE_MS)) {
+        clearPaymentPendingFlag();
+        return;
+    }
+
     const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pending.paymentIntentId, clientSecret: pending.clientSecret });
 
     if (status === "succeeded") {
@@ -2097,8 +2105,9 @@ async function checkAndHandlePendingPaymentOnLoad() {
         return;
     }
 
-    // timeout/unknown: keep pending flag + keep basket
-    alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+    // timeout/unknown: keep pending flag + keep basket.
+    // Do not show a blocking alert here (it fires during normal browsing if the API is temporarily down).
+    console.warn("Payment is still processing (or status check failed). Cart is unchanged. You can try again in a moment.");
 }
 function getStripePublishableKeySafe() {
     // Preferred sources (in order):
