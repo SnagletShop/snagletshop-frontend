@@ -2824,26 +2824,13 @@ contactSection.innerHTML = `
   <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
   <form id="contact-form" autocomplete="off">
     <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
-    <input
-      type="email"
-      id="contact-email"
-      name="email"
-      autocomplete="email"
-      required
-    >
+    <input type="email" id="contact-email" name="email" autocomplete="email" required>
 
     <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
-    <textarea
-      id="contact-message"
-      name="message"
-      class="MessageTextArea"
-      autocomplete="off"
-      required
-    ></textarea>
+    <textarea id="contact-message" name="message" class="MessageTextArea" required></textarea>
 
-    <!-- honeypot (do not autofill) -->
-    <div aria-hidden="true"
-         style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+    <!-- honeypot (hidden from humans, should stay empty) -->
+    <div aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;pointer-events:none;">
       <label for="contact-website">Website</label>
       <input
         type="text"
@@ -2864,6 +2851,7 @@ contactSection.innerHTML = `
     <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
   </p>
 `;
+
 
 
     // Legal Notice
@@ -3055,7 +3043,11 @@ contactSection.innerHTML = `
             const message = document.getElementById("contact-message")?.value?.trim() || "";
 const website = ""; // prevent autofill false-positives
 
-
+const response = await fetch(`${API_BASE}/send-message`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, message, turnstileToken, website }),
+});
             if (!isValidEmailClient(email)) {
                 alert("Please enter a valid email address (e.g., name@example.com).");
                 return;
@@ -6606,6 +6598,7 @@ function updateBasket() {
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
