@@ -3278,7 +3278,20 @@ function CategoryButtons() {
                 heading.classList.add("Category_Button_Heading");
 
                 const iconValue = (catArray.length > 0) ? (catArray[0].iconPng || catArray[0].iconPngUrl || catArray[0].iconUrl || catArray[0].icon || null) : null;
-                const iconPath = iconValue;
+                let iconPath = iconValue;
+                if (typeof iconPath === "string") {
+                    const s = iconPath.trim();
+                    if (s.startsWith("{") && s.endsWith("}")) {
+                        try {
+                            const obj = JSON.parse(s);
+                            if (obj && typeof obj === "object") {
+                                const light = String(obj.light || obj.l || obj.url || obj.icon || "").trim();
+                                const dark = String(obj.dark || obj.d || "").trim();
+                                iconPath = (isDarkModeEnabled() ? (dark || light) : (light || dark)) || iconPath;
+                            }
+                        } catch { }
+                    }
+                }
                 const displayName = category.replace(/_/g, ' ');
 
 
