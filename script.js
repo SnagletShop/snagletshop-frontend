@@ -5983,7 +5983,7 @@ function __ssEnsureOptionChipStyles() {
 .Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;height:auto !important;}
 .Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
 .Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
-.Basket-Item .Item-Details{display:flex !important;flex-direction:column !important;gap:10px !important;height:auto !important;}
+.Basket-Item .Item-Details{display:flex !important;;gap:10px !important;height:auto !important;}
 .BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 /* Quantity controls: compact vertical stack, centered */
@@ -6756,6 +6756,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
