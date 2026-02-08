@@ -5996,21 +5996,7 @@ function __ssEnsureOptionChipStyles() {
   gap:12px !important;
   min-width:64px !important;
 }
-.Quantity-Controls-Basket .BasketChangeQuantityButton{
-  width:44px;
-  height:44px;
-  border-radius:9999px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0;
-  margin:0;
-  line-height:1;
-  font-size:26px;
-  background:rgba(0,0,0,0.04);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);
-  cursor:pointer;
-}
+
 .Quantity-Controls-Basket .BasketChangeQuantityButton:hover{
   background:rgba(0,0,0,0.06);
 }
@@ -6756,6 +6742,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
