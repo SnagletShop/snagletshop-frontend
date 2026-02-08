@@ -5987,15 +5987,7 @@ function __ssEnsureOptionChipStyles() {
 .BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 /* Quantity controls: compact vertical stack, centered */
-.Quantity-Controls-Basket{
-  align-self:center !important;
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-  justify-content:center !important;
-  gap:12px !important;
-  min-width:64px !important;
-}
+
 
 .Quantity-Controls-Basket .BasketChangeQuantityButton:hover{
   background:rgba(0,0,0,0.06);
@@ -6742,6 +6734,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
