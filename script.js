@@ -4878,26 +4878,22 @@ function updateBasket() {
         console.log(`   🔹 Product IMAGELINK: ${item.image}`);
         console.log(`   🔹 Product description: ${item.description}`);
 
-        __ssEnsureOptionChipStyles();
-
         let selectedOptionHTML = "";
         try {
-            // Prefer canonical multi-option shape
             const multi = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
             if (multi.length) {
-                selectedOptionHTML = __ssRenderSelectedOptionsChips(multi);
+                const txt = __ssFormatSelectedOptionsDisplay(multi);
+                if (txt) selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(txt)}</span>`;
             } else if (item.selectedOption) {
                 // Back-compat: single selection
                 const product = Object.values(products).flat().find(p => p.name === item.name);
-                let label = "Option";
-                if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length) {
-                    label = String(product.optionGroups[0]?.label || product.optionGroups[0]?.key || "Option");
-                } else if (Array.isArray(product?.productOptions) && product.productOptions.length) {
-                    // legacy: ["Colour:", "White", ...]
-                    label = String(product.productOptions[0] || "Option");
+                let label = "option";
+                if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length && product.optionGroups[0]?.label) {
+                    label = String(product.optionGroups[0].label).replace(":", "").trim().toLowerCase();
+                } else if (product?.productOptions && product.productOptions.length > 1) {
+                    label = product.productOptions[0].replace(":", "").trim().toLowerCase();
                 }
-                label = String(label).trim().replace(/\s*[:\-–—]\s*$/, "");
-                selectedOptionHTML = __ssRenderSelectedOptionsChips([{ label, value: String(item.selectedOption).trim() }]);
+                selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(label)}: ${__ssEscHtml(String(item.selectedOption).toLowerCase())}</span>`;
             }
         } catch {
             // ignore
@@ -4921,10 +4917,9 @@ function updateBasket() {
 
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
-                ${selectedOptionHTML ? '<div class="BasketOptionsRow">' + selectedOptionHTML + '</div>' : ""}
                 <div class="PriceAndOptionRow">
                     <p class="basket-item-price" data-eur="${totalPrice}">${totalPrice}€</p>
-                </div>
+                    </div>
             </div>
 <div class="Quantity-Controls-Basket">
   <button class="BasketChangeQuantityButton" type="button"
@@ -5961,51 +5956,70 @@ function __ssDefaultSelectedOptions(groups) {
 
 function __ssFormatSelectedOptionsDisplay(selectedOptions) {
     const sel = __ssNormalizeSelectedOptions(selectedOptions);
-    return sel.map(o => `${o.label}: ${o.value}`).join(" · ");
+    return sel.map(o => `${o.label}: ${o.value}`).join(", ");
 }
 
+
+function __ssCleanOptionLabel(label) {
+    return String(label ?? "")
+        .trim()
+        .replace(/\s*[:\-–—]\s*$/, "");
+}
 
 function __ssEnsureOptionChipStyles() {
+    if (document.getElementById("__ss-option-chip-styles")) return;
+    const style = document.createElement("style");
+    style.id = "__ss-option-chip-styles";
+    style.textContent = `
+.BasketOptionChips{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 6px 0;}
+.BasketOptionChip{display:inline-flex;align-items:center;padding:10px 18px;border-radius:9999px;background:rgba(0,0,0,0.06);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.1;white-space:nowrap;}
+.ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.ReceiptOptionChips .BasketOptionChip{padding:8px 14px;font-size:0.95em;}
+@media (max-width: 700px){
+  .BasketOptionChips{gap:10px;}
+  .BasketOptionChip{padding:8px 14px;font-size:0.95em;}
+}
+`;
+    document.head.appendChild(style);
+}
+
+function __ssBuildOptionChipsHTMLFromItem(item) {
     try {
-        if (document.getElementById("ss-opt-chip-styles")) return;
-        const st = document.createElement("style");
-        st.id = "ss-opt-chip-styles";
-        st.textContent = `
-.BasketOptionsRow{
-  margin-top:6px;
-  font-size:0.92em;
-  line-height:1.25;
-  color:rgba(0,0,0,0.55);
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  align-items:center;
-}
-.ss-opt-chip{
-  display:inline-flex;
-  gap:4px;
-  align-items:center;
-  padding:2px 8px;
-  border-radius:999px;
-  background:rgba(0,0,0,0.06);
-}
-.ss-opt-label{ font-weight:600; }
-.ss-opt-value{ font-weight:500; }
-        `.trim();
-        document.head.appendChild(st);
+        const parts = [];
+        const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+        if (sel.length) {
+            sel.forEach(o => {
+                const label = __ssCleanOptionLabel(o.label || o.key || "");
+                const value = String(o.value ?? "").trim();
+                if (!value) return;
+                parts.push(label ? `${label}: ${value}` : value);
+            });
+        } else if (item?.selectedOption) {
+            let label = "";
+            try {
+                const product = Object.values(products || {}).flat().find(p => p && p.name === item.name);
+                if (product?.optionGroups?.[0]?.label) label = product.optionGroups[0].label;
+                else if (product?.productOptions?.[0]) label = product.productOptions[0];
+            } catch { }
+            label = __ssCleanOptionLabel(label || "Option");
+            const value = String(item.selectedOption).trim();
+            if (value) parts.push(`${label}: ${value}`);
+        }
+
+        if (!parts.length) return { card: "", receipt: "" };
+
+        const chips = parts
+            .map(t => `<span class="BasketOptionChip">${__ssEscHtml(t)}</span>`)
+            .join("");
+
+        return {
+            card: `<div class="BasketOptionChips">${chips}</div>`,
+            receipt: `<div class="ReceiptOptionChips">${chips}</div>`
+        };
     } catch {
-        // ignore
+        return { card: "", receipt: "" };
     }
 }
-
-function __ssRenderSelectedOptionsChips(selectedOptions) {
-    const sel = __ssNormalizeSelectedOptions(selectedOptions);
-    if (!sel.length) return "";
-    return sel
-        .map(o => `<span class="ss-opt-chip"><span class="ss-opt-label">${__ssEscHtml(o.label)}</span>: <span class="ss-opt-value">${__ssEscHtml(o.value)}</span></span>`)
-        .join("");
-}
-
 
 function __ssFormatSelectedOptionsKey(selectedOptions) {
     const sel = __ssNormalizeSelectedOptions(selectedOptions);
@@ -6582,14 +6596,8 @@ function updateBasket() {
         const safeDesc = __ssEscHtml(item?.description || "");
         const safeImg = __ssEscHtml(item?.image || "");
 
-        let optionText = "";
-        const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-        if (sel.length) optionText = `Selected: ${__ssFormatSelectedOptionsDisplay(sel)}`;
-        else if (item?.selectedOption) optionText = `Selected option: ${String(item.selectedOption)}`;
-
-        const selectedOptionHTML = optionText
-            ? `<span class="BasketSelectedOption">${__ssEscHtml(optionText)}</span>`
-            : "";
+        __ssEnsureOptionChipStyles();
+        const chips = __ssBuildOptionChipsHTMLFromItem(item);
 
         productDiv.innerHTML = `
       <div class="Basket-Item">
@@ -6607,10 +6615,10 @@ function updateBasket() {
             <strong class="BasketText">${safeName.length > 15 ? safeName.slice(0, 15) + "…" : safeName}</strong>
           </a>
           <p class="BasketTextDescription">${safeDesc}</p>
-          <div class="PriceAndOptionRow">
+          ${chips.card}
+          <div class=\"PriceAndOptionRow\">
             <p class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</p>
-            ${selectedOptionHTML}
-          </div>
+            </div>
         </div>
         <div class="Quantity-Controls-Basket">
           <button class="BasketChangeQuantityButton" type="button"
@@ -6636,14 +6644,12 @@ function updateBasket() {
         const itemTotal = unit * qty;
 
         const name = __ssEscHtml(item?.name || "");
-        const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-        const opt = sel.length ? ` (${__ssEscHtml(__ssFormatSelectedOptionsDisplay(sel))})` :
-            (item?.selectedOption ? ` (${__ssEscHtml(String(item.selectedOption))})` : "");
+        const chips = __ssBuildOptionChipsHTMLFromItem(item);
 
         receiptContent += `
       <tr>
         <td>${qty} ×</td>
-        <td>${name}${opt}</td>
+        <td><div class=\"ReceiptItemName\">${name}</div>${chips.receipt}</td>
         <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
       </tr>
     `;
