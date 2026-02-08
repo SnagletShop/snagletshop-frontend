@@ -4878,22 +4878,26 @@ function updateBasket() {
         console.log(`   🔹 Product IMAGELINK: ${item.image}`);
         console.log(`   🔹 Product description: ${item.description}`);
 
+        __ssEnsureOptionChipStyles();
+
         let selectedOptionHTML = "";
         try {
+            // Prefer canonical multi-option shape
             const multi = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
             if (multi.length) {
-                const txt = __ssFormatSelectedOptionsInline(multi, { sep: " · ", maxLen: 80 });
-                if (txt) selectedOptionHTML = `<span class="BasketSelectedOption">${__ssEscHtml(txt)}</span>`;
+                selectedOptionHTML = __ssRenderSelectedOptionsChips(multi);
             } else if (item.selectedOption) {
                 // Back-compat: single selection
                 const product = Object.values(products).flat().find(p => p.name === item.name);
-                let label = "option";
-                if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length && product.optionGroups[0]?.label) {
-                    label = String(product.optionGroups[0].label).replace(":", "").trim().toLowerCase();
-                } else if (product?.productOptions && product.productOptions.length > 1) {
-                    label = product.productOptions[0].replace(":", "").trim().toLowerCase();
+                let label = "Option";
+                if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length) {
+                    label = String(product.optionGroups[0]?.label || product.optionGroups[0]?.key || "Option");
+                } else if (Array.isArray(product?.productOptions) && product.productOptions.length) {
+                    // legacy: ["Colour:", "White", ...]
+                    label = String(product.productOptions[0] || "Option");
                 }
-                selectedOptionHTML = `<span class="BasketSelectedOption">${__ssEscHtml(label)}: ${__ssEscHtml(String(item.selectedOption))}</span>`;
+                label = String(label).trim().replace(/\s*[:\-–—]\s*$/, "");
+                selectedOptionHTML = __ssRenderSelectedOptionsChips([{ label, value: String(item.selectedOption).trim() }]);
             }
         } catch {
             // ignore
@@ -4917,9 +4921,9 @@ function updateBasket() {
 
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
+                ${selectedOptionHTML ? '<div class="BasketOptionsRow">' + selectedOptionHTML + '</div>' : ""}
                 <div class="PriceAndOptionRow">
                     <p class="basket-item-price" data-eur="${totalPrice}">${totalPrice}€</p>
-                    ${selectedOptionHTML}
                 </div>
             </div>
 <div class="Quantity-Controls-Basket">
@@ -5957,30 +5961,49 @@ function __ssDefaultSelectedOptions(groups) {
 
 function __ssFormatSelectedOptionsDisplay(selectedOptions) {
     const sel = __ssNormalizeSelectedOptions(selectedOptions);
-    return sel.map(o => `${o.label}: ${o.value}`).join(", ");
+    return sel.map(o => `${o.label}: ${o.value}`).join(" · ");
 }
 
-// Basket/UI-friendly formatting (keeps casing, uses a compact separator, and can be truncated)
-function __ssFormatSelectedOptionsInline(selectedOptions, cfg = null) {
-    const sel = __ssNormalizeSelectedOptions(selectedOptions);
-    const sep = (cfg && typeof cfg === "object" && cfg.sep != null) ? String(cfg.sep) : " · ";
-    const maxLen = (cfg && typeof cfg === "object" && cfg.maxLen != null) ? (Number(cfg.maxLen) || 0) : 80;
 
-    const out = sel.map(o => `${o.label}: ${o.value}`).join(sep);
-    if (maxLen > 0 && out.length > maxLen) return out.slice(0, Math.max(1, maxLen - 1)) + "…";
-    return out;
-}
-
-// Best-effort label for legacy single-option baskets
-function __ssGuessPrimaryOptionLabel(productName) {
+function __ssEnsureOptionChipStyles() {
     try {
-        const p = __ssGetCatalogFlat().find(pp => pp?.name === productName) || {};
-        const groups = __ssExtractOptionGroups(p);
-        const label = groups?.[0]?.label ? String(groups[0].label) : "Option";
-        return label.trim().replace(/:$/, "");
+        if (document.getElementById("ss-opt-chip-styles")) return;
+        const st = document.createElement("style");
+        st.id = "ss-opt-chip-styles";
+        st.textContent = `
+.BasketOptionsRow{
+  margin-top:6px;
+  font-size:0.92em;
+  line-height:1.25;
+  color:rgba(0,0,0,0.55);
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+.ss-opt-chip{
+  display:inline-flex;
+  gap:4px;
+  align-items:center;
+  padding:2px 8px;
+  border-radius:999px;
+  background:rgba(0,0,0,0.06);
+}
+.ss-opt-label{ font-weight:600; }
+.ss-opt-value{ font-weight:500; }
+        `.trim();
+        document.head.appendChild(st);
     } catch {
-        return "Option";
+        // ignore
     }
+}
+
+function __ssRenderSelectedOptionsChips(selectedOptions) {
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    if (!sel.length) return "";
+    return sel
+        .map(o => `<span class="ss-opt-chip"><span class="ss-opt-label">${__ssEscHtml(o.label)}</span>: <span class="ss-opt-value">${__ssEscHtml(o.value)}</span></span>`)
+        .join("");
 }
 
 
@@ -6561,12 +6584,8 @@ function updateBasket() {
 
         let optionText = "";
         const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-        if (sel.length) optionText = __ssFormatSelectedOptionsInline(sel, { sep: " · ", maxLen: 80 });
-        else if (item?.selectedOption) {
-            const lbl = __ssGuessPrimaryOptionLabel(String(item?.name || ""));
-            const val = String(item.selectedOption).trim();
-            optionText = val ? `${lbl}: ${val}` : "";
-        }
+        if (sel.length) optionText = `Selected: ${__ssFormatSelectedOptionsDisplay(sel)}`;
+        else if (item?.selectedOption) optionText = `Selected option: ${String(item.selectedOption)}`;
 
         const selectedOptionHTML = optionText
             ? `<span class="BasketSelectedOption">${__ssEscHtml(optionText)}</span>`
