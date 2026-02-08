@@ -6019,7 +6019,7 @@ function __ssEnsureOptionChipStyles() {
 .Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
 .Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
   .Basket-Item{padding:12px 12px !important;gap:12px !important;}
-  .BasketOptionChips{gap:8px;margin-top:6px;}
+
   .BasketOptionChip{font-size:14px;padding:5px 10px;}
   .BasketTextDescription{-webkit-line-clamp:2;}
   .ReceiptOptionChips .BasketOptionChip{font-size:13px;}
@@ -6734,6 +6734,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
