@@ -4858,7 +4858,10 @@ function updateBasket() {
 
     basketContainer.innerHTML = "";
 
-    if (Object.keys(basket).length === 0) {
+    
+    // Ensure option chips + layout overrides are available
+    __ssEnsureOptionChipStyles();
+if (Object.keys(basket).length === 0) {
         basketContainer.innerHTML = `<p class='EmptyBasketMessage'>The basket is empty!</p>`;
         return;
     }
@@ -4878,28 +4881,14 @@ function updateBasket() {
         console.log(`   🔹 Product IMAGELINK: ${item.image}`);
         console.log(`   🔹 Product description: ${item.description}`);
 
-        let selectedOptionHTML = "";
-        try {
-            const multi = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
-            if (multi.length) {
-                const txt = __ssFormatSelectedOptionsDisplay(multi);
-                if (txt) selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(txt)}</span>`;
-            } else if (item.selectedOption) {
-                // Back-compat: single selection
-                const product = Object.values(products).flat().find(p => p.name === item.name);
-                let label = "option";
-                if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length && product.optionGroups[0]?.label) {
-                    label = String(product.optionGroups[0].label).replace(":", "").trim().toLowerCase();
-                } else if (product?.productOptions && product.productOptions.length > 1) {
-                    label = product.productOptions[0].replace(":", "").trim().toLowerCase();
-                }
-                selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(label)}: ${__ssEscHtml(String(item.selectedOption).toLowerCase())}</span>`;
-            }
-        } catch {
-            // ignore
-        }
+        const product = (() => {
+    try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
+})();
 
-        const encodedName = encodeURIComponent(item.name);
+const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+
+const encodedName = encodeURIComponent(item.name);
         productDiv.innerHTML = `
         <div class="Basket-Item">
             <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank">
@@ -4917,9 +4906,10 @@ function updateBasket() {
 
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
-                <div class="PriceAndOptionRow">
+                                ${optionChipsHTML}
+<div class="PriceAndOptionRow">
                     <p class="basket-item-price" data-eur="${totalPrice}">${totalPrice}€</p>
-                    </div>
+</div>
             </div>
 <div class="Quantity-Controls-Basket">
   <button class="BasketChangeQuantityButton" type="button"
@@ -4949,14 +4939,23 @@ function updateBasket() {
         let itemTotal = itemPrice * item.quantity;
         totalSum += itemTotal;
 
-        receiptContent += `
-            <tr>
-                <td>${item.quantity} ×</td>
-                <td>${item.name}</td>
-                <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
-            </tr>
-        `;
-    });
+        const productForReceipt = (() => {
+    try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
+})();
+const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
+
+receiptContent += `
+    <tr>
+        <td>${item.quantity} ×</td>
+        <td>
+            <div class="ReceiptItemName">${__ssEscHtml(item.name)}</div>
+            ${receiptChipsHTML}
+        </td>
+        <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+    </tr>
+`;
+});
 
     receiptContent += `</table></div>`;
     receiptContent += `
@@ -5959,6 +5958,11 @@ function __ssFormatSelectedOptionsDisplay(selectedOptions) {
     return sel.map(o => `${o.label}: ${o.value}`).join(", ");
 }
 
+function __ssFormatSelectedOptionsKey(selectedOptions) {
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    return sel.map(o => `${o.label}=${o.value}`).join(" | ");
+}
+
 
 function __ssCleanOptionLabel(label) {
     return String(label ?? "")
@@ -5968,62 +5972,77 @@ function __ssCleanOptionLabel(label) {
 
 function __ssEnsureOptionChipStyles() {
     if (document.getElementById("__ss-option-chip-styles")) return;
+
     const style = document.createElement("style");
     style.id = "__ss-option-chip-styles";
     style.textContent = `
-.BasketOptionChips{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 6px 0;}
-.BasketOptionChip{display:inline-flex;align-items:center;padding:10px 18px;border-radius:9999px;background:rgba(0,0,0,0.06);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.1;white-space:nowrap;}
+/* Hide legacy inline "Selected ..." label (we use chips instead) */
+.BasketSelectedOption{display:none !important;}
+
+/* Basket layout: remove fixed aspect ratio so extra lines (chips) don't overlap */
+.Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;height:auto !important;}
+.Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
+.Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
+.Basket-Item .Item-Details{display:flex !important;flex-direction:column !important;gap:10px !important;height:auto !important;}
+.PriceAndOptionRow{margin-top:6px;}
+
+/* Option chips */
+.BasketOptionChips{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 0 0;}
+.BasketOptionChip{display:inline-flex;align-items:center;padding:8px 16px;border-radius:9999px;background:rgba(0,0,0,0.06);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.1;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:20px;}
+
+/* Receipt */
+.Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
+.ReceiptTable{width:100% !important;border-collapse:collapse;}
+.ReceiptTable td{vertical-align:top;padding:6px 8px;}
+.ReceiptItemName{display:block;}
 .ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
-.ReceiptOptionChips .BasketOptionChip{padding:8px 14px;font-size:0.95em;}
+.ReceiptOptionChips .BasketOptionChip{padding:7px 14px;font-size:18px;}
+
 @media (max-width: 700px){
-  .BasketOptionChips{gap:10px;}
-  .BasketOptionChip{padding:8px 14px;font-size:0.95em;}
+  .Basket-Item{padding:12px 12px !important;}
+  .BasketOptionChip{font-size:18px;padding:7px 14px;}
 }
 `;
     document.head.appendChild(style);
 }
 
-function __ssBuildOptionChipsHTMLFromItem(item) {
-    try {
-        const parts = [];
-        const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-        if (sel.length) {
-            sel.forEach(o => {
-                const label = __ssCleanOptionLabel(o.label || o.key || "");
-                const value = String(o.value ?? "").trim();
-                if (!value) return;
-                parts.push(label ? `${label}: ${value}` : value);
-            });
-        } else if (item?.selectedOption) {
-            let label = "";
-            try {
-                const product = Object.values(products || {}).flat().find(p => p && p.name === item.name);
-                if (product?.optionGroups?.[0]?.label) label = product.optionGroups[0].label;
-                else if (product?.productOptions?.[0]) label = product.productOptions[0];
-            } catch { }
-            label = __ssCleanOptionLabel(label || "Option");
-            const value = String(item.selectedOption).trim();
-            if (value) parts.push(`${label}: ${value}`);
-        }
+function __ssGetSelectedOptionsForDisplay(item, product) {
+    const multi = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+    const out = [];
 
-        if (!parts.length) return { card: "", receipt: "" };
-
-        const chips = parts
-            .map(t => `<span class="BasketOptionChip">${__ssEscHtml(t)}</span>`)
-            .join("");
-
-        return {
-            card: `<div class="BasketOptionChips">${chips}</div>`,
-            receipt: `<div class="ReceiptOptionChips">${chips}</div>`
-        };
-    } catch {
-        return { card: "", receipt: "" };
+    if (multi.length) {
+        multi.forEach(o => {
+            const label = __ssCleanOptionLabel(o.label || o.key || "Option");
+            const value = String(o.value ?? "").trim();
+            if (!value) return;
+            out.push({ label, value });
+        });
+        return out;
     }
+
+    if (item?.selectedOption) {
+        let label = "Option";
+        if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length && product.optionGroups[0]?.label) {
+            label = product.optionGroups[0].label;
+        } else if (product?.productOptions && product.productOptions.length > 1) {
+            label = product.productOptions[0];
+        }
+        label = __ssCleanOptionLabel(label);
+        const value = String(item.selectedOption ?? "").trim();
+        if (value) out.push({ label, value });
+    }
+
+    return out;
 }
 
-function __ssFormatSelectedOptionsKey(selectedOptions) {
-    const sel = __ssNormalizeSelectedOptions(selectedOptions);
-    return sel.map(o => `${o.label}=${o.value}`).join(" | ");
+function __ssBuildOptionChipsHTML(displayOptions, isReceipt) {
+    if (!Array.isArray(displayOptions) || displayOptions.length === 0) return "";
+    const cls = isReceipt ? "BasketOptionChips ReceiptOptionChips" : "BasketOptionChips";
+    return `<div class="${cls}">` + displayOptions.map(o => {
+        const label = __ssEscHtml(__ssCleanOptionLabel(o.label || "Option"));
+        const value = __ssEscHtml(String(o.value ?? "").trim());
+        return `<span class="BasketOptionChip">${label}: ${value}</span>`;
+    }).join("") + `</div>`;
 }
 
 function __ssApplyOptionImageMapping(group, optionValue, validImages) {
@@ -6575,6 +6594,9 @@ function updateBasket() {
 
     basketContainer.innerHTML = "";
 
+    // Ensure option chips + layout overrides are available
+    __ssEnsureOptionChipStyles();
+
     if (!basket || Object.keys(basket).length === 0) {
         basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
         return;
@@ -6596,10 +6618,14 @@ function updateBasket() {
         const safeDesc = __ssEscHtml(item?.description || "");
         const safeImg = __ssEscHtml(item?.image || "");
 
-        __ssEnsureOptionChipStyles();
-        const chips = __ssBuildOptionChipsHTMLFromItem(item);
+        const product = (() => {
+    try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
+})();
 
-        productDiv.innerHTML = `
+const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+
+productDiv.innerHTML = `
       <div class="Basket-Item">
         <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer">
           <img class="Basket_Image"
@@ -6615,10 +6641,10 @@ function updateBasket() {
             <strong class="BasketText">${safeName.length > 15 ? safeName.slice(0, 15) + "…" : safeName}</strong>
           </a>
           <p class="BasketTextDescription">${safeDesc}</p>
-          ${chips.card}
-          <div class=\"PriceAndOptionRow\">
+                    ${optionChipsHTML}
+<div class="PriceAndOptionRow">
             <p class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</p>
-            </div>
+</div>
         </div>
         <div class="Quantity-Controls-Basket">
           <button class="BasketChangeQuantityButton" type="button"
@@ -6643,17 +6669,24 @@ function updateBasket() {
         const unit = Number(parseFloat(item?.price) || 0);
         const itemTotal = unit * qty;
 
-        const name = __ssEscHtml(item?.name || "");
-        const chips = __ssBuildOptionChipsHTMLFromItem(item);
+            const name = __ssEscHtml(item?.name || "");
+    const productForReceipt = (() => {
+        try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
+    })();
+    const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+    const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
 
-        receiptContent += `
-      <tr>
-        <td>${qty} ×</td>
-        <td><div class=\"ReceiptItemName\">${name}</div>${chips.receipt}</td>
-        <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
-      </tr>
-    `;
-    });
+    receiptContent += `
+  <tr>
+    <td>${qty} ×</td>
+    <td>
+      <div class="ReceiptItemName">${name}</div>
+      ${receiptChipsHTML}
+    </td>
+    <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+  </tr>
+`;
+});
 
     receiptContent += `</table></div>`;
     receiptContent += `
