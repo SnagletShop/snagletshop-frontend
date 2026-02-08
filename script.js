@@ -5984,23 +5984,28 @@ function __ssEnsureOptionChipStyles() {
 .Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
 .Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
 .Basket-Item .Item-Details{display:flex !important;flex-direction:column !important;gap:10px !important;height:auto !important;}
+.BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .PriceAndOptionRow{margin-top:6px;}
 
 /* Option chips */
-.BasketOptionChips{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 0 0;}
-.BasketOptionChip{display:inline-flex;align-items:center;padding:8px 16px;border-radius:9999px;background:rgba(0,0,0,0.06);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.1;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:20px;}
+.BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 0 0;justify-content:flex-start;align-items:flex-start;}
+.BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.05;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
 
 /* Receipt */
 .Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
 .ReceiptTable{width:100% !important;border-collapse:collapse;}
 .ReceiptTable td{vertical-align:top;padding:6px 8px;}
 .ReceiptItemName{display:block;}
-.ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
-.ReceiptOptionChips .BasketOptionChip{padding:7px 14px;font-size:18px;}
+.ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.ReceiptOptionChips .BasketOptionChip{padding:5px 10px;font-size:15px;}
 
 @media (max-width: 700px){
-  .Basket-Item{padding:12px 12px !important;}
-  .BasketOptionChip{font-size:18px;padding:7px 14px;}
+  .Basket-Item{padding:12px 12px !important;gap:12px !important;}
+  .BasketOptionChips{gap:8px;margin-top:6px;}
+  .BasketOptionChip{font-size:14px;padding:5px 10px;}
+  .BasketTextDescription{-webkit-line-clamp:2;}
+  .ReceiptOptionChips .BasketOptionChip{font-size:13px;}
 }
 `;
     document.head.appendChild(style);
@@ -6638,10 +6643,10 @@ productDiv.innerHTML = `
         </a>
         <div class="Item-Details">
           <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer" class="BasketText">
-            <strong class="BasketText">${safeName.length > 15 ? safeName.slice(0, 15) + "…" : safeName}</strong>
+            <strong class="BasketText BasketTitle">${safeName}</strong>
           </a>
+          ${optionChipsHTML}
           <p class="BasketTextDescription">${safeDesc}</p>
-                    ${optionChipsHTML}
 <div class="PriceAndOptionRow">
             <p class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</p>
 </div>
