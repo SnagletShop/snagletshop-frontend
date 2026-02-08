@@ -4067,6 +4067,64 @@
             overflow-y: auto;
             overscroll-behavior: contain;
         }
+/* Mobile basket: make option chips compact + prevent layout blow-ups */
+@media (max-width: 520px){
+
+  /* Ensure the item grid can shrink instead of overflowing */
+  .basket-item{
+    display:grid !important;
+    grid-template-columns: 72px 1fr 64px !important; /* img | content | qty */
+    column-gap: 10px !important;
+    row-gap: 8px !important;
+    align-items:start !important;
+  }
+  .basket-item > *{ min-width:0 !important; }  /* critical for wrapping */
+
+  /* Chips container: tighter spacing, allow wrapping */
+  .ss-optchips,
+  .BasketOptionChips,
+  .basket-option-chips{
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:6px !important;
+    margin:6px 0 0 !important;
+    max-width:100% !important;
+  }
+
+  /* Chips: smaller text/padding, clamp max width, ellipsis */
+  .ss-chip,
+  .BasketOptionChip,
+  .basket-option-chip{
+    font-size:12px !important;
+    padding:4px 8px !important;
+    border-radius:999px !important;
+    line-height:1.15 !important;
+    max-width: 46vw !important;          /* prevents giant pills */
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+
+  /* If you have many chips: keep them from pushing everything down */
+  .basket-item .ss-optchips{ max-height: 3.2em !important; overflow:hidden !important; }
+
+  /* Qty controls: keep compact */
+  .Quantity-Controls-Basket{
+    justify-content:center !important;
+    gap:8px !important;
+  }
+  .Quantity-Controls-Basket button{
+    width:36px !important;
+    height:32px !important;
+    border-radius:10px !important;
+    font-size:18px !important;
+  }
+  .Quantity-Controls-Basket .qty,
+  .Quantity-Controls-Basket span{
+    font-size:18px !important;
+    min-width:18px !important;
+  }
+}
 
         @media (min-width: 681px) {
             .ImageControl {
@@ -4745,4 +4803,5 @@
         });
     </script>
     <!-- Code injected by live-s
+
 
