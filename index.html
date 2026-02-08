@@ -729,6 +729,46 @@
                 -webkit-line-clamp: 6;
                 text-overflow: ellipsis;
             }
+/* Restore “old” basket +/- look: slightly angular + horizontal row */
+.Quantity-Controls-Basket{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:14px !important;
+  align-self:center !important;
+}
+
+/* Buttons: slightly angular rectangles (not circles) */
+.Quantity-Controls-Basket button,
+.Quantity-Controls-Basket .qty-btn{
+  width:44px !important;
+  height:38px !important;
+  border-radius:10px !important;        /* angular-ish */
+  border:1px solid rgba(0,0,0,.12) !important;
+  background:transparent !important;
+  cursor:pointer !important;
+  line-height:1 !important;
+  font-size:22px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* Quantity number */
+.Quantity-Controls-Basket .qty,
+.Quantity-Controls-Basket span{
+  min-width:28px !important;
+  text-align:center !important;
+  font-size:24px !important;
+  line-height:1 !important;
+}
+
+/* Optional: subtle hover like before */
+.Quantity-Controls-Basket button:hover,
+.Quantity-Controls-Basket .qty-btn:hover{
+  background:rgba(0,0,0,.04) !important;
+}
 
 
 
@@ -4705,3 +4745,4 @@
         });
     </script>
     <!-- Code injected by live-s
+
