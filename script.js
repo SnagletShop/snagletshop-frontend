@@ -4882,8 +4882,8 @@ function updateBasket() {
         try {
             const multi = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
             if (multi.length) {
-                const txt = __ssFormatSelectedOptionsDisplay(multi);
-                if (txt) selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(txt)}</span>`;
+                const txt = __ssFormatSelectedOptionsInline(multi, { sep: " · ", maxLen: 80 });
+                if (txt) selectedOptionHTML = `<span class="BasketSelectedOption">${__ssEscHtml(txt)}</span>`;
             } else if (item.selectedOption) {
                 // Back-compat: single selection
                 const product = Object.values(products).flat().find(p => p.name === item.name);
@@ -4893,7 +4893,7 @@ function updateBasket() {
                 } else if (product?.productOptions && product.productOptions.length > 1) {
                     label = product.productOptions[0].replace(":", "").trim().toLowerCase();
                 }
-                selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(label)}: ${__ssEscHtml(String(item.selectedOption).toLowerCase())}</span>`;
+                selectedOptionHTML = `<span class="BasketSelectedOption">${__ssEscHtml(label)}: ${__ssEscHtml(String(item.selectedOption))}</span>`;
             }
         } catch {
             // ignore
@@ -5960,6 +5960,30 @@ function __ssFormatSelectedOptionsDisplay(selectedOptions) {
     return sel.map(o => `${o.label}: ${o.value}`).join(", ");
 }
 
+// Basket/UI-friendly formatting (keeps casing, uses a compact separator, and can be truncated)
+function __ssFormatSelectedOptionsInline(selectedOptions, cfg = null) {
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    const sep = (cfg && typeof cfg === "object" && cfg.sep != null) ? String(cfg.sep) : " · ";
+    const maxLen = (cfg && typeof cfg === "object" && cfg.maxLen != null) ? (Number(cfg.maxLen) || 0) : 80;
+
+    const out = sel.map(o => `${o.label}: ${o.value}`).join(sep);
+    if (maxLen > 0 && out.length > maxLen) return out.slice(0, Math.max(1, maxLen - 1)) + "…";
+    return out;
+}
+
+// Best-effort label for legacy single-option baskets
+function __ssGuessPrimaryOptionLabel(productName) {
+    try {
+        const p = __ssGetCatalogFlat().find(pp => pp?.name === productName) || {};
+        const groups = __ssExtractOptionGroups(p);
+        const label = groups?.[0]?.label ? String(groups[0].label) : "Option";
+        return label.trim().replace(/:$/, "");
+    } catch {
+        return "Option";
+    }
+}
+
+
 function __ssFormatSelectedOptionsKey(selectedOptions) {
     const sel = __ssNormalizeSelectedOptions(selectedOptions);
     return sel.map(o => `${o.label}=${o.value}`).join(" | ");
@@ -6537,8 +6561,12 @@ function updateBasket() {
 
         let optionText = "";
         const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-        if (sel.length) optionText = `Selected: ${__ssFormatSelectedOptionsDisplay(sel)}`;
-        else if (item?.selectedOption) optionText = `Selected option: ${String(item.selectedOption)}`;
+        if (sel.length) optionText = __ssFormatSelectedOptionsInline(sel, { sep: " · ", maxLen: 80 });
+        else if (item?.selectedOption) {
+            const lbl = __ssGuessPrimaryOptionLabel(String(item?.name || ""));
+            const val = String(item.selectedOption).trim();
+            optionText = val ? `${lbl}: ${val}` : "";
+        }
 
         const selectedOptionHTML = optionText
             ? `<span class="BasketSelectedOption">${__ssEscHtml(optionText)}</span>`
