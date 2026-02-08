@@ -6002,7 +6002,7 @@ function __ssEnsureOptionChipStyles() {
   text-align:center;
 }
 /* Option chips */
-.BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 0 0;justify-content:flex-start;align-items:flex-start;}
+.BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:flex-start;}
 .BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.05;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
 
 /* Receipt */
@@ -6734,6 +6734,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
