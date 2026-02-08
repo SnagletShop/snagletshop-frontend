@@ -5986,12 +5986,43 @@ function __ssEnsureOptionChipStyles() {
 .Basket-Item .Item-Details{display:flex !important;flex-direction:column !important;gap:10px !important;height:auto !important;}
 .BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-/* Quantity controls: center vertically, price under +/- */
-.Quantity-Controls-Basket{align-self:center !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:10px !important;}
-.BasketQtyRow{display:flex !important;align-items:center !important;justify-content:center !important;gap:18px !important;}
-.basket-item-price-right{margin:0 !important;}
-.PriceAndOptionRow{margin-top:6px;}
-
+/* Quantity controls: compact vertical stack, centered */
+.Quantity-Controls-Basket{
+  align-self:center !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:12px !important;
+  min-width:64px !important;
+}
+.Quantity-Controls-Basket .BasketChangeQuantityButton{
+  width:44px;
+  height:44px;
+  border-radius:9999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  margin:0;
+  line-height:1;
+  font-size:26px;
+  background:rgba(0,0,0,0.04);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);
+  cursor:pointer;
+}
+.Quantity-Controls-Basket .BasketChangeQuantityButton:hover{
+  background:rgba(0,0,0,0.06);
+}
+.Quantity-Controls-Basket .BasketChangeQuantityText{
+  font-family:'Afacad',sans-serif;
+  font-size:20px;
+  line-height:1;
+  margin:0;
+  padding:0;
+  min-width:1.5em;
+  text-align:center;
+}
 /* Option chips */
 .BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 0 0;justify-content:flex-start;align-items:flex-start;}
 .BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.05;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
@@ -6006,8 +6037,9 @@ function __ssEnsureOptionChipStyles() {
 
 @media (max-width: 700px){
 
-.Quantity-Controls-Basket{gap:8px !important;}
-.BasketQtyRow{gap:14px !important;}
+.Quantity-Controls-Basket{gap:10px !important;min-width:56px !important;}
+.Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
+.Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
   .Basket-Item{padding:12px 12px !important;gap:12px !important;}
   .BasketOptionChips{gap:8px;margin-top:6px;}
   .BasketOptionChip{font-size:14px;padding:5px 10px;}
@@ -6654,10 +6686,7 @@ productDiv.innerHTML = `
           </a>
           ${optionChipsHTML}
           <p class="BasketTextDescription">${safeDesc}</p>
-<div class="PriceAndOptionRow">
-            <p class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</p>
 </div>
-        </div>
         <div class="Quantity-Controls-Basket">
           <button class="BasketChangeQuantityButton" type="button"
                   data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
