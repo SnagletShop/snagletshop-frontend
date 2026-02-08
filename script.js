@@ -4906,17 +4906,17 @@ const encodedName = encodeURIComponent(item.name);
 
                 </a>
                 <p class="BasketTextDescription">${item.description}</p>
-                                ${optionChipsHTML}
-<div class="PriceAndOptionRow">
-                    <p class="basket-item-price" data-eur="${totalPrice}">${totalPrice}€</p>
-</div>
+                                       ${optionChipsHTML}
             </div>
 <div class="Quantity-Controls-Basket">
-  <button class="BasketChangeQuantityButton" type="button"
-          data-key="${encodeURIComponent(key)}" data-delta="-1">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-  <span class="BasketChangeQuantityText">${item.quantity}</span>
-  <button class="BasketChangeQuantityButton" type="button"
-          data-key="${encodeURIComponent(key)}" data-delta="1">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
+  <div class="BasketQtyRow">
+    <button class="BasketChangeQuantityButton" type="button"
+            data-key="${encodeURIComponent(key)}" data-delta="-1">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
+    <span class="BasketChangeQuantityText">${item.quantity}</span>
+    <button class="BasketChangeQuantityButton" type="button"
+            data-key="${encodeURIComponent(key)}" data-delta="1">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
+  </div>
+  <p class="basket-item-price basket-item-price-right" data-eur="${totalPrice}">${totalPrice}€</p>
 </div>
 
         </div>
@@ -5986,6 +5986,10 @@ function __ssEnsureOptionChipStyles() {
 .Basket-Item .Item-Details{display:flex !important;flex-direction:column !important;gap:10px !important;height:auto !important;}
 .BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+/* Quantity controls: center vertically, price under +/- */
+.Quantity-Controls-Basket{align-self:center !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:10px !important;}
+.BasketQtyRow{display:flex !important;align-items:center !important;justify-content:center !important;gap:18px !important;}
+.basket-item-price-right{margin:0 !important;}
 .PriceAndOptionRow{margin-top:6px;}
 
 /* Option chips */
@@ -6001,6 +6005,9 @@ function __ssEnsureOptionChipStyles() {
 .ReceiptOptionChips .BasketOptionChip{padding:5px 10px;font-size:15px;}
 
 @media (max-width: 700px){
+
+.Quantity-Controls-Basket{gap:8px !important;}
+.BasketQtyRow{gap:14px !important;}
   .Basket-Item{padding:12px 12px !important;gap:12px !important;}
   .BasketOptionChips{gap:8px;margin-top:6px;}
   .BasketOptionChip{font-size:14px;padding:5px 10px;}
