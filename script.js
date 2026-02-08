@@ -2482,7 +2482,8 @@ function searchProducts() {
                     product.expectedPurchasePrice,
                     product.productLink,
                     product.description,
-                    (product.productOptions && product.productOptions[1]) || ""
+                    "",
+                    __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
                 );
             });
 
@@ -4437,7 +4438,8 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
                 product.expectedPurchasePrice,
                 product.productLink,
                 product.description,
-                (product.productOptions && product.productOptions[1]) || ""
+                "",
+                __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
             );
         });
 
@@ -4877,16 +4879,24 @@ function updateBasket() {
         console.log(`   🔹 Product description: ${item.description}`);
 
         let selectedOptionHTML = "";
-        if (item.selectedOption) {
-            // Try to find the product from the products database
-            const product = Object.values(products).flat().find(p => p.name === item.name);
-            let label = "option";
-
-            if (product?.productOptions && product.productOptions.length > 1) {
-                label = product.productOptions[0].replace(":", "").trim().toLowerCase();
+        try {
+            const multi = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
+            if (multi.length) {
+                const txt = __ssFormatSelectedOptionsDisplay(multi);
+                if (txt) selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(txt)}</span>`;
+            } else if (item.selectedOption) {
+                // Back-compat: single selection
+                const product = Object.values(products).flat().find(p => p.name === item.name);
+                let label = "option";
+                if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length && product.optionGroups[0]?.label) {
+                    label = String(product.optionGroups[0].label).replace(":", "").trim().toLowerCase();
+                } else if (product?.productOptions && product.productOptions.length > 1) {
+                    label = product.productOptions[0].replace(":", "").trim().toLowerCase();
+                }
+                selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${__ssEscHtml(label)}: ${__ssEscHtml(String(item.selectedOption).toLowerCase())}</span>`;
             }
-
-            selectedOptionHTML = `<span class="BasketSelectedOption">Selected ${label}: ${item.selectedOption.toLowerCase()}</span>`;
+        } catch {
+            // ignore
         }
 
         const encodedName = encodeURIComponent(item.name);
