@@ -1,8550 +1,6863 @@
-
-// ---- Global helper fallbacks (to prevent mount() crashes) ----
-window.q = window.q || function (sel, root) { return (root || document).querySelector(sel); };
-window.el = window.el || function (tag, cls) { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
-window.injectCssOnce = window.injectCssOnce || function () {
-  if (document.getElementById("mgmt-topbar-css")) return;
-  const st = document.createElement("style");
-  st.id = "mgmt-topbar-css";
-  st.textContent = `
-    .mgmt-topbar-container{display:flex;align-items:center;gap:12px}
-    .mgmt-brand-wrap{display:flex;align-items:center}
-    .mgmt-topbar-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .mgmt-btn{border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:8px 10px;font-weight:700;cursor:pointer}
-    .mgmt-btn.primary{background:#111827;color:#fff;border-color:#111827}
-    .mgmt-btn.danger{border-color:#fecaca;color:#b91c1c;background:#fff5f5}
-    .mgmt-sep{width:1px;height:28px;background:#e5e7eb;margin:0 6px}
-  `;
-  document.head.appendChild(st);
-};
-
-// ---- Project selector (multi-server profiles) ----
-const MG_PROJECTS_KEY = "mgmt_projects_v1";
-const MG_ACTIVE_PROJECT_KEY = "mgmt_active_project_id";
-
-function mgLoadProjects() {
-  try {
-    const raw = localStorage.getItem(MG_PROJECTS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-
-
-// ---- Global action runner fallback (ensures buttons work even if topbar-scoped actionRunner isn't in global scope) ----
-if (typeof window.actionRunner !== "function") {
-  window.actionRunner = async function (fn, label) {
+async function ensureStripePublishableKey() {
+    // 1) Prefer explicitly injected key (e.g. in index.html or Netlify env replacement)
+    if (window.STRIPE_PUBLISHABLE_KEY && String(window.STRIPE_PUBLISHABLE_KEY).trim()) {
+        return String(window.STRIPE_PUBLISHABLE_KEY).trim();
+    }
+    // 2) Fetch from backend public-config (no secrets)
     try {
-      // Execute action
-      return await fn();
-    } catch (e) {
-      // Surface in console; UI may also show errors elsewhere.
-      console.error(label ? `[actionRunner] ${label} failed` : "[actionRunner] failed", e);
-      throw e;
-    }
-  };
-}
-// Provide a global binding for code that calls `actionRunner(...)`
-try { window.actionRunnerGlobal = window.actionRunner; } catch { }
-
-var actionRunner = window.actionRunner;
-function mgSaveProjects(list) {
-  localStorage.setItem(MG_PROJECTS_KEY, JSON.stringify(Array.isArray(list) ? list : []));
-}
-
-function mgEnsureDefaultProject() {
-  const projects = mgLoadProjects();
-  if (projects.length) return projects;
-
-  const p = {
-    id: "default",
-    name: "Default",
-    api_base: localStorage.getItem("api_base") || "",
-    admin_code: localStorage.getItem("admin_code") || "",
-    api_token: localStorage.getItem("api_token") || "",
-    // optional remembered creds
-    admin_user: localStorage.getItem("admin_user") || "",
-    admin_pass: localStorage.getItem("admin_pass") || "",
-  };
-  mgSaveProjects([p]);
-  localStorage.setItem(MG_ACTIVE_PROJECT_KEY, p.id);
-  return [p];
-}
-
-function mgGetActiveProjectId() {
-  return localStorage.getItem(MG_ACTIVE_PROJECT_KEY) || "default";
-}
-
-function mgSetActiveProjectId(id) {
-  localStorage.setItem(MG_ACTIVE_PROJECT_KEY, String(id || "default"));
-}
-
-function mgApplyProjectToLocalStorage(project) {
-  if (!project) return;
-  if (project.api_base != null) localStorage.setItem("api_base", String(project.api_base || ""));
-  if (project.admin_code != null) localStorage.setItem("admin_code", String(project.admin_code || ""));
-  if (project.api_token != null) localStorage.setItem("api_token", String(project.api_token || ""));
-  if (project.admin_user != null) localStorage.setItem("admin_user", String(project.admin_user || ""));
-  if (project.admin_pass != null) localStorage.setItem("admin_pass", String(project.admin_pass || ""));
-}
-
-function mgPersistActiveProjectFromLocalStorage() {
-  const projects = mgEnsureDefaultProject();
-  const activeId = mgGetActiveProjectId();
-  const idx = projects.findIndex(p => p.id === activeId);
-  if (idx < 0) return;
-  const p = projects[idx];
-  p.api_base = localStorage.getItem("api_base") || "";
-  p.admin_code = localStorage.getItem("admin_code") || "";
-  p.api_token = localStorage.getItem("api_token") || "";
-  p.admin_user = localStorage.getItem("admin_user") || "";
-  p.admin_pass = localStorage.getItem("admin_pass") || "";
-  projects[idx] = p;
-  mgSaveProjects(projects);
-}
-
-async function mgSwitchProject(projectId, { forceLogin = false } = {}) {
-  const projects = mgEnsureDefaultProject();
-  const p = projects.find(x => x.id === projectId) || projects[0];
-  mgSetActiveProjectId(p.id);
-  mgApplyProjectToLocalStorage(p);
-
-  // Clear current session and re-auth
-  try { clearAdminSession?.(); } catch { }
-
-  if (forceLogin) {
-    // wipe token to force credentials prompt
-    localStorage.removeItem("api_token");
-  }
-
-  // Ensure login, then refresh orders UI
-  if (typeof ensureLogin === "function") {
-    await ensureLogin();
-    try { await refreshCatalogFileModeUi(); } catch { }
-
-  }
-  try {
-    if (typeof loadOrdersFromServer === "function") {
-      state.orders = await loadOrdersFromServer();
-      render?.();
-    }
-
-    // Accounting tab
-    const __ab = btn("accounting");
-    if (__ab) {
-      __ab._mgWired = true;
-      __ab.onclick = () => actionRunner(async () => {
-        await safeEnsureLogin();
-        try { tariffsUiHide?.(); } catch { }
-        try { productsUiHide?.(); } catch { }
-        try { window.graphEngine?.close?.(); } catch { }
-        localStorage.setItem("mgmt_active_tab", "accounting");
-        try { updateMgmtTabButtons?.(); } catch { }
-        try { renderFilters(true); } catch { }
-        try { const groups = document.getElementById("groups"); if (groups) groups.innerHTML = ""; } catch { }
-        if (typeof accountingUiShow === "function") await accountingUiShow();
-      }, "Accounting");
-    }
-  } catch { }
-}
-
-// === Admin API config (wired to server.js) ===
-// This file is meant to work both when hosted on your domain (same-origin as server.js)
-// and when opened from a local dev server (via localStorage overrides).
-
-
-/**
- * API base resolution for the admin UI.
- * Goal: always talk to https://api.snagletshop.com in production, while still allowing localhost dev.
- */
-function _isIpv4Host(hostname) {
-  return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname || "");
-}
-
-function _normalizeApiBase(input) {
-  let s = String(input || "").trim();
-  if (!s) return "";
-  s = s.replace(/\/+$/, "");
-  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) {
-    if (s.startsWith("localhost") || s.startsWith("127.") || s.startsWith("0.0.0.0")) s = "http://" + s;
-    else s = "https://" + s;
-  }
-  try {
-    const u = new URL(s);
-    return u.origin;
-  } catch {
-    return "";
-  }
-}
-
-function getApiBase(opts = {}) {
-  const preferStored = opts.preferStored !== false;
-
-  const storedRaw = preferStored ? localStorage.getItem("api_base") : "";
-  const metaRaw =
-    (document.querySelector('meta[name="api-base"]') &&
-      document.querySelector('meta[name="api-base"]').getAttribute("content")) ||
-    "";
-  const origin = (location && location.origin) ? String(location.origin) : "";
-  const host = (location && location.hostname) ? String(location.hostname) : "";
-  const originUsable = !!origin && origin !== "null" && !origin.startsWith("file:");
-
-  const candidates = [];
-  if (storedRaw) candidates.push(storedRaw);
-  if (metaRaw) candidates.push(metaRaw);
-
-  // Use same-origin API only if the admin UI is served from api.* or localhost (dev).
-  if (originUsable && (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.startsWith("api."))) {
-    candidates.push(origin);
-  }
-
-  // Final fallback: production API
-  candidates.push("https://api.snagletshop.com");
-
-  for (const raw of candidates) {
-    const normalized = _normalizeApiBase(raw);
-    if (!normalized) continue;
-
-    try {
-      const u = new URL(normalized);
-
-      // Never use https://<IP> because it will fail TLS (cert CN mismatch). Force the proper hostname.
-      if (u.protocol === "https:" && _isIpv4Host(u.hostname)) {
-        if (storedRaw) localStorage.setItem("api_base", "https://api.snagletshop.com");
-        return "https://api.snagletshop.com";
-      }
-
-      // If someone accidentally stored the storefront origin, rewrite to API origin.
-      if (u.hostname === "snagletshop.com" || u.hostname === "www.snagletshop.com") {
-        if (storedRaw) localStorage.setItem("api_base", "https://api.snagletshop.com");
-        return "https://api.snagletshop.com";
-      }
-
-      return normalized;
-    } catch {
-      // ignore
-    }
-  }
-
-  return "https://api.snagletshop.com";
-}
-
-(function bootstrapAdminApi() {
-  // Ensure a stable object identity (do not replace window.adminApi if it already exists).
-  window.adminApi = window.adminApi || {};
-  const api = window.adminApi;
-
-  // ---- Base URL ----
-  api.setApiBase = api.setApiBase || function setApiBase(base) {
-    const b = String(base || "").trim().replace(/\/+$/, "");
-    if (b) localStorage.setItem("api_base", b);
-    return b;
-  };
-
-  // Try localStorage override first, otherwise use current origin if usable.
-  const resolvedBase = getApiBase({ preferStored: true });
-  if (resolvedBase) api.setApiBase(resolvedBase);
-
-  // ---- Optional admin code ----
-  api.setAdminCode = api.setAdminCode || function setAdminCode(code) {
-    const c = String(code || "").trim();
-    if (c) localStorage.setItem("admin_code", c);
-    else localStorage.removeItem("admin_code");
-    return c;
-  };
-  const storedCode = localStorage.getItem("admin_code");
-  if (storedCode && storedCode !== "null") api.setAdminCode(storedCode);
-
-  // ---- Token helpers (shared with _adminHeaders below) ----
-  api.tokenValid = api.tokenValid || function tokenValid() {
-    const tok = localStorage.getItem("api_token") || "";
-    if (!tok) return false;
-
-    const expMs = Number(localStorage.getItem("api_token_exp_ms") || 0);
-    if (expMs > 0) return Date.now() < expMs;
-
-    // If exp wasn't stored (older versions), assume ~55 minutes from set time.
-    const setAt = Number(localStorage.getItem("api_token_set_at_ms") || 0);
-    if (setAt > 0) return (Date.now() - setAt) < (55 * 60 * 1000);
-
-    return true;
-  };
-
-  api.login = api.login || async function login(username, password, adminCodeOverride) {
-    const base = getApiBase();
-    if (!base || base === "null") throw new Error("Missing api_base. Set localStorage.api_base to your server origin.");
-
-    const adminCode = String(adminCodeOverride || localStorage.getItem("admin_code") || "").trim();
-    const res = await fetch(`${base}/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        password,
-        adminCode: adminCode || undefined
-      })
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data?.error || `Login failed (${res.status})`);
-    }
-
-    const token = String(data.token || "");
-    const expiresIn = Number(data.expiresIn || 0);
-
-    if (!token) throw new Error("Login failed: missing token in response.");
-
-    localStorage.setItem("api_token", token);
-    localStorage.setItem("api_token_set_at_ms", String(Date.now()));
-    if (expiresIn > 0) {
-      // small safety margin
-      localStorage.setItem("api_token_exp_ms", String(Date.now() + (expiresIn * 1000) - 15000));
-    } else {
-      localStorage.removeItem("api_token_exp_ms");
-    }
-
-    return data;
-  };
-
-  // Minimal client methods if your page doesn't include an external adminApi library
-  api.listOrders = api.listOrders || async function listOrders({ from, to, limit = 1000 } = {}) {
-    const base = getApiBase();
-    const qs = new URLSearchParams();
-    if (from) qs.set("from", from);
-    if (to) qs.set("to", to);
-    if (limit != null) qs.set("limit", String(limit));
-    const r = await fetch(`${base}/admin/orders?${qs.toString()}`, {
-      method: "GET",
-      headers: _adminHeaders(false)
-    });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `listOrders failed (${r.status})`);
-    return out;
-  };
-
-  api.patchOrder = api.patchOrder || async function patchOrder(orderId, payload) {
-    if (!orderId) throw new Error("patchOrder: orderId required");
-    const base = getApiBase();
-    const r = await fetch(`${base}/admin/orders/${encodeURIComponent(orderId)}`, {
-      method: "PATCH",
-      headers: _adminHeaders(true),
-      body: JSON.stringify(payload || {})
-    });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `patchOrder failed (${r.status})`);
-    return out;
-  };
-
-  api.resend = api.resend || async function resend(orderId) {
-    if (!orderId) throw new Error("resend: orderId required");
-    const base = getApiBase();
-    const r = await fetch(`${base}/admin/orders/${encodeURIComponent(orderId)}/resend-confirmation`, {
-      method: "POST",
-      headers: _adminHeaders(true),
-      body: "{}"
-    });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `resend failed (${r.status})`);
-    return out;
-  };
-
-
-  api.sendShippedEmail = api.sendShippedEmail || async function sendShippedEmail(orderId) {
-    if (!orderId) throw new Error("sendShippedEmail: orderId required");
-    const base = getApiBase();
-    const r = await fetch(`${base}/admin/orders/${encodeURIComponent(orderId)}/send-shipped-email`, {
-      method: "POST",
-      headers: _adminHeaders(true),
-      body: "{}"
-    });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `sendShippedEmail failed (${r.status})`);
-    return out;
-  };
-})();
-
-// ---- API base helper (fix: legacy API_BASE usages) ----
-
-let _ensureLoginPromise = null;
-
-function clearAdminSession() {
-  localStorage.removeItem("api_token");
-  localStorage.removeItem("api_token_exp_ms");
-  localStorage.removeItem("api_token_set_at_ms");
-}
-
-
-function clearRememberedLogin() {
-  // Optional convenience: allows automatic re-login when the short-lived API token expires.
-  // WARNING: if you enable "remember password", it is stored in this browser on this device.
-  localStorage.removeItem("admin_remember_password");
-  localStorage.removeItem("admin_saved_password");
-  try { if (navigator.credentials && navigator.credentials.preventSilentAccess) navigator.credentials.preventSilentAccess(); } catch { }
-}
-
-async function maybeRememberLogin(username, password, adminCode) {
-  const u = String(username || "").trim();
-  const p = (password == null) ? null : String(password);
-  const code = String(adminCode || localStorage.getItem("admin_code") || "").trim();
-  if (!u || p == null) return;
-
-  // Respect "Remember on this device" if present, otherwise default ON.
-  const rememberEl = document.getElementById("rememberCreds");
-  const remember = rememberEl ? !!rememberEl.checked : (localStorage.getItem("admin_remember_password") !== "0");
-
-  if (!remember) {
-    clearRememberedLogin();
-    localStorage.setItem("admin_last_user", u);
-    if (code) localStorage.setItem("admin_code", code);
-    return;
-  }
-
-  localStorage.setItem("admin_remember_password", "1");
-  localStorage.setItem("admin_last_user", u);
-  localStorage.setItem("admin_saved_password", p);
-  if (code) localStorage.setItem("admin_code", code);
-
-  // Best-effort: also store in the browser password manager (if available).
-  try {
-    if (navigator.credentials && window.PasswordCredential) {
-      const cred = new PasswordCredential({ id: u, name: u, password: p });
-      await navigator.credentials.store(cred);
-    }
-  } catch { }
-}
-
-
-async function tryAutoLoginIfConfigured() {
-  // 1) Try Credential Management API (password manager) silently.
-  try {
-    if (navigator.credentials && navigator.credentials.get) {
-      const cred = await navigator.credentials.get({ password: true, mediation: "silent" });
-      if (cred && cred.id && cred.password) {
-        localStorage.setItem("admin_last_user", String(cred.id));
-        await adminApi.login(String(cred.id), String(cred.password));
-        return true;
-      }
-    }
-  } catch { }
-
-  // 2) Try local remembered password (explicit opt-in).
-  try {
-    if (localStorage.getItem("admin_remember_password") === "1") {
-      const u = (localStorage.getItem("admin_last_user") || "").trim();
-      const p = localStorage.getItem("admin_saved_password");
-      if (u && p) {
-        await adminApi.login(u, p);
-        return true;
-      }
-    }
-  } catch { }
-
-  return false;
-}
-
-function isAdminAuthError(err) {
-  const msg = String(err?.message || err || "");
-  return (
-    /\b(401|403)\b/.test(msg) ||
-    /missing token|invalid token|bad admin code|missing or invalid admin code/i.test(msg)
-  );
-}
-
-// Confirms the saved token is accepted by the server (not just "valid by time").
-async function probeAdminSession() {
-  const base = getApiBase({ preferStored: true });
-  if (!base || base === "null") return true;
-
-  try {
-    const headers = (typeof _adminHeaders === "function") ? _adminHeaders(false) : {};
-    const r = await fetch(`${base}/admin/orders?limit=1`, { method: "GET", headers });
-    if (r.status === 401 || r.status === 403) return false;
-    return true;
-  } catch {
-    // Network/down: don't force relogin just because probe failed to reach server
-    return true;
-  }
-}
-
-
-// ======= Login UI (no prompts) =======
-let _loginUiInited = false;
-let _loginWaitPromise = null;
-let _loginWaitResolve = null;
-
-function _loginEl(id) { return document.getElementById(id); }
-
-function _setLoginStatus(msg, type) {
-  const el = _loginEl("loginStatus");
-  if (!el) return;
-  el.classList.remove("error", "ok");
-  if (type) el.classList.add(type);
-  el.textContent = String(msg || "");
-}
-
-function _getMetaApiBase() {
-  try {
-    const el = document.querySelector('meta[name="api-base"]');
-    const v = el ? String(el.getAttribute("content") || "").trim() : "";
-    return v;
-  } catch {
-    return "";
-  }
-}
-
-function _saveApiBaseFromUI(raw) {
-  const r = String(raw || "").trim();
-  const normalized = _normalizeApiBase(r);
-  if (!normalized) return false;
-  try {
-    if (window.adminApi && typeof window.adminApi.setApiBase === "function") {
-      window.adminApi.setApiBase(normalized);
-    } else {
-      localStorage.setItem("api_base", normalized);
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function _prefillLoginFields() {
-  const uEl = _loginEl("loginUsername");
-  const pEl = _loginEl("loginPassword");
-  const cEl = _loginEl("loginAdminCode");
-  const rememberEl = _loginEl("rememberCreds");
-
-  const aEl = _loginEl("loginApiBase");
-  if (uEl) uEl.value = String(localStorage.getItem("admin_last_user") || "");
-  if (pEl) pEl.value = String(localStorage.getItem("admin_saved_password") || "");
-  if (cEl) cEl.value = String(localStorage.getItem("admin_code") || "");
-
-  // Server URL (api_base) override
-  if (aEl) {
-    const stored = String(localStorage.getItem("api_base") || "").trim();
-    const meta = _getMetaApiBase();
-    aEl.value = stored || meta || "https://api.snagletshop.com";
-  }
-
-  if (rememberEl) {
-    const stored = localStorage.getItem("admin_remember_password");
-    rememberEl.checked = (stored === "1") || (stored == null); // default ON
-  }
-}
-
-function initLoginUI() {
-  if (_loginUiInited) return;
-  _loginUiInited = true;
-
-  const screen = _loginEl("loginScreen");
-  if (!screen) return;
-
-  _prefillLoginFields();
-
-  const form = _loginEl("loginForm");
-  const toggle = _loginEl("togglePw");
-  const logout = _loginEl("logoutBtn");
-  const rememberEl = _loginEl("rememberCreds");
-
-  const apiBaseEl = _loginEl("loginApiBase");
-  if (toggle) {
-    toggle.addEventListener("click", () => {
-      const pEl = _loginEl("loginPassword");
-      if (!pEl) return;
-      const isPw = pEl.type === "password";
-      pEl.type = isPw ? "text" : "password";
-      toggle.textContent = isPw ? "Hide" : "Show";
-    });
-  }
-
-  if (rememberEl) {
-    rememberEl.addEventListener("change", () => {
-      if (rememberEl.checked) {
-        localStorage.setItem("admin_remember_password", "1");
-      } else {
-        clearRememberedLogin();
-      }
-    });
-  }
-
-
-  if (apiBaseEl) {
-    const apply = () => {
-      const ok = _saveApiBaseFromUI(apiBaseEl.value);
-      if (ok) _setLoginStatus("Server URL saved.", "ok");
-      else _setLoginStatus("Invalid Server URL.", "error");
-    };
-    apiBaseEl.addEventListener("blur", apply);
-    apiBaseEl.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        apply();
-      }
-    });
-  }
-
-  if (logout) {
-    logout.addEventListener("click", () => {
-      try { clearAdminSession(); } catch { }
-      showLoginScreen({ autoAttempt: false });
-      _setLoginStatus("Signed out.", "ok");
-    });
-  }
-
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const u = String(_loginEl("loginUsername")?.value || "").trim();
-      const p = String(_loginEl("loginPassword")?.value || "");
-      const code = String(_loginEl("loginAdminCode")?.value || "").trim();
-      const remember = !!_loginEl("rememberCreds")?.checked;
-      const apiBase = String(_loginEl("loginApiBase")?.value || "").trim();
-      if (apiBase) _saveApiBaseFromUI(apiBase);
-      await loginWithCreds({ username: u, password: p, adminCode: code, remember, silent: false });
-    });
-  }
-}
-
-function showLoginScreen({ autoAttempt = false } = {}) {
-  initLoginUI();
-  const screen = _loginEl("loginScreen");
-  if (!screen) return;
-
-  screen.classList.remove("hidden");
-  screen.setAttribute("aria-hidden", "false");
-  _prefillLoginFields();
-
-  // optional: attempt background sign-in using remembered creds
-  if (autoAttempt) {
-    const u = String(localStorage.getItem("admin_last_user") || "").trim();
-    const p = localStorage.getItem("admin_saved_password");
-    const code = String(localStorage.getItem("admin_code") || "").trim();
-    const remember = (localStorage.getItem("admin_remember_password") === "1") || (localStorage.getItem("admin_remember_password") == null);
-    if (u && p) {
-      loginWithCreds({ username: u, password: String(p), adminCode: code, remember, silent: true });
-    }
-  }
-}
-
-function hideLoginScreen() {
-  const screen = _loginEl("loginScreen");
-  if (!screen) return;
-  screen.classList.add("hidden");
-  screen.setAttribute("aria-hidden", "true");
-}
-
-function _resolveLoginWaiter() {
-  if (_loginWaitResolve) {
-    _loginWaitResolve();
-    _loginWaitResolve = null;
-  }
-  _loginWaitPromise = null;
-}
-
-function waitForInteractiveLogin() {
-  showLoginScreen({ autoAttempt: false });
-  if (_loginWaitPromise) return _loginWaitPromise;
-
-  _loginWaitPromise = new Promise((resolve) => {
-    _loginWaitResolve = resolve;
-  });
-  return _loginWaitPromise;
-}
-
-async function loginWithCreds({ username, password, adminCode, remember = true, silent = false } = {}) {
-  const u = String(username || "").trim();
-  const p = (password == null) ? "" : String(password);
-  const code = String(adminCode || "").trim();
-
-  if (!u || !p) {
-    if (!silent) _setLoginStatus("Enter username and password.", "error");
-    return false;
-  }
-
-  // ensure api_base is set + in sync
-  const base = getApiBase({ preferStored: true });
-  adminApi.setApiBase(base);
-
-  // persist admin code for auto-login if provided
-  if (code) adminApi.setAdminCode(code);
-
-  try {
-    if (!silent) _setLoginStatus("Signing in…");
-    else _setLoginStatus("Signing in…");
-
-    localStorage.setItem("admin_last_user", u);
-
-    // attempt login
-    await adminApi.login(u, p, code || undefined);
-
-    // remember credentials (requested behavior)
-    if (remember) {
-      localStorage.setItem("admin_remember_password", "1");
-      localStorage.setItem("admin_saved_password", p);
-      if (code) localStorage.setItem("admin_code", code);
-
-      // Persist credentials/API base into the active project profile (if projects are used)
-      try { mgPersistActiveProjectFromLocalStorage(); } catch { }
-
-      // best-effort: also store in browser password manager
-      try {
-        if (navigator.credentials && window.PasswordCredential) {
-          const cred = new PasswordCredential({ id: u, name: u, password: p });
-          await navigator.credentials.store(cred);
+        const res = await fetch(`${API_BASE}/public-config`, { method: "GET" });
+        const data = await res.json().catch(() => ({}));
+        const k = data && data.stripePublishableKey ? String(data.stripePublishableKey).trim() : "";
+        if (k) {
+            window.STRIPE_PUBLISHABLE_KEY = k;
+            return k;
         }
-      } catch { }
-    } else {
-      // still keep last username for convenience
-      clearRememberedLogin();
-      localStorage.setItem("admin_last_user", u);
-      if (code) localStorage.setItem("admin_code", code);
-    }
-
-    _setLoginStatus("Signed in.", "ok");
-    hideLoginScreen();
-    _resolveLoginWaiter();
-    return true;
-  } catch (e) {
-    const msg = String(e?.message || e || "Login failed");
-    if (/admin code|x-admin-code|missing or invalid admin code/i.test(msg)) {
-      if (!silent) _setLoginStatus("Admin code required or invalid. Enter it and try again.", "error");
-      else _setLoginStatus("Admin code required.", "error");
-    } else {
-      if (!silent) _setLoginStatus(msg, "error");
-      else _setLoginStatus("Sign-in failed. Open the login screen to retry.", "error");
-    }
-    showLoginScreen({ autoAttempt: false });
-    return false;
-  }
+    } catch { }
+    return "";
 }
 
-
-
-async function ensureLogin() {
-  if (_ensureLoginPromise) return _ensureLoginPromise;
-
-  _ensureLoginPromise = (async () => {
-    // Do NOT flash the login UI during normal actions.
-    // The login screen is shown on initial load and only shown again if interactive auth is required.
-
-    // Ensure api_base is set (in case user changed it in the login screen)
-    const base = getApiBase({ preferStored: true });
-    adminApi.setApiBase(base);
-
-    // If we have a token, verify the server actually accepts it.
-    if (adminApi.tokenValid()) {
-      const ok = await probeAdminSession().catch(() => false);
-      if (ok) {
-        hideLoginScreen();
-        return;
-      }
-      clearAdminSession(); // token rejected by server -> force login below
-    }
-
-    // Auto-login if configured: refresh session without prompting when token expires.
+function showStripeConfigError(msg) {
     try {
-      const ok = await tryAutoLoginIfConfigured();
-      if (ok) {
-        hideLoginScreen();
-        return;
-      }
+        alert(msg);
+    } catch { }
+    const payBtn = document.getElementById("payButton") || document.getElementById("payBtn");
+    if (payBtn) payBtn.disabled = true;
+}
+
+
+window.functionBlacklist = new Set([
+
+]);
+const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = true;
+// applyTariff is controlled by the backend (see /products payload: applyTariff).
+// We keep a local fallback for offline/backwards compatibility.
+let serverApplyTariff = null;
+if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTariff", "true");
+// early in boot:
+// API base is configurable for local/staging.
+// You can override by setting window.__API_BASE__ before this script loads,
+// or by setting <meta name="api-base" content="https://..."> in index.html.
+const DEFAULT_BACKEND_PORT = 5500; // server.js default
+
+const API_BASE = (() => {
+  const injected = (typeof window !== "undefined" && window.__API_BASE__) ? String(window.__API_BASE__) : "";
+  const meta = String(document.querySelector('meta[name="api-base"]')?.getAttribute("content") || "");
+
+  const chosen = (injected || meta).trim();
+  if (chosen) return chosen.replace(/\/+$/, "");
+
+  // Production default (no explicit port -> https/443)
+  const host = window.location.hostname || "";
+  const isProd =
+    host === "snagletshop.com" ||
+    host === "www.snagletshop.com" ||
+    host === "api.snagletshop.com" ||
+    host.endsWith(".snagletshop.com");
+
+  if (isProd) return "https://api.snagletshop.com";
+
+  // Dev / direct-IP default -> same host on :8080
+  const proto = window.location.protocol || "http:";
+  return `${proto}//${host}:${DEFAULT_BACKEND_PORT}`;
+})().replace(/\/+$/, "");
+
+
+function canonicalizeProductLink(link) {
+    const raw = String(link || "").trim();
+    if (!raw) return "";
+    try {
+        const u = new URL(raw);
+        u.search = "";
+        u.hash = "";
+        const path = u.pathname.replace(/\/+$/, "");
+        return `${u.protocol}//${u.host}${path}`;
+    } catch {
+        return raw.split("?")[0].split("#")[0].replace(/\/+$/, "");
+    }
+}
+
+function extractProductIdFromLink(link) {
+    const s = canonicalizeProductLink(link);
+    if (!s) return "";
+    const m = s.match(/\/item\/(\d+)\.html/i) || s.match(/\/i\/(\d+)\.html/i);
+    if (m && m[1]) return String(m[1]);
+    const m2 = s.match(/(\d{10,16})/);
+    if (m2 && m2[1]) return String(m2[1]);
+    return "";
+}
+
+
+function normalizeCartItemsForServer(items) {
+    const arr = Array.isArray(items) ? items : [];
+    return arr.map((it) => {
+        const productLink = String(it?.productLink || it?.link || "").trim();
+        const canonicalLink = canonicalizeProductLink(productLink);
+
+        const productId = String(it?.productId || "").trim();
+
+        const out = {
+            ...it,
+            productLink: canonicalLink || productLink
+        };
+        if (productId) out.productId = productId;
+
+        return out;
+    });
+}
+
+
+
+
+// ---------------- Turnstile (Cloudflare) token helper ----------------
+// Requirements:
+//  - index.html must include Turnstile api.js?render=explicit
+//  - set <meta name="turnstile-sitekey" content="...">
+//  - an element with id="snaglet-turnstile" exists (created in index.html; fallback created here)
+const __snagletTurnstile = {
+    widgetId: null,
+    lastToken: "",
+    pending: null
+};
+
+function __snagletGetTurnstileSiteKey() {
+    const key = document.querySelector('meta[name="turnstile-sitekey"]')?.content?.trim() || "";
+    // Keep default placeholder inert (prevents accidental broken builds)
+    if (!key || key === "__TURNSTILE_SITE_KEY__") return "";
+    return key;
+}
+
+function __snagletEnsureTurnstileContainer() {
+    let el = document.getElementById("snaglet-turnstile");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "snaglet-turnstile";
+        el.style.cssText = "position:fixed;bottom:12px;right:12px;width:150px;min-height:140px;z-index:2147483647;";
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
+function __snagletWaitForTurnstile(timeoutMs = 10000) {
+    return new Promise((resolve) => {
+        const started = Date.now();
+        const tick = () => {
+            if (window.turnstile && typeof window.turnstile.render === "function") return resolve(true);
+            if (Date.now() - started > timeoutMs) return resolve(false);
+            setTimeout(tick, 50);
+        };
+        tick();
+    });
+}
+
+async function __snagletInitTurnstileOnce() {
+    if (__snagletTurnstile.widgetId != null) return true;
+
+    const sitekey = __snagletGetTurnstileSiteKey();
+    if (!sitekey) return false;
+
+    // Make sure container exists
+    __snagletEnsureTurnstileContainer();
+
+    const ok = await __snagletWaitForTurnstile(12000);
+    if (!ok) return false;
+
+    try {
+        window.turnstile.ready(() => {
+            try {
+                __snagletTurnstile.widgetId = window.turnstile.render("#snaglet-turnstile", {
+                    sitekey,
+                    size: "compact",
+                    appearance: "interaction-only",
+                    execution: "execute", // token is generated only when we call turnstile.execute()
+                    callback: (token) => {
+                        __snagletTurnstile.lastToken = token || "";
+                        if (__snagletTurnstile.pending) {
+                            clearTimeout(__snagletTurnstile.pending.timer);
+                            __snagletTurnstile.pending.resolve(__snagletTurnstile.lastToken);
+                            __snagletTurnstile.pending = null;
+                        }
+                    },
+                    "expired-callback": () => {
+                        __snagletTurnstile.lastToken = "";
+                    },
+                    "error-callback": () => {
+                        __snagletTurnstile.lastToken = "";
+                        if (__snagletTurnstile.pending) {
+                            clearTimeout(__snagletTurnstile.pending.timer);
+                            __snagletTurnstile.pending.resolve("");
+                            __snagletTurnstile.pending = null;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn("[turnstile] render failed:", e?.message || e);
+            }
+        });
+        return true;
     } catch (e) {
-      if (isAdminAuthError(e)) clearRememberedLogin();
+        console.warn("[turnstile] init failed:", e?.message || e);
+        return false;
     }
-
-    // Wait for interactive login in the embedded login UI.
-    await waitForInteractiveLogin();
-    hideLoginScreen();
-  })();
-
-  try {
-    return await _ensureLoginPromise;
-  } finally {
-    _ensureLoginPromise = null;
-  }
 }
 
+async function snagletGetTurnstileToken({ forceFresh = true, timeoutMs = 12000 } = {}) {
+    const inited = await __snagletInitTurnstileOnce();
+    if (!inited || !window.turnstile || __snagletTurnstile.widgetId == null) return "";
+
+    const wid = __snagletTurnstile.widgetId;
+
+    // If caller doesn't require fresh token, reuse current one if present
+    try {
+        if (!forceFresh) {
+            const existing = window.turnstile.getResponse(wid);
+            if (existing) return String(existing);
+        }
+
+        // Reset + execute to get a single-use, fresh token
+        window.turnstile.reset(wid);
+
+        const token = await new Promise((resolve) => {
+            const timer = setTimeout(() => resolve(""), timeoutMs);
+            __snagletTurnstile.pending = { resolve, timer };
+            try {
+                try {
+                    window.turnstile.execute(wid);
+                } catch (e2) {
+                    // Fallback for older API signatures
+                    window.turnstile.execute("#snaglet-turnstile");
+                }
+            } catch (e) {
+                clearTimeout(timer);
+                __snagletTurnstile.pending = null;
+                resolve("");
+            }
+        });
+
+        return String(token || window.turnstile.getResponse(wid) || __snagletTurnstile.lastToken || "");
+    } catch (e) {
+        console.warn("[turnstile] token failed:", e?.message || e);
+        return "";
+    }
+}
+
+// Initialize early so the widget is ready when user checks out
+document.addEventListener("DOMContentLoaded", () => { __snagletInitTurnstileOnce(); });
+// ----------------------------------------------------------------------
+
+let productsDatabase = {};
+
+// Seed from legacy window.products (if present)
+if (typeof window !== "undefined" && window.products && typeof window.products === "object" && Object.keys(window.products).length > 0) {
+    productsDatabase = window.products;
+    console.log("ℹ️ Seeded productsDatabase from legacy window.products.");
+}
+
+let initProductsPromise = null;
+let exchangeRatesFetchedAt = 0;
+/**
+ * Loads product catalog from the backend and normalizes globals:
+ * - productsDatabase (this file)
+ * - window.products (legacy global used throughout the UI)
+ *
+ * Returns a Promise that resolves to the loaded products object.
+ * Safe to call multiple times (memoized).
+ */
+function initProducts() {
+    if (initProductsPromise) return initProductsPromise;
+
+    initProductsPromise = (async () => {
+        try {
+            const r = await fetch(`${API_BASE}/catalog`);
+            if (!r.ok) throw new Error(`Products request failed: ${r.status}`);
+
+            const productsPayload = await r.json();
+
+            // ---- canonical shape (/catalog) ----
+            if (productsPayload && productsPayload.productsById && productsPayload.categories) {
+                const productsById = productsPayload.productsById || {};
+                const categories = productsPayload.categories || {};
+
+                const resolvedCatalog = {};
+                for (const [cat, ids] of Object.entries(categories)) {
+                    resolvedCatalog[cat] = (ids || []).map(id => productsById[id]).filter(Boolean);
+                }
+
+                productsDatabase = resolvedCatalog;
+                window.products = productsDatabase;
+
+                const cfg = productsPayload.config || {};
+                if (typeof cfg.applyTariff === "boolean") {
+                    serverApplyTariff = cfg.applyTariff;
+                    localStorage.setItem("applyTariff", String(serverApplyTariff));
+                }
+
+                console.log("✅ Products data loaded (canonical).");
+                return window.products; // IMPORTANT: stop here
+            }
+
+            // ---- legacy shapes (if ever used) ----
+            const catalog =
+                (productsPayload && typeof productsPayload === "object" && productsPayload.catalog && typeof productsPayload.catalog === "object")
+                    ? productsPayload.catalog
+                    : productsPayload;
+
+            const cfg =
+                (productsPayload && typeof productsPayload === "object" && productsPayload.config && typeof productsPayload.config === "object")
+                    ? productsPayload.config
+                    : {};
+
+            productsDatabase = catalog || {};
+            window.products = productsDatabase;
+
+            if (typeof cfg.applyTariff === "boolean") {
+                serverApplyTariff = cfg.applyTariff;
+                localStorage.setItem("applyTariff", String(serverApplyTariff));
+            }
+
+            console.log("✅ Products data loaded.");
+        } catch (err) {
+            console.error("❌ Failed to load products from server, falling back to window.products:", err);
+            productsDatabase = window.products || {};
+            window.products = productsDatabase;
+        }
+
+        return window.products;
+    })();
+
+    return initProductsPromise;
+}
+
+// Kick off loading immediately when the script is loaded
+initProducts();
 
 
-// ======= Utilities & constants =======
-const TZ = "Europe/Bratislava";
-const DEFAULT_ROW_ORDER = ["orderMeta", "products", "shipping", "financials", "customer", "actions"];
-const DEFAULT_SETTINGS = {
-  defaultSince: "today",
-  defaultTill: "startOfYear",
-  tillRollToCurrentYear: true,
-  rowOrder: DEFAULT_ROW_ORDER
+
+
+
+const TEXTS = {
+    ERRORS: {
+        BASKET_PARSE: "❌ Failed to parse basket from localStorage. Resetting basket.",
+        GEOLOCATION_FAIL: "Geolocation failed, defaulting to EUR",
+        PRODUCTS_NOT_LOADED: "Products data not loaded. Check your script order.",
+        PRODUCTS_LOADED: "Products data loaded."
+    },
+    GENERAL: {
+        TOTAL_LABEL: "Total: ",
+        DARK_MODE_LABEL: "Dark Mode"
+    },
+    CURRENCIES: {
+        EUR: "€",
+        USD: "$",
+        GBP: "£",
+        CAD: "C$",
+        AUD: "A$"
+    },
+    PAYMENT_MODAL: {
+        TITLE: "Enter Payment Details",
+        FIELDS: {
+            NAME: "First Name",
+            SURNAME: "Last Name",
+            EMAIL: "Email Address",
+            CITY: "City / Town",
+            POSTAL_CODE: "Postal Code",
+            STREET_HOUSE_NUMBER: "Street and House Number",
+            COUNTRY: "Country of Residence",
+            CARD_HOLDER_NAME_LABEL: "Cardholder Name",
+            CARD_HOLDER_NAME_PLACEHOLDER: "Cardholder Name",
+            CARD_NUMBER_LABEL: "Card Number",
+            CARD_NUMBER_PLACEHOLDER: "xxxx xxxx xxxx xxxx",
+            EXPIRY_DATE_LABEL: "Card Expiry Date",
+            EXPIRY_DATE_PLACEHOLDER: "MM/YY",
+            CVV_LABEL: "CVV",
+            CVV_PLACEHOLDER: "CVV"
+        },
+        BUTTONS: {
+            SUBMIT: "Pay Now",
+            CLOSE: "×"
+        }
+    },
+    CONTACT_FORM: {
+        TITLE: "Send us a Message!",
+        FIELDS: {
+            EMAIL: "Your Email",
+            MESSAGE: "Message"
+        },
+        SEND_BUTTON: "Send!"
+    },
+    SORTING: {
+        LABEL: "Sort by:",
+        OPTIONS: {
+            NAME_ASC: "Name (A-Z)",
+            NAME_DESC: "Name (Z-A)",
+            PRICE_ASC: "Price (Low to High)",
+            PRICE_DESC: "Price (High to Low)"
+        }
+    },
+    PRODUCT_SECTION: {
+        ADD_TO_CART: "Add to Cart",
+        BUY_NOW: "Buy",
+        PRICE_LABEL: "Price: ",
+        DESCRIPTION_PLACEHOLDER: "No description available.",
+        IMAGE_NAV: {
+            PREVIOUS: "◀",
+            NEXT: "▶"
+        }
+    },
+    SEARCH: {
+        PLACEHOLDER: "Search",
+        EMPTY_MESSAGE: "Please enter a search term.",
+        NO_RESULTS: "No products found."
+    },
+    BASKET: {
+        EMPTY_MESSAGE: "The basket is empty.",
+        TOTAL_PRICE: "Total Price: ",
+        QUANTITY: "Quantity:",
+        BUTTONS: {
+            DECREASE: "−",
+            INCREASE: "+",
+            PAY_NOW: "Pay Now"
+        },
+        RECEIPT_TITLE: "Receipt"
+    }
+};
+// Exchange rates
+let exchangeRates = {
+
+    EUR: 1,
+    USD: 1.1,
+    GBP: 0.85,
+    CAD: 1.45,
+    AUD: 1.6
+};
+let tariffMultipliers = {};
+// Country-to-currency mapping
+const countryToCurrency = {
+    US: "USD", CA: "CAD", MX: "MXN", JM: "JMD", DO: "DOP",
+    GB: "GBP", FR: "EUR", DE: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", BE: "EUR",
+    PL: "PLN", CZ: "CZK", SE: "SEK", NO: "NOK", DK: "DKK", HU: "HUF", RO: "RON", BG: "BGN",
+    RU: "RUB", UA: "UAH",
+    SK: "EUR", SI: "EUR", PT: "EUR", FI: "EUR", IE: "EUR", AT: "EUR", GR: "EUR", EE: "EUR", LV: "EUR", LT: "EUR",
+    JP: "JPY", CN: "CNY", IN: "INR", KR: "KRW", ID: "IDR", MY: "MYR", PH: "PHP", TH: "THB", VN: "VND",
+    PK: "PKR", BD: "BDT",
+    ZA: "ZAR", NG: "NGN", KE: "KES", EG: "EGP", GH: "GHS", TZ: "TZS",
+    AU: "AUD", NZ: "NZD", FJ: "FJD", PG: "PGK",
+    AE: "AED", SA: "SAR", IL: "ILS", TR: "TRY", IR: "IRR",
+    BR: "BRL", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN", VE: "VES"
+};
+const countryNames = {
+    US: "United States",
+    CA: "Canada",
+    MX: "Mexico",
+    JM: "Jamaica",
+    DO: "Dominican Republic",
+
+    GB: "United Kingdom",
+    FR: "France",
+    DE: "Germany",
+    IT: "Italy",
+    ES: "Spain",
+    NL: "Netherlands",
+    BE: "Belgium",
+
+    PL: "Poland",
+    CZ: "Czechia",
+    SE: "Sweden",
+    NO: "Norway",
+    DK: "Denmark",
+    HU: "Hungary",
+    RO: "Romania",
+    BG: "Bulgaria",
+
+    RU: "Russia",
+    UA: "Ukraine",
+
+    SK: "Slovakia",
+    SI: "Slovenia",
+    PT: "Portugal",
+    FI: "Finland",
+    IE: "Ireland",
+    AT: "Austria",
+    GR: "Greece",
+    EE: "Estonia",
+    LV: "Latvia",
+    LT: "Lithuania",
+
+    JP: "Japan",
+    CN: "China",
+    IN: "India",
+    KR: "South Korea",
+    ID: "Indonesia",
+    MY: "Malaysia",
+    PH: "Philippines",
+    TH: "Thailand",
+    VN: "Vietnam",
+
+    PK: "Pakistan",
+    BD: "Bangladesh",
+
+    ZA: "South Africa",
+    NG: "Nigeria",
+    KE: "Kenya",
+    EG: "Egypt",
+    GH: "Ghana",
+    TZ: "Tanzania",
+
+    AU: "Australia",
+    NZ: "New Zealand",
+    FJ: "Fiji",
+    PG: "Papua New Guinea",
+
+    AE: "United Arab Emirates",
+    SA: "Saudi Arabia",
+    IL: "Israel",
+    TR: "Turkey",
+    IR: "Iran",
+
+    BR: "Brazil",
+    AR: "Argentina",
+    CL: "Chile",
+    CO: "Colombia",
+    PE: "Peru",
+    VE: "Venezuela",
+    AF: "Afghanistan",
+    AL: "Albania",
+    AM: "Armenia",
+    AO: "Angola",
+    AZ: "Azerbaijan",
+    BA: "Bosnia and Herzegovina",
+    BB: "Barbados",
+    BH: "Bahrain",
+    BI: "Burundi",
+    BJ: "Benin",
+    BO: "Bolivia",
+    BW: "Botswana",
+    BY: "Belarus",
+    BZ: "Belize",
+    CD: "Democratic Republic of the Congo",
+    CF: "Central African Republic",
+    CG: "Republic of the Congo",
+    CI: "Ivory Coast",
+    CR: "Costa Rica",
+    CU: "Cuba",
+    CV: "Cape Verde",
+    CY: "Cyprus",
+    DJ: "Djibouti",
+    DZ: "Algeria",
+    EC: "Ecuador",
+    ER: "Eritrea",
+    ET: "Ethiopia",
+    GA: "Gabon",
+    GE: "Georgia",
+    GM: "Gambia",
+    GN: "Guinea",
+    GQ: "Equatorial Guinea",
+    GT: "Guatemala",
+    GY: "Guyana",
+    HN: "Honduras",
+    HR: "Croatia",
+    HT: "Haiti",
+    IS: "Iceland",
+    JO: "Jordan",
+    KZ: "Kazakhstan",
+    LB: "Lebanon",
+    LK: "Sri Lanka",
+    LR: "Liberia",
+    LS: "Lesotho",
+    LY: "Libya",
+    MA: "Morocco",
+    MD: "Moldova",
+    ME: "Montenegro",
+    MG: "Madagascar",
+    MK: "North Macedonia",
+    ML: "Mali",
+    MM: "Myanmar (Burma)",
+    MN: "Mongolia",
+    MR: "Mauritania",
+    MW: "Malawi",
+    MZ: "Mozambique",
+    NA: "Namibia",
+    NE: "Niger",
+    NI: "Nicaragua",
+    NP: "Nepal",
+    OM: "Oman",
+    PA: "Panama",
+    PS: "Palestine",
+    QA: "Qatar",
+    RS: "Serbia",
+    RW: "Rwanda",
+    SD: "Sudan",
+    SN: "Senegal",
+    SO: "Somalia",
+    SS: "South Sudan",
+    SR: "Suriname",
+    SV: "El Salvador",
+    SY: "Syria",
+    TM: "Turkmenistan",
+    TN: "Tunisia",
+    TT: "Trinidad and Tobago",
+    TW: "Taiwan",
+    TZ: "Tanzania",
+    UG: "Uganda",
+    UY: "Uruguay",
+    UZ: "Uzbekistan",
+    YE: "Yemen",
+    ZM: "Zambia",
+    ZW: "Zimbabwe",
+    AD: "Andorra",
+    AG: "Antigua and Barbuda",
+    AI: "Anguilla",
+    AQ: "Antarctica",
+    AS: "American Samoa",
+    AW: "Aruba",
+    AX: "Åland Islands",
+
+    BF: "Burkina Faso",
+    BL: "Saint Barthélemy",
+    BM: "Bermuda",
+    BN: "Brunei",
+    BQ: "Bonaire, Sint Eustatius and Saba",
+    BS: "Bahamas",
+    BT: "Bhutan",
+    BV: "Bouvet Island",
+
+    CC: "Cocos (Keeling) Islands",
+    CH: "Switzerland",
+    CK: "Cook Islands",
+    CM: "Cameroon",
+    CW: "Curaçao",
+    CX: "Christmas Island",
+
+    DM: "Dominica",
+    EH: "Western Sahara",
+
+    FK: "Falkland Islands (Malvinas)",
+    FM: "Micronesia",
+    FO: "Faroe Islands",
+
+    GD: "Grenada",
+    GF: "French Guiana",
+    GG: "Guernsey",
+    GI: "Gibraltar",
+    GL: "Greenland",
+    GP: "Guadeloupe",
+    GS: "South Georgia and the South Sandwich Islands",
+    GU: "Guam",
+    GW: "Guinea-Bissau",
+
+    HK: "Hong Kong",
+    HM: "Heard Island and McDonald Islands",
+    IM: "Isle of Man",
+    IO: "British Indian Ocean Territory",
+    IQ: "Iraq",
+    JE: "Jersey",
+
+    KG: "Kyrgyzstan",
+    KH: "Cambodia",
+    KI: "Kiribati",
+    KM: "Comoros",
+    KN: "Saint Kitts and Nevis",
+    KP: "North Korea",
+    KW: "Kuwait",
+    KY: "Cayman Islands",
+    LA: "Laos",
+    LC: "Saint Lucia",
+    LI: "Liechtenstein",
+    LU: "Luxembourg",
+
+    MC: "Monaco",
+    MF: "Saint Martin (French part)",
+    MH: "Marshall Islands",
+    MO: "Macao",
+    MP: "Northern Mariana Islands",
+    MQ: "Martinique",
+    MS: "Montserrat",
+    MT: "Malta",
+    MU: "Mauritius",
+    MV: "Maldives",
+
+    NC: "New Caledonia",
+    NF: "Norfolk Island",
+    NR: "Nauru",
+    NU: "Niue",
+
+    PF: "French Polynesia",
+    PM: "Saint Pierre and Miquelon",
+    PN: "Pitcairn",
+    PR: "Puerto Rico",
+    PW: "Palau",
+    PY: "Paraguay",
+    RE: "Réunion",
+
+    SB: "Solomon Islands",
+    SC: "Seychelles",
+    SG: "Singapore",
+    SH: "Saint Helena, Ascension and Tristan da Cunha",
+    SJ: "Svalbard and Jan Mayen",
+    SL: "Sierra Leone",
+    SM: "San Marino",
+    ST: "São Tomé and Príncipe",
+    SX: "Sint Maarten (Dutch part)",
+    SZ: "Eswatini",
+
+    TC: "Turks and Caicos Islands",
+    TD: "Chad",
+    TF: "French Southern Territories",
+    TG: "Togo",
+    TJ: "Tajikistan",
+    TK: "Tokelau",
+    TL: "Timor-Leste",
+    TO: "Tonga",
+    TV: "Tuvalu",
+
+    UM: "United States Minor Outlying Islands",
+    VA: "Vatican City",
+    VC: "Saint Vincent and the Grenadines",
+    VG: "British Virgin Islands",
+    VI: "U.S. Virgin Islands",
+    VU: "Vanuatu",
+    WF: "Wallis and Futuna",
+    WS: "Samoa",
+    YT: "Mayotte",
+
 };
 
-function loadSettings() {
-  try { return { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem("shop_settings") || "null") || {}) }; }
-  catch (e) { return DEFAULT_SETTINGS; }
-}
-function saveSettings(s) { localStorage.setItem("shop_settings", JSON.stringify(s)); }
-
-function loadOrders() {
-  try {
-    const saved = localStorage.getItem("shop_orders");
-    if (saved) { return JSON.parse(saved); }
-  } catch (e) { }
-  return fakeOrders();
-}
-function saveOrders(orders) { localStorage.setItem("shop_orders", JSON.stringify(orders)); }
-
-function toLocalDateKey(date) {
-  const d = new Date(date);
-  const y = d.toLocaleString("en-CA", { timeZone: TZ, year: "numeric" });
-  const m = d.toLocaleString("en-CA", { timeZone: TZ, month: "2-digit" });
-  const da = d.toLocaleString("en-CA", { timeZone: TZ, day: "2-digit" });
-  return `${y}-${m}-${da}`;
-}
-function parseQuickDate(token) {
-  const now = new Date();
-  if (!token) return now;
-  const t = (typeof token === "string" ? token : token.value).trim().toLowerCase();
-  if (t === "today") return now;
-  if (t === "yesterday") { const d = new Date(); d.setDate(d.getDate() - 1); return d; }
-  const d = new Date(t);
-  return isNaN(d.valueOf()) ? now : d;
-}
-function startOfYear(d = new Date()) { return new Date(d.getFullYear(), 0, 1); }
-function daysBetween(a, b) {
-  const A = new Date(toLocalDateKey(a));
-  const B = new Date(toLocalDateKey(b));
-  return Math.abs(Math.round((A - B) / (1000 * 60 * 60 * 24)));
-}
-function niceDateTime(date) {
-  return new Date(date).toLocaleString("sk-SK", { timeZone: TZ });
-}
-
-// ---- Security helpers ----
-function escHtml(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function safeHref(url) {
-  const u = String(url ?? "").trim();
-  if (!u) return "";
-  // Only allow http(s). Block javascript:, data:, etc.
-  if (/^https?:\/\//i.test(u)) return u;
-  return "";
-}
-
-// ---- Options helpers (multi-variant support) ----
-function formatSelectedOptions(selectedOptions, legacySelectedOption) {
-  const arr = Array.isArray(selectedOptions) ? selectedOptions : [];
-  const parts = [];
-  for (const o of arr) {
-    const label = String(o?.label ?? "").trim();
-    const value = String(o?.value ?? "").trim();
-    if (!value) continue;
-    if (!label) { parts.push(value); continue; }
-    const cleanLabel = label.endsWith(":") ? label.slice(0, -1) : label;
-    parts.push(`${cleanLabel}: ${value}`);
-  }
-  if (parts.length) return parts.join(", ");
-  const legacy = String(legacySelectedOption ?? "").trim();
-  return legacy || "";
-}
-
-function niceDate(date) {
-  return new Date(date).toLocaleDateString("sk-SK", { timeZone: TZ });
-}
-function labelForDate(dateLike) {
-  const d = new Date(dateLike);
-  const today = new Date(), yd = new Date(); yd.setDate(yd.getDate() - 1);
-  const k = toLocalDateKey(d);
-  if (k === toLocalDateKey(today)) return "Today";
-  if (k === toLocalDateKey(yd)) return "Yesterday";
-  return niceDate(d);
-}
-
-// ======= Fake data =======
-function fakeOrders() {
-  const now = new Date();
-  function mk(i, offsetDays = 0) {
-    const d = new Date(now); d.setDate(now.getDate() - offsetDays);
-    return {
-      id: `ORD-${1000 + i}`,
-      createdAt: d.toISOString(),
-      customer: {
-        name: ["Andrej", "Marta", "Peter", "Lucia"][i % 4],
-        surname: ["Novák", "Kováč", "Lanting", "Horváth"][i % 4],
-        address: `Hlavná ${10 + i}`,
-        postalCode: `0${i}200`,
-        city: ["Bratislava", "Košice", "Žilina", "Trnava"][i % 4],
-        country: "Slovakia"
-      },
-      currency: "EUR",
-      emailSentAt: null,
-      shippedEmailSentAt: null,
-      doneAt: null,
-      products: [
-        { name: "Product Alpha", amount: 3, unitPrice: 12.49, totalSale: 37.47, url: "https://www.aliexpress.com/item/123", expectedPurchase: 3.33 },
-        { name: "Product Beta", amount: 1, unitPrice: 10, totalSale: 10, url: "https://www.aliexpress.com/item/456", expectedPurchase: 8.156 }
-      ],
-      shipping: { aliExpress: 0, thirdParty1: 0, thirdParty2: 0 },
-      notes: ""
-    };
-  }
-  return [mk(1, 0), mk(2, 0), mk(3, 1), mk(4, 2), mk(5, 10)];
-}
-
-// ======= State =======
-const state = {
-  settings: loadSettings(),
-  orders: [],                   // will be filled from server
-  filters: { since: null, till: null, daysBack: 0, status: "all" },
-  openOrderId: null
+const currencySymbols = {
+    USD: "$", CAD: "C$", MXN: "$", JMD: "J$", DOP: "RD$",
+    EUR: "€", GBP: "£", CHF: "CHF", PLN: "zł", CZK: "Kč", SEK: "kr", NOK: "kr", DKK: "kr",
+    HUF: "Ft", RON: "lei", BGN: "лв", RUB: "₽", UAH: "₴",
+    JPY: "¥", CNY: "¥", INR: "₹", KRW: "₩", IDR: "Rp", MYR: "RM", PHP: "₱", THB: "฿", VND: "₫",
+    PKR: "₨", BDT: "৳",
+    ZAR: "R", NGN: "₦", KES: "KSh", EGP: "E£", GHS: "₵", TZS: "TSh",
+    AUD: "A$", NZD: "NZ$", FJD: "FJ$", PGK: "K",
+    AED: "د.إ", SAR: "﷼", ILS: "₪", TRY: "₺", IRR: "﷼",
+    BRL: "R$", ARS: "$", CLP: "$", COP: "$", PEN: "S/", VES: "Bs"
 };
 
-// Map API order -> UI order structure
-function mapApiToUi(o) {
-  // server returns { orderId, createdAt, customer{firstName,lastName,...}, items[{quantity,unitPriceEUR,...}], pricing{totalPaidEUR,currency}, status, emailSentAt }
-  const saleTotal = Number(o?.pricing?.totalPaidEUR || 0);
-  return {
-    id: o.orderId || o.id,
-    createdAt: o.createdAt,
-    customer: {
-      name: o.customer?.firstName || '',
-      surname: o.customer?.lastName || '',
-      address: o.customer?.address1 || '',
-      postalCode: o.customer?.postalCode || '',
-      city: o.customer?.city || '',
-      country: o.customer?.countryCode || '',
-      phone: o.customer?.phone || '',
-      region: o.customer?.region || ''
-    },
 
-    currency: "EUR",
-    paymentCurrency: o.pricing?.currency || "EUR",
-    paidEUR: Number(o?.pricing?.totalPaidEUR || 0),
-    baseTotalEUR: Number(o?.pricing?.baseTotalEUR || 0),
-    tariffPct: Number(o?.pricing?.tariffPct || 0),
-    fxFetchedAt: o?.pricing?.fxFetchedAt || null,
-    paidOriginalAmount: ((o?.stripe?.amountMinor != null) ? Number(o.stripe.amountMinor) : Number(o?.pricing?.amountCents || 0)) / 100,
-    stripeFeeEUR: Number(o?.costs?.stripeFeeEUR || 0),
-    emailSentAt: o.emailSentAt || null,
-    shippedEmailSentAt: o.shippedEmailSentAt || null,
-    doneAt: (o.status && o.status !== 'NEW') ? (o.updatedAt || null) : null, // simple heuristic
-    // Derive product lines for UI display; use quantity + unit price when present
-    products: (o.items || []).map(it => {
-      const selectedOptions = Array.isArray(it.selectedOptions) ? it.selectedOptions : [];
-      const legacySelectedOption = it.selectedOption || '';
-      return {
-        name: it.name || '',
-        amount: Number(it.quantity || 1),
-        unitPrice: Number(it.unitPriceEUR || 0),
-        totalSale: null, // keep null; UI derives total from amount*unit
-        url: it.productLink || it.url || '',
-        expectedPurchase: Number(it.expectedPurchase || 0),
-        selectedOptions,
-        selectedOption: legacySelectedOption,
-        selected: formatSelectedOptions(selectedOptions, legacySelectedOption)
-      };
-    }),
+function showAppLoader(text = "Loading…") {
+    const overlay = document.getElementById(APP_LOADER_ID);
+    if (overlay) {
+        const textEl = document.getElementById(`${APP_LOADER_ID}_text`);
+        if (textEl) textEl.textContent = String(text || "Loading…");
+        overlay.style.display = "flex";
+    }
 
-    // Shipping is stored server-side in order.operator.shipping
-    shipping: {
-      aliExpress: Number(o?.operator?.shipping?.aliExpress || 0),
-      thirdParty1: Number(o?.operator?.shipping?.thirdParty1 || 0),
-      thirdParty2: Number(o?.operator?.shipping?.thirdParty2 || 0)
-    },
-    notes: ''
-  };
+    document.documentElement.style.cursor = "progress";
+    document.documentElement.setAttribute("aria-busy", "true");
+
+    try { if (document.body) document.body.style.overflow = "hidden"; } catch { }
 }
 
-async function loadOrdersFromServer() {
-  // use your filter dates already present in the app
-  const from = state.filters.since?.toISOString();
-  const to = state.filters.till?.toISOString();
-  const list = await adminApi.listOrders({ from, to, limit: 5000 });
-  return list.map(mapApiToUi);
+function hideAppLoader() {
+    const overlay = document.getElementById(APP_LOADER_ID);
+    if (overlay) overlay.remove(); // remove entirely so it can’t reflash
+
+    document.documentElement.style.cursor = "";
+    document.documentElement.removeAttribute("aria-busy");
+
+    try { if (document.body) document.body.style.overflow = ""; } catch { }
 }
 
-function toast(title, description) {
-  const t = document.createElement("div");
-  t.className = "t";
-  const ttl = document.createElement("div");
-  ttl.className = "title";
-  ttl.textContent = String(title || "");
-  t.appendChild(ttl);
-  if (description) {
-    const d = document.createElement("div");
-    d.textContent = String(description);
-    t.appendChild(d);
-  }
-  const root = document.getElementById("toast");
-  root.appendChild(t);
-  setTimeout(() => { t.remove(); }, 2200);
+const preloadedImages = new Set();
+
+
+let selectedCurrency = "EUR";
+try {
+    selectedCurrency = localStorage.getItem("selectedCurrency") || "EUR";
+} catch (err) {
+    console.warn("⚠️ Could not access localStorage:", err);
+}
+let searchInput = null;
+let mobileSearchInput = null;
+const navEntry = performance.getEntriesByType("navigation")[0];
+
+const isPageRefresh = navEntry?.type === "reload";
+const SETTINGS_CACHE_KEY = "preloadedSettings";
+const SETTINGS_CACHE_TTL_HOURS = 12;
+
+window.preloadedData = {
+    exchangeRates: null,
+    countries: null,
+    tariffs: null
+};
+
+
+
+let cart = {};
+let basket = {};
+let currentCategory = null;
+let elements; // Declare outside to reuse
+let paymentElement; // Reuse across submissions
+let stripeInstance;
+let elementsInstance;
+let paymentElementInstance;
+let clientSecret = null;
+
+let lastCategory = "Default_Page"; // Start with a default
+
+
+let isReplaying = false;
+// === CONFIG ===
+const MAX_HISTORY_LENGTH = 500;
+window.DEBUG_HISTORY = false;
+let debounceTimeout;
+
+
+// Refactored history system for consistent back/forward navigation
+
+let userHistoryStack = [];
+let currentIndex = -1;
+
+if (location.pathname !== "/" && !location.pathname.includes(".") && !location.pathname.startsWith("/order-status/") && !location.pathname.startsWith("/p/")) {
+    // Allow deep links for product slugs and /p/<id>.
+    // Do not force redirect to '/'.
+}
+function normalizeProductKey(s) {
+    return String(s || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 }
 
-function applyDefaultDates() {
-  const s = state.settings;
-  if (s.defaultSince === "today" || s.defaultSince === "yesterday") {
-    state.filters.since = parseQuickDate(s.defaultSince);
-  } else if (typeof s.defaultSince === "string") {
-    state.filters.since = parseQuickDate(s.defaultSince);
-  } else { state.filters.since = new Date(); }
+function getAllProductsFlatSafe() {
+    const db =
+        (window.products && typeof window.products === "object" && window.products) ||
+        (typeof products !== "undefined" && products) ||
+        {};
 
-  if (s.defaultTill === "startOfYear") {
-    const ref = new Date();
-    if (s.tillRollToCurrentYear && typeof s.defaultTillDate === "string") {
-      const md = s.defaultTillDate.split("-").slice(1).join("-");
-      const d = new Date(`${ref.getFullYear()}-${md}T00:00:00`);
-      if (!isNaN(d.valueOf())) { state.filters.till = d; }
-      else { state.filters.till = startOfYear(ref); }
-    } else {
-      state.filters.till = startOfYear(ref);
+    const out = [];
+    for (const v of Object.values(db)) {
+        if (Array.isArray(v)) out.push(...v);
     }
-  } else if (s.defaultTill === "specific" && s.defaultTillDate) {
-    if (s.tillRollToCurrentYear) {
-      const md = s.defaultTillDate.split("-").slice(1).join("-");
-      const d = new Date(`${new Date().getFullYear()}-${md}T00:00:00`);
-      state.filters.till = isNaN(d.valueOf()) ? new Date(s.defaultTillDate) : d;
-    } else {
-      state.filters.till = new Date(s.defaultTillDate);
-    }
-  } else {
-    state.filters.till = startOfYear(new Date());
-  }
-  state.filters.daysBack = daysBetween(state.filters.since, state.filters.till);
-}
-async function init() {
-  // Default landing tab
-  try { localStorage.setItem("mgmt_active_tab", "orders"); } catch { }// Ensure the advanced topbar buttons exist + are wired (Products ⬇/⬆, Tariffs ⬇/⬆, Sync, Ping, etc.)
-  try { mount(); } catch (e) { console.error("mount() failed:", e); }
 
-  // Wire Settings modal buttons (Close/Save) now that the modal exists in index.html
-  try { setupSettingsModal(); } catch (e) { console.error("setupSettingsModal() failed:", e); }
-
-  applyDefaultDates();
-  renderFilters(true);
-  render(); // render empty list quickly
-
-  // Ensure overlays aren't covering Orders on first load
-  try { productsUiHide?.(); } catch { }
-  try { tariffsUiHide?.(); } catch { }
-  try { window.graphEngine?.close?.(); } catch { }
-  try { updateMgmtTabButtons?.(); } catch { }
-
-  await ensureLogin();
-
-  // Keep Products tab file-mode selector in sync with the server as soon as auth is available.
-  try { await refreshCatalogFileModeUi(); } catch { }
-
-
-
-  // Graphs tab (safe if graphEngine.js is missing)
-  try {
-    if (window.graphEngine?.install) {
-      await window.graphEngine.install({ adminApi: window.adminApi });
-    }
-  } catch (e) {
-    console.error("graphEngine.install failed:", e);
-  }
-
-  try {
-    state.orders = await loadOrdersFromServer();
-  } catch (e) {
-    if (isAdminAuthError(e)) {
-      clearAdminSession();
-      await ensureLogin();
-      state.orders = await loadOrdersFromServer();
-    } else {
-      throw e;
-    }
-  }
-  render();
-
-
+    // filter out the per-category "icon" objects etc.
+    return out.filter(p => p && typeof p === "object" && typeof p.name === "string" && p.name.trim());
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  try { showLoginScreen({ autoAttempt: true }); } catch (e) { console.error("showLoginScreen failed:", e); }
+function findProductByNameParam(productParam) {
+    const target = normalizeProductKey(productParam);
+    const all = getAllProductsFlatSafe();
 
-  // Prevent stale service workers on the API origin from interfering with the admin UI.
-  try {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations()
-        .then((regs) => Promise.all((regs || []).map(r => r.unregister())))
-        .catch(() => { });
+    // exact normalized match first
+    let p = all.find(x => normalizeProductKey(x.name) === target);
+    if (p) return p;
+
+    // fallback: handle common slug-ish links
+    p = all.find(x => normalizeProductKey(x.name).includes(target) || target.includes(normalizeProductKey(x.name)));
+    return p || null;
+}
+
+function buildUrlForState(state) {
+    try {
+        if (state?.action === "GoToProductPage") {
+            const name = state?.data?.[0];
+            const pid = state?.data?.[4];
+            if (pid) return `/p/${encodeURIComponent(pid)}`;
+            if (name) return `/?product=${encodeURIComponent(name)}`;
+        }
+    } catch { }
+    // for every other state, keep URL clean (important so product param doesn't “stick”)
+    return "/";
+}
+
+function navigate(action, data = null) {
+    if (isReplaying) return;
+
+    const newState = { action, data };
+
+    // Trim future if navigating from mid-history
+    if (currentIndex < userHistoryStack.length - 1) {
+        userHistoryStack = userHistoryStack.slice(0, currentIndex + 1);
     }
-  } catch { }
 
-  // Wire modal buttons + save handler (no-op if modal not present).
-  try { setupSettingsModal(); } catch (e) { console.error("setupSettingsModal failed:", e); }
+    // Add new state
+    userHistoryStack.push(newState);
+    currentIndex = userHistoryStack.length - 1;
 
-  // UX: allow Esc to close the settings modal
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      try { closeSettingsModal(); } catch { }
+    history.pushState({ index: currentIndex }, "", buildUrlForState(newState));
+    handleStateChange(newState);
+}
+
+function isSettingsCacheValid(timestamp) {
+    if (!timestamp) return false;
+    const ageInHours = (Date.now() - timestamp) / (1000 * 60 * 60);
+    return ageInHours < SETTINGS_CACHE_TTL_HOURS;
+}
+function safeJsonParse(str, fallback = null) {
+    try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function lsGet(key, fallback = null) {
+    try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+
+function lsSet(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch { return false; }
+}
+
+function tariffsObjectToCountriesArray(tariffsObj) {
+    if (!tariffsObj || typeof tariffsObj !== "object" || Array.isArray(tariffsObj)) return [];
+    return Object.keys(tariffsObj)
+        .map(code => ({ code, tariff: Number(tariffsObj[code]) || 0 }))
+        .sort((a, b) => a.code.localeCompare(b.code));
+}
+let _preloadSettingsPromise = null;
+// ======================
+// Cross-tab basket sync
+// ======================
+const BASKET_STORAGE_KEY = "basket";
+const BASKET_REV_KEY = "basket_rev"; // forces an event even if JSON string doesn't change
+const TAB_SYNC_ID = (() => {
+    try { return crypto.randomUUID(); } catch { return String(Date.now()) + "-" + Math.random().toString(16).slice(2); }
+})();
+const basketBC = ("BroadcastChannel" in window) ? new BroadcastChannel("snagletshop:basket") : null;
+
+function readBasketFromStorageSafe() {
+    try {
+        const raw = localStorage.getItem(BASKET_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
     }
-  });
+}
 
-  init().catch(console.error);
+// Mutate in-place to keep references stable
+function replaceBasketInMemory(next) {
+    try {
+        if (typeof basket !== "object" || !basket) basket = {};
+        for (const k of Object.keys(basket)) delete basket[k];
+        if (next && typeof next === "object") {
+            for (const k of Object.keys(next)) basket[k] = next[k];
+        }
+    } catch {
+        basket = next && typeof next === "object" ? next : {};
+    }
+}
+
+function refreshBasketUIIfOpen() {
+    // Only re-render if the basket view already exists; don't “force open” it.
+    if (document.getElementById("Basket_Viewer") && typeof updateBasket === "function") {
+        updateBasket();
+    }
+}
+
+function syncBasketFromStorage(reason = "external") {
+    replaceBasketInMemory(readBasketFromStorageSafe());
+    refreshBasketUIIfOpen();
+
+    // If checkout modal is open and cart changed in another tab, close it to avoid stale checkout state.
+    const modal = document.getElementById("paymentModal");
+    const modalOpen = modal && modal.style && modal.style.display && modal.style.display !== "none";
+    if (modalOpen && typeof closeModal === "function") {
+        try { closeModal(); } catch { }
+    }
+}
+
+function persistBasket(reason = "update") {
+    try { localStorage.setItem(BASKET_STORAGE_KEY, JSON.stringify(basket)); } catch { }
+    try { localStorage.setItem(BASKET_REV_KEY, String(Date.now())); } catch { }
+
+    if (basketBC) {
+        try { basketBC.postMessage({ type: "basket_changed", from: TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
+    }
+}
+
+function clearBasketStorage(reason = "clear") {
+    try { localStorage.removeItem(BASKET_STORAGE_KEY); } catch { }
+    try { localStorage.setItem(BASKET_REV_KEY, String(Date.now())); } catch { }
+
+    if (basketBC) {
+        try { basketBC.postMessage({ type: "basket_changed", from: TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
+    }
+}
+
+// Other tabs: localStorage events
+window.addEventListener("storage", (e) => {
+    if (e.storageArea !== localStorage) return;
+    if (e.key === BASKET_STORAGE_KEY || e.key === BASKET_REV_KEY || e.key === null) {
+        syncBasketFromStorage("storage");
+    }
 });
 
-async function sendEmail(order) {
-  try {
-    await ensureLogin();
-    const res = await adminApi.sendShippedEmail(order.id);  // POST /admin/orders/:id/send-shipped-email
-    order.shippedEmailSentAt = res?.shippedEmailSentAt || new Date().toISOString();
-    saveOrders(state.orders); // keep your local cache logic
-    toast("Email sent", `Shipped email sent for ${esc(order.id)}`);
-    render();
-  } catch (e) {
-    toast("Error", String(e?.message || e));
-  }
-}
-async function toggleDone(order) {
-  const now = order.doneAt ? null : new Date().toISOString();
-  try {
-    await ensureLogin();
-    const patch = { status: now ? "PLACED_WITH_AGENT" : "NEW" };
-    await adminApi.patchOrder(order.id, patch);   // PATCH /admin/orders/:id
-    order.doneAt = now;
-    saveOrders(state.orders);
-    render();
-  } catch (e) {
-    toast("Error", String(e?.message || e));
-  }
+// Other tabs: BroadcastChannel (faster/more reliable on some browsers)
+if (basketBC) {
+    basketBC.onmessage = (ev) => {
+        const msg = ev?.data;
+        if (!msg || msg.type !== "basket_changed") return;
+        if (msg.from === TAB_SYNC_ID) return;
+        syncBasketFromStorage("broadcast");
+    };
 }
 
+async function preloadSettingsData() {
+    if (_preloadSettingsPromise) return _preloadSettingsPromise;
 
+    const setRatesFetchedAt = (ts) => {
+        const safeTs = Number(ts || 0) || 0;
 
-// ======= Filters UI =======
-function getActiveMgmtTab() {
-  return localStorage.getItem("mgmt_active_tab") || "orders";
+        // always publish timestamp globally so other functions can read it safely
+        window.exchangeRatesFetchedAt = safeTs;
+
+        // if you have a global variable declared, keep it in sync (no ReferenceError)
+        if (typeof exchangeRatesFetchedAt !== "undefined") {
+            exchangeRatesFetchedAt = safeTs;
+        }
+
+        window.preloadedData = window.preloadedData || {};
+        window.preloadedData.ratesFetchedAt = safeTs;
+    };
+
+    _preloadSettingsPromise = (async () => {
+        try {
+            window.preloadedData = window.preloadedData || {
+                exchangeRates: null,
+                countries: null,
+                tariffs: null,
+                ratesFetchedAt: 0
+            };
+
+            const cached = safeJsonParse(lsGet(SETTINGS_CACHE_KEY));
+            if (cached && isSettingsCacheValid(cached.timestamp)) {
+                tariffMultipliers = (cached.tariffs && typeof cached.tariffs === "object") ? cached.tariffs : {};
+                exchangeRates = (cached.rates && typeof cached.rates === "object") ? cached.rates : {};
+
+                // restore FX snapshot timestamp (0 if older cache format)
+                setRatesFetchedAt(cached.ratesFetchedAt || cached.fetchedAt || 0);
+
+                window.preloadedData.tariffs = tariffMultipliers;
+                window.preloadedData.exchangeRates = exchangeRates;
+                window.preloadedData.countries =
+                    cached.countries || tariffsObjectToCountriesArray(tariffMultipliers);
+
+                handlesTariffsDropdown(window.preloadedData.countries || []);
+                console.log("⚡ Using cached settings data.");
+                return;
+            }
+
+            // Fetch fresh settings (NO fetchTariffs() here -> breaks recursion)
+            const [tariffsObj, ratesData, countriesArr] = await Promise.all([
+                fetchTariffsFromServer(),
+                fetchExchangeRatesFromServer(),
+                fetchCountriesFromServer().catch(() => null)
+            ]);
+
+            const safeTariffs =
+                (tariffsObj && typeof tariffsObj === "object" && !Array.isArray(tariffsObj)) ? tariffsObj : {};
+
+            // ratesData expected: { rates: {...}, fetchedAt: <ms> }, but tolerate older shapes too
+            const safeRates =
+                (ratesData && typeof ratesData.rates === "object" && ratesData.rates && !Array.isArray(ratesData.rates))
+                    ? ratesData.rates
+                    : ((ratesData && typeof ratesData === "object" && !Array.isArray(ratesData)) ? ratesData : {});
+
+            const fetchedAt =
+                (ratesData && Number(ratesData.fetchedAt || 0)) ? Number(ratesData.fetchedAt) : 0;
+
+            tariffMultipliers = { ...safeTariffs };
+            exchangeRates = { ...safeRates };
+            setRatesFetchedAt(fetchedAt);
+
+            const countriesList = (Array.isArray(countriesArr) && countriesArr.length)
+                ? countriesArr
+                : tariffsObjectToCountriesArray(tariffMultipliers);
+            handlesTariffsDropdown(countriesList);
+
+            // keep global preloadedData coherent
+            window.preloadedData.tariffs = tariffMultipliers;
+            window.preloadedData.exchangeRates = exchangeRates;
+            window.preloadedData.countries = countriesList;
+
+            lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
+                tariffs: tariffMultipliers,
+                rates: exchangeRates,
+                ratesFetchedAt: Number(window.exchangeRatesFetchedAt || 0) || 0,
+                countries: countriesList,
+                timestamp: Date.now()
+            }));
+
+            console.log("✅ Settings data loaded & cached.");
+        } catch (err) {
+            console.warn("⚠️ preloadSettingsData failed:", err?.message || err);
+            tariffMultipliers = (tariffMultipliers && typeof tariffMultipliers === "object") ? tariffMultipliers : {};
+            exchangeRates = (exchangeRates && typeof exchangeRates === "object") ? exchangeRates : {};
+            setRatesFetchedAt(window.exchangeRatesFetchedAt || 0);
+        }
+    })();
+
+    try {
+        return await _preloadSettingsPromise;
+    } finally {
+        _preloadSettingsPromise = null;
+    }
 }
 
 
-function updateMgmtTabButtons() {
-  const active = getActiveMgmtTab();
-  const o = document.getElementById("mgOrdersTabBtn");
-  const g = document.getElementById("mgGraphsTabBtn");
-  const p = document.getElementById("mgProductsTabBtn");
-  const t = document.getElementById("mgTariffsTabBtn");
-  const a = document.getElementById("mgAccountingTabBtn");
 
-  const set = (el, on) => {
-    if (!el) return;
-    el.classList.toggle("primary", !!on);
-  };
 
-  // Keep Excel primary (not a tab), so only mark actual tabs.
-  set(o, active === "orders");
-  set(g, active === "graphs");
-  set(p, active === "products");
-  set(t, active === "tariffs");
-  set(a, active === "accounting");
+
+
+
+
+function openOrderStatusModal(prefill = {}) {
+    // Avoid duplicates
+    if (document.getElementById("orderStatusModal")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "orderStatusModal";
+    overlay.style.cssText = [
+        "position:fixed",
+        "inset:0",
+        "z-index:999999",
+        "background:rgba(0,0,0,0.55)",
+        "display:flex",
+        "align-items:center",
+        "justify-content:center",
+        "padding:12px"
+    ].join(";");
+
+    const card = document.createElement("div");
+    card.style.cssText = [
+        "width:min(720px,100%)",
+        "max-height:calc(100vh - 24px)",
+        "overflow:auto",
+        "background:var(--Modal_Background_Colour)",
+        "border-radius:18px",
+        "padding:18px 18px 14px",
+        "box-shadow:0 20px 70px rgba(0,0,0,0.35)",
+        "border:1px solid rgba(0,0,0,0.08)",
+        "color:var(--Default_Text_Colour)",
+        "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
+    ].join(";");
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;";
+
+    const h = document.createElement("div");
+    h.textContent = "Track your order";
+    h.style.cssText = "font-size:18px;font-weight:800;";
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "×";
+    close.style.cssText = "font-size:22px;line-height:1;border:none;background:transparent;cursor:pointer;padding:6px 10px;border-radius:10px;";
+    close.onclick = () => overlay.remove();
+
+    header.appendChild(h);
+    header.appendChild(close);
+
+    const form = document.createElement("div");
+    form.style.cssText = "display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px;";
+
+    const oidWrap = document.createElement("div");
+    const oidLabel = document.createElement("div");
+    oidLabel.textContent = "Order ID";
+    oidLabel.style.cssText = "font-size:12px;opacity:0.75;margin-bottom:4px;";
+    const oidInput = document.createElement("input");
+    oidInput.type = "text";
+    oidInput.placeholder = "e.g. SS-2026-000123";
+    oidInput.value = prefill.orderId ? String(prefill.orderId) : "";
+    oidInput.style.cssText = "width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);";
+    oidWrap.appendChild(oidLabel);
+    oidWrap.appendChild(oidInput);
+
+    const tokWrap = document.createElement("div");
+    const tokLabel = document.createElement("div");
+    tokLabel.textContent = "Token";
+    tokLabel.style.cssText = "font-size:12px;opacity:0.75;margin-bottom:4px;";
+    const tokInput = document.createElement("input");
+    tokInput.type = "text";
+    tokInput.placeholder = "public token";
+    tokInput.value = prefill.token ? String(prefill.token) : "";
+    tokInput.style.cssText = "width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);";
+    tokWrap.appendChild(tokLabel);
+    tokWrap.appendChild(tokInput);
+
+    const go = document.createElement("button");
+    go.type = "button";
+    go.textContent = "Check";
+    go.style.cssText = "padding:10px 14px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+
+    form.appendChild(oidWrap);
+    form.appendChild(tokWrap);
+    form.appendChild(go);
+
+    const out = document.createElement("div");
+    out.style.cssText = "border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:12px;background:rgba(0,0,0,0.03);min-height:90px;white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:12px;";
+
+    function render(obj) {
+        try {
+            const lines = [];
+            if (obj?.ok) {
+                lines.push(`ok: true`);
+                lines.push(`orderId: ${obj.orderId || ""}`);
+                lines.push(`status: ${obj.status || ""}`);
+                if (obj.createdAt) lines.push(`createdAt: ${_formatDateMaybe(obj.createdAt)}`);
+                if (obj.paidAt) lines.push(`paidAt: ${_formatDateMaybe(obj.paidAt)}`);
+                if (obj.procurementStatus) lines.push(`procurementStatus: ${obj.procurementStatus}`);
+                if (obj.deliveredAt) lines.push(`deliveredAt: ${_formatDateMaybe(obj.deliveredAt)}`);
+                if (Array.isArray(obj.tracking) && obj.tracking.length) {
+                    lines.push(`tracking:`);
+                    for (const t of obj.tracking) {
+                        const carrier = t?.carrier ? ` ${t.carrier}` : "";
+                        const num = t?.number ? ` ${t.number}` : "";
+                        const url = t?.url ? ` ${t.url}` : "";
+                        lines.push(`  -${carrier}${num}${url}`);
+                    }
+                }
+                if (Array.isArray(obj.items) && obj.items.length) {
+                    lines.push(`items:`);
+                    for (const it of obj.items) {
+                        const opts = Array.isArray(it.selectedOptions) && it.selectedOptions.length ? ` [${it.selectedOptions.join(" | ")}]` : "";
+                        const opt1 = it.selectedOption ? ` (${it.selectedOption})` : "";
+                        lines.push(`  - ${it.quantity}x ${it.name}${opt1}${opts}`);
+                    }
+                }
+                out.textContent = lines.join("\n");
+            } else {
+                out.textContent = JSON.stringify(obj, null, 2);
+            }
+        } catch {
+            out.textContent = String(obj || "");
+        }
+    }
+
+    async function run() {
+        go.disabled = true;
+        go.textContent = "Checking...";
+        out.textContent = "Loading...";
+        try {
+            const data = await fetchOrderStatus({ orderId: oidInput.value, token: tokInput.value });
+            render(data);
+        } catch (e) {
+            out.textContent = `Error: ${e?.message || e}`;
+        } finally {
+            go.disabled = false;
+            go.textContent = "Check";
+        }
+    }
+
+    go.onclick = run;
+    oidInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+    tokInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+
+    const recent = document.createElement("div");
+    recent.style.cssText = "margin-top:12px;";
+
+    const recentTitle = document.createElement("div");
+    recentTitle.textContent = "Recent orders on this device";
+    recentTitle.style.cssText = "font-weight:800;margin-bottom:8px;font-size:13px;opacity:0.9;";
+
+    const recentList = document.createElement("div");
+    recentList.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+
+    function renderRecent() {
+        recentList.innerHTML = "";
+        const items = getRecentOrders();
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.textContent = "No recent orders stored yet.";
+            empty.style.cssText = "font-size:12px;opacity:0.75;";
+            recentList.appendChild(empty);
+            return;
+        }
+
+        for (const it of items) {
+            const row = document.createElement("div");
+            row.style.cssText = "display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:10px 12px;background:rgba(0,0,0,0.02);";
+
+            const left = document.createElement("div");
+            left.style.cssText = "display:flex;flex-direction:column;gap:2px;min-width:0;";
+
+            const a = document.createElement("div");
+            a.textContent = String(it.orderId);
+            a.style.cssText = "font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+
+            const b = document.createElement("div");
+            b.textContent = _formatDateMaybe(it.ts);
+            b.style.cssText = "font-size:11px;opacity:0.72;";
+
+            left.appendChild(a);
+            left.appendChild(b);
+
+            const actions = document.createElement("div");
+            actions.style.cssText = "display:flex;gap:8px;align-items:center;";
+
+            const view = document.createElement("button");
+            view.type = "button";
+            view.textContent = "View";
+            view.style.cssText = "padding:8px 10px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+            view.onclick = () => {
+                oidInput.value = String(it.orderId);
+                tokInput.value = String(it.token);
+                run();
+            };
+
+            const open = document.createElement("button");
+            open.type = "button";
+            open.textContent = "Open link";
+            open.style.cssText = "padding:8px 10px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:transparent;cursor:pointer;font-weight:700;";
+            open.onclick = () => {
+                let url = it.orderStatusUrl || `${API_BASE}/order-status-view/${encodeURIComponent(it.orderId)}#token=${encodeURIComponent(it.token)}`;
+
+                // Backward compatibility: convert old ?token= links to the fragment-based view.
+                if (typeof url === "string" && url.includes("/order-status/") && url.includes("?token=")) {
+                    try {
+                        const u = new URL(url, window.location.origin);
+                        const tok = u.searchParams.get("token") || "";
+                        u.pathname = u.pathname.replace(/\/order-status\//, "/order-status-view/");
+                        u.search = "";
+                        u.hash = tok ? `token=${encodeURIComponent(tok)}` : "";
+                        url = u.toString();
+                    } catch { }
+                }
+                window.open(url, "_blank", "noopener,noreferrer");
+            };
+
+            actions.appendChild(view);
+            actions.appendChild(open);
+
+            row.appendChild(left);
+            row.appendChild(actions);
+            recentList.appendChild(row);
+        }
+    }
+
+    renderRecent();
+
+    // Auto-run when opened from a direct link (orderId + token present)
+    if (oidInput.value && tokInput.value) {
+        setTimeout(() => { try { run(); } catch { } }, 0);
+    }
+
+    recent.appendChild(recentTitle);
+    recent.appendChild(recentList);
+
+    card.appendChild(header);
+    card.appendChild(form);
+    card.appendChild(out);
+    card.appendChild(recent);
+
+    overlay.appendChild(card);
+
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    document.body.appendChild(overlay);
 }
 
-function renderFilters(force = false) {
-  const root = document.getElementById("filters");
-  if (!root) return;
+document.addEventListener("DOMContentLoaded", async () => {
+    await preloadSettingsData();
+});
 
-  const active = getActiveMgmtTab();
-  const show = active === "orders";
+const ANALYTICS_SESSION_KEY = 'snaglet_analytics_session';
+function findCatalogProductByLink(productLink) {
+    const link = String(productLink || "").trim();
+    if (!link) return null;
 
-  // Remove orders-specific chrome in other tabs (prevents "filters" UI leaking)
-  root.classList.toggle("filters", show);
-  root.classList.toggle("filters-hidden", !show);
+    if (Array.isArray(products)) {
+        const hit = products.find(p => String(p?.productLink || "").trim() === link);
+        if (hit) return hit;
+    }
 
-  if (!show) {
-    if (force) root.innerHTML = "";
-    else if (root.innerHTML.trim()) root.innerHTML = "";
-    return;
-  } root.innerHTML = `
-        <div class="row">
-          <div class="field" style="grid-column:span 3;">
-            <label>Since (latest)</label>
-            <input type="date" id="fSince" value="${toLocalDateKey(state.filters.since)}"/>
-            <div style="display:flex;gap:8px;margin-top:6px;">
-              <button class="Buttony" id="sinceToday">Today</button>
-              <button class="Buttony" id="sinceYesterday">Yesterday</button>
-            </div>
-          </div>
-          <div class="field" style="grid-column:span 3;">
-            <label>To (oldest)</label>
-            <input type="date" id="fTill" value="${toLocalDateKey(state.filters.till)}"/>
-            <div style="display:flex;gap:8px;margin-top:6px;">
-              <button class="Buttony" id="tillSOY">Start of year</button>
-            </div>
-          </div>
-          <div class="field" style="grid-column:span 2;">
-            <label>Days back</label>
-            <input type="number" id="fDays" min="0" value="${state.filters.daysBack}"/>
-          </div>
-          <div class="field" style="grid-column:span 2;">
-            <label>Status filter</label>
-            <select id="fStatus">
-              <option value="all" ${state.filters.status === "all" ? "selected" : ""}>All</option>
-              <option value="not" ${state.filters.status === "not" ? "selected" : ""}>Not done</option>
-              <option value="done" ${state.filters.status === "done" ? "selected" : ""}>Done</option>
-            </select>
-          </div>
-          <div class="right" style="grid-column:span 2;">
-            <div style="display:flex;gap:8px;align-items:end;">
-              <button class="Buttony" id="refreshBtn">Refresh</button>
-              <button class="Buttony" id="downloadAllBtn">Excel</button>
-              <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
-            </div>
-          </div>
-        </div>
-      `;
+    if (productsDatabase && typeof productsDatabase === "object") {
+        for (const arr of Object.values(productsDatabase)) {
+            if (!Array.isArray(arr)) continue;
+            const hit = arr.find(p => String(p?.productLink || "").trim() === link);
+            if (hit) return hit;
+        }
+    }
 
-  root.querySelector("#sinceToday").onclick = () => { state.filters.since = parseQuickDate("today"); syncDays(); renderFilters(); render(); };
-  root.querySelector("#sinceYesterday").onclick = () => { state.filters.since = parseQuickDate("yesterday"); syncDays(); renderFilters(); render(); };
-  root.querySelector("#tillSOY").onclick = () => { state.filters.till = startOfYear(new Date()); syncDays(); renderFilters(); render(); };
-  root.querySelector("#refreshBtn").onclick = () => { location.reload(); };
-  root.querySelector("#downloadAllBtn").onclick = () => {
-    const from = state.filters.since?.toISOString();
-    const to = state.filters.till?.toISOString();
-    adminApi.exportExcel({ from, to, limit: 10000 });
-  };
-
-  root.querySelector("#settingsBtn").onclick = () => openSettingsModal();
-
-  root.querySelector("#fSince").onchange = (e) => { state.filters.since = parseQuickDate(e.target.value); syncDays(); render(); };
-  root.querySelector("#fTill").onchange = (e) => { state.filters.till = parseQuickDate(e.target.value); syncDays(); render(); };
-  root.querySelector("#fDays").oninput = (e) => { const v = Math.max(0, Number(e.target.value || 0)); setDaysBack(v); renderFilters(); render(); };
-  root.querySelector("#fStatus").onchange = (e) => { state.filters.status = e.target.value; render(); };
+    return null;
 }
 
-function syncDays() { state.filters.daysBack = daysBetween(state.filters.since, state.filters.till); }
-function setDaysBack(v) {
-  const newTill = new Date(state.filters.since);
-  newTill.setDate(newTill.getDate() - v);
-  state.filters.till = newTill;
-  state.filters.daysBack = v;
+function findCatalogProductByName(name) {
+    const n = String(name || "").trim();
+    if (!n) return null;
+
+    if (Array.isArray(products)) {
+        const hit = products.find(p => String(p?.name || "").trim() === n);
+        if (hit) return hit;
+    }
+
+    if (productsDatabase && typeof productsDatabase === "object") {
+        for (const arr of Object.values(productsDatabase)) {
+            if (!Array.isArray(arr)) continue;
+            const hit = arr.find(p => String(p?.name || "").trim() === n);
+            if (hit) return hit;
+        }
+    }
+
+    return null;
 }
-function currentFiltered() {
-  const arr = state.orders.filter(o => {
-    const d = new Date(toLocalDateKey(o.createdAt));
-    const inRange = d >= new Date(toLocalDateKey(state.filters.till)) && d <= new Date(toLocalDateKey(state.filters.since));
-    if (!inRange) return false;
-    if (state.filters.status === "done") return !!o.doneAt;
-    if (state.filters.status === "not") return !o.doneAt;
+
+function buildFullCartFromBasket() {
+    const basket = readBasket();
+    const fullCart = [];
+
+    for (const item of basket) {
+        const quantity = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+
+        // Prefer server-provided catalog truth
+        const cat =
+            findCatalogProductByLink(item?.productLink) ||
+            findCatalogProductByName(item?.name);
+
+        const unitEUR = Number(cat?.price ?? item?.price ?? 0) || 0;
+        const expectedPurchase = Number(cat?.expectedPurchasePrice ?? item?.expectedPurchasePrice ?? 0) || 0;
+
+        fullCart.push({
+            name: String(cat?.name ?? item?.name ?? "").trim(),
+            selectedOption: String(item?.selectedOption ?? "").trim(),
+            quantity,
+            // keep both fields (your server accepts either)
+            price: unitEUR,
+            unitPriceEUR: unitEUR,
+            expectedPurchasePrice: expectedPurchase,
+            expectedPurchase: expectedPurchase,
+            productLink: String(cat?.productLink ?? item?.productLink ?? "").trim(),
+            image: String(cat?.image ?? item?.image ?? "").trim(),
+            description: String(cat?.description ?? item?.description ?? "")
+        });
+    }
+
+    return fullCart;
+}
+
+// Simple anonymous session id stored in localStorage
+let analyticsSessionId = localStorage.getItem(ANALYTICS_SESSION_KEY);
+if (!analyticsSessionId) {
+    analyticsSessionId =
+        Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSessionId);
+}
+
+/**
+ * Fire a lightweight analytics event to the server.
+ * This should never block the UI or throw.
+ */
+function sendAnalyticsEvent(type, payload = {}, options = {}) {
+    try {
+        fetch(`${API_BASE}/analytics/event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type,
+                sessionId: analyticsSessionId,
+                path: window.location.pathname + window.location.search,
+                websiteOrigin: window.location.hostname,
+                ...payload
+            }),
+            // For unload events you could set keepalive: true
+            keepalive: !!options.keepalive
+        }).catch(() => {
+            // ignore network errors for analytics
+        });
+    } catch (e) {
+        // swallow; analytics must never break the page
+    }
+}
+
+function buildAnalyticsProductPayload(productName, override = {}) {
+    const p = findProductByNameParam(productName) || {};
+    const name = override.name || p.name || String(productName || "");
+    const productId = override.productId || p.productId || null;
+    const productLink = override.productLink || p.productLink || p.canonicalLink || null;
+    const priceEUR =
+        override.priceEUR != null ? override.priceEUR :
+            (p.price != null ? Number(p.price) : null);
+
+    return {
+        product: {
+            name,
+            productId,
+            category: (typeof currentCategory !== "undefined" ? currentCategory : null),
+            productLink,
+            priceEUR
+        }
+    };
+}
+
+function buildAnalyticsCartItems(stripeCart) {
+    try {
+        return (stripeCart || []).map(it => ({
+            productId: it.productId || null,
+            name: it.name || it.productName || "",
+            qty: Number(it.quantity || it.qty || 1),
+            priceEUR: it.priceEUR != null ? Number(it.priceEUR) : (it.price != null ? Number(it.price) : null)
+        }));
+    } catch {
+        return [];
+    }
+}
+
+// Fire a simple "page opened" ping as soon as the script runs
+sendAnalyticsEvent('page_open');
+
+function handleStateChange(state) {
+    switch (state.action) {
+        case 'loadProducts':
+            const [category, sort, order] = state.data || [];
+            currentCategory = category; // ✅ Make sure it's globally set
+            loadProducts(category, sort, order);
+            CategoryButtons(); // Now this works properly
+            break;
+
+        case 'GoToProductPage':
+            GoToProductPage(...(state.data || []));
+            break;
+        case 'GoToCart':
+            GoToCart();
+            break;
+        case 'GoToSettings':
+            GoToSettings();
+            break;
+        case 'searchQuery':
+            searchQuery(...(state.data || []));
+            break;
+        default:
+            console.warn('⚠️ Unknown state action:', state.action);
+    }
+}
+
+window.addEventListener('popstate', (event) => {
+    const modal = document.getElementById("paymentModal");
+    if (modal && typeof closeModal === "function") {
+        closeModal();
+        return;
+    }
+
+    const index = event.state?.index;
+    if (typeof index === 'number' && userHistoryStack[index]) {
+        isReplaying = true;
+        handleStateChange(userHistoryStack[index]);
+        currentIndex = index;
+
+        isReplaying = false;
+    } else {
+        console.warn("⚠️ Invalid popstate index:", event.state);
+    }
+});
+function initializeHistory() {
+    // Deep link: /?product=...
+    const params = new URLSearchParams(window.location.search);
+    const productParam = params.get("product");
+
+    if (productParam) {
+        const prod = findProductByNameParam(productParam);
+
+        if (prod) {
+            const desc =
+                prod.description ||
+                TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER ||
+                "No description available.";
+
+            const state = {
+                action: "GoToProductPage",
+                data: [prod.name, prod.price, desc]
+            };
+
+            userHistoryStack = [state];
+            currentIndex = 0;
+
+            // Keep the URL as product link and render the product page
+            history.replaceState({ index: 0 }, "", buildUrlForState(state));
+            handleStateChange(state);
+            return;
+        }
+
+        // Invalid product link: clean it so refresh doesn't keep retrying
+        history.replaceState({ index: 0 }, "", "/");
+    }
+
+    // Normal boot path
+    if (currentIndex >= 0 && userHistoryStack[currentIndex]) {
+        handleStateChange(userHistoryStack[currentIndex]);
+    } else {
+        navigate("loadProducts", ["Default_Page", "NameFirst", "asc"]);
+    }
+}
+
+// Replace old trackUserEvent calls with navigate()
+function trackedGoToSettings() {
+    navigate('GoToSettings');
+}
+
+function trackedGoToCart() {
+    navigate('GoToCart');
+}
+
+function trackSearch(query) {
+    const lastEvent = userHistoryStack[userHistoryStack.length - 1];
+    if (!lastEvent || lastEvent.action !== 'searchQuery' || lastEvent.data[0] !== query) {
+        navigate('searchQuery', [query]);
+    }
+}
+/* =========================
+   APP BOOT LOADER (Products)
+   ========================= */
+const APP_LOADER_STYLE_ID = "appBootLoaderStyles";
+const APP_LOADER_ID = "appBootLoaderOverlay";
+
+let __appBootPrevBodyOverflow = null;
+let __appBootPrevTitle = null;
+
+function ensureAppLoaderStyles() {
+    if (document.getElementById(APP_LOADER_STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = APP_LOADER_STYLE_ID;
+    style.textContent = `
+         @keyframes appLoaderSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+   
+         #${APP_LOADER_ID}{
+           position:fixed; inset:0; z-index:90000;
+           display:flex; align-items:center; justify-content:center;
+           padding:16px;
+           background:rgba(0,0,0,.45);
+           backdrop-filter: blur(8px);
+           -webkit-backdrop-filter: blur(8px);
+         }
+         #${APP_LOADER_ID} .card{
+           width:min(520px, calc(100vw - 32px));
+           border-radius:16px;
+           border:1px solid rgba(255,255,255,0.12);
+           background:rgba(20,20,20,0.9);
+           box-shadow:0 20px 60px rgba(0,0,0,.65);
+           padding:16px;
+           font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+           color:#fff;
+         }
+         #${APP_LOADER_ID} .row{
+           display:flex; align-items:center; gap:12px;
+         }
+         #${APP_LOADER_ID} .spinner{
+           width:22px; height:22px; border-radius:999px;
+           border:3px solid rgba(255,255,255,0.22);
+           border-top-color: rgba(255,255,255,0.95);
+           animation: appLoaderSpin 900ms linear infinite;
+           flex:0 0 auto;
+         }
+         #${APP_LOADER_ID} .title{
+           font-weight:700; font-size:15px; line-height:1.2;
+         }
+         #${APP_LOADER_ID} .sub{
+           margin-top:6px;
+           font-size:13px;
+           opacity:.85;
+           line-height:1.35;
+         }
+       `;
+    document.head.appendChild(style);
+
+}
+
+function showAppLoader(text = "Loading…") {
+    try { ensureAppLoaderStyles(); } catch { }
+
+    let overlay = document.getElementById(APP_LOADER_ID);
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = APP_LOADER_ID;
+        overlay.setAttribute("role", "status");
+        overlay.setAttribute("aria-live", "polite");
+        overlay.innerHTML = `
+             <div class="card">
+               <div class="row">
+                 <div class="spinner" aria-hidden="true"></div>
+                 <div class="title">Loading SnagletShop</div>
+               </div>
+               <div class="sub" id="${APP_LOADER_ID}_text"></div>
+             </div>
+           `;
+        (document.body || document.documentElement).appendChild(overlay);
+    }
+
+    const textEl = document.getElementById(`${APP_LOADER_ID}_text`);
+    if (textEl) textEl.textContent = String(text || "Loading…");
+
+    // small UX touches
+    document.documentElement.style.cursor = "progress";
+    document.documentElement.setAttribute("aria-busy", "true");
+
+    try {
+        if (__appBootPrevTitle === null) __appBootPrevTitle = document.title;
+        if (!/Loading/i.test(document.title)) document.title = `Loading…`;
+    } catch { }
+
+    try {
+        if (document.body) {
+            if (__appBootPrevBodyOverflow === null) __appBootPrevBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+        }
+    } catch { }
+}
+
+function hideAppLoader() {
+    const overlay = document.getElementById(APP_LOADER_ID);
+    if (overlay) overlay.remove();
+
+    document.documentElement.style.cursor = "";
+    document.documentElement.removeAttribute("aria-busy");
+
+    try {
+        if (document.body && __appBootPrevBodyOverflow !== null) {
+            document.body.style.overflow = __appBootPrevBodyOverflow;
+        }
+    } catch { }
+    __appBootPrevBodyOverflow = null;
+
+    try {
+        if (__appBootPrevTitle !== null) document.title = __appBootPrevTitle;
+    } catch { }
+    __appBootPrevTitle = null;
+}
+
+// Boot after DOM is ready and products are available.
+// This prevents the early history/render call from throwing and aborting the rest of the script.
+let __bootAppStarted = false;
+
+async function bootApp() {
+    if (__bootAppStarted) return;
+    __bootAppStarted = true;
+
+    showAppLoader("Loading products…");
+
+    try {
+        // Ensure catalog is ready before the first render
+        try { await initProducts(); } catch { }
+        showAppLoader("Preparing store…");
+
+        // Ensure global `products` exists for legacy code paths
+        if (!window.products || typeof window.products !== "object") {
+            window.products = productsDatabase || {};
+        }
+
+        // Hydrate basket early
+        try {
+            basket = JSON.parse(localStorage.getItem("basket")) || {};
+        } catch {
+            basket = {};
+            try { localStorage.setItem("basket", JSON.stringify(basket)); } catch { }
+        }
+
+        // Defaults used throughout the UI
+        if (typeof window.currentCategory === "undefined") window.currentCategory = "Default_Page";
+        if (typeof window.currentSortOrder === "undefined") window.currentSortOrder = "asc";
+
+        // Initial render (history-aware)
+        try {
+            initializeHistory();
+        } catch (e) {
+            console.warn("⚠️ initializeHistory failed on boot, falling back to Default_Page:", e);
+            loadProducts("Default_Page", localStorage.getItem("defaultSort") || "NameFirst", "asc");
+            CategoryButtons();
+        }
+
+        // Let the render paint, then remove overlay
+        requestAnimationFrame(() => setTimeout(hideAppLoader, 0));
+    } catch (e) {
+        console.warn("⚠️ bootApp error:", e);
+        hideAppLoader(); // never get stuck behind the loader
+    }
+}
+
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => void bootApp());
+} else {
+    void bootApp();
+}
+
+
+
+
+
+// Unified Search Handling for Both Desktop and Mobile
+
+const debounce = (func, delay) => {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+};
+async function fetchTariffsFromServer() {
+    const res = await fetch(`${API_BASE}/tariffs`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to fetch tariffs (${res.status})`);
+    const data = await res.json().catch(() => null);
+
+    // Accept either { ... } or { tariffs: { ... } }
+    const obj =
+        (data && typeof data === "object" && !Array.isArray(data))
+            ? (data.tariffs && typeof data.tariffs === "object" ? data.tariffs : data)
+            : null;
+
+    if (!obj) throw new Error("Invalid tariffs payload.");
+    return obj;
+}
+
+async function fetchCountriesFromServer() {
+    const res = await fetch(`${API_BASE}/countries`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to fetch countries (${res.status})`);
+    const data = await res.json().catch(() => null);
+    if (!Array.isArray(data)) throw new Error("Invalid countries payload.");
+
+    // Normalize expected shape: [{ code, tariff }]
+    return data
+        .filter(x => x && typeof x === "object" && x.code)
+        .map(x => ({
+            code: String(x.code).toUpperCase(),
+            tariff: Number(x.tariff || 0) || 0
+        }));
+}
+
+async function fetchTariffs() {
+    try {
+        window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
+
+        // If already loaded, use it
+        if (window.preloadedData.tariffs && Object.keys(window.preloadedData.tariffs).length) {
+            tariffMultipliers = { ...window.preloadedData.tariffs };
+            return tariffMultipliers;
+        }
+
+        // Load via settings preload (safe now; no recursion)
+        await preloadSettingsData();
+
+        if (window.preloadedData.tariffs && Object.keys(window.preloadedData.tariffs).length) {
+            tariffMultipliers = { ...window.preloadedData.tariffs };
+            return tariffMultipliers;
+        }
+
+        // Last resort direct fetch
+        const tariffsObj = await fetchTariffsFromServer();
+        tariffMultipliers = { ...tariffsObj };
+        window.preloadedData.tariffs = tariffMultipliers;
+        window.preloadedData.countries = tariffsObjectToCountriesArray(tariffMultipliers);
+        return tariffMultipliers;
+    } catch (e) {
+        console.warn("⚠️ fetchTariffs failed; keeping existing tariffMultipliers:", e);
+        tariffMultipliers = (tariffMultipliers && typeof tariffMultipliers === "object") ? tariffMultipliers : {};
+        return tariffMultipliers;
+    }
+}
+
+
+
+function setupSearchInputs() {
+    searchInput = document.getElementById("Search_Bar");
+    mobileSearchInput = document.getElementById("Mobile_Search_Bar");
+
+    if (!searchInput || !mobileSearchInput) {
+        console.warn("⚠️ Search inputs not found; skipping search binding.");
+        return;
+    }
+
+    const handleSearch = (query) => {
+        const trimmed = (query || "").trim();
+        searchInput.value = trimmed;
+        mobileSearchInput.value = trimmed;
+
+        if (trimmed.length > 0) {
+            trackSearch(trimmed);
+            searchProducts(trimmed);
+        } else {
+            loadProducts(lastCategory || "Default_Page");
+        }
+    };
+
+    const debouncedDesktop = debounce(() => {
+        handleSearch(searchInput.value);
+    }, 300);
+
+    const debouncedMobile = debounce(() => {
+        handleSearch(mobileSearchInput.value);
+    }, 300);
+
+    searchInput.addEventListener("input", debouncedDesktop);
+    mobileSearchInput.addEventListener("input", debouncedMobile);
+
+    const stopSubmit = (e) => {
+        if (e.key === "Enter") e.preventDefault();
+    };
+
+    searchInput.addEventListener("keydown", stopSubmit);
+    mobileSearchInput.addEventListener("keydown", stopSubmit);
+}
+
+document.addEventListener("DOMContentLoaded", setupSearchInputs);
+
+
+
+
+
+
+
+const functionRegistry = {
+    loadProducts,
+    GoToProductPage,
+    GoToCart,
+    GoToSettings,
+    searchQuery
+    // add more functions here as needed
+};
+
+// === LOAD FROM SESSION ===
+
+
+// === UTILITIES ===
+function log(...args) {
+    if (window.DEBUG_HISTORY) console.log(...args);
+}
+
+// === FUNCTION INVOCATION (Safe) ===
+function invokeFunctionByName(functionName, args = []) {
+    const fn = functionRegistry[functionName];
+    if (typeof fn === "function") {
+        try {
+            fn(...args);
+        } catch (err) {
+            console.error(`⚠️ Error invoking ${functionName}:`, err);
+        }
+    } else {
+        console.warn(`❌ Function not found in registry: ${functionName}`);
+    }
+}
+// --- PAYMENT PENDING (covers 3DS redirects) --------------------------
+const PAYMENT_PENDING_KEY = "payment_pending_v1";
+
+const RECENT_ORDERS_KEY = "recentOrders_v1";
+
+function _safeJsonParse(raw) {
+    try { return JSON.parse(raw); } catch { return null; }
+}
+
+function getRecentOrders() {
+    const raw = localStorage.getItem(RECENT_ORDERS_KEY);
+    const arr = Array.isArray(_safeJsonParse(raw)) ? _safeJsonParse(raw) : [];
+    return (arr || [])
+        .filter(o => o && typeof o === "object" && o.orderId && o.token)
+        .sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0))
+        .slice(0, 25);
+}
+
+function addRecentOrder({ orderId, token, orderStatusUrl = null, paymentIntentId = null } = {}) {
+    if (!orderId || !token) return;
+    const now = Date.now();
+
+    const entry = {
+        ts: now,
+        orderId: String(orderId),
+        token: String(token),
+        orderStatusUrl: orderStatusUrl ? String(orderStatusUrl) : null,
+        paymentIntentId: paymentIntentId ? String(paymentIntentId) : null
+    };
+
+    const current = getRecentOrders();
+    // de-dup by orderId
+    const next = [entry, ...current.filter(o => String(o.orderId) !== String(orderId))].slice(0, 25);
+
+    try { localStorage.setItem(RECENT_ORDERS_KEY, JSON.stringify(next)); } catch { }
+}
+
+async function fetchOrderStatus({ orderId, token } = {}) {
+    const oid = String(orderId || "").trim();
+    const t = String(token || "").trim();
+    if (!oid || !t) throw new Error("Missing orderId or token.");
+
+    const url = `${API_BASE}/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        // Turnstile specific guidance
+        if (data && (data.error === "TURNSTILE_FAILED" || data.error === "TURNSTILE_REQUIRED" || String(data.message || "").toUpperCase().includes("TURNSTILE"))) {
+            const configured = Boolean(__snagletGetTurnstileSiteKey());
+            const hint = configured
+                ? "Turnstile verification failed. Please refresh the page and try again."
+                : "Bot protection (Turnstile) is not configured on this site. Set <meta name=\"turnstile-sitekey\" content=\"YOUR_SITE_KEY\"> in index.html (and ensure the backend TURNSTILE_SECRET_KEY matches).";
+            alert(hint);
+        }
+
+        const msg = data?.error || data?.message || `Order status failed (${res.status})`;
+        const err = new Error(msg);
+        err.status = res.status;
+        err.details = data;
+        throw err;
+    }
+    return data;
+}
+
+function _formatDateMaybe(v) {
+    try {
+        if (!v) return "";
+        const d = (typeof v === "string" || typeof v === "number") ? new Date(v) : new Date(String(v));
+        if (Number.isNaN(d.getTime())) return String(v);
+        return d.toLocaleString();
+    } catch {
+        return String(v || "");
+    }
+}
+
+/**
+ * Stores enough info to recover after a Stripe redirect (3DS) or refresh.
+ */
+function setPaymentPendingFlag({ paymentIntentId = null, orderId = null, clientSecret = null } = {}) {
+    if (!paymentIntentId && !clientSecret) return;
+    try {
+        localStorage.setItem(
+            PAYMENT_PENDING_KEY,
+            JSON.stringify({
+                ts: Date.now(),
+                paymentIntentId: paymentIntentId ? String(paymentIntentId) : null,
+                orderId: orderId ? String(orderId) : null,
+                clientSecret: clientSecret ? String(clientSecret) : null
+            })
+        );
+    } catch { }
+}
+
+function getPaymentPendingFlag() {
+    try {
+        const raw = localStorage.getItem(PAYMENT_PENDING_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+
+        // Backwards-compatible: tolerate older shapes
+        const paymentIntentId = obj?.paymentIntentId ? String(obj.paymentIntentId) : null;
+        const clientSecret = obj?.clientSecret ? String(obj.clientSecret) : null;
+        const orderId = obj?.orderId ? String(obj.orderId) : null;
+        const ts = Number(obj?.ts || 0) || 0;
+
+        if (!paymentIntentId && !clientSecret) return null;
+
+        return { ts, paymentIntentId, clientSecret, orderId };
+    } catch {
+        return null;
+    }
+}
+
+function clearPaymentPendingFlag() {
+    try { localStorage.removeItem(PAYMENT_PENDING_KEY); } catch { }
+}
+
+async function pollPendingPaymentUntilFinal({ paymentIntentId, clientSecret, timeoutMs = 120000, intervalMs = 2500 } = {}) {
+    if (!paymentIntentId) return { status: "unknown" };
+
+    const cs =
+        (clientSecret ? String(clientSecret) : null) ||
+        (getPaymentPendingFlag()?.clientSecret ? String(getPaymentPendingFlag().clientSecret) : null) ||
+        (window.latestClientSecret ? String(window.latestClientSecret) : null);
+
+    const baseUrl = `${API_BASE}/payment-intent-status/${encodeURIComponent(paymentIntentId)}`;
+    const url = cs ? `${baseUrl}?clientSecret=${encodeURIComponent(cs)}` : baseUrl;
+
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+        try {
+            const res = await fetch(url, { cache: "no-store" });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                // If clientSecret is missing, backend returns 400; stop early to avoid spamming.
+                if (res.status === 400 && !cs) return { status: "missing_client_secret" };
+                // Otherwise keep polling a bit (transient errors)
+            } else {
+                const status = String(data?.status || "");
+
+                if (status === "succeeded") return { status };
+                if (status === "requires_payment_method" || status === "canceled") return { status };
+            }
+
+            // still pending: processing / requires_capture / requires_action / etc.
+        } catch { }
+
+        await new Promise(r => setTimeout(r, intervalMs));
+    }
+
+    return { status: "timeout" };
+}
+
+async function checkAndHandlePendingPaymentOnLoad() {
+    const pending = getPaymentPendingFlag();
+    if (!pending?.paymentIntentId) return;
+
+    // Avoid stale "pending payment" flags causing random alerts during normal browsing.
+    // If the flag is older than 15 minutes, clear it silently.
+    const MAX_AGE_MS = 15 * 60 * 1000;
+    if (pending?.ts && (Date.now() - Number(pending.ts) > MAX_AGE_MS)) {
+        clearPaymentPendingFlag();
+        return;
+    }
+
+    const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pending.paymentIntentId, clientSecret: pending.clientSecret });
+
+    if (status === "succeeded") {
+        clearPaymentPendingFlag();
+        clearBasketCompletely();
+        try { clearCheckoutDraft(); } catch { }
+        setPaymentSuccessFlag({ reloadOnOk: true });
+        window.location.replace(window.location.origin);
+        return;
+    }
+
+    if (status === "requires_payment_method" || status === "canceled") {
+        clearPaymentPendingFlag();
+        alert("Payment did not complete. Your cart is still saved—please try again.");
+        return;
+    }
+
+    // timeout/unknown: keep pending flag + keep basket.
+    // Do not show a blocking alert here (it fires during normal browsing if the API is temporarily down).
+    console.warn("Payment is still processing (or status check failed). Cart is unchanged. You can try again in a moment.");
+}
+function getStripePublishableKeySafe() {
+    // Preferred sources (in order):
+    //  1) window.STRIPE_PUBLISHABLE_KEY / window.STRIPE_PUBLISHABLE (runtime injection)
+    //  2) <meta name="stripe-publishable-key" content="pk_live_...">
+    const fromMeta = document.querySelector('meta[name="stripe-publishable-key"]')?.content?.trim() || "";
+    const pk = (window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || fromMeta || "").trim();
+
+    if (!pk || pk === "__STRIPE_PUBLISHABLE_KEY__") {
+        throw new Error("Stripe publishable key is not configured. Set <meta name=\"stripe-publishable-key\" content=\"pk_live_...\"/> or define window.STRIPE_PUBLISHABLE_KEY before script.js.");
+    }
+
+    // Prevent accidental production deploy with a test key.
+    const host = String(location.hostname || "").toLowerCase();
+    const isLocal = (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local"));
+    if (!isLocal && pk.startsWith("pk_test_")) {
+        throw new Error("Refusing to run checkout with a Stripe TEST publishable key on a non-localhost domain. Use a pk_live_... key.");
+    }
+    return pk;
+}
+function ensureStripeInstance() {
+    if (!window.stripeInstance) {
+        if (typeof Stripe !== "function") throw new Error("Stripe.js not loaded");
+        window.stripeInstance = Stripe(getStripePublishableKeySafe());
+    }
+    return window.stripeInstance;
+}
+
+function stripStripeReturnParamsFromUrl(urlObj) {
+    // Stripe appends these on return_url
+    urlObj.searchParams.delete("redirect_status");
+    urlObj.searchParams.delete("payment_intent");
+    urlObj.searchParams.delete("payment_intent_client_secret");
+
+    // your own marker (optional)
+    urlObj.searchParams.delete("stripe_return");
+
+    // legacy flag you used earlier
+    urlObj.searchParams.delete("payment_success");
+}
+document.addEventListener("DOMContentLoaded", () => {
+    try { installApiHealthIndicator(); } catch { }
+    try { installOrderTrackingButton(); } catch { }
+
+    // Support direct customer links produced by backend: /order-status/:orderId?token=...
+    try {
+        const sp = new URLSearchParams(window.location.search || "");
+        const path = String(window.location.pathname || "");
+
+        let orderIdFromPath = "";
+        if (path.startsWith("/order-status/")) {
+            orderIdFromPath = decodeURIComponent(path.slice("/order-status/".length).split("/")[0] || "");
+        }
+
+        const orderId = orderIdFromPath || (sp.get("orderId") || "");
+        const token = sp.get("token") || "";
+
+        if (orderId && token && (orderIdFromPath || sp.has("orderId"))) {
+            openOrderStatusModal({ orderId, token });
+        }
+    } catch { }
+
+
+    // 1) Handle Stripe redirect returns (3DS) safely
+    handleStripeRedirectReturnOnLoad()
+        .catch(e => console.warn("handleStripeRedirectReturnOnLoad failed:", e))
+        .finally(() => {
+            // 2) Show success overlay if flagged
+            checkAndShowPaymentSuccess();
+
+            // 3) If something is pending, poll Stripe via server until final
+            checkAndHandlePendingPaymentOnLoad();
+        });
+});
+
+/**
+ * Handles Stripe "return_url" redirects (3DS) reliably.
+ * - If succeeded: clears basket + sets success flag
+ * - If still processing: stores pending + lets polling finish on load
+ * - If failed/canceled: keeps basket
+ */
+async function handleStripeRedirectReturnOnLoad() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const piIdFromUrl = params.get("payment_intent");
+    const csFromUrl = params.get("payment_intent_client_secret");
+    const hasStripeReturnSignals =
+        !!csFromUrl || !!piIdFromUrl || params.has("redirect_status") || params.has("stripe_return");
+
+    if (!hasStripeReturnSignals) return false;
+
+    // If we have PI id / client secret, persist pending so refreshes are safe
+    if (piIdFromUrl || csFromUrl) {
+        setPaymentPendingFlag({
+            paymentIntentId: piIdFromUrl || null,
+            orderId: window.latestOrderId || null,
+            clientSecret: csFromUrl || null
+        });
+    }
+
+    let finalStatus = null;
+    let finalPiId = piIdFromUrl || null;
+
+    // Try client-side retrieve first (best signal right after redirect)
+    if (csFromUrl) {
+        try {
+            const stripe = ensureStripeInstance();
+            const { paymentIntent, error } = await stripe.retrievePaymentIntent(csFromUrl);
+            if (error) throw error;
+
+            if (paymentIntent?.id) finalPiId = paymentIntent.id;
+            if (paymentIntent?.status) finalStatus = paymentIntent.status;
+
+            if (finalPiId) {
+                setPaymentPendingFlag({
+                    paymentIntentId: finalPiId,
+                    orderId: window.latestOrderId || null,
+                    clientSecret: csFromUrl
+                });
+            }
+        } catch (e) {
+            console.warn("Stripe retrievePaymentIntent failed; will fall back to server polling.", e);
+        }
+    }
+
+    // If we already know the result, apply it now
+    if (finalStatus === "succeeded") {
+        clearPaymentPendingFlag();
+        clearBasketCompletely();
+        try { clearCheckoutDraft(); } catch { }
+        setPaymentSuccessFlag({ reloadOnOk: true });
+    } else if (finalStatus === "requires_payment_method" || finalStatus === "canceled") {
+        clearPaymentPendingFlag();
+        alert("Payment did not complete. Your cart is still saved—please try again.");
+    } else {
+        // unknown/processing: keep pending; checkAndHandlePendingPaymentOnLoad() will poll
+        if (finalPiId) {
+            setPaymentPendingFlag({
+                paymentIntentId: finalPiId,
+                orderId: window.latestOrderId || null,
+                clientSecret: csFromUrl || null
+            });
+        }
+    }
+
+    // Always clean URL so reloads don't re-trigger
+    stripStripeReturnParamsFromUrl(url);
+    const q = url.searchParams.toString();
+    const cleaned = url.pathname + (q ? `?${q}` : "");
+    try { window.history.replaceState({}, "", cleaned); } catch { }
+
     return true;
-  });
-  return arr;
 }
 
-// ======= Render =======
-function render() {
-  saveOrders(state.orders);
-  const container = document.getElementById("groups");
-  if (!container) return;
+async function fetchExchangeRatesFromServer() {
+    // Prefer the backend proxy endpoint (so the frontend exercises /api/proxy-rates),
+    // but fall back to the direct /rates endpoint if needed.
+    let res = null;
 
-  // If a non-Orders tab is active, keep Orders view cleared so Orders-only UI cannot leak.
-  try {
-    if (typeof getActiveMgmtTab === "function" && getActiveMgmtTab() !== "orders") {
-      container.innerHTML = "";
-      return;
-    }
-  } catch (e) { }
-  container.innerHTML = "";
-  const filtered = currentFiltered();
-
-  // group by day
-  const g = {};
-  filtered.forEach(o => {
-    const key = toLocalDateKey(o.createdAt);
-    if (!g[key]) g[key] = [];
-    g[key].push(o);
-  });
-  const entries = Object.entries(g).sort((a, b) => a[0] < b[0] ? 1 : -1);
-
-  if (entries.length === 0) {
-    container.innerHTML = `<div style="text-align:center;margin:48px 0;color:#6b7280">No orders in this period.</div>`;
-    return;
-  }
-
-  for (const [dateKey, arr] of entries) {
-    // centered day divider that matches styles.css (.tag + .tag__label)
-    const divider = document.createElement("div");
-    divider.className = "tag";
-    divider.innerHTML = `<span class="tag__label">${labelForDate(dateKey)}</span>`;
-    container.appendChild(divider);
-
-    arr.sort((a, b) => a.id < b.id ? 1 : -1).forEach(o => {
-      container.appendChild(renderOrderCard(o));
-    });
-  }
-}
-
-// Compute and set extra gap for an open card
-function _setExtraGap(card) {
-  const drop = card.querySelector('#DropdownDiv');
-  if (!drop) return;
-
-  const mult = parseFloat(getComputedStyle(document.documentElement)
-    .getPropertyValue('--expand-gap-mult')) || 0.18;
-  const minG = parseFloat(getComputedStyle(document.documentElement)
-    .getPropertyValue('--expand-gap-min')) || 16;
-  const maxG = parseFloat(getComputedStyle(document.documentElement)
-    .getPropertyValue('--expand-gap-max')) || 180;
-
-  const h = drop.scrollHeight || 0;
-  const px = Math.max(minG, Math.min(maxG, Math.round(h * mult)));
-  card.style.setProperty('--extra-gap', px + 'px');
-}
-function _attachGapObserver(card) {
-  const drop = card.querySelector('#DropdownDiv');
-  if (!drop || card._gapObserver) return;
-  card._gapObserver = new ResizeObserver(() => _setExtraGap(card));
-  card._gapObserver.observe(drop);
-}
-function _detachGapObserver(card) {
-  if (card._gapObserver) {
-    card._gapObserver.disconnect();
-    card._gapObserver = null;
-  }
-}
-
-// ======= Order card =======
-function renderOrderCard(order) {
-  const esc = escHtml;
-  const money = n => Number(n || 0).toFixed(2);
-  const saleTotal0 = Number(order.paidEUR != null ? order.paidEUR : order.products.reduce((s, p) => s + (p.totalSale ?? p.amount * p.unitPrice), 0));
-  const purchaseTotal0 = order.products.reduce((s, p) => s + Number(p.expectedPurchase || p.purchasePrice || 0) * p.amount, 0);
-  const shippingSum0 = Number(order.shipping.aliExpress || 0) + Number(order.shipping.thirdParty1 || 0) + Number(order.shipping.thirdParty2 || 0);
-  const stripeFee0 = Number(order.stripeFeeEUR || 0);
-  const shippingPlusFees0 = shippingSum0 + stripeFee0;
-  const expectedProfit0 = saleTotal0 - (purchaseTotal0 + shippingPlusFees0);
-
-  // Keep all financial texts in sync (top bar, shipping rows, equation)
-  function applyFinancialTexts(saleTotal, purchaseTotal, shippingTotal, profit) {
-    let el;
-
-    // --- TOP BAR ---
-    el = card.querySelector("#TopBarDiv_B_A_B_TopBarExpectedPurchasePriceText");
-    if (el) el.textContent = `Expected purchase price: ${money(purchaseTotal)} ${order.currency}`;
-
-    el = card.querySelector("#TopBarDiv_B_A_C_TopBarShippingText");
-    if (el) {
-      const shipOnly = Number(order.shipping.aliExpress || 0) + Number(order.shipping.thirdParty1 || 0) + Number(order.shipping.thirdParty2 || 0);
-      const stripeFee = Number(order.stripeFeeEUR || 0);
-      const extra = stripeFee ? ` (Stripe fee: ${money(stripeFee)} ${order.currency})` : "";
-      el.textContent = `Shipping: ${money(shipOnly)} ${order.currency}${extra}`;
+    try {
+        res = await fetch(`${API_BASE}/api/proxy-rates`, { cache: "no-store" });
+        if (!res.ok) res = null;
+    } catch {
+        res = null;
     }
 
-    el = card.querySelector("#TopBarDiv_B_B_A_TopBarProfitText");
-    if (el) el.textContent = `Profit: ${money(profit)} ${order.currency}`;
-
-
-    // --- Shipping total box on the “Shipping cost:” row ---
-    el = card.querySelector("#DropdownDiv_C_B_B_ShippingCostSumText");
-    if (el) el.textContent = `${money(shippingTotal)} ${order.currency}`;
-
-    // --- Total sale / total purchase (there are TWO copies of each ID) ---
-    card.querySelectorAll("#DropdownDiv_C_B_C_TotalPriceText").forEach(node => {
-      node.textContent = `${money(saleTotal)} ${order.currency}`;
-    });
-
-    card.querySelectorAll("#DropdownDiv_C_B_D_TotalPurchasePriceText").forEach(node => {
-      node.textContent = `${money(purchaseTotal)} ${order.currency}`;
-    });
-
-    // --- Profit equation + pill ---
-    el = card.querySelector("#DropdownDiv_C_C_B_ProfitCalculationText");
-    if (el) {
-      el.textContent =
-        `${money(saleTotal)} − (${money(purchaseTotal)} + ${money(shippingTotal)})`;
+    if (!res) {
+        res = await fetch(`${API_BASE}/rates`, { cache: "no-store" });
     }
 
-    el = card.querySelector("#DropdownDiv_C_C_D_ProfitText");
-    if (el) el.textContent = `${money(profit)} ${order.currency}`;
-  }
+    if (!res.ok) throw new Error(`Failed to fetch exchange rates (${res.status})`);
+    const data = await res.json().catch(() => null);
+    if (!data || !data.rates) throw new Error("Invalid exchange rates payload.");
+    return data;
+}
 
 
-  const card = document.createElement("div");
-  card.id = "OrderCardDiv";
-  card.className = "OrderCardDiv";
-  card.dataset.id = order.id;
-  // ---------- TOP BAR ----------
-  const head = document.createElement("div");
-  head.id = "TopBarDiv";
-  head.className = "TopBarDiv";
 
-  const confirmationEmailText = order.emailSentAt
-    ? `Confirmation email: ${niceDateTime(order.emailSentAt)}`
-    : "Confirmation email: Not yet";
 
-  const shippedEmailText = order.shippedEmailSentAt
-    ? `Shipped email: ${niceDateTime(order.shippedEmailSentAt)}`
-    : "Shipped email: Not yet";
+document.addEventListener("DOMContentLoaded", () => {
 
-  const emailTimeText = `${confirmationEmailText}<br>${shippedEmailText}`;
 
-  const doneTimeText = order.doneAt
-    ? `Time done: ${niceDateTime(order.doneAt)}`
-    : "Time done: Not yet";
 
-  head.innerHTML = `
-    <!-- Left: Order ID + Date & Time -->
-    <div id="TopBarDiv_A" class="TopBarDiv_A">
-      <div id="TopBarDiv_A_A" class="TopBarDiv_A_A">
-        <span
-          id="TopBarDiv_A_A_OrderIdText"
-          class="TopBarDiv_A_A_OrderIdText"
-        >
-          Order ID: ${esc(order.id)}
-        </span>
-      </div>
-      <div id="TopBarDiv_A_B" class="TopBarDiv_A_B">
-        <span
-          id="TopBarDiv_A_B_DateTimeText"
-          class="TopBarDiv_A_B_DateTimeText"
-        >
-          Date and Time: ${niceDateTime(order.createdAt)}
-        </span>
-      </div>
+
+
+    const navEntry = performance.getEntriesByType("navigation")[0];
+    const isPageRefresh = navEntry?.type === "reload";
+
+    const params = new URLSearchParams(window.location.search);
+    if (isPageRefresh && !params.has("product")) {
+        console.log("🔄 Page refresh detected, clearing session history...");
+
+
+
+        history.replaceState({ page: "loadProducts", index: 0 }, "", window.location.pathname);
+    }
+});
+
+
+
+
+
+// === KEYBOARD SHORTCUTS (Alt + Arrow) ===
+document.addEventListener("keydown", (e) => {
+    if (!e.altKey) return;
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+function searchQuery(query) {
+    const input = document.getElementById("Search_Bar");
+    const mobileInput = document.getElementById("Mobile_Search_Bar");
+
+    if (input) input.value = query;
+    if (mobileInput) mobileInput.value = query;
+
+    console.debug(`🔍 Replaying search for: ${query}`);
+    searchProducts(query); // ✅ This triggers the actual search display
+}
+
+
+
+
+function searchProducts() {
+    const queryDesktop = document.getElementById("Search_Bar")?.value || "";
+    const queryMobile = document.getElementById("Mobile_Search_Bar")?.value || "";
+
+    const activeElement = document.activeElement;
+    let rawQuery = "";
+
+    if (activeElement?.id === "Mobile_Search_Bar") {
+        rawQuery = queryMobile;
+    } else {
+        rawQuery = queryDesktop;
+    }
+
+    const query = rawQuery.toLowerCase().replace(/\s+/g, "").trim();
+    if (!query) return;
+
+    // Sync both fields
+    document.getElementById("Search_Bar").value = rawQuery;
+    document.getElementById("Mobile_Search_Bar").value = rawQuery;
+
+    const viewer = document.getElementById("Viewer");
+    viewer.innerHTML = "";
+
+    let results = [];
+
+    Object.keys(products).forEach(category => {
+        results.push(
+            ...products[category].filter(product => {
+                if (!product.name) return false; // ⛔ Skip icon-only objects
+                const normalizedName = product.name.toLowerCase().replace(/\s+/g, "");
+                const normalizedDescription = (product.description || "").toLowerCase().replace(/\s+/g, "");
+                return normalizedName.includes(query) || normalizedDescription.includes(query);
+            })
+
+        );
+    });
+
+    const uniqueResults = [];
+    const seenNames = new Set();
+
+    results.forEach(product => {
+        if (!seenNames.has(product.name)) {
+            seenNames.add(product.name);
+            uniqueResults.push(product);
+        }
+    });
+
+    if (uniqueResults.length > 0) {
+        uniqueResults.forEach(product => {
+            const productDiv = document.createElement("div");
+            productDiv.classList.add("product");
+
+            const card = document.createElement("div");
+            card.className = "product-card";
+
+            // Clickable product name as a link, no underline
+            const nameLink = document.createElement("a");
+            nameLink.className = "product-name";
+
+            nameLink.textContent = product.name;
+            nameLink.style.textDecoration = "none";
+            nameLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                navigate("GoToProductPage", [
+                    product.name,
+                    product.price,
+                    product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+                ]);
+            });
+
+
+            nameLink.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
+            nameLink.target = "_blank"; // Open in new tab
+            const img = document.createElement("img");
+            img.className = "Clickable_Image";
+            img.src = product.image;
+            img.alt = product.name;
+            img.dataset.name = product.name;
+            img.dataset.price = product.price;
+            img.dataset.imageurl = product.image;
+            img.dataset.description = product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER;
+
+
+            img.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
+            img.target = "_blank"; // Open in new tab
+            img.addEventListener("click", () => {
+                navigate("GoToProductPage", [
+                    product.name,
+                    product.price,
+                    product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+                ]);
+            });
+
+            const priceP = document.createElement("p");
+            priceP.className = "product-price";
+            priceP.textContent = `${product.price}€`;
+
+            const quantityContainer = document.createElement("div");
+            quantityContainer.className = "quantity-container";
+
+            const quantityControls = document.createElement("div");
+            quantityControls.className = "quantity-controls";
+
+            const decBtn = document.createElement("button");
+            decBtn.className = "Button";
+            decBtn.textContent = TEXTS.BASKET.BUTTONS.DECREASE;
+            decBtn.addEventListener("click", () => decreaseQuantity(product.name));
+
+            const quantitySpan = document.createElement("span");
+            quantitySpan.className = "WhiteText";
+            quantitySpan.id = `quantity-${product.name}`;
+            quantitySpan.textContent = "1";
+
+            const incBtn = document.createElement("button");
+            incBtn.className = "Button";
+            incBtn.textContent = TEXTS.BASKET.BUTTONS.INCREASE;
+            incBtn.addEventListener("click", () => increaseQuantity(product.name));
+
+            const addToCartBtn = document.createElement("button");
+            addToCartBtn.className = "add-to-cart";
+
+            addToCartBtn.innerHTML = `
+              <span style="display: flex; align-items: center; gap: 6px;">
+                ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
+                <svg class="cart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            `;
+
+            addToCartBtn.addEventListener("click", () => {
+                addToCart(
+                    product.name,
+                    product.price,
+                    product.image,
+                    product.expectedPurchasePrice,
+                    product.productLink,
+                    product.description,
+                    "",
+                    __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
+                );
+            });
+
+
+            quantityControls.append(decBtn, quantitySpan, incBtn);
+            quantityContainer.append(quantityControls, addToCartBtn);
+
+            card.append(nameLink, img, priceP, quantityContainer);
+            productDiv.appendChild(card);
+            viewer.appendChild(productDiv);
+        });
+    } else {
+        viewer.innerHTML = "<p>No products found.</p>";
+    }
+}
+
+
+
+
+function handleCurrencyChange(newCurrency) {
+    selectedCurrency = newCurrency;
+    localStorage.setItem("selectedCurrency", selectedCurrency);
+    syncCurrencySelects(selectedCurrency);
+    updateAllPrices();
+}
+
+
+
+
+document.getElementById("currency-select")?.addEventListener("change", (e) => {
+    handleCurrencyChange(e.target.value);
+});
+
+document.addEventListener("change", (e) => {
+    if (e.target && e.target.id === "currencySelect") {
+        handleCurrencyChange(e.target.value);
+    }
+});
+document.addEventListener("click", function (event) {
+    const button = event.target.closest(".Category_Button");
+    if (!button) return;
+
+    const functionCall = button.getAttribute("onclick");
+    if (!functionCall) return;
+
+    const match = functionCall.match(/(\w+)\(([^)]*)\)/);
+    if (!match) return;
+
+    const functionName = match[1];
+    const args = match[2]
+        .split(",")
+        .map(arg => arg.trim().replace(/^['"]|['"]$/g, ""));
+
+    console.debug(`🛍️ Category button clicked - ${functionName}`, args);
+
+    invokeFunctionByName(functionName, args);
+});
+
+
+
+
+
+
+
+
+
+
+
+try {
+    basket = JSON.parse(localStorage.getItem("basket")) || {};
+} catch (e) {
+    console.error("❌ Failed to parse basket from localStorage. Resetting basket.");
+    basket = {};
+    localStorage.setItem("basket", JSON.stringify(basket));
+}
+
+// Detect user's currency via IP API (if no saved preference)
+function detectUserCurrency() {
+    // Detect user's currency via IP API (best-effort). Never throw.
+    return fetch("https://ipapi.co/json/")
+        .then(response => response.json())
+        .then(data => {
+            const userCountry = String(data?.country_code || "").toUpperCase();
+            if (!userCountry) return;
+
+            selectedCurrency = countryToCurrency[userCountry] || (localStorage.getItem("selectedCurrency") || "EUR");
+            localStorage.setItem("selectedCurrency", selectedCurrency);
+            localStorage.setItem("detectedCountry", userCountry);
+
+            const currencySelect = document.getElementById("currency-select");
+            if (currencySelect) currencySelect.value = selectedCurrency;
+
+            console.log("🌍 Country detected:", userCountry);
+            console.log("💱 Currency set to:", selectedCurrency);
+            console.log("📦 Tariff applied:", localStorage.getItem("applyTariff"));
+
+            updateAllPrices();
+        })
+        .catch((err) => {
+            console.warn("Currency detect blocked/failed; keeping saved currency.", err);
+            // Keep existing selectedCurrency (saved/manual)
+        });
+}
+
+function convertPrice(priceInEur) {
+    let converted = priceInEur * exchangeRates[selectedCurrency];
+
+    const selectedCountry = localStorage.getItem("detectedCountry") || "US";
+    const tariff = tariffMultipliers[selectedCountry] || 0;
+
+    const applyTariff = getApplyTariffFlag();
+    if (applyTariff) {
+        converted *= (1 + tariff);
+    }
+
+    return converted.toFixed(2);
+}
+
+
+// Function to update all prices
+function updateAllPrices() {
+    document.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
+        let basePrice = parseFloat(element.dataset.eur);
+        if (!isNaN(basePrice)) {
+            let convertedValue = convertPrice(basePrice);
+
+            let currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
+            element.textContent = `${currencySymbol}${convertedValue}`;
+        }
+    });
+
+    // Update total price in basket
+    let totalElement = document.getElementById("basket-total");
+    if (totalElement) {
+        let baseTotal = parseFloat(totalElement.dataset.eur);
+        if (!isNaN(baseTotal)) {
+            totalElement.textContent = `Total: ${convertPrice(baseTotal)} ${selectedCurrency}`;
+        }
+    }
+}
+
+// Store original EUR value in dataset when page loads
+function initializePrices() {
+    document.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price, .productPrice").forEach(element => {
+        let basePrice = parseFloat(element.textContent.replace(/[^0-9.]/g, ""));
+        if (!isNaN(basePrice)) {
+            element.dataset.eur = basePrice;
+        }
+    });
+
+    let totalElement = document.getElementById("basket-total");
+    if (totalElement) {
+        let baseTotal = parseFloat(totalElement.textContent.replace(/[^0-9.]/g, ""));
+        if (!isNaN(baseTotal)) {
+            totalElement.dataset.eur = baseTotal;
+        }
+    }
+}
+
+function observeNewProducts() {
+    let observer = new MutationObserver(() => {
+        observer.disconnect(); // Stop observing temporarily
+
+        document.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
+            if (!element.dataset.eur) {
+                element.dataset.eur = element.textContent.replace(/[^0-9.]/g, "").trim();
+            }
+        });
+
+        updateAllPrices();
+
+        observer.observe(document.body, { childList: true, subtree: true }); // Resume observing
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+
+document.getElementById("currencySelect")?.addEventListener("change", function (event) {
+    selectedCurrency = event.target.value;
+    localStorage.setItem("selectedCurrency", selectedCurrency);
+
+    syncCurrencySelects(selectedCurrency);  // ✅ this ensures the TopBar updates too
+    updateAllPrices();
+});
+
+document.getElementById("currencySelect")?.addEventListener("change", function (event) {
+    selectedCurrency = event.target.value;
+    localStorage.setItem("selectedCurrency", selectedCurrency);
+    syncCurrencySelects(selectedCurrency);  // 🔁 this updates the other one
+    updateAllPrices();
+});
+
+
+// Page load: Apply saved currency or detect it
+
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const currencySelect = document.getElementById("currency-select");
+    await fetchTariffs();
+    if (!currencySelect) {
+        console.warn("currency-select element not found. Skipping price initialization.");
+        return;
+    }
+    currencySelect.value = selectedCurrency;
+    detectUserCurrency();
+    initializePrices();         // Store original EUR prices in DOM
+    observeNewProducts();       // Handle dynamic product loading
+    // Set preferred currency
+
+    await fetchExchangeRatesFromServer();  // ✅ WAIT for rates to update
+    updateAllPrices();                     // ✅ THEN convert prices properly
+});
+
+async function populateCountries() {
+    console.log("📦 Running populateCountries()");
+
+    const select = document.getElementById("countrySelect");
+    if (!select) {
+        console.warn("❌ countrySelect not found.");
+        return;
+    }
+
+    // Ensure tariffs are loaded (preferred path: preload cache)
+    await fetchTariffs();
+
+    const countries = window.preloadedData?.countries?.length
+        ? window.preloadedData.countries
+        : tariffsObjectToCountriesArray(tariffMultipliers);
+
+    console.log(`📦 Loaded ${countries.length} countries from tariffs`, countries);
+
+    select.innerHTML = ""; // clear
+
+    for (const c of countries) {
+        const code = String(c.code || "").toUpperCase();
+        if (!code) continue;
+        const name = countryNames[code] || code;
+
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = name;
+        select.appendChild(opt);
+    }
+
+    const detected = localStorage.getItem("detectedCountry") || "US";
+    const detectedEl = document.getElementById("detected-country");
+    if (detectedEl) detectedEl.textContent = detected;
+    select.value = detected;
+
+    select.addEventListener("change", () => {
+        const newCountry = select.value;
+        localStorage.setItem("detectedCountry", newCountry);
+
+        if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+            const newCurrency = countryToCurrency[newCountry];
+            if (newCurrency) {
+                selectedCurrency = newCurrency;
+                localStorage.setItem("selectedCurrency", selectedCurrency);
+                syncCurrencySelects(selectedCurrency);
+            }
+        }
+
+        updateAllPrices();
+    });
+
+    if (select.tomselect) select.tomselect.destroy();
+
+    new TomSelect(select, {
+        maxOptions: 1000,
+        sortField: { field: "text", direction: "asc" },
+        placeholder: "Select a country…",
+        closeAfterSelect: true
+    });
+
+    console.log("✅ TomSelect initialized on countrySelect");
+}
+
+
+
+
+
+
+
+async function GoToSettings() {
+    await preloadSettingsData();
+    clearCategoryHighlight();
+
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) {
+        console.error("Viewer element not found.");
+        return;
+    }
+
+    if (typeof removeSortContainer === "function") removeSortContainer();
+
+    viewer.innerHTML = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("settings-panel");
+    wrapper.style.backgroundColor = "var(--SearchBar_Background_Colour)";
+    wrapper.style.color = "var(--Default_Text_Colour)";
+
+    // Theme Toggle
+    const themeSection = document.createElement("div");
+    themeSection.classList.add("settings-section");
+    themeSection.innerHTML = `
+      <h3>Theme</h3>
+      <label for="themeToggle">${TEXTS.GENERAL.DARK_MODE_LABEL}</label>
+      <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider"></span>
+      </label>
+    `;
+
+    // Currency Selector
+    const currencySection = document.createElement("div");
+    currencySection.classList.add("settings-section");
+    currencySection.innerHTML = `
+      <h3>Currency</h3>
+      <label for="currencySelect">Preferred currency:</label>
+      <select id="currencySelect" class="currencySelect tom-hidden" style="width: 100%"></select>
+    `;
+
+    // Country Selector
+    const countrySection = document.createElement("div");
+    countrySection.classList.add("settings-section");
+    countrySection.innerHTML = `
+      <h3>Shipping Country</h3>
+      <label for="countrySelect">Detected: <span id="detected-country"></span></label>
+      <select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
+    `;
+
+    // Clear Data Button
+    const clearSection = document.createElement("div");
+    clearSection.classList.add("settings-section");
+    clearSection.innerHTML = `
+      <h3>Reset</h3>
+      <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
+    `;
+
+    // Contact Form
+
+// Contact Form
+const contactSection = document.createElement("div");
+contactSection.classList.add("settings-section");
+contactSection.innerHTML = `
+  <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
+  <form id="contact-form" autocomplete="off">
+    <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
+    <input type="email" id="contact-email" name="email" autocomplete="email" required>
+
+    <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
+    <textarea id="contact-message" name="message" class="MessageTextArea" required></textarea>
+
+    <!-- honeypot (hidden from humans, should stay empty) -->
+    <div aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;pointer-events:none;">
+      <label for="contact-website">Website</label>
+      <input
+        type="text"
+        id="contact-website"
+        name="contact_website_do_not_fill"
+        autocomplete="new-password"
+        tabindex="-1"
+        inputmode="none"
+        value=""
+        readonly
+      >
     </div>
 
-    <!-- Middle: price summary + profit -->
-    <div id="TopBarDiv_B" class="TopBarDiv_B">
-      <div id="TopBarDiv_B_A" class="TopBarDiv_B_A">
-        <div id="TopBarDiv_B_A_A" class="TopBarDiv_B_A_A">
-          <span
-            id="TopBarDiv_B_A_A_TopBarTotalPricePaidText"
-            class="TopBarDiv_B_A_A_TopBarTotalPricePaidText"
-          >
-            Price paid: ${money(saleTotal0)} ${order.currency}${(order.paymentCurrency && order.paymentCurrency !== "EUR" && Number(order.paidOriginalAmount || 0) > 0) ? ` (≈${money(order.paidOriginalAmount)} ${esc(order.paymentCurrency)})` : ""}
-          </span>
-        </div>
-        <div id="TopBarDiv_B_A_B" class="TopBarDiv_B_A_B">
-          <span
-            id="TopBarDiv_B_A_B_TopBarExpectedPurchasePriceText"
-            class="TopBarDiv_B_A_B_TopBarExpectedPurchasePriceText"
-          >
-            Expected purchase price: ${money(purchaseTotal0)} ${order.currency}
-          </span>
-        </div>
-        <div id="TopBarDiv_B_A_C" class="TopBarDiv_B_A_C">
-          <span
-            id="TopBarDiv_B_A_C_TopBarShippingText"
-            class="TopBarDiv_B_A_C_TopBarShippingText"
-          >
-            Shipping: ${money(shippingSum0)} ${order.currency}
-          </span>
-        </div>
-      </div>
-      <div id="TopBarDiv_B_B" class="TopBarDiv_B_B">
-        <div id="TopBarDiv_B_B_A" class="TopBarDiv_B_B_A">
-          <span
-            id="TopBarDiv_B_B_A_TopBarProfitText"
-            class="TopBarDiv_B_B_A_TopBarProfitText"
-          >
-            Profit: ${money(expectedProfit0)} ${order.currency}
-          </span>
-        </div>
-      </div>
-    </div>
+    <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
+  </form>
 
-    <!-- Right: buttons + times -->
-    <div id="TopBarDiv_C" class="TopBarDiv_C">
-<div id="TopBarDiv_C_A" class="TopBarDiv_C_A">
-  <button
-    id="TopBarDiv_C_A_A_TopBarDownloadButton"
-    class="TopBarDiv_C_A_A"
-    type="button"
-  ></button>
-  <button
-    id="TopBarDiv_C_A_B_SendEmailButton"
-    class="TopBarDiv_C_A_B"
-    type="button"
-  ></button>
-  <button
-    id="TopBarDiv_C_A_C_DoneCheckButton"
-    class="TopBarDiv_C_A_C"
-    type="button"
-  ></button>
-  <button
-    id="TopBarDiv_C_A_D_RefundButton"
-    class="TopBarDiv_C_A_D"
-    type="button"
-  >
-    Refund
-  </button>
-</div>
-
-      </div>
-      <div id="TopBarDiv_C_B" class="TopBarDiv_C_B">
-        <div id="TopBarDiv_C_B_A" class="TopBarDiv_C_B_A">
-          ${emailTimeText}
-        </div>
-        <div id="TopBarDiv_C_B_B" class="TopBarDiv_C_B_B">
-          ${doneTimeText}
-        </div>
-      </div>
-    </div>
-  `;
-  card.appendChild(head);
-
-
-  // ---------- DROPDOWN ----------
-  const drop = document.createElement("div");
-  drop.id = "DropdownDiv"; drop.className = "DropdownDiv";
-
-  drop.innerHTML = `
-  <div id="DropdownDiv_A" class="DropdownDiv_A">
-    <div id="DropdownDiv_A_A" class="DropdownDiv_A_A">
-      <span id="DropdownDiv_A_A_ProductNameText" class="DropdownDiv_A_A_ProductNameText">
-        Product name
-      </span>
-    </div>
-    <div id="DropdownDiv_A_B" class="DropdownDiv_A_B">
-      <span id="DropdownDiv_A_B_SelectedProductText" class="DropdownDiv_A_B_SelectedProductText">
-        Selected product
-      </span>
-    </div>
-    <div id="DropdownDiv_A_C" class="DropdownDiv_A_C">
-      <span id="DropdownDiv_A_C_ProductAmountText" class="DropdownDiv_A_C_ProductAmountText">
-        Amount
-      </span>
-    </div>
-    <div id="DropdownDiv_A_D" class="DropdownDiv_A_D">
-      <span id="DropdownDiv_A_D_ProductUnitPriceText" class="DropdownDiv_A_D_ProductUnitPriceText">
-        Unit price
-      </span>
-    </div>
-    <div id="DropdownDiv_A_E" class="DropdownDiv_A_E">
-      <span id="DropdownDiv_A_E_TotalRowPriceTexT" class="DropdownDiv_A_E_TotalRowPriceTexT">
-        Total sale price
-      </span>
-    </div>
-    <div id="DropdownDiv_A_F" class="DropdownDiv_A_F">
-      <span id="DropdownDiv_A_F_ProductPurchasePriceText" class="DropdownDiv_A_F_ProductPurchasePriceText">
-        Purchase price
-      </span>
-    </div>
-  </div>
-
-  <div id="ProductsContainer" class="ProductsContainer"></div>
-
-  <div id="DropdownDiv_B" class="DropdownDiv_B" aria-hidden="true"></div>
-
-  <div id="DropdownDiv_C" class="DropdownDiv_C">
-    <!-- C_A: shipping cost row with 3 providers + inline sum -->
-    <!-- C_A: shipping cost row with providers, '+' signs and inline sum -->
-    <div id="DropdownDiv_C_A" class="DropdownDiv_C_A">
-      <!-- label row: AliExpress + Third party 1 + Third party 2 -->
-      <div id="DropdownDiv_C_A_A" class="DropdownDiv_C_A_A">
-        <div id="DropdownDiv_C_A_A_A" class="DropdownDiv_C_A_A_A">
-          <span
-            id="DropdownDiv_C_A_A_A_AliexpressText"
-            class="DropdownDiv_C_A_A_A_AliexpressText"
-          >
-            AliExpress
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_A_X1" class="DropdownDiv_C_A_A_X_Plus">
-          <span
-            id="DropdownDiv_C_A_A_X1_PlusText"
-            class="DropdownDiv_C_A_A_X_PlusText"
-          >
-            +
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_A_B" class="DropdownDiv_C_A_A_B">
-          <span
-            id="DropdownDiv_C_A_A_B_ThirdPartyText"
-            class="DropdownDiv_C_A_A_B_ThirdPartyText"
-          >
-            Third party 1
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_A_X2" class="DropdownDiv_C_A_A_X_Plus">
-          <span
-            id="DropdownDiv_C_A_A_X2_PlusText"
-            class="DropdownDiv_C_A_A_X_PlusText"
-          >
-            +
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_A_C" class="DropdownDiv_C_A_A_C">
-          <span
-            id="DropdownDiv_C_A_A_C_ThirdParty2Text"
-            class="DropdownDiv_C_A_A_C_ThirdParty2Text"
-          >
-            Third party 2
-          </span>
-        </div>
-      </div>
-
-      <!-- input row: 3 boxes + inline “Sum of …” on the same band -->
-      <div id="DropdownDiv_C_A_B" class="DropdownDiv_C_A_B">
-        <div id="DropdownDiv_C_A_B_A" class="DropdownDiv_C_A_B_A">
-          <span
-            id="DropdownDiv_C_A_B_A_ShippingCostText"
-            class="DropdownDiv_C_A_B_A_ShippingCostText"
-          >
-            Shipping cost
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_B_B" class="DropdownDiv_C_A_B_B">
-          <input
-            id="DropdownDiv_C_A_B_B_AliexpressInput"
-            class="DropdownDiv_C_A_B_B_AliexpressInput commit"
-            type="text"
-            value="${money(order.shipping.aliExpress || 0)}"
-          >
-        </div>
-
-        <div id="DropdownDiv_C_A_B_X1" class="DropdownDiv_C_A_B_X_Plus">
-          <span
-            id="DropdownDiv_C_A_B_X1_PlusText"
-            class="DropdownDiv_C_A_B_X_PlusText"
-          >
-            +
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_B_C" class="DropdownDiv_C_A_B_C">
-          <input
-            id="DropdownDiv_C_A_B_C_ThirdParty1Input"
-            class="DropdownDiv_C_A_B_C_ThirdParty1Input commit"
-            type="text"
-            value="${money(order.shipping.thirdParty1 || 0)}"
-          >
-        </div>
-
-        <div id="DropdownDiv_C_A_B_X2" class="DropdownDiv_C_A_B_X_Plus">
-          <span
-            id="DropdownDiv_C_A_B_X2_PlusText"
-            class="DropdownDiv_C_A_B_X_PlusText"
-          >
-            +
-          </span>
-        </div>
-
-        <div id="DropdownDiv_C_A_B_D" class="DropdownDiv_C_A_B_D">
-          <input
-            id="DropdownDiv_C_A_B_D_ThirdParty2Input"
-            class="DropdownDiv_C_A_B_D_ThirdParty2Input commit"
-            type="text"
-            value="${money(order.shipping.thirdParty2 || 0)}"
-          >
-        </div>
-
-        <!-- inline “Sum of …” block on the right -->
-        <div id="DropdownDiv_C_A_B_E" class="DropdownDiv_C_A_B_E">
-          <span
-            id="DropdownDiv_C_A_B_E_ShippingCostSumLabel"
-            class="DropdownDiv_C_A_B_E_ShippingCostSumLabel"
-          >
-          
-          </span>
-        </div>
-        <!-- total sale price -->
-        <div id="DropdownDiv_C_B_C" class="DropdownDiv_C_B_C">
-        <div id="DropdownDiv_C_B_C" class="DropdownDiv_C_B_C_A">
-        <span
-          id="DropdownDiv_C_B_C_TotalPriceText"
-          class="DropdownDiv_C_B_C_TotalPriceText"
-        >
-          ${money(saleTotal0)} ${order.currency}
-        </span>
-      </div>
-
-      <!-- total expected purchase price -->
-      <div id="DropdownDiv_C_B_D" class="DropdownDiv_C_B_C_B">
-        <span
-          id="DropdownDiv_C_B_D_TotalPurchasePriceText"
-          class="DropdownDiv_C_B_D_TotalPurchasePriceText"
-        >
-          ${money(purchaseTotal0)} ${order.currency}
-        </span>
-      </div>
-        </div>
-  
-
-      </div>
-    </div>
-
-    <!-- C_B: row under the dashed line → “Shipping cost: Sum of …” + totals -->
-    <div id="DropdownDiv_C_B" class="DropdownDiv_C_B">
-      <div id="DropdownDiv_C_B_A" class="DropdownDiv_C_B_A">
-        <span
-          id="DropdownDiv_C_B_A_ShippingText"
-          class="DropdownDiv_C_B_A_ShippingText"
-        >
-          Shipping cost:
-        </span>
-        <span
-          id="DropdownDiv_C_B_A_ShippingSumLabel"
-          class="DropdownDiv_C_B_A_ShippingSumLabel"
-        >
-          
-        </span>
-      </div>
-
-      <!-- shipping total (same value as above “Sum of …”) -->
-      <div id="DropdownDiv_C_B_B" class="DropdownDiv_C_B_B">
-        <span
-          id="DropdownDiv_C_B_B_ShippingCostSumText"
-          class="DropdownDiv_C_B_B_ShippingCostSumText"
-        >
-          ${money(shippingSum0)} ${order.currency}
-        </span>
-      </div>
-
-      <div id="DropdownDiv_C_B_C" class="DropdownDiv_C_B_C">
-      <div id="DropdownDiv_C_B_C" class="DropdownDiv_C_B_C_A">
-      <span id="DropdownDiv_C_B_C_TotalPriceText" class="DropdownDiv_C_B_C_TotalPriceText">
-        47.47 EUR
-      </span>
-    </div>
-
-    <!-- total expected purchase price -->
-    <div id="DropdownDiv_C_B_D" class="DropdownDiv_C_B_C_B">
-      <span id="DropdownDiv_C_B_D_TotalPurchasePriceText" class="DropdownDiv_C_B_D_TotalPurchasePriceText">
-        40.00 EUR
-      </span>
-    </div>
-      </div>
-    </div>
-
-
-    <!-- C_C: expected profit equation -->
-    <div id="DropdownDiv_C_C" class="DropdownDiv_C_C">
-      <div id="DropdownDiv_C_C_A" class="DropdownDiv_C_C_A">
-        <span id="DropdownDiv_C_C_A_ShippingCostText" class="DropdownDiv_C_C_A_ShippingCostText">
-          Expected profit
-        </span>
-      </div>
-      <div id="DropdownDiv_C_C_B" class="DropdownDiv_C_C_B">
-        <span id="DropdownDiv_C_C_B_ProfitCalculationText" class="DropdownDiv_C_C_B_ProfitCalculationText">
-          ${money(saleTotal0)} − (${money(purchaseTotal0)} + ${money(shippingSum0)})
-        </span>
-      </div>
-      <div id="DropdownDiv_C_C_C" class="DropdownDiv_C_C_C">
-        <span id="DropdownDiv_C_C_C_EqualsSign" class="DropdownDiv_C_C_C_EqualsSign">=</span>
-      </div>
-      <div id="DropdownDiv_C_C_D" class="DropdownDiv_C_C_D">
-        <span id="DropdownDiv_C_C_D_ProfitText" class="DropdownDiv_C_C_D_ProfitText">
-          ${money(expectedProfit0)} ${order.currency}
-        </span>
-      </div>
-    </div>
-
-    <!-- C_C_D: bottom band (name / address / currency + button) -->
-    <div id="DropdownDiv_C_C_D" class="DropdownDiv_C_C_D">
-      <div id="DropdownDiv_C_C_D_A" class="DropdownDiv_C_C_D_A">
-        <div id="DropdownDiv_C_C_D_A_A" class="DropdownDiv_C_C_D_A_A">
-          <span
-            id="DropdownDiv_C_C_D_A_A_UserName"
-            class="DropdownDiv_C_C_D_A_A_UserName copyable"
-            data-copy="${esc(order.customer.name)}"
-          >
-            Name: ${esc(order.customer.name)}
-          </span>
-        </div>
-        <div id="DropdownDiv_C_C_D_A_B" class="DropdownDiv_C_C_D_A_B">
-          <span
-            id="DropdownDiv_C_C_D_A_B_UserSurname"
-            class="DropdownDiv_C_C_D_A_B_UserSurname copyable"
-            data-copy="${esc(order.customer.surname)}"
-          >
-            Surname: ${esc(order.customer.surname)}
-          </span>
-        </div>
-      </div>
-
-      <div id="DropdownDiv_C_C_D_B" class="DropdownDiv_C_C_D_B">
-        <div id="DropdownDiv_C_C_D_B_A" class="DropdownDiv_C_C_D_B_A">
-          <span
-            id="DropdownDiv_C_C_D_B_A_UserCountry"
-            class="DropdownDiv_C_C_D_B_A_UserCountry copyable"
-            data-copy="${esc(order.customer.country)}"
-          >
-            Country: ${esc(order.customer.country)}
-          </span>
-        </div>
-        <div id="DropdownDiv_C_C_D_B_B" class="DropdownDiv_C_C_D_B_B">
-          <span
-            id="DropdownDiv_C_C_D_B_B_UserCity"
-            class="DropdownDiv_C_C_D_B_B_UserCity copyable"
-            data-copy="${esc(order.customer.city)}"
-          >
-            City: ${esc(order.customer.city)}
-          </span>
-        </div>
-        <div id="DropdownDiv_C_C_D_B_C" class="DropdownDiv_C_C_D_B_C">
-          <span
-            id="DropdownDiv_C_C_D_B_C_UserAddress"
-            class="DropdownDiv_C_C_D_B_C_UserAddress copyable"
-            data-copy="${esc(order.customer.address)}"
-          >
-            Address: ${esc(order.customer.address)}
-          </span>
-        </div>
-        <div id="DropdownDiv_C_C_D_B_D" class="DropdownDiv_C_C_D_B_D">
-          <span
-            id="DropdownDiv_C_C_D_B_D_UserPostalCode"
-            class="DropdownDiv_C_C_D_B_D_UserPostalCode copyable"
-            data-copy="${esc(order.customer.postalCode)}"
-          >
-            Postal code: ${esc(order.customer.postalCode)}
-          </span>
-        </div>
-      </div>
-
-      <div id="DropdownDiv_C_C_D_C" class="DropdownDiv_C_C_D_C">
-        <div id="DropdownDiv_C_C_D_C_A" class="DropdownDiv_C_C_D_C_A">
-          <span id="DropdownDiv_C_C_D_C_A_UserCurrencyText" class="DropdownDiv_C_C_D_C_A_UserCurrencyText">
-            User currency: ${order.currency}
-          </span>
-        </div>
-        <div id="DropdownDiv_C_C_D_C_B" class="DropdownDiv_C_C_D_C_B">
-          <button
-            id="DropdownDiv_C_C_D_C_B_SubmitSendEmailMarkDoneButton"
-            class="DropdownDiv_C_C_D_C_B_SubmitSendEmailMarkDoneButton"
-            type="button"
-          >
-            Submit + Send + Mark done
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <p class="contact-note">If the form doesn't work, email us at
+    <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
+  </p>
 `;
 
 
 
-  card.appendChild(drop);
-  applyFinancialTexts(saleTotal0, purchaseTotal0, shippingPlusFees0, expectedProfit0);
-  // ---------- PRODUCTS ----------
-  const pc = drop.querySelector("#ProductsContainer");
-  pc.innerHTML = "";
-  order.products.forEach((p, i) => {
-    const row = document.createElement("div");
-    row.id = `ProductDiv_${i}`; row.className = "ProductDiv";
-    // Build row safely (no innerHTML / no inline attributes)
-    const a = document.createElement("div");
-    a.id = `ProductDiv_A_${i}`;
-    a.className = "ProductDiv_A";
-
-    const btn = document.createElement("button");
-    btn.id = `ProductDiv_A_A_ProductNameText_${i}`;
-    btn.className = "ProductDiv_A_A_ProductNameText copyable";
-    btn.title = "Copy AliExpress URL";
-    btn.dataset.copy = String(p.url || "");
-    btn.textContent = String(p.name || "");
-    a.appendChild(btn);
-
-    const b = document.createElement("div");
-    b.id = `ProductDiv_B_${i}`;
-    b.className = "ProductDiv_B";
-    const sel = document.createElement("span");
-    sel.id = `ProductDiv_B_SelectedProductText_${i}`;
-    sel.className = "ProductDiv_B_SelectedProductText";
-    sel.textContent = String(p.selected || "");
-    b.appendChild(sel);
-
-    const c = document.createElement("div");
-    c.id = `ProductDiv_C_${i}`;
-    c.className = "ProductDiv_C";
-    const amt = document.createElement("span");
-    amt.id = `ProductDiv_C_ProductAmountText_${i}`;
-    amt.className = "ProductDiv_C_ProductAmountText";
-    amt.textContent = String(p.amount ?? "");
-    c.appendChild(amt);
-
-    const d = document.createElement("div");
-    d.id = `ProductDiv_D_${i}`;
-    d.className = "ProductDiv_D";
-    const unit = document.createElement("span");
-    unit.id = `ProductDiv_D_ProductUnitPriceText_${i}`;
-    unit.className = "ProductDiv_D_ProductUnitPriceText";
-    unit.textContent = money(p.unitPrice);
-    d.appendChild(unit);
-
-    const e = document.createElement("div");
-    e.id = `ProductDiv_E_${i}`;
-    e.className = "ProductDiv_E";
-    const total = document.createElement("span");
-    total.id = `ProductDiv_E_ProductTotalPrice_${i}`;
-    total.className = "ProductDiv_E_ProductTotalPrice";
-    total.textContent = money(p.totalSale ?? p.amount * p.unitPrice);
-    e.appendChild(total);
-
-    const f = document.createElement("div");
-    f.id = `ProductDiv_F_${i}`;
-    f.className = "ProductDiv_F";
-    const inp = document.createElement("input");
-    inp.id = `ProductDiv_F_ProductPurchasePriceInputText_${i}`;
-    inp.className = "ProductDiv_F_ProductPurchasePriceInputText commit";
-    inp.type = "text";
-    inp.value = money(p.expectedPurchase ?? p.purchasePrice ?? 0);
-    inp.dataset.kind = "expectedPurchase";
-    inp.dataset.index = String(i);
-    f.appendChild(inp);
-
-    row.appendChild(a);
-    row.appendChild(b);
-    row.appendChild(c);
-    row.appendChild(d);
-    row.appendChild(e);
-    row.appendChild(f);
-
-    pc.appendChild(row);
-  });
-
-  // ---------- BEHAVIOUR ----------
-  head.addEventListener("click", (e) => {
-    if (e.target.closest("button")) return;
-    if (state.openOrderId === order.id) { closeDropbar(card); state.openOrderId = null; }
-    else { openDropbar(card); state.openOrderId = order.id; }
-  });
-
-  // copy-on-click (ID, name, address, ALI URL, etc.)
-  card.addEventListener("click", (e) => {
-    const v = e.target?.dataset?.copy;
-    if (v != null) {
-      navigator.clipboard.writeText(String(v));
-      toast("Copied", String(v));
-      e.stopPropagation();
-    }
-  });
-
-  // icon buttons
-  const downloadBtn = card.querySelector("#TopBarDiv_C_A_A_TopBarDownloadButton");
-  if (downloadBtn) {
-    downloadBtn.onclick = (e) => {
-      e.stopPropagation();
-      downloadOrderExcel(order);
-    };
-  }
-
-  const sendBtn = card.querySelector("#TopBarDiv_C_A_B_SendEmailButton");
-  if (sendBtn) {
-    sendBtn.onclick = (e) => {
-      e.stopPropagation();
-      sendEmail(order);
-    };
-  }
-
-  const doneBtn = card.querySelector("#TopBarDiv_C_A_C_DoneCheckButton");
-  if (doneBtn) {
-    doneBtn.onclick = (e) => {
-      e.stopPropagation();
-      toggleDone(order);
-    };
-  }
-
-  const refundBtn = card.querySelector("#TopBarDiv_C_A_D_RefundButton");
-  if (refundBtn) {
-    refundBtn.onclick = async (e) => {
-      e.stopPropagation();
-      await handleRefund(order);
-    };
-  }
-
-
-  // submit + send + mark done
-  const submitBtn = card.querySelector("#DropdownDiv_C_C_D_C_B_SubmitSendEmailMarkDoneButton");
-  if (submitBtn) {
-    submitBtn.onclick = async () => {
-      try {
-        await ensureLogin();
-        await persistEdits(order);       // ✅ save order edits (purchase + shipping)
-        await applyPricesAndSave(order); // ✅ update catalog prices
-        await sendEmail(order);
-        if (!order.doneAt) await toggleDone(order);
-        toast("Saved", "Submitted");
-      } catch (e) {
-        toast("Error", String(e?.message || e));
-      }
-    };
-  }
-
-
-  // commit on Enter (purchase & shipping)
-  // commit on Enter (purchase & shipping)
-  card.querySelectorAll("input.commit").forEach(input => {
-    input.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
-
-      // 1) update underlying data
-      if (input.dataset.kind === "expectedPurchase") {
-        const idx = Number(input.dataset.index);
-        order.products[idx].expectedPurchase = Number(input.value || 0);
-      }
-
-      if (input.id === "DropdownDiv_C_A_B_B_AliexpressInput") {
-        order.shipping.aliExpress = Number(input.value || 0);
-      }
-      if (input.id === "DropdownDiv_C_A_B_C_ThirdParty1Input") {
-        order.shipping.thirdParty1 = Number(input.value || 0);
-      }
-      if (input.id === "DropdownDiv_C_A_B_D_ThirdParty2Input") {
-        order.shipping.thirdParty2 = Number(input.value || 0);
-      }
-
-      // 2) recompute totals from updated data
-      const saleTotal = Number(order.paidEUR || 0);
-      const purchaseTotal = order.products.reduce(
-        (s, p) => s + Number(p.expectedPurchase || p.purchasePrice || 0) * p.amount,
-        0
-      );
-      const shipOnly =
-        Number(order.shipping.aliExpress || 0) +
-        Number(order.shipping.thirdParty1 || 0) +
-        Number(order.shipping.thirdParty2 || 0);
-      const stripeFee = Number(order.stripeFeeEUR || 0);
-      const shipPlusFees = shipOnly + stripeFee;
-      const profit = saleTotal - (purchaseTotal + shipPlusFees);
-
-      // 3) update ALL visuals for this card
-      applyFinancialTexts(saleTotal, purchaseTotal, shipPlusFees, profit);
-
-      // 4) persist + UX
-      saveOrders(state.orders);
-      input.blur();
-      toast("Saved", "Values committed");
-      persistEdits(order).catch(console.error);
-    });
-
-    input.addEventListener("click", () => input.select());
-  });
-
-
-  return card;
-}
-
-// OPEN/CLOSE helpers
-function openDropbar(card) {
-  closeAllDropbars();
-  card.classList.add('open');
-  const db = card.querySelector('#DropdownDiv');
-  if (db) { db.style.maxHeight = db.scrollHeight + 'px'; }
-  _setExtraGap(card);
-  _attachGapObserver(card);
-  state.openOrderId = card.dataset.id || state.openOrderId;
-}
-function closeDropbar(card) {
-  card.classList.remove('open');
-  const db = card.querySelector('#DropdownDiv');
-  if (db) { db.style.maxHeight = '0px'; }
-  card.style.setProperty('--extra-gap', '0px');
-  _detachGapObserver(card);
-}
-function closeAllDropbars() {
-  document.querySelectorAll(".OrderCardDiv.open").forEach(c => closeDropbar(c));
-}
-async function adminDownloadLocalServerProducts() {
-  const r = await fetch(`${_adminBase()}/admin/products/local/download`, {
-    method: "GET",
-    headers: _adminHeaders(false)
-  });
-  if (!r.ok) throw new Error(`Download failed (${r.status})`);
-
-  const blob = await r.blob();
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "ServerProducts.js";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  URL.revokeObjectURL(url);
-}
-
-async function adminReplaceLocalServerProductsFromFile(file) {
-  if (!file) throw new Error("No file selected");
-
-  const text = await file.text();
-  const headers = _adminHeaders(false);
-  headers["Content-Type"] = "text/plain; charset=utf-8";
-
-  const r = await fetch(`${_adminBase()}/admin/products/local/replace`, {
-    method: "POST",
-    headers,
-    body: text
-  });
-
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(out.error || `Upload failed (${r.status})`);
-  return out;
-}
-
-// Load the bundled Management Frontend/ServerProducts.js, extract the exported object, and upload as strict JSON.
-// This avoids backend 400s caused by non-JSON formats such as `const products = {...}; module.exports = products;`.
-function _parseServerProductsModuleToObject(jsText) {
-  const src = String(jsText || "").replace(/^\uFEFF/, "");
-
-  // Allow simple ESM form too.
-  const code = src.replace(/\bexport\s+default\b/g, "module.exports =");
-
-  const module = { exports: undefined };
-  const exports = {};
-  const require = () => { throw new Error("require() is disabled in ServerProducts parser"); };
-
-  // Evaluate in a minimal sandbox.
-  const fn = new Function("module", "exports", "require", `${code}\n; return (module.exports !== undefined ? module.exports : exports);`);
-  const out = fn(module, exports, require);
-  const obj = (module.exports !== undefined ? module.exports : out);
-  if (!obj || typeof obj !== "object") {
-    throw new Error("Bundled ServerProducts.js did not export an object");
-  }
-  return obj;
-}
-
-async function adminReplaceLocalServerProductsFromBundledFile() {
-  const r = await fetch("./ServerProducts.js", { cache: "no-store" });
-  if (!r.ok) throw new Error(`Failed to load bundled ServerProducts.js (${r.status})`);
-  const jsText = await r.text();
-  const obj = _parseServerProductsModuleToObject(jsText);
-  const jsonText = JSON.stringify(obj, null, 2);
-
-  const headers = _adminHeaders(false);
-  headers["Content-Type"] = "text/plain; charset=utf-8";
-
-  const up = await fetch(`${_adminBase()}/admin/products/local/replace`, {
-    method: "POST",
-    headers,
-    body: jsonText
-  });
-  const out = await up.json().catch(() => ({}));
-  if (!up.ok) throw new Error(out.error || `Upload failed (${up.status})`);
-  return out;
-}
-
-window.adminApi = window.adminApi || {}; Object.assign(window.adminApi, {
-  downloadLocalServerProducts: adminDownloadLocalServerProducts,
-  replaceLocalServerProductsFromFile: adminReplaceLocalServerProductsFromFile,
-  replaceLocalServerProductsFromBundledFile: adminReplaceLocalServerProductsFromBundledFile
-});
-
-// ===== Refund API adapter =====
-async function adminRefundOrder(orderId, { amount, reason, note } = {}) {
-  if (!orderId) throw new Error("refundOrder: orderId is required");
-
-  const body = {};
-  if (amount != null) body.amount = Number(amount);
-  if (reason) body.reason = String(reason);
-  if (note) body.note = String(note);
-
-  const r = await fetch(`${_adminBase()}/admin/orders/${encodeURIComponent(orderId)}/refund`, {
-    method: "POST",
-    headers: _adminHeaders(true),
-    body: JSON.stringify(body)
-  });
-
-  if (!r.ok) {
-    let msg = `refundOrder HTTP ${r.status}`;
-    try {
-      const t = await r.text();
-      if (t) msg += `: ${t}`;
-    } catch (_) { }
-    throw new Error(msg);
-  }
-
-  return r.json();
-}
-async function handleRefund(order) {
-  if (!order || !order.id) return;
-
-  // Use server-paid total (EUR) for refunds/info
-  const saleTotal = Number(order.paidEUR || 0);
-  const amountText = saleTotal > 0
-    ? `${saleTotal.toFixed(2)} ${order.currency || "EUR"} (full remaining amount)`
-    : "full remaining amount";
-
-  const msg =
-    `Do you really want to send a REFUND for order ${esc(order.id)}?\n\n` +
-    `Amount: ${amountText}\n\n` +
-    `Press OK to create the refund in Stripe.\n` +
-    `Press Cancel to abort and do nothing.`;
-
-  const ok = window.confirm(msg);
-  if (!ok) {
-    toast("Cancelled", "Refund not sent");
-    return;
-  }
-
-  try {
-    await ensureLogin();
-    // Full refund (no explicit amount) – server will use remaining amount
-    const res = await adminApi.refundOrder(order.id, {});
-
-    const refund = res?.refund || {};
-    const orderFromServer = res?.order || {};
-
-    // Nice amount text from minor units
-    let refundAmountText = "";
-    if (typeof refund.amountMinor === "number" && refund.amountMinor > 0) {
-      const dec = (refund.amountMinor / 100).toFixed(2);
-      const cur = (refund.currency || order.currency || "EUR").toUpperCase();
-      refundAmountText = `${dec} ${cur}`;
-    }
-
-    toast(
-      "Refund created",
-      refundAmountText
-        ? `Refund ${refund.id || ""} for ${refundAmountText}`
-        : `Refund ${refund.id || ""} created`
-    );
-
-    // Optionally update local order state with status from backend
-    if (orderFromServer.status) {
-      order.status = orderFromServer.status;
-    }
-    if (orderFromServer.stripe) {
-      order.stripe = orderFromServer.stripe;
-    }
-
-    saveOrders(state.orders);
-    render();
-  } catch (e) {
-    toast("Error", String(e?.message || e));
-  }
-}
-
-// expose on global adminApi
-window.adminApi = window.adminApi || {}; Object.assign(window.adminApi, {
-  refundOrder: adminRefundOrder
-});
-
-
-// Excel exports
-async function downloadOrderExcel(order) {
-  const rows = [];
-  rows.push(["Order ID", order.id]);
-  rows.push(["Created", niceDateTime(order.createdAt)]);
-  rows.push(["Customer", `${esc(order.customer.name)} ${esc(order.customer.surname)}`]);
-  rows.push(["Address", order.customer.address]);
-  rows.push(["City", order.customer.city]);
-  rows.push(["Postal Code", order.customer.postalCode]);
-  rows.push(["Country", order.customer.country]);
-  rows.push([]);
-  rows.push(["Products"]);
-  rows.push(["Name", "Qty", "Unit Price", "Sale Total", "Expected Purchase", "URL"]);
-  order.products.forEach(p => rows.push([p.name, p.amount, p.unitPrice, p.totalSale, p.expectedPurchase, p.url]));
-  const shippingTotal = Object.values(order.shipping).reduce((a, b) => a + Number(b || 0), 0);
-  const expectedPurchaseTotal = order.products.reduce((s, p) => s + Number(p.expectedPurchase || 0) * p.amount, 0);
-  const saleTotal = order.products.reduce((s, p) => s + (p.totalSale ?? (p.amount * p.unitPrice)), 0);
-
-  const expectedProfit = saleTotal - (expectedPurchaseTotal + shippingTotal);
-  rows.push([]);
-  rows.push(["Shipping Total", shippingTotal]);
-  rows.push(["Expected Purchase Total", expectedPurchaseTotal]);
-  rows.push(["Sale Total", saleTotal]);
-  rows.push(["Expected Profit", expectedProfit]);
-
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Order");
-  XLSX.writeFile(wb, `${esc(order.id)}.xlsx`);
-}
-async function downloadOrdersExcel(orders, label = "orders") {
-  const rows = [["Order ID", "Date", "Customer", "Sale Total", "Expected Purchase Total", "Shipping Total", "Expected Profit", "Done At", "Email Sent At"]];
-  for (const o of orders) {
-    const shippingTotal = Object.values(o.shipping).reduce((a, b) => a + Number(b || 0), 0);
-    const expectedPurchaseTotal = o.products.reduce((s, p) => s + Number(p.expectedPurchase || 0) * p.amount, 0);
-    const saleTotal = o.products.reduce((s, p) => s + p.totalSale, 0);
-    const expectedProfit = saleTotal - (expectedPurchaseTotal + shippingTotal);
-    rows.push([
-      o.id,
-      niceDate(o.createdAt),
-      `${o.customer.name} ${o.customer.surname}`,
-      saleTotal,
-      expectedPurchaseTotal,
-      shippingTotal,
-      expectedProfit,
-      o.doneAt ? niceDateTime(o.doneAt) : "",
-      o.emailSentAt ? niceDateTime(o.emailSentAt) : ""
-    ]);
-  }
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Orders");
-  XLSX.writeFile(wb, `${label}.xlsx`);
-}
-
-// ======= Settings modal (drag order + defaults) =======
-// ======= Settings modal (drag order + defaults + API base/admin code) =======
-function setupSettingsModal() {
-  const m = document.getElementById("settingsModal");
-  if (!m) return;
-
-  // Close handlers
-  m.querySelectorAll("[data-close-modal]").forEach(b => {
-    b.addEventListener("click", closeSettingsModal);
-  });
-
-  const closeBtn = document.getElementById("settingsClose");
-  const saveBtn = document.getElementById("settingsSave");
-  if (closeBtn) closeBtn.onclick = closeSettingsModal;
-
-  if (saveBtn) {
-    saveBtn.onclick = () => {
-      // 1) Save UI preferences (row order + default dates)
-      const items = Array.from(document.querySelectorAll("#dragList .drag-item")).map(el => el.dataset.id).filter(Boolean);
-      if (items.length) state.settings.rowOrder = items;
-
-      const defSince = document.querySelector("input[name='defSince']:checked")?.value || "today";
-      state.settings.defaultSince =
-        defSince === "specific"
-          ? (document.getElementById("defSinceDate")?.value || "today")
-          : defSince;
-
-      const defTill = document.querySelector("input[name='defTill']:checked")?.value || "startOfYear";
-      state.settings.defaultTill = defTill;
-      state.settings.defaultTillDate = document.getElementById("defTillDate")?.value || undefined;
-      state.settings.tillRollToCurrentYear = !!document.getElementById("rollYear")?.checked;
-
-      saveSettings(state.settings);
-
-      // 2) Save API wiring (used by ensureLogin/adminApi)
-      try {
-        const apiBaseEl = document.getElementById("apiBaseInput");
-        const adminCodeEl = document.getElementById("adminCodeInput");
-        try { window.graphEngine?.setAdminApi?.(window.adminApi); } catch { }
-
-        const rawBase = String(apiBaseEl?.value || "").trim().replace(/\/+$/, "");
-        if (rawBase) {
-          window.adminApi?.setApiBase?.(rawBase);
-        } else {
-          localStorage.removeItem("api_base");
-        }
-
-        const rawCode = String(adminCodeEl?.value || "").trim();
-        if (rawCode) {
-          window.adminApi?.setAdminCode?.(rawCode);
-        } else {
-          localStorage.removeItem("admin_code");
-        }
-      } catch (e) {
-        console.error("Saving API settings failed:", e);
-      }
-
-      closeSettingsModal();
-      render();
-      toast("Saved", "Settings updated");
-    };
-  }
-}
-
-function openSettingsModal() {
-  const m = document.getElementById("settingsModal");
-  if (!m) return;
-
-  // Populate drag list
-  const list = document.getElementById("dragList");
-  if (list) {
-    list.innerHTML = "";
-    (state.settings.rowOrder || DEFAULT_ROW_ORDER).forEach(id => {
-      const el = document.createElement("div");
-      el.className = "drag-item";
-      el.dataset.id = id;
-      el.innerHTML = `<span>${labelize(id)}</span><span class="meta">drag</span>`;
-      list.appendChild(el);
-    });
-
-    // Init Sortable once (if library is present)
-    try {
-      if (window.Sortable && !list._sortableInstance) {
-        list._sortableInstance = new Sortable(list, { animation: 150, ghostClass: "drag-ghost" });
-      }
-    } catch (e) {
-      console.warn("Sortable init failed:", e);
-    }
-  }
-
-  // Populate default since
-  const sinceVal = state.settings.defaultSince;
-  document.querySelectorAll("input[name='defSince']").forEach(r => {
-    const v = r.value;
-    r.checked = (v === sinceVal) || (v === "specific" && sinceVal !== "today" && sinceVal !== "yesterday");
-  });
-  const defSinceDate = document.getElementById("defSinceDate");
-  if (defSinceDate) {
-    defSinceDate.value =
-      (sinceVal && sinceVal !== "today" && sinceVal !== "yesterday")
-        ? toLocalDateKey(sinceVal)
-        : toLocalDateKey(new Date());
-  }
-
-  // Populate default till
-  document.querySelectorAll("input[name='defTill']").forEach(r => {
-    r.checked = (r.value === state.settings.defaultTill);
-  });
-  const defTillDate = document.getElementById("defTillDate");
-  if (defTillDate) {
-    defTillDate.value = state.settings.defaultTillDate
-      ? toLocalDateKey(state.settings.defaultTillDate)
-      : toLocalDateKey(startOfYear(new Date()));
-  }
-  const roll = document.getElementById("rollYear");
-  if (roll) roll.checked = !!state.settings.tillRollToCurrentYear;
-
-  // Populate API wiring fields
-  const apiBaseEl = document.getElementById("apiBaseInput");
-  if (apiBaseEl) apiBaseEl.value = String(localStorage.getItem("api_base") || "").trim();
-
-  const adminCodeEl = document.getElementById("adminCodeInput");
-  if (adminCodeEl) adminCodeEl.value = String(localStorage.getItem("admin_code") || "").trim();
-
-  m.classList.remove("hidden");
-  m.setAttribute("aria-hidden", "false");
-}
-
-function closeSettingsModal() {
-  const m = document.getElementById("settingsModal");
-  if (!m) return;
-  m.classList.add("hidden");
-  m.setAttribute("aria-hidden", "true");
-}
-function labelize(key) {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, m => m.toUpperCase());
-}
-// --- drop-in replacements in scriptA.js ---
-// Helper URLs/headers (use your existing ones if already present)
-function _adminBase() {
-  // Use the same API-base resolver as the rest of the admin UI (supports <meta name="api-base"> and stored base).
-  try {
-    if (typeof getApiBase === "function") {
-      const b = getApiBase({ preferStored: true });
-      if (b) return String(b).replace(/\/\/+$/, "");
-    }
-  } catch { /* ignore */ }
-
-  // Legacy fallback
-  return (localStorage.getItem("api_base") || location.origin).replace(/\/\/+$/, "");
-}
-function _adminHeaders(json = true) {
-  const h = json ? { "Content-Type": "application/json" } : {};
-  const token = localStorage.getItem("api_token") || "";
-  const code = localStorage.getItem("admin_code") || "";
-  if (token) h.Authorization = `Bearer ${token}`;
-  if (code) h["X-Admin-Code"] = code;
-  return h;
-}
-
-// ---- authHeaders() compatibility alias (older code paths) ----
-function authHeaders(json = false) {
-  try { return _adminHeaders(!!json); } catch { return {}; }
-}
-
-
-// Drop-in replacement
-async function adminUpdateProductPrice({ productLink, name, newRetailPriceEUR, purchasePriceEUR }) {
-  const body = { productLink, name };
-  if (purchasePriceEUR != null) body.purchasePriceEUR = Number(purchasePriceEUR) || 0;
-  if (newRetailPriceEUR != null) body.newRetailPriceEUR = Number(newRetailPriceEUR) || 0;
-
-  if (!body.productLink && !body.name) {
-    throw new Error("updateProductPrice: productLink or name is required");
-  }
-
-  const r = await fetch(`${_adminBase()}/admin/product-price`, {
-    method: "PATCH",
-    headers: _adminHeaders(true),
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) {
-    const t = await r.text().catch(() => "");
-    throw new Error(`updateProductPrice HTTP ${r.status} ${t}`);
-  }
-  return r.json();
-}
-
-// Expose on the global adapter
-window.adminApi = window.adminApi || {}; Object.assign(window.adminApi, {
-  updateProductPrice: adminUpdateProductPrice
-});
-async function adminExportExcel({ from, to, limit = 10000 } = {}) {
-  await ensureLogin();
-  const params = new URLSearchParams();
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-  if (limit) params.set("limit", String(limit));
-  // The route is auth-protected, so we pass the bearer token via a temporary fetch+blob download
-  const r = await fetch(`${_adminBase()}/admin/export/orders.xlsx?${params}`, {
-    headers: _adminHeaders(false)
-  });
-  if (!r.ok) throw new Error(`exportExcel HTTP ${r.status}`);
-  const blob = await r.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "orders.xlsx";
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(url);
-  a.remove();
-}
-window.adminApi = window.adminApi || {}; Object.assign(window.adminApi, { exportExcel: adminExportExcel });
-
-async function applyPricesAndSave(order) {
-  await ensureLogin();
-
-  for (const p of order.products) {
-    const purchaseEUR = Number(p.expectedPurchase || p.purchasePrice || 0);
-    if (!purchaseEUR) continue;
-
-    // Prefer product link when you have it; fallback to name.
-    const payload = {
-      productLink: p.url || undefined,
-      name: p.name || undefined,
-      purchasePriceEUR: purchaseEUR
-      // newRetailPriceEUR: computeNewRetailEUR(purchaseEUR) ?? undefined
-    };
-
-    try {
-      await adminApi.updateProductPrice(payload);
-    } catch (err) {
-      console.warn("updateProductPrice failed for", p.name, err);
-    }
-  }
-}
-
-
-
-async function persistEdits(order) {
-  await ensureLogin();
-
-  // Accounting currency is EUR; do not overwrite server-paid totals.
-  const saleTotalEUR = Number(order.paidEUR || 0);
-
-  const purchaseTotalEUR = order.products.reduce(
-    (s, p) => s + (Number(p.expectedPurchase || p.purchasePrice || 0) * Number(p.amount || 1)),
-    0
-  );
-
-  const shippingOnlyEUR =
-    Number(order.shipping?.aliExpress || 0) +
-    Number(order.shipping?.thirdParty1 || 0) +
-    Number(order.shipping?.thirdParty2 || 0);
-
-  const stripeFeeEUR = Number(order.stripeFeeEUR || 0);
-  const profitPreviewEUR = saleTotalEUR - (purchaseTotalEUR + shippingOnlyEUR + stripeFeeEUR);
-
-  // Encode a compact internal note for quick review
-  const note = [
-    `expectedPurchaseTotal=${purchaseTotalEUR.toFixed(2)}`,
-    `shippingOnly=${shippingOnlyEUR.toFixed(2)}`,
-    `stripeFee=${stripeFeeEUR.toFixed(2)}`,
-    `profitPreview=${profitPreviewEUR.toFixed(2)}`,
-    `editedAt=${new Date().toISOString()}`
-  ].join(";");
-
-  const itemsPatch = order.products.map((p, index) => ({
-    index,
-    expectedPurchase: Number((Number(p.expectedPurchase || 0)).toFixed(2))
-  }));
-
-  const patch = {
-    pricing: { note },
-    operator: {
-      shipping: {
-        aliExpress: Number(order.shipping?.aliExpress || 0),
-        thirdParty1: Number(order.shipping?.thirdParty1 || 0),
-        thirdParty2: Number(order.shipping?.thirdParty2 || 0)
-      }
-    },
-    itemsPatch
-  };
-
-  await adminApi.patchOrder(order.id, patch);
-}
-
-
-async function getProducts() {
-  const r = await fetch(`${_adminBase()}/products`, { headers: _adminHeaders(false) });
-  if (!r.ok) throw new Error(`getProducts HTTP ${r.status}`);
-  const payload = await r.json();
-
-  // New shape: { catalog, config }
-  if (payload && typeof payload === "object" && payload.catalog && typeof payload.catalog === "object") {
-    return payload.catalog;
-  }
-  return payload;
-}
-// expose (without overwriting updateProductPrice)
-window.adminApi = window.adminApi || {}; Object.assign(window.adminApi, { getProducts });
-
-
-
-async function updateProductPrice({ productId, slug, sku, pricePath, newPrice }) {
-  const payload = { newPrice: Number(newPrice) };
-  if (productId) payload.productId = String(productId);
-  else if (slug) payload.slug = String(slug);
-  else if (sku) payload.sku = String(sku);
-  if (pricePath) payload.path = String(pricePath);
-  const r = await fetch(u("product-price"), { method: "PATCH", headers: headers(), body: JSON.stringify(payload) });
-  if (!r.ok) throw new Error(`updateProductPrice HTTP ${r.status}`);
-  return r.json();
-}
-window.adminApi = window.adminApi || {}; Object.assign(window.adminApi, {
-  updateProductPrice: adminUpdateProductPrice
-});
-
-
-
-
-// ===== Generic admin helpers (non-conflicting) =====
-async function _adminFetchJson(url, { method = "GET", headers, body } = {}) {
-  const r = await fetch(url, { method, headers, body });
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(out?.error || `HTTP ${r.status}`);
-  return out;
-}
-
-async function _adminFetchText(url, { method = "GET", headers, body } = {}) {
-  const r = await fetch(url, { method, headers, body });
-  const t = await r.text().catch(() => "");
-  if (!r.ok) throw new Error(t || `HTTP ${r.status}`);
-  return t;
-}
-
-function _adminDownloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-// ===== Tariffs (data/tariffs/tariffs.json) =====
-async function adminFetchLocalTariffsText() {
-  return _adminFetchText(`${_adminBase()}/admin/tariffs/download`, {
-    method: "GET",
-    headers: _adminHeaders(false)
-  });
-}
-
-async function adminDownloadLocalTariffs() {
-  const r = await fetch(`${_adminBase()}/admin/tariffs/download`, {
-    method: "GET",
-    headers: _adminHeaders(false)
-  });
-  if (!r.ok) throw new Error(`Download failed (${r.status})`);
-
-  const blob = await r.blob();
-  _adminDownloadBlob(blob, "tariffs.json");
-}
-
-async function adminReplaceLocalTariffsFromText(jsonText) {
-  if (typeof jsonText !== "string" || !jsonText.trim()) {
-    throw new Error("replaceTariffs: jsonText is required");
-  }
-
-  // Validate JSON before sending
-  JSON.parse(jsonText);
-
-  const headers = _adminHeaders(false);
-  headers["Content-Type"] = "text/plain; charset=utf-8";
-
-  return _adminFetchJson(`${_adminBase()}/admin/tariffs/replace`, {
-    method: "POST",
-    headers,
-    body: jsonText
-  });
-}
-
-async function adminReplaceLocalTariffsFromObject(obj) {
-  if (!obj || typeof obj !== "object") {
-    throw new Error("replaceTariffs: object is required");
-  }
-  return _adminFetchJson(`${_adminBase()}/admin/tariffs/replace`, {
-    method: "POST",
-    headers: _adminHeaders(true),
-    body: JSON.stringify(obj)
-  });
-}
-
-async function adminReplaceLocalTariffsFromFile(file) {
-  if (!file) throw new Error("No file selected");
-  const text = await file.text();
-  return adminReplaceLocalTariffsFromText(text);
-}
-
-// ===== Catalog reconcile (local vs canonical) =====
-async function adminSyncProductsWithCanonical() {
-  return _adminFetchJson(`${_adminBase()}/admin/products/sync`, {
-    method: "POST",
-    headers: _adminHeaders(true),
-    body: "{}"
-  });
-}
-
-// ===== Ops/status =====
-async function adminHealthz() {
-  return _adminFetchJson(`${_adminBase()}/healthz`, { method: "GET" });
-}
-
-async function adminGetRates() {
-  return _adminFetchJson(`${_adminBase()}/rates`, { method: "GET" });
-}
-
-// ===== Fulfillment controls =====
-async function adminGetOrderFulfillment(orderId) {
-  if (!orderId) throw new Error("getFulfillment: orderId required");
-  return _adminFetchJson(
-    `${_adminBase()}/admin/orders/${encodeURIComponent(orderId)}/fulfillment`,
-    { method: "GET", headers: _adminHeaders(false) }
-  );
-}
-
-async function adminPatchOrderFulfillment(orderId, { method, packages, customs, self } = {}) {
-  if (!orderId) throw new Error("patchFulfillment: orderId required");
-  const body = {};
-  if (method != null) body.method = method;
-  if (packages != null) body.packages = packages;
-  if (customs != null) body.customs = customs;
-  if (self != null) body.self = self;
-
-  return _adminFetchJson(
-    `${_adminBase()}/admin/orders/${encodeURIComponent(orderId)}/fulfillment`,
-    { method: "PATCH", headers: _adminHeaders(true), body: JSON.stringify(body) }
-  );
-}
-
-async function adminQuoteOrderFulfillment(orderId, { method = "AGENT", packages = [], customs = {} } = {}) {
-  if (!orderId) throw new Error("quoteFulfillment: orderId required");
-  return _adminFetchJson(
-    `${_adminBase()}/admin/orders/${encodeURIComponent(orderId)}/fulfillment/quote`,
-    {
-      method: "POST",
-      headers: _adminHeaders(true),
-      body: JSON.stringify({ method, packages, customs })
-    }
-  );
-}
-
-async function adminPlaceOrderFulfillment(orderId, { method = "AGENT", packages = [], customs = {}, self = {} } = {}) {
-  if (!orderId) throw new Error("placeFulfillment: orderId required");
-  return _adminFetchJson(
-    `${_adminBase()}/admin/orders/${encodeURIComponent(orderId)}/fulfillment/place`,
-    {
-      method: "POST",
-      headers: _adminHeaders(true),
-      body: JSON.stringify({ method, packages, customs, self })
-    }
-  );
-}
-
-async function adminCancelOrderFulfillment(orderId) {
-  if (!orderId) throw new Error("cancelFulfillment: orderId required");
-  return _adminFetchJson(
-    `${_adminBase()}/admin/orders/${encodeURIComponent(orderId)}/fulfillment/cancel`,
-    { method: "POST", headers: _adminHeaders(true), body: "{}" }
-  );
-}
-
-// ===== Expose on global adapter =====
-window.adminApi = window.adminApi || {};
-Object.assign(window.adminApi, {
-  fetchLocalTariffsText: adminFetchLocalTariffsText,
-  downloadLocalTariffs: adminDownloadLocalTariffs,
-  replaceLocalTariffsFromText: adminReplaceLocalTariffsFromText,
-  replaceLocalTariffsFromObject: adminReplaceLocalTariffsFromObject,
-  replaceLocalTariffsFromFile: adminReplaceLocalTariffsFromFile,
-
-  syncProductsWithCanonical: adminSyncProductsWithCanonical,
-
-  healthz: adminHealthz,
-  getRates: adminGetRates,
-
-  getOrderFulfillment: adminGetOrderFulfillment,
-  patchOrderFulfillment: adminPatchOrderFulfillment,
-  quoteOrderFulfillment: adminQuoteOrderFulfillment,
-  placeOrderFulfillment: adminPlaceOrderFulfillment,
-  cancelOrderFulfillment: adminCancelOrderFulfillment
-});
-; (() => {
-  // ===== Tariffs UI (editor + history) =====
-  let _tariffsUi = {
-    installed: false,
-    panel: null,
-    rawText: "",
-    obj: null,
-    rows: [],       // [{id, code, value}]
-    filter: "",
-    dirty: false,
-    jsonEditing: false,
-    history: { items: [], index: -1 }, // snapshots
-    _editDebounce: null,
-    _baseline: null // snapshot of last server refresh
-  };
-
-  function _tariffsNewRow(code = "", value = "") {
-    const id = (typeof crypto !== "undefined" && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : ("r_" + Date.now() + "_" + Math.random().toString(16).slice(2));
-    return { id, code: String(code || ""), value: String(value ?? "") };
-  }
-
-  function _tariffsRowsFromObject(obj) {
-    const rows = [];
-    if (!obj || typeof obj !== "object" || Array.isArray(obj)) return rows;
-    // preserve insertion order
-    for (const [k, v] of Object.entries(obj)) {
-      rows.push(_tariffsNewRow(String(k || ""), String(v)));
-    }
-    return rows;
-  }
-
-  function _tariffsIsFiniteNumberString(s) {
-    const v = Number(String(s).trim());
-    return Number.isFinite(v);
-  }
-
-  function _tariffsNormalizeCode(s) {
-    return String(s || "").trim().toUpperCase();
-  }
-
-  function _tariffsNormalizeNumber(v) {
-    if (typeof v === "number" && Number.isFinite(v)) return v;
-    if (typeof v === "string") {
-      const s = v.trim().replace(",", ".");
-      const n = Number(s);
-      return Number.isFinite(n) ? n : null;
-    }
-    return null;
-  }
-
-  function _tariffsParseLooseJson(raw) {
-    const s0 = String(raw || "").trim();
-    if (!s0) return null;
-
-    // First try strict JSON
-    try { return JSON.parse(s0); } catch (_) { }
-
-    // Attempt small, safe repairs:
-    let s = s0;
-
-    // Replace commas in numbers (12,5 -> 12.5) without touching separators
-    s = s.replace(/(\d),(\d)/g, "$1.$2");
-
-    // Quote bare keys: { US: 12.5 } -> { "US": 12.5 }
-    s = s.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":');
-
-    // Insert missing commas between adjacent properties:
-    // "US": 12.5\n"UK": 7.5  => "US": 12.5,\n"UK": 7.5
-    s = s.replace(/("([^"\\]|\\.)*"\s*:\s*[^,\n\r\}]+)\s*[\r\n]+\s*(")/g, "$1,\n$3");
-
-    // Remove trailing commas before } or ]
-    s = s.replace(/,\s*([}\]])/g, "$1");
-
-    // Final attempt
-    return JSON.parse(s);
-  }
-
-  function _tariffsObjectToRows(obj) {
-    if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-      throw new Error('Top-level JSON must be an object like { "US": 12.5 }');
-    }
-    const rows = [];
-
-    const toValueString = (x) => {
-      if (typeof x === "number" && Number.isFinite(x)) return String(x);
-      if (typeof x === "string") return x.trim().replace(/,/g, ".");
-      return "";
-    };
-
-    for (const [kRaw, v] of Object.entries(obj)) {
-      const code = _tariffsNormalizeCode(kRaw);
-      if (!code) continue;
-
-      let valueStr = "";
-
-      // support value as number/string or {tariff: ...} / {value: ...}
-      if (typeof v === "object" && v && !Array.isArray(v)) {
-        valueStr = toValueString(v.tariff ?? v.rate ?? v.value);
-      } else {
-        valueStr = toValueString(v);
-      }
-
-      rows.push(_tariffsNewRow(code, valueStr));
-    }
-
-    rows.sort((a, b) => String(a.code).localeCompare(String(b.code)));
-    return rows;
-  }
-  function _tariffsRowsToObject(rows) {
-    const obj = {};
-    for (const r of (rows || [])) {
-      const code = _tariffsNormalizeCode(r.code);
-      const raw = String(r.value ?? "").trim();
-      if (!code) continue;
-      if (!raw) continue; // don't serialize empty values
-      const val = Number(raw);
-      if (!Number.isFinite(val)) continue;
-      obj[code] = val;
-    }
-    return obj;
-  }
-
-  function _tariffsValidateRows(rows) {
-    const dupCodes = new Set();
-    const seen = new Map(); // code -> count
-    const emptyCodes = new Set();
-    const invalidValues = new Set();
-
-    for (const r of rows || []) {
-      const code = _tariffsNormalizeCode(r.code);
-      if (!code) emptyCodes.add(r.id);
-      else seen.set(code, (seen.get(code) || 0) + 1);
-
-      const valStr = String(r.value ?? "").trim();
-      if (!valStr || !_tariffsIsFiniteNumberString(valStr)) invalidValues.add(r.id);
-    }
-
-    for (const [code, count] of seen.entries()) {
-      if (count > 1) dupCodes.add(code);
-    }
-
-    const dupRowIds = new Set();
-    if (dupCodes.size) {
-      for (const r of rows || []) {
-        const code = _tariffsNormalizeCode(r.code);
-        if (code && dupCodes.has(code)) dupRowIds.add(r.id);
-      }
-    }
-
-    const ok = dupCodes.size === 0 && emptyCodes.size === 0 && invalidValues.size === 0;
-    return { ok, dupCodes, dupRowIds, emptyCodes, invalidValues };
-  }
-
-  function _tariffsHistoryReset(rows, reason = "Loaded") {
-    const snap = {
-      t: Date.now(),
-      reason,
-      rows: (rows || []).map(r => ({ id: r.id, code: r.code, value: r.value }))
-    };
-    _tariffsUi.history.items = [snap];
-    _tariffsUi.history.index = 0;
-    _tariffsUi._baseline = snap;
-    tariffsUiRenderHistory();
-    tariffsUiRenderHistoryButtons();
-  }
-
-  function _tariffsHistoryPush(reason = "Edit") {
-    const snap = {
-      t: Date.now(),
-      reason,
-      rows: (_tariffsUi.rows || []).map(r => ({ id: r.id, code: r.code, value: r.value }))
-    };
-
-    const h = _tariffsUi.history;
-    if (h.index < h.items.length - 1) h.items = h.items.slice(0, h.index + 1);
-
-    h.items.push(snap);
-    if (h.items.length > 120) {
-      const baseline = h.items[0];
-      h.items = [baseline].concat(h.items.slice(-119));
-    }
-    h.index = h.items.length - 1;
-    tariffsUiRenderHistory();
-    tariffsUiRenderHistoryButtons();
-  }
-
-  function _tariffsHistorySchedule(reason = "Edit") {
-    if (_tariffsUi._editDebounce) clearTimeout(_tariffsUi._editDebounce);
-    _tariffsUi._editDebounce = setTimeout(() => {
-      _tariffsUi._editDebounce = null;
-      _tariffsHistoryPush(reason);
-    }, 650);
-  }
-
-  function _tariffsHistoryGoTo(idx) {
-    const h = _tariffsUi.history;
-    if (!h.items.length) return;
-    const i = Math.max(0, Math.min(Number(idx), h.items.length - 1));
-    h.index = i;
-    const snap = h.items[i];
-    _tariffsUi.rows = (snap.rows || []).map(r => ({ id: r.id, code: r.code, value: r.value }));
-    _tariffsUiSetDirty(true);
-    tariffsUiRender();
-    tariffsUiRenderHistory();
-    tariffsUiRenderHistoryButtons();
-  }
-
-  function _tariffsHistoryUndo() {
-    const h = _tariffsUi.history;
-    if (h.index <= 0) return;
-    _tariffsHistoryGoTo(h.index - 1);
-  }
-
-  function _tariffsHistoryRedo() {
-    const h = _tariffsUi.history;
-    if (h.index >= h.items.length - 1) return;
-    _tariffsHistoryGoTo(h.index + 1);
-  }
-
-  function _tariffsUiEnsurePanel() {
-    if (_tariffsUi.panel) return _tariffsUi.panel;
-
-    let panel = document.getElementById("tariffsTab");
-    if (!panel) {
-      panel = document.createElement("section");
-      panel.id = "tariffsTab";
-      panel.className = "container tariffs-hidden";
-      const main = document.querySelector("section.container");
-      if (main && main.parentNode) main.parentNode.insertBefore(panel, main.nextSibling);
-      else document.body.appendChild(panel);
-    } else {
-      // Use the placeholder panel from index.html. Ensure toggle logic treats it as hidden initially.
-      panel.classList.add("tariffs-hidden");
-    }
-
-    panel.innerHTML = `
-    <div class="tariffs-top">
-      <div class="tariffs-title">Tariffs <span class="mg-badge" id="tariffsStatusBadge">not loaded</span></div>
-      <div class="tariffs-actions">
-        <button class="mgmt-btn" id="tariffsRefreshBtn">Refresh</button>
-        <button class="mgmt-btn" id="tariffsDownloadBtn">Download</button>
-        <button class="mgmt-btn" id="tariffsUploadBtn">Upload</button>
-        <button class="mgmt-btn" id="tariffsCloseBtn" title="Close">✕</button>
-      </div>
-    </div>
-
-    <div class="tariffs-body">
-      <div class="tariffs-note" id="tariffsNote"></div>
-
-      <div class="tariffs-layout">
-  <div class="tariffs-main">
-    <div class="tariffs-toolbar">
-      <input class="tariffs-search" id="tariffsSearch" placeholder="Search country code…" />
-      <div class="tariffs-count" id="tariffsCount"></div>
-    </div>
-
-    <div class="tariffs-editor" id="tariffsEditorView">
-      <div class="tariffs-table-wrap">
-        <table class="tariffs-table">
-          <thead>
-            <tr>
-              <th style="width: 240px;">Country code</th>
-              <th style="width: 240px;">Tariff</th>
-              <th style="width: 90px;"></th>
-            </tr>
-          </thead>
-          <tbody id="tariffsTbody"></tbody>
-        </table>
-      </div>
-
-      <div class="tariffs-bottombar">
-        <button class="mgmt-btn primary" id="tariffsAddRowBtn">+ Add row</button>
-        <div class="tariffs-bottombar-right">
-          <button class="mgmt-btn" id="tariffsCancelBtn" disabled>Cancel</button>
-          <button class="mgmt-btn primary" id="tariffsSaveBtn" disabled>Save</button>
-        </div>
-      </div>
-      <div class="tariffs-add-hint tariffs-add-hint-bottom">Changes are local until you click <b>Save</b>.</div>
-    </div>
-  </div>
-
-  <aside class="tariffs-history">
-          <div class="tariffs-history-head">
-            <div class="tariffs-history-title">History</div>
-            <div class="tariffs-history-nav">
-              <button class="mgmt-btn" id="tariffsHistBackBtn" title="Back">◀</button>
-              <button class="mgmt-btn" id="tariffsHistFwdBtn" title="Forward">▶</button>
-            </div>
-          </div>
-          <div class="tariffs-history-list" id="tariffsHistoryList"></div>
-          <div class="tariffs-history-hint">Click an entry to jump. Use ◀/▶ to navigate.</div>
-        </aside>
-</div>
-
-      <details class="tariffs-jsondrop" id="tariffsJsonDetails">
-      <summary class="tariffs-jsondrop-summary"><span>Raw JSON (auto-updates)</span><button class="mgmt-btn mgmt-btn-ghost" id="tariffsApplyJsonBtn" type="button" title="Overwrite rows from JSON">Sync rows from JSON</button></summary>
-      <textarea class="tariffs-raw" id="tariffsJsonText" spellcheck="false" ></textarea>
-      <div class="tariffs-raw-hint">This JSON view reflects your rows immediately. Use <b>Refresh</b> to load the latest server version.</div>
-    </details>
-
-</div>
-  `;
-
-    _tariffsUi.panel = panel;
-
-    const byId = (id) => panel.querySelector("#" + id);
-
-    byId("tariffsCloseBtn")?.addEventListener("click", () => tariffsUiHide());
-
-    byId("tariffsRefreshBtn")?.addEventListener("click", async () => {
-      await actionRunner(async () => { await tariffsUiRefresh(); }, "Tariffs refresh");
-    });
-
-    byId("tariffsDownloadBtn")?.addEventListener("click", async () => {
-      await actionRunner(async () => {
-        await safeEnsureLogin();
-        if (!window.adminApi?.downloadLocalTariffs) throw new Error("downloadLocalTariffs() not found");
-        await window.adminApi.downloadLocalTariffs();
-        ttoast("Tariffs", "Download started");
-      }, "Tariffs download");
-    });
-
-    byId("tariffsUploadBtn")?.addEventListener("click", async () => {
-      await actionRunner(async () => {
-        await safeEnsureLogin();
-        if (!window.adminApi?.replaceLocalTariffsFromFile) throw new Error("replaceLocalTariffsFromFile() not found");
-        const file = await pickFile({ accept: ".json,application/json" });
-        if (!file) return;
-        await window.adminApi.replaceLocalTariffsFromFile(file);
-        ttoast("Tariffs", "Uploaded & replaced");
-        await tariffsUiRefresh();
-      }, "Tariffs upload");
-    });
-
-    byId("tariffsSaveBtn")?.addEventListener("click", async () => {
-      await actionRunner(async () => { await tariffsUiSave(); }, "Tariffs save");
-    });
-
-    byId("tariffsCancelBtn")?.addEventListener("click", () => {
-      tariffsUiCancel();
-    });
-
-    byId("tariffsHistBackBtn")?.addEventListener("click", () => _tariffsHistoryUndo());
-    byId("tariffsHistFwdBtn")?.addEventListener("click", () => _tariffsHistoryRedo());
-
-    byId("tariffsSearch")?.addEventListener("input", (e) => {
-      _tariffsUi.filter = String(e.target?.value || "");
-      tariffsUiRenderTableBody();
-    });
-    tariffsUiSyncJson();
-
-    byId("tariffsAddRowBtn")?.addEventListener("click", () => {
-      _tariffsUi.rows.push(_tariffsNewRow("", ""));
-      _tariffsUiSetDirty(true);
-      _tariffsHistoryPush("Add row");
-      tariffsUiRenderTableBody();
-    });
-    tariffsUiSyncJson();
-
-    // Row events (delegation)
-    // Raw JSON -> Rows (bi-directional sync)
-    const jsonTa = panel.querySelector("#tariffsJsonText");
-    if (jsonTa) {
-      const applyJson = () => {
-        if (_tariffsUi.jsonUpdating) return false;
-        const raw = String(jsonTa.value || "").trim();
-        if (!raw) return false;
-        try {
-          const parsed = _tariffsParseLooseJson(raw);
-          if (parsed === null) return;
-          const rows = _tariffsObjectToRows(parsed);
-          _tariffsUi.rows = rows;
-          _tariffsUiSetDirty(true);
-          _tariffsHistoryPush("Apply JSON");
-          jsonTa.classList.remove("tariffs-json-invalid");
-          tariffsUiValidate();
-          tariffsUiRenderTableBody();
-          tariffsUiRenderCount();
-          tariffsUiRenderHistory();
-        } catch (e) {
-          jsonTa.classList.add("tariffs-json-invalid");
-          // keep rows as-is; show a readable error in the banner if available
-          const msg = (e && e.message) ? e.message : "Invalid JSON";
-          const banner = panel.querySelector("#tariffsErrBanner");
-          if (banner) {
-            banner.hidden = false;
-            banner.textContent = msg;
-          }
-        }
-      };
-
-      jsonTa.addEventListener("focus", () => { _tariffsUi.jsonEditing = true; });
-      jsonTa.addEventListener("blur", () => { _tariffsUi.jsonEditing = false; tariffsUiSyncJson(true); });
-
-      const applyBtn = panel.querySelector("#tariffsApplyJsonBtn");
-      if (applyBtn) {
-        applyBtn.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          clearTimeout(_tariffsUi.jsonDebounce);
-          const ok = applyJson();
-          if (ok) { tariffsUiSyncJson(true); ttoast("Tariffs", "Rows overwritten from JSON"); }
-        });
-      }
-
-      jsonTa.addEventListener("input", () => {
-        if (_tariffsUi.jsonUpdating) return false;
-        clearTimeout(_tariffsUi.jsonDebounce);
-        _tariffsUi.jsonDebounce = setTimeout(() => {
-          applyJson();
-          // if JSON is valid, also sync JSON formatting back (pretty print)
-          if (!jsonTa.classList.contains("tariffs-json-invalid")) tariffsUiSyncJson(true);
-        }, 350);
-      });
-
-      jsonTa.addEventListener("keydown", (ev) => {
-        if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
-          ev.preventDefault();
-          clearTimeout(_tariffsUi.jsonDebounce);
-          applyJson();
-          if (!jsonTa.classList.contains("tariffs-json-invalid")) tariffsUiSyncJson(true);
-        }
-      });
-    }
-
-    panel.querySelector("#tariffsTbody")?.addEventListener("click", (e) => {
-      const btn = e.target?.closest("[data-delrow]");
-      if (!btn) return;
-      const id = String(btn.getAttribute("data-delrow") || "");
-      _tariffsUi.rows = (_tariffsUi.rows || []).filter(r => r.id !== id);
-      _tariffsUiSetDirty(true);
-      _tariffsHistoryPush("Delete row");
-      tariffsUiRenderTableBody();
-      tariffsUiRenderCount();
-      tariffsUiRenderHistory();
-      tariffsUiSyncJson();
-    });
-
-    panel.querySelector("#tariffsTbody")?.addEventListener("input", (e) => {
-      const inp = e.target?.closest("input[data-rowid][data-field]");
-      if (!inp) return;
-      const id = String(inp.getAttribute("data-rowid") || "");
-      const field = String(inp.getAttribute("data-field") || "");
-      const row = (_tariffsUi.rows || []).find(r => r.id === id);
-      if (!row) return;
-
-      if (field === "code") row.code = String(inp.value || "");
-
-      if (field === "value") {
-        // replace comma with dot automatically
-        let v = String(inp.value || "");
-        if (v.includes(",")) {
-          v = v.replace(/,/g, ".");
-          inp.value = v;
-        }
-        row.value = v;
-      }
-
-      _tariffsUiSetDirty(true);
-      _tariffsHistorySchedule("Edit");
-      tariffsUiRenderValidationOnly();
-      tariffsUiRenderCount();
-      tariffsUiSyncJson();
-    });
-
-    // keyboard shortcuts while panel visible
-    panel.addEventListener("keydown", (e) => {
-      const visible = !_tariffsUi.panel?.classList.contains("tariffs-hidden");
-      if (!visible) return;
-      const isMac = /Mac|iPhone|iPad/.test(navigator.platform || "");
-      const ctrl = isMac ? e.metaKey : e.ctrlKey;
-      if (!ctrl) return;
-      if (e.key.toLowerCase() === "z") { e.preventDefault(); _tariffsHistoryUndo(); }
-      if (e.key.toLowerCase() === "y") { e.preventDefault(); _tariffsHistoryRedo(); }
-    });
-
-    return panel;
-  }
-
-  function _tariffsUiSetBadge(text) {
-    const el = _tariffsUi.panel?.querySelector("#tariffsStatusBadge");
-    if (el) el.textContent = String(text || "");
-  }
-
-  function _tariffsUiSetNote(text, level) {
-    const el = _tariffsUi.panel?.querySelector("#tariffsNote");
-    if (!el) return;
-    const msg = String(text || "");
-    el.textContent = msg;
-    el.className = "tariffs-note" + (level ? ` tariffs-note-${level}` : "");
-    if (msg) el.style.display = "block";
-    else el.style.display = "none";
-  }
-
-  function _tariffsUiSetDirty(isDirty) {
-    _tariffsUi.dirty = !!isDirty;
-    const saveBtn = _tariffsUi.panel?.querySelector("#tariffsSaveBtn");
-    const cancelBtn = _tariffsUi.panel?.querySelector("#tariffsCancelBtn");
-    if (saveBtn) saveBtn.disabled = !_tariffsUi.dirty;
-    if (cancelBtn) cancelBtn.disabled = !_tariffsUi.dirty;
-    tariffsUiRenderHistoryButtons();
-  }
-
-  function tariffsUiRenderHistoryButtons() {
-    const h = _tariffsUi.history;
-
-    const backBtn = _tariffsUi.panel?.querySelector("#tariffsHistBackBtn");
-    const fwdBtn = _tariffsUi.panel?.querySelector("#tariffsHistFwdBtn");
-    if (backBtn) backBtn.disabled = !(h.items.length && h.index > 0);
-    if (fwdBtn) fwdBtn.disabled = !(h.items.length && h.index < h.items.length - 1);
-  }
-
-  function tariffsUiRenderHistory() {
-    const list = _tariffsUi.panel?.querySelector("#tariffsHistoryList");
-    if (!list) return;
-    const h = _tariffsUi.history;
-    const items = h.items || [];
-    const cur = h.index;
-
-    const fmt = (t) => {
-      try {
-        const d = new Date(t);
-        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      } catch { return ""; }
-    };
-
-    list.innerHTML = items.map((it, i) => {
-      const active = (i === cur) ? "tariffs-history-item-active" : "";
-      return `
-      <button class="tariffs-history-item ${active}" data-hidx="${i}">
-        <span class="tariffs-history-time">${escHtml(fmt(it.t))}</span>
-        <span class="tariffs-history-reason">${escHtml(it.reason || "Edit")}</span>
-      </button>
+    // Legal Notice
+    const legalSection = document.createElement("div");
+    legalSection.classList.add("settings-section");
+    legalSection.innerHTML = `
+      <h3>Legal Notice &amp; Store Policies</h3>
+      <p><strong>Legal Notice:</strong><br>
+      Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
+  
+      <h4>Shipping Policy</h4>
+      <p>
+        We operate on a dropshipping model. Most items ship from global suppliers and logistics partners.
+        Estimated delivery: <strong>2&nbsp;weeks to several weeks</strong>, depending on destination, carrier performance,
+        customs processing, and product availability. Estimated dates are <strong>not guaranteed</strong>.<br><br>
+        We are not responsible for delays caused by customs, carriers, labor actions, natural disasters, or other events outside our direct control.
+      </p>
+  
+      <h4>Returns, Cancellations &amp; Refunds</h4>
+      <p><strong>Before shipment:</strong> We may be able to cancel an order if it has not yet been processed; this is not guaranteed.</p>
+      <p><strong>After shipment (general rule):</strong> We do not accept cancellations or “change-of-mind” returns once an order has been handed to a carrier, <strong>except</strong> where mandatory consumer law grants you a right to withdraw.</p>
+      <p><strong>EU/EEA/UK consumers (cooling-off):</strong> For most physical goods, you have a statutory right to withdraw from a distance contract within <strong>14 days</strong> after delivery without giving a reason (exceptions apply). This paragraph prevails over any conflicting term in these policies.</p>
+  
+      <h4>Items Damaged, Defective, or Not-as-Described</h4>
+      <p>
+        If your item arrives damaged, defective, or significantly different from its description, contact us <strong>promptly</strong>
+        with your order number and clear photos/videos so we can assist. Any request for early notice does not limit your
+        <strong>non-waivable statutory rights</strong>.
+      </p>
+  
+      <h4>Warranty / Legal Guarantee</h4>
+      <p>
+        Unless a manufacturer warranty is explicitly provided with the product, we do not offer a separate commercial warranty.
+        <strong>This does not affect your statutory rights</strong>.
+      </p>
+  
+      <h4>Customs, Duties &amp; Taxes</h4>
+      <p>
+        Prices may or may not include taxes and import fees depending on your destination and the shipping method:
+        <ul>
+          <li><strong>Taxes collected at checkout (e.g., VAT/IOSS, DDP):</strong> If stated at checkout, these are included in your final price.</li>
+          <li><strong>Taxes due on delivery (DDU/DAP):</strong> If not shown as included, you are responsible for any applicable import duties/VAT/GST/fees.</li>
+        </ul>
+      </p>
+  
+      <h4>Delivery Issues &amp; Risk of Loss</h4>
+      <p>
+        Ensure your shipping address and contact details are accurate. We are not responsible for loss, delay, or misdelivery
+        arising from incorrect or incomplete addresses provided by you.
+      </p>
+  
+      <h4>Exclusions</h4>
+      <ul>
+        <li>We do not accept returns for buyer’s remorse where not required by law.</li>
+        <li>We do not accept returns for incorrect size/color/variant chosen by the customer, unless required by law.</li>
+        <li>Minor variations in color, packaging, or appearance that do not affect basic function are not considered defects.</li>
+      </ul>
+  
+      <h4>Contact</h4>
+      <p>
+        To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email.
+      </p>
+  
+      <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
     `;
-    }).join("");
 
-    list.querySelectorAll("[data-hidx]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.getAttribute("data-hidx"));
-        _tariffsHistoryGoTo(i);
-      });
+    wrapper.append(themeSection, currencySection, countrySection, clearSection, contactSection, legalSection);
+    viewer.appendChild(wrapper);
+
+    // Reset button
+    document.getElementById("clearDataButton")?.addEventListener("click", () => {
+        if (!confirm("Are you sure you want to reset all saved data?")) return;
+        localStorage.clear();
+        sessionStorage.clear();
+        alert("All data cleared. Reloading page...");
+        // location.reload();
     });
-  }
 
-  function tariffsUiShow() {
-    _tariffsUiEnsurePanel();
-    const p = _tariffsUi.panel;
-    p.classList.remove("tariffs-hidden");
-    p.classList.remove("hidden");
-    p.setAttribute("aria-hidden", "false");
-    localStorage.setItem("mgmt_active_tab", "tariffs");
-    try { const groups = document.getElementById("groups"); if (groups) groups.innerHTML = ""; } catch (e) { }
-    try { renderFilters(true); } catch (e) { }
-    try { updateMgmtTabButtons(); } catch (e) { }
-    tariffsUiRenderHistoryButtons();
-  }
-
-  function tariffsUiHide() {
-    if (!_tariffsUi.panel) return;
-    const p = _tariffsUi.panel;
-    p.classList.add("tariffs-hidden");
-    p.classList.add("hidden");
-    p.setAttribute("aria-hidden", "true");
-    const active = localStorage.getItem("mgmt_active_tab");
-    if (active === "tariffs") localStorage.setItem("mgmt_active_tab", "orders");
-    try { renderFilters(true); } catch (e) { }
-  }
-
-  async function tariffsUiToggle() {
-    _tariffsUiEnsurePanel();
-    const hidden = _tariffsUi.panel.classList.contains("tariffs-hidden");
-    if (hidden) {
-      tariffsUiShow();
-      await tariffsUiRefresh();
-    } else {
-      tariffsUiHide();
-    }
-  }
-
-  function tariffsUiCancel() {
-    const base = _tariffsUi._baseline;
-    if (!base) return;
-    _tariffsUi.rows = (base.rows || []).map(r => ({ id: r.id, code: r.code, value: r.value }));
-    _tariffsHistoryReset(_tariffsUi.rows, "Cancelled");
-    _tariffsUiSetDirty(false);
-    tariffsUiRender();
-    tariffsUiSyncJson(true);
-    ttoast("Tariffs", "Changes cancelled");
-  }
-
-  async function tariffsUiRefresh() {
-    try { _tariffsUiEnsurePanel(); } catch (e) { console.error("tariffsUiRefresh: ensurePanel failed", e); }
-
-    try { _tariffsUiSetBadge("loading…"); } catch { }
-    try { _tariffsUiSetNote("", ""); } catch { }
-    try { _tariffsUiSetDirty(false); } catch { }
-
-    let text = "";
-    try {
-      // Prefer admin (editable) only if the whole stack exists
-      const canAdmin =
-        window.adminApi &&
-        typeof window.adminApi.fetchLocalTariffsText === "function" &&
-        typeof safeEnsureLogin === "function";
-
-      if (canAdmin) {
-        await safeEnsureLogin();
-        text = await window.adminApi.fetchLocalTariffsText();
-      } else {
-        // Robust base resolution (never throws)
-        let base = "";
-        try { base = (typeof getApiBase === "function" ? getApiBase({ preferStored: true }) : ""); } catch { }
-        if (!base) {
-          base =
-            (document.querySelector('meta[name="api-base"]')?.getAttribute("content") || "") ||
-            (localStorage.getItem("api_base") || "") ||
-            "https://api.snagletshop.com";
-        }
-        base = String(base || "https://api.snagletshop.com").trim().replace(/\/+$/, "");
-
-        const url = `${base}/tariffs?__mg=${Date.now()}`;
-        const res = await window.fetch(url, {
-          method: "GET",
-          cache: "no-store",
-          headers: { "Accept": "application/json" }
+    // Theme toggle logic
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+        themeToggle.checked = localStorage.getItem("themeMode") === "dark";
+        themeToggle.addEventListener("change", (e) => {
+            const darkMode = !!e.target.checked;
+            document.documentElement.classList.toggle("dark-mode", darkMode);
+            document.documentElement.classList.toggle("light-mode", !darkMode);
+            localStorage.setItem("themeMode", darkMode ? "dark" : "light");
         });
-        if (!res.ok) throw new Error(`Tariffs fetch failed: ${res.status} ${res.statusText || ""}`.trim());
-        text = await res.text();
-        try { _tariffsUiSetNote("Loaded from public /tariffs endpoint (read-only). Upload/Save requires admin API.", "info"); } catch { }
-      }
-
-      _tariffsUi.rawText = String(text || "").trim();
-
-      let obj = null;
-      try { obj = JSON.parse(_tariffsUi.rawText || "{}"); } catch (e) { obj = null; }
-      _tariffsUi.obj = obj;
-
-      if (obj && typeof obj === "object" && !Array.isArray(obj)) {
-        _tariffsUi.rows = _tariffsRowsFromObject(obj);
-        try { _tariffsUiSetBadge(`loaded: ${_tariffsUi.rows.length}`); } catch { }
-        try {
-          if (_tariffsUi.rows.length === 0) _tariffsUiSetNote("Tariffs are currently empty.", "info");
-        } catch { }
-        try { _tariffsHistoryReset(_tariffsUi.rows, "Loaded"); } catch { }
-        try { _tariffsUiSetDirty(false); } catch { }
-      } else {
-        _tariffsUi.rows = [];
-        try { _tariffsUiSetBadge(obj ? "loaded (non-object)" : "invalid JSON"); } catch { }
-        try { _tariffsUiSetNote("Tariffs JSON is not a plain object.", "warn"); } catch { }
-        try { _tariffsHistoryReset(_tariffsUi.rows, "Loaded"); } catch { }
-        try { _tariffsUiSetDirty(false); } catch { }
-      }
-    } catch (e) {
-      try { _tariffsUiSetBadge("error"); } catch { }
-      try { _tariffsUiSetNote(String(e?.message || e), "warn"); } catch { }
-      console.error("tariffsUiRefresh failed:", e);
     }
 
-    try { tariffsUiRender(); } catch (e) { console.error("tariffsUiRender failed:", e); }
-    try { tariffsUiSyncJson(true); } catch { }
-  }
-
-  function tariffsUiRenderCount() {
-    const el = _tariffsUi.panel?.querySelector("#tariffsCount");
-    if (!el) return;
-    const total = (_tariffsUi.rows || []).length;
-    const q = String(_tariffsUi.filter || "").trim().toUpperCase();
-    if (!q) { el.textContent = `${total} entries`; return; }
-    const shown = (_tariffsUi.rows || []).filter(r => _tariffsNormalizeCode(r.code).includes(q)).length;
-    el.textContent = `${shown}/${total} shown`;
-  }
-
-  function tariffsUiRenderValidationOnly() {
-    const v = _tariffsValidateRows(_tariffsUi.rows || []);
-    const panel = _tariffsUi.panel;
-    if (!panel) return;
-
-    panel.querySelectorAll("#tariffsTbody input.tariffs-invalid").forEach(el => el.classList.remove("tariffs-invalid"));
-
-    const _ce = (s) => (window.CSS && CSS.escape)
-      ? CSS.escape(String(s))
-      : String(s).replace(/[^a-zA-Z0-9_\-]/g, "\\$&");
-
-    const mark = (rowId, field) => {
-      const q = `#tariffsTbody input[data-rowid="${_ce(rowId)}"][data-field="${field}"]`;
-      const el = panel.querySelector(q);
-      if (el) el.classList.add("tariffs-invalid");
-    };
-
-    for (const id of v.emptyCodes) mark(id, "code");
-    for (const id of v.invalidValues) mark(id, "value");
-    for (const id of v.dupRowIds) mark(id, "code");
-
-    if (!v.ok) {
-      if (v.dupCodes.size) {
-        _tariffsUiSetNote(`Duplicate country codes: ${Array.from(v.dupCodes).join(", ")}. Each country code must be unique.`, "warn");
-      } else if (v.emptyCodes.size) {
-        _tariffsUiSetNote("Some country codes are empty. Fill them in or delete the rows.", "warn");
-      } else if (v.invalidValues.size) {
-        _tariffsUiSetNote("Some tariff values are missing or not numbers.", "warn");
-      }
-    } else {
-      _tariffsUiSetNote("", "");
-    }
-
-    tariffsUiRenderHistoryButtons();
-  }
-
-  function tariffsUiRenderTableBody() {
-    const panel = _tariffsUi.panel;
-    if (!panel) return;
-    const tbody = panel.querySelector("#tariffsTbody");
-    if (!tbody) return;
-
-    const q = String(_tariffsUi.filter || "").trim().toUpperCase();
-    const rows = (_tariffsUi.rows || []).slice(); // keep existing order
-
-    const shown = rows.filter(r => !q || _tariffsNormalizeCode(r.code).includes(q));
-
-    tbody.innerHTML = shown.map(r => {
-      return `
-      <tr class="tariffs-row" data-rowid="${escHtml(r.id)}">
-        <td>
-          <input class="tariffs-input tariffs-code-input" data-rowid="${escHtml(r.id)}" data-field="code" value="${escHtml(r.code)}" placeholder="e.g. US" />
-        </td>
-        <td>
-          <input class="tariffs-input tariffs-val" data-rowid="${escHtml(r.id)}" data-field="value" value="${escHtml(r.value)}" placeholder="e.g. 12.5" inputmode="decimal" />
-        </td>
-        <td class="tariffs-row-actions">
-          <button class="mgmt-btn" data-delrow="${escHtml(r.id)}" title="Delete">🗑</button>
-        </td>
-      </tr>`;
-    }).join("");
-
-    if (!shown.length) tbody.innerHTML = `<tr><td colspan="3" class="tariffs-empty">No entries.</td></tr>`;
-
-    tariffsUiRenderValidationOnly();
-    tariffsUiRenderCount();
-  }
-
-
-  function tariffsUiSyncJson(force = false) {
-    const ta = _tariffsUi.panel?.querySelector("#tariffsJsonText");
-    if (!ta) return;
-
-    if (_tariffsUi.jsonEditing && !force) return;
-    const obj = _tariffsRowsToObject(_tariffsUi.rows || []);
-    const text = JSON.stringify(obj, null, 2);
-    if (!force && document.activeElement === ta) return; // don't fight the user while typing
-    if (force || String(ta.value || "") !== text) {
-      _tariffsUi.jsonUpdating = true;
-      ta.value = text;
-      _tariffsUi.jsonUpdating = false;
-      ta.classList.remove("tariffs-json-invalid");
-    }
-  }
-
-  function tariffsUiRender() {
-    if (!_tariffsUi.panel) return;
-    tariffsUiRenderTableBody();
-    tariffsUiSyncJson();
-    tariffsUiRenderHistory();
-    tariffsUiRenderHistoryButtons();
-  }
-
-  async function tariffsUiSave() {
-    _tariffsUiEnsurePanel();
-    await safeEnsureLogin();
-
-    const v = _tariffsValidateRows(_tariffsUi.rows || []);
-    if (!v.ok) {
-      tariffsUiRenderValidationOnly();
-      throw new Error("Fix duplicates/empty codes/invalid values before saving.");
-    }
-
-    const obj = _tariffsRowsToObject(_tariffsUi.rows || []);
-    if (!window.adminApi?.replaceLocalTariffsFromObject) throw new Error("replaceLocalTariffsFromObject() not found");
-    await window.adminApi.replaceLocalTariffsFromObject(obj);
-
-    ttoast("Tariffs", "Saved");
-    _tariffsUiSetDirty(false);
-    await tariffsUiRefresh();
-  }
-
-  // ================================
-  // Management Frontend Toolkit (v1)
-  // Pure frontend QoL utilities; no server changes required.
-  // Exposes: window.mgmtTools
-  // ================================
-
-  if (window.mgmtTools && window.mgmtTools.__v === 1) return;
-
-  const LS_VIEWS = "mgmt_saved_views_v1";
-  const LS_NOTES = "mgmt_order_notes_v1";
-  const SS_ORDERS_CACHE = "mgmt_orders_cache_v1";
-
-  const TOOL = (window.mgmtTools = window.mgmtTools || {});
-  TOOL.__v = 1;
-
-  // ---------- base / headers adapters ----------
-  function _base() {
-    if (typeof window._adminBase === "function") return window._adminBase();
-    const b = String(localStorage.getItem("api_base") || location.origin || "").replace(/\/+$/, "");
-    return b || String(location.origin || "").replace(/\/+$/, "");
-  }
-  function _headers(json = true) {
-    if (typeof window._adminHeaders === "function") return window._adminHeaders(json);
-    const h = json ? { "Content-Type": "application/json" } : {};
-    const token = localStorage.getItem("api_token") || "";
-    const code = localStorage.getItem("admin_code") || "";
-    if (token) h.Authorization = `Bearer ${token}`;
-    if (code) h["X-Admin-Code"] = code;
-    return h;
-  }
-
-  async function _fetchJson(url, { method = "GET", headers, body } = {}) {
-    const r = await fetch(url, { method, headers, body });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `HTTP ${r.status}`);
-    return out;
-  }
-
-  async function _fetchBlob(url, { method = "GET", headers, body } = {}) {
-    const r = await fetch(url, { method, headers, body });
-    if (!r.ok) {
-      const t = await r.text().catch(() => "");
-      throw new Error(t || `HTTP ${r.status}`);
-    }
-    return r.blob();
-  }
-
-  function _downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function _safeStr(v) {
-    return (v == null) ? "" : String(v);
-  }
-  function _normStr(v) {
-    return _safeStr(v).trim();
-  }
-  function _lower(v) {
-    return _normStr(v).toLowerCase();
-  }
-  function _num(v, fallback = 0) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
-  }
-
-  // ---------- order normalization ----------
-  function orderId(order) {
-    return _normStr(order?.orderId || order?.id || order?._id || order?.stripe?.paymentIntentId || "");
-  }
-
-  function orderStatus(order) {
-    return _normStr(order?.status || "").toUpperCase() || "UNKNOWN";
-  }
-
-  function orderCreatedAt(order) {
-    const cands = [
-      order?.createdAt,
-      order?.created_at,
-      order?.paidAt,
-      order?.stripe?.paidAt,
-      order?.stripe?.createdAt,
-      order?.stripe?.created,
-      order?.updatedAt
-    ];
-    for (const x of cands) {
-      if (!x) continue;
-      const d = (x instanceof Date) ? x : new Date(x);
-      if (!isNaN(d.getTime())) return d;
-    }
-    return null;
-  }
-
-  function orderCustomer(order) {
-    // server.js schema uses order.customer; older admin UIs may use userDetails/shipping
-    return order?.customer || order?.userDetails || order?.shipping || {};
-  }
-
-  function customerName(order) {
-    const c = orderCustomer(order);
-    const full =
-      _normStr(c?.fullName) ||
-      _normStr([c?.firstName, c?.lastName].filter(Boolean).join(" ")) ||
-      _normStr(order?.name) ||
-      _normStr(order?.customerName);
-    return full;
-  }
-
-  function customerEmail(order) {
-    const c = orderCustomer(order);
-    return _normStr(c?.email || order?.email || order?.customerEmail);
-  }
-
-  function customerPhone(order) {
-    const c = orderCustomer(order);
-    return _normStr(c?.phone || order?.phone);
-  }
-
-  function customerCountry(order) {
-    const c = orderCustomer(order);
-    return _normStr(c?.countryCode || c?.country || order?.countryCode || order?.country) || "";
-  }
-
-  function orderCurrency(order) {
-    const cur = _normStr(order?.pricing?.currency || order?.currency || order?.stripe?.currency || "");
-    return cur ? cur.toUpperCase() : "EUR";
-  }
-
-  function orderItems(order) {
-    if (Array.isArray(order?.items)) return order.items;
-    if (Array.isArray(order?.products)) return order.products;
-    if (Array.isArray(order?.productsFull)) return order.productsFull;
-    return [];
-  }
-
-  function itemQty(it) {
-    return _num(it?.quantity ?? it?.amount ?? it?.qty ?? 1, 1);
-  }
-
-  function itemSaleEUR(it) {
-    // server.js items often store unitPriceEUR
-    if (it?.unitPriceEUR != null) return _num(it.unitPriceEUR, 0);
-    if (it?.unitPrice != null) return _num(it.unitPrice, 0);
-    if (it?.priceEUR != null) return _num(it.priceEUR, 0);
-    return 0;
-  }
-
-  function itemExpectedPurchaseEUR(it) {
-    return _num(it?.expectedPurchase ?? it?.purchasePriceEUR ?? it?.expectedPurchaseEUR ?? 0, 0);
-  }
-
-  function orderTotalsEUR(order) {
-    const items = orderItems(order);
-
-    let sale = 0;
-    let purchase = 0;
-
-    for (const it of items) {
-      const q = itemQty(it);
-      sale += q * itemSaleEUR(it);
-      purchase += q * itemExpectedPurchaseEUR(it);
-    }
-
-    const totalPaidEUR =
-      (order?.pricing?.totalPaidEUR != null)
-        ? _num(order.pricing.totalPaidEUR, 0)
-        : (sale || 0);
-
-    const marginEUR = (sale || totalPaidEUR) - purchase;
-
-    return {
-      saleEUR: sale,
-      purchaseEUR: purchase,
-      totalPaidEUR,
-      marginEUR,
-      marginPct: (sale > 0) ? (marginEUR / sale) : null
-    };
-  }
-
-  function orderSearchText(order) {
-    const c = orderCustomer(order);
-    const items = orderItems(order);
-
-    const parts = [
-      orderId(order),
-      orderStatus(order),
-      customerName(order),
-      customerEmail(order),
-      customerPhone(order),
-      customerCountry(order),
-      orderCurrency(order),
-      _normStr(c?.address1),
-      _normStr(c?.address2),
-      _normStr(c?.city),
-      _normStr(c?.region),
-      _normStr(c?.postalCode),
-      _normStr(order?.websiteOrigin),
-      _normStr(order?.pricing?.note),
-      _normStr(order?.stripe?.paymentIntentId),
-      _normStr(order?.stripe?.chargeId)
-    ];
-
-    for (const it of items) {
-      parts.push(
-        _normStr(it?.name),
-        _normStr(it?.selectedOption),
-        _normStr(it?.productLink),
-        _normStr(it?.description)
-      );
-    }
-
-    return _lower(parts.filter(Boolean).join(" | "));
-  }
-
-  // ---------- attention flags ----------
-  function attentionFlags(order) {
-    const s = orderStatus(order);
-    const c = orderCustomer(order);
-    const items = orderItems(order);
-    const createdAt = orderCreatedAt(order);
-
-    const paidLike =
-      s.includes("PAID") || s.includes("FULFILL") || s.includes("SHIPP") || s.includes("DONE") || s.includes("COMPLET");
-
-    const missing = {
-      email: !customerEmail(order),
-      phone: !customerPhone(order),
-      address: !_normStr(c?.address1) || !_normStr(c?.city) || !_normStr(c?.postalCode) || !_normStr(c?.countryCode),
-      items: !Array.isArray(items) || items.length === 0,
-      paymentIntentId: paidLike && !_normStr(order?.stripe?.paymentIntentId),
-      paidAt: paidLike && !order?.paidAt
-    };
-
-    const reasons = [];
-    if (missing.email) reasons.push("Missing email");
-    if (missing.phone) reasons.push("Missing phone");
-    if (missing.address) reasons.push("Missing address fields");
-    if (missing.items) reasons.push("No items");
-    if (missing.paymentIntentId) reasons.push("Paid-like status but missing Stripe paymentIntentId");
-    if (missing.paidAt) reasons.push("Paid-like status but missing paidAt");
-
-    // classic "stuck" pending payment: old + pending-like status
-    const ageDays = (createdAt && !isNaN(createdAt)) ? ((Date.now() - createdAt.getTime()) / 86400000) : null;
-    const stuckPending =
-      (ageDays != null && ageDays > 2) &&
-      (s.includes("PENDING") || s.includes("REQUIRES") || s.includes("PAYMENT"));
-
-    if (stuckPending) reasons.push("Old pending-payment order");
-
-    const score = reasons.length + (stuckPending ? 1 : 0);
-    return { score, reasons, missing, stuckPending, ageDays };
-  }
-
-  // ---------- filtering / searching ----------
-  function filterOrders(orders, filters = {}) {
-    const q = _lower(filters.query || "");
-    const status = filters.status ? _upperList(filters.status) : null;
-    const country = filters.country ? _upperList(filters.country) : null;
-    const currency = filters.currency ? _upperList(filters.currency) : null;
-
-    const since = filters.since ? new Date(filters.since) : null;
-    const till = filters.till ? new Date(filters.till) : null;
-
-    const minTotal = (filters.minTotal != null) ? _num(filters.minTotal, null) : null;
-    const maxTotal = (filters.maxTotal != null) ? _num(filters.maxTotal, null) : null;
-
-    const attentionOnly = !!filters.attentionOnly;
-    const missingAddressOnly = !!filters.missingAddressOnly;
-    const missingEmailOnly = !!filters.missingEmailOnly;
-    const missingPhoneOnly = !!filters.missingPhoneOnly;
-
-    const out = [];
-    for (const o of (orders || [])) {
-      if (!o) continue;
-
-      const s = orderStatus(o);
-      const cc = customerCountry(o).toUpperCase();
-      const cur = orderCurrency(o).toUpperCase();
-      const at = orderCreatedAt(o);
-      const totals = orderTotalsEUR(o);
-      const flags = attentionFlags(o);
-
-      if (status && status.length && !status.includes(s)) continue;
-      if (country && country.length && !country.includes(cc)) continue;
-      if (currency && currency.length && !currency.includes(cur)) continue;
-
-      if (since && at && at < since) continue;
-      if (till && at && at > till) continue;
-
-      if (minTotal != null && totals.totalPaidEUR < minTotal) continue;
-      if (maxTotal != null && totals.totalPaidEUR > maxTotal) continue;
-
-      if (attentionOnly && flags.score <= 0) continue;
-      if (missingAddressOnly && !flags.missing.address) continue;
-      if (missingEmailOnly && !flags.missing.email) continue;
-      if (missingPhoneOnly && !flags.missing.phone) continue;
-
-      if (q) {
-        const hay = o.__mgmtSearch || (o.__mgmtSearch = orderSearchText(o));
-        if (!hay.includes(q)) continue;
-      }
-
-      out.push(o);
-    }
-    return out;
-  }
-
-  function _upperList(v) {
-    if (Array.isArray(v)) return v.map(x => _normStr(x).toUpperCase()).filter(Boolean);
-    return _normStr(v).split(",").map(x => x.trim().toUpperCase()).filter(Boolean);
-  }
-
-  function sortOrders(orders, { by = "createdAt", dir = "desc" } = {}) {
-    const mul = (String(dir).toLowerCase() === "asc") ? 1 : -1;
-    const arr = Array.isArray(orders) ? [...orders] : [];
-    arr.sort((a, b) => {
-      if (by === "totalPaidEUR") {
-        const ta = orderTotalsEUR(a).totalPaidEUR;
-        const tb = orderTotalsEUR(b).totalPaidEUR;
-        return mul * (ta - tb);
-      }
-      if (by === "marginEUR") {
-        const ma = orderTotalsEUR(a).marginEUR;
-        const mb = orderTotalsEUR(b).marginEUR;
-        return mul * (ma - mb);
-      }
-      if (by === "attention") {
-        const sa = attentionFlags(a).score;
-        const sb = attentionFlags(b).score;
-        return mul * (sa - sb);
-      }
-      // default: createdAt
-      const da = orderCreatedAt(a);
-      const db = orderCreatedAt(b);
-      const ta = da ? da.getTime() : 0;
-      const tb = db ? db.getTime() : 0;
-      return mul * (ta - tb);
-    });
-    return arr;
-  }
-
-  // ---------- saved views ----------
-  function _loadViews() {
-    try {
-      const raw = localStorage.getItem(LS_VIEWS);
-      if (!raw) return {};
-      const obj = JSON.parse(raw);
-      if (!obj || typeof obj !== "object") return {};
-      return obj;
-    } catch {
-      return {};
-    }
-  }
-  function _saveViews(viewsObj) {
-    localStorage.setItem(LS_VIEWS, JSON.stringify(viewsObj || {}));
-  }
-
-  function listViews() {
-    const v = _loadViews();
-    return Object.keys(v).sort().map(name => ({ name, filters: v[name]?.filters || {}, meta: v[name]?.meta || {} }));
-  }
-
-  function setView(name, filters, meta = {}) {
-    const n = _normStr(name);
-    if (!n) throw new Error("setView: name required");
-    const views = _loadViews();
-    views[n] = { filters: filters || {}, meta: { ...meta, updatedAt: new Date().toISOString() } };
-    _saveViews(views);
-    return { ok: true, name: n, view: views[n] };
-  }
-
-  function deleteView(name) {
-    const n = _normStr(name);
-    const views = _loadViews();
-    if (views[n]) delete views[n];
-    _saveViews(views);
-    return { ok: true, name: n };
-  }
-
-  function runView(orders, name, { sortBy, sortDir } = {}) {
-    const n = _normStr(name);
-    const views = _loadViews();
-    const v = views[n];
-    if (!v) throw new Error(`View not found: ${n}`);
-    const filtered = filterOrders(orders, v.filters || {});
-    return sortOrders(filtered, { by: sortBy || "createdAt", dir: sortDir || "desc" });
-  }
-
-  // ---------- action queue (rate-limited + retries) ----------
-  class ActionQueue {
-    constructor({ concurrency = 1, minIntervalMs = 250, maxRetries = 1, onProgress } = {}) {
-      this.concurrency = Math.max(1, _num(concurrency, 1));
-      this.minIntervalMs = Math.max(0, _num(minIntervalMs, 0));
-      this.maxRetries = Math.max(0, _num(maxRetries, 0));
-      this.onProgress = typeof onProgress === "function" ? onProgress : null;
-      this._q = [];
-      this._running = 0;
-      this._done = 0;
-      this._failed = 0;
-      this._started = 0;
-      this._lastRunAt = 0;
-    }
-
-    stats() {
-      return {
-        queued: this._q.length,
-        running: this._running,
-        done: this._done,
-        failed: this._failed,
-        started: this._started
-      };
-    }
-
-    add(taskFn, { label = "", retries = this.maxRetries } = {}) {
-      if (typeof taskFn !== "function") throw new Error("queue.add: taskFn must be a function");
-      const item = { taskFn, label: _normStr(label), retriesLeft: Math.max(0, _num(retries, 0)) };
-      return new Promise((resolve, reject) => {
-        item.resolve = resolve;
-        item.reject = reject;
-        this._q.push(item);
-        this._pump();
-      });
-    }
-
-    clear() {
-      this._q.length = 0;
-      return this.stats();
-    }
-
-    async _waitSpacing() {
-      const now = Date.now();
-      const dt = now - this._lastRunAt;
-      if (dt < this.minIntervalMs) {
-        await new Promise(r => setTimeout(r, this.minIntervalMs - dt));
-      }
-    }
-
-    _emit() {
-      if (this.onProgress) {
-        try {
-          this.onProgress(this.stats());
-        } catch { }
-      }
-    }
-
-    _pump() {
-      this._emit();
-      while (this._running < this.concurrency && this._q.length) {
-        const item = this._q.shift();
-        this._run(item);
-      }
-    }
-
-    async _run(item) {
-      this._running++;
-      this._started++;
-      this._emit();
-
-      try {
-        await this._waitSpacing();
-        this._lastRunAt = Date.now();
-
-        const res = await item.taskFn();
-        this._done++;
-        item.resolve(res);
-      } catch (e) {
-        if (item.retriesLeft > 0) {
-          item.retriesLeft--;
-          // push back (simple retry)
-          this._q.push(item);
-        } else {
-          this._failed++;
-          item.reject(e);
-        }
-      } finally {
-        this._running--;
-        this._emit();
-        // spacing handled per task start; pump next
-        this._pump();
-      }
-    }
-  }
-
-  // ---------- server action wrappers ----------
-  async function patchOrder(orderIdValue, payload) {
-    const id = _normStr(orderIdValue);
-    if (!id) throw new Error("patchOrder: orderId required");
-    if (window.adminApi?.patchOrder) return window.adminApi.patchOrder(id, payload || {});
-    return _fetchJson(`${_base()}/admin/orders/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: _headers(true),
-      body: JSON.stringify(payload || {})
-    });
-  }
-
-  async function resendConfirmation(orderIdValue) {
-    const id = _normStr(orderIdValue);
-    if (!id) throw new Error("resendConfirmation: orderId required");
-    if (window.adminApi?.resend) return window.adminApi.resend(id);
-    return _fetchJson(`${_base()}/admin/orders/${encodeURIComponent(id)}/resend-confirmation`, {
-      method: "POST",
-      headers: _headers(true),
-      body: "{}"
-    });
-  }
-
-  async function refundOrder(orderIdValue, { amount, reason, note } = {}) {
-    const id = _normStr(orderIdValue);
-    if (!id) throw new Error("refundOrder: orderId required");
-    const body = {};
-    if (amount != null) body.amount = amount;
-    if (reason != null) body.reason = reason;
-    if (note != null) body.note = note;
-    return _fetchJson(`${_base()}/admin/orders/${encodeURIComponent(id)}/refund`, {
-      method: "POST",
-      headers: _headers(true),
-      body: JSON.stringify(body)
-    });
-  }
-
-  async function listOrdersFromServer({ from, to, limit = 1000 } = {}) {
-    if (window.adminApi?.listOrders) return window.adminApi.listOrders({ from, to, limit });
-    const qs = new URLSearchParams();
-    if (from) qs.set("from", from);
-    if (to) qs.set("to", to);
-    if (limit != null) qs.set("limit", String(limit));
-    return _fetchJson(`${_base()}/admin/orders?${qs.toString()}`, { method: "GET", headers: _headers(false) });
-  }
-
-  // ---------- bulk actions ----------
-  async function bulkPatchStatus(orderIds, status, { queue } = {}) {
-    const ids = (Array.isArray(orderIds) ? orderIds : []).map(_normStr).filter(Boolean);
-    const q = queue || TOOL.queue || new ActionQueue();
-    const results = [];
-    for (const id of ids) {
-      const p = q.add(() => patchOrder(id, { status }), { label: `patch:${id}` })
-        .then(r => ({ ok: true, id, result: r }))
-        .catch(e => ({ ok: false, id, error: _safeStr(e?.message || e) }));
-      results.push(p);
-    }
-    return Promise.all(results);
-  }
-
-  async function bulkResendConfirmation(orderIds, { queue } = {}) {
-    const ids = (Array.isArray(orderIds) ? orderIds : []).map(_normStr).filter(Boolean);
-    const q = queue || TOOL.queue || new ActionQueue();
-    const results = [];
-    for (const id of ids) {
-      const p = q.add(() => resendConfirmation(id), { label: `resend:${id}` })
-        .then(r => ({ ok: true, id, result: r }))
-        .catch(e => ({ ok: false, id, error: _safeStr(e?.message || e) }));
-      results.push(p);
-    }
-    return Promise.all(results);
-  }
-
-  async function bulkRefund(orderIds, refundPayload, { queue } = {}) {
-    const ids = (Array.isArray(orderIds) ? orderIds : []).map(_normStr).filter(Boolean);
-    const q = queue || TOOL.queue || new ActionQueue();
-    const results = [];
-    for (const id of ids) {
-      const p = q.add(() => refundOrder(id, refundPayload || {}), { label: `refund:${id}` })
-        .then(r => ({ ok: true, id, result: r }))
-        .catch(e => ({ ok: false, id, error: _safeStr(e?.message || e) }));
-      results.push(p);
-    }
-    return Promise.all(results);
-  }
-
-  // ---------- caching ----------
-  function cacheOrders(orders) {
-    try {
-      sessionStorage.setItem(SS_ORDERS_CACHE, JSON.stringify({
-        cachedAt: Date.now(),
-        orders: Array.isArray(orders) ? orders : []
-      }));
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: _safeStr(e?.message || e) };
-    }
-  }
-
-  function loadCachedOrders() {
-    try {
-      const raw = sessionStorage.getItem(SS_ORDERS_CACHE);
-      if (!raw) return { ok: true, cachedAt: null, orders: [] };
-      const obj = JSON.parse(raw);
-      return {
-        ok: true,
-        cachedAt: obj?.cachedAt || null,
-        orders: Array.isArray(obj?.orders) ? obj.orders : []
-      };
-    } catch (e) {
-      return { ok: false, cachedAt: null, orders: [], error: _safeStr(e?.message || e) };
-    }
-  }
-
-  async function fetchOrdersWithCache(opts = {}) {
-    // Non-invasive: just fetch and store; caller decides what to do with the orders
-    const orders = await listOrdersFromServer(opts);
-    cacheOrders(orders);
-    return orders;
-  }
-
-  // ---------- private notes (local only) ----------
-  function _loadNotesObj() {
-    try {
-      const raw = localStorage.getItem(LS_NOTES);
-      if (!raw) return {};
-      const obj = JSON.parse(raw);
-      return (obj && typeof obj === "object") ? obj : {};
-    } catch {
-      return {};
-    }
-  }
-  function _saveNotesObj(obj) {
-    localStorage.setItem(LS_NOTES, JSON.stringify(obj || {}));
-  }
-
-  function setOrderNote(orderIdValue, text) {
-    const id = _normStr(orderIdValue);
-    if (!id) throw new Error("setOrderNote: orderId required");
-    const notes = _loadNotesObj();
-    const t = _normStr(text);
-    if (!t) {
-      delete notes[id];
-    } else {
-      notes[id] = { text: t, updatedAt: new Date().toISOString() };
-    }
-    _saveNotesObj(notes);
-    return { ok: true, id, note: notes[id] || null };
-  }
-
-  function getOrderNote(orderIdValue) {
-    const id = _normStr(orderIdValue);
-    const notes = _loadNotesObj();
-    return notes[id] || null;
-  }
-
-  function listOrderNotes() {
-    const notes = _loadNotesObj();
-    return Object.keys(notes).sort().map(id => ({ id, ...notes[id] }));
-  }
-
-  // ---------- duplicate detection ----------
-  function findPotentialDuplicates(orders, { windowMinutes = 30 } = {}) {
-    const winMs = Math.max(1, _num(windowMinutes, 30)) * 60 * 1000;
-    const buckets = new Map();
-
-    for (const o of (orders || [])) {
-      const email = _lower(customerEmail(o));
-      if (!email) continue;
-
-      const totals = orderTotalsEUR(o);
-      const total = Math.round(_num(totals.totalPaidEUR, 0) * 100) / 100;
-
-      const key = `${email}__${total.toFixed(2)}`;
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key).push(o);
-    }
-
-    const out = [];
-    for (const [key, arr] of buckets.entries()) {
-      if (arr.length < 2) continue;
-      const sorted = sortOrders(arr, { by: "createdAt", dir: "asc" });
-
-      let grp = [sorted[0]];
-      for (let i = 1; i < sorted.length; i++) {
-        const prev = grp[grp.length - 1];
-        const a = orderCreatedAt(prev);
-        const b = orderCreatedAt(sorted[i]);
-        const dt = (a && b) ? (b.getTime() - a.getTime()) : Infinity;
-
-        if (dt <= winMs) grp.push(sorted[i]);
-        else {
-          if (grp.length >= 2) out.push(_dupGroup(grp, key));
-          grp = [sorted[i]];
-        }
-      }
-      if (grp.length >= 2) out.push(_dupGroup(grp, key));
-    }
-
-    return out;
-
-    function _dupGroup(group, keyStr) {
-      const first = group[0];
-      const last = group[group.length - 1];
-      const atA = orderCreatedAt(first);
-      const atB = orderCreatedAt(last);
-      return {
-        key: keyStr,
-        count: group.length,
-        email: customerEmail(first),
-        totalPaidEUR: orderTotalsEUR(first).totalPaidEUR,
-        from: atA ? atA.toISOString() : null,
-        to: atB ? atB.toISOString() : null,
-        ids: group.map(orderId),
-        orders: group
-      };
-    }
-  }
-
-  // ---------- dashboard stats ----------
-  function summarizeOrders(orders) {
-    const rows = Array.isArray(orders) ? orders : [];
-    const byStatus = {};
-    const byCountry = {};
-    const byCurrency = {};
-    let totalPaidEUR = 0;
-    let saleEUR = 0;
-    let purchaseEUR = 0;
-
-    for (const o of rows) {
-      const s = orderStatus(o);
-      const c = (customerCountry(o) || "??").toUpperCase();
-      const cur = orderCurrency(o);
-
-      byStatus[s] = (byStatus[s] || 0) + 1;
-      byCountry[c] = (byCountry[c] || 0) + 1;
-      byCurrency[cur] = (byCurrency[cur] || 0) + 1;
-
-      const t = orderTotalsEUR(o);
-      totalPaidEUR += _num(t.totalPaidEUR, 0);
-      saleEUR += _num(t.saleEUR, 0);
-      purchaseEUR += _num(t.purchaseEUR, 0);
-    }
-
-    const marginEUR = (saleEUR || totalPaidEUR) - purchaseEUR;
-
-    return {
-      count: rows.length,
-      byStatus,
-      byCountry,
-      byCurrency,
-      totals: {
-        totalPaidEUR,
-        saleEUR,
-        purchaseEUR,
-        marginEUR,
-        marginPct: (saleEUR > 0) ? (marginEUR / saleEUR) : null
-      }
-    };
-  }
-
-  // ---------- print/copy helpers ----------
-  async function copyText(text) {
-    const t = _safeStr(text);
-    if (!t) return false;
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(t);
-      return true;
-    }
-
-    // fallback
-    const ta = document.createElement("textarea");
-    ta.value = t;
-    ta.setAttribute("readonly", "true");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    return ok;
-  }
-
-  function formatAddress(order) {
-    const c = orderCustomer(order);
-    const name = customerName(order);
-    const lines = [
-      name,
-      _normStr(c?.address1),
-      _normStr(c?.address2),
-      [_normStr(c?.postalCode), _normStr(c?.city)].filter(Boolean).join(" "),
-      _normStr(c?.region),
-      _normStr((c?.countryCode || c?.country || "").toUpperCase()),
-      customerPhone(order) ? `Phone: ${customerPhone(order)}` : "",
-      customerEmail(order) ? `Email: ${customerEmail(order)}` : ""
-    ].filter(Boolean);
-
-    return lines.join("\n");
-  }
-
-  function formatOrderSummary(order) {
-    const id = orderId(order);
-    const s = orderStatus(order);
-    const cur = orderCurrency(order);
-    const totals = orderTotalsEUR(order);
-    const items = orderItems(order);
-
-    const lines = [];
-    lines.push(`Order: ${id}`);
-    lines.push(`Status: ${s}`);
-    lines.push(`Customer: ${customerName(order) || "—"} (${customerEmail(order) || "—"})`);
-    lines.push(`Country: ${(customerCountry(order) || "—").toUpperCase()}`);
-    lines.push(`Currency: ${cur}`);
-    lines.push(`Total (EUR): ${totals.totalPaidEUR.toFixed(2)}`);
-    lines.push(`Margin (EUR): ${_num(totals.marginEUR, 0).toFixed(2)}`);
-
-    lines.push("");
-    lines.push("Items:");
-    if (!items.length) {
-      lines.push("  (none)");
-    } else {
-      for (const it of items) {
-        const q = itemQty(it);
-        const name = _normStr(it?.name) || "(item)";
-        const opt = _normStr(it?.selectedOption);
-        const link = _normStr(it?.productLink);
-        const sale = (q * itemSaleEUR(it)).toFixed(2);
-        const pur = (q * itemExpectedPurchaseEUR(it)).toFixed(2);
-        lines.push(`  - ${name}${opt ? ` (${opt})` : ""} x${q} | saleEUR ${sale} | buyEUR ${pur}${link ? ` | ${link}` : ""}`);
-      }
-    }
-
-    return lines.join("\n");
-  }
-
-  function openPrintWindowFromText(title, text) {
-    const safeTitle = _safeStr(title || "Print");
-    const body = _safeStr(text).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-    const html = `<!doctype html>
-<html><head><meta charset="utf-8"><title>${safeTitle}</title>
-<style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:20px;line-height:1.4}
-  .box{white-space:normal}
-</style></head>
-<body><div class="box">${body}</div>
-<script>window.onload=()=>{window.print();}</script>
-</body></html>`;
-    const w = window.open("", "_blank", "noopener,noreferrer");
-    if (!w) throw new Error("Popup blocked");
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  }
-
-  // ---------- guardrails ----------
-  async function confirmTyped({ message = "Confirm action", phrase = "CONFIRM" } = {}) {
-    const msg = _safeStr(message);
-    const p = _safeStr(phrase);
-    const ans = prompt(`${msg}\n\nType exactly: ${p}`);
-    return _normStr(ans) === p;
-  }
-
-  function validateJsonText(jsonText, { maxBytes = 5_000_000, requireObjectOrArray = true } = {}) {
-    const text = _safeStr(jsonText);
-    if (!text.trim()) return { ok: false, error: "Empty JSON" };
-
-    const bytes = new Blob([text]).size;
-    if (bytes > maxBytes) return { ok: false, error: `JSON too large (${bytes} bytes)` };
-
-    try {
-      const parsed = JSON.parse(text);
-      if (requireObjectOrArray) {
-        const okType = (parsed && typeof parsed === "object");
-        if (!okType) return { ok: false, error: "Top-level JSON must be an object or array" };
-      }
-      return { ok: true, parsed };
-    } catch (e) {
-      return { ok: false, error: _safeStr(e?.message || e) };
-    }
-  }
-
-  function jsonDiffSummary(oldJsonText, newJsonText, { maxPaths = 200, maxDepth = 6 } = {}) {
-    const a = validateJsonText(oldJsonText, { requireObjectOrArray: false });
-    const b = validateJsonText(newJsonText, { requireObjectOrArray: false });
-
-    if (!a.ok || !b.ok) {
-      return {
-        ok: false,
-        oldOk: a.ok,
-        newOk: b.ok,
-        oldError: a.ok ? null : a.error,
-        newError: b.ok ? null : b.error
-      };
-    }
-
-    const oldObj = a.parsed;
-    const newObj = b.parsed;
-
-    const changed = [];
-    const added = [];
-    const removed = [];
-    let truncated = false;
-
-    function pushLimited(arr, v) {
-      if (arr.length >= maxPaths) { truncated = true; return; }
-      arr.push(v);
-    }
-
-    function walk(path, x, y, depth) {
-      if (depth > maxDepth) {
-        if (JSON.stringify(x) !== JSON.stringify(y)) pushLimited(changed, path || "(root)");
-        return;
-      }
-
-      const xType = _type(x);
-      const yType = _type(y);
-      if (xType !== yType) {
-        pushLimited(changed, path || "(root)");
-        return;
-      }
-
-      if (xType === "array") {
-        // array diff: detect length changes, then shallow compare by index (bounded)
-        if ((x?.length || 0) !== (y?.length || 0)) pushLimited(changed, `${path || "(root)"} (length)`);
-        const n = Math.min(x.length, y.length, 50);
-        for (let i = 0; i < n; i++) {
-          if (JSON.stringify(x[i]) !== JSON.stringify(y[i])) pushLimited(changed, `${path || "(root)"}[${i}]`);
-        }
-        return;
-      }
-
-      if (xType === "object") {
-        const xKeys = Object.keys(x || {});
-        const yKeys = Object.keys(y || {});
-        const xSet = new Set(xKeys);
-        const ySet = new Set(yKeys);
-
-        for (const k of xKeys) {
-          if (!ySet.has(k)) pushLimited(removed, _join(path, k));
-        }
-        for (const k of yKeys) {
-          if (!xSet.has(k)) pushLimited(added, _join(path, k));
-        }
-        for (const k of yKeys) {
-          if (!xSet.has(k)) continue;
-          walk(_join(path, k), x[k], y[k], depth + 1);
-        }
-        return;
-      }
-
-      // primitive
-      if (x !== y) pushLimited(changed, path || "(root)");
-    }
-
-    walk("", oldObj, newObj, 0);
-
-    // line-level rough diff (fast)
-    const line = _lineDiffCounts(_safeStr(oldJsonText), _safeStr(newJsonText));
-
-    return {
-      ok: true,
-      addedKeys: added,
-      removedKeys: removed,
-      changedPaths: changed,
-      truncated,
-      lineDiff: line
-    };
-
-    function _type(v) {
-      if (Array.isArray(v)) return "array";
-      if (v && typeof v === "object") return "object";
-      return "primitive";
-    }
-    function _join(p, k) {
-      return p ? `${p}.${k}` : k;
-    }
-    function _lineDiffCounts(oldText, newText) {
-      const aLines = oldText.split(/\r?\n/);
-      const bLines = newText.split(/\r?\n/);
-      const aSet = new Set(aLines);
-      const bSet = new Set(bLines);
-      let added = 0, removed = 0;
-      for (const l of bSet) if (!aSet.has(l)) added++;
-      for (const l of aSet) if (!bSet.has(l)) removed++;
-      return { addedUniqueLines: added, removedUniqueLines: removed, oldLines: aLines.length, newLines: bLines.length };
-    }
-  }
-
-  // ---------- client-side export (selected orders) ----------
-  function exportOrdersToCSV(orders, filename = "orders.csv") {
-    const rows = Array.isArray(orders) ? orders : [];
-    const cols = [
-      "orderId",
-      "createdAt",
-      "status",
-      "email",
-      "name",
-      "country",
-      "currency",
-      "totalPaidEUR",
-      "saleEUR",
-      "purchaseEUR",
-      "marginEUR"
-    ];
-
-    function csvEscape(v) {
-      const s = _safeStr(v);
-      if (/["\n,]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-      return s;
-    }
-
-    const lines = [];
-    lines.push(cols.join(","));
-
-    for (const o of rows) {
-      const id = orderId(o);
-      const at = orderCreatedAt(o);
-      const totals = orderTotalsEUR(o);
-      const line = [
-        id,
-        at ? at.toISOString() : "",
-        orderStatus(o),
-        customerEmail(o),
-        customerName(o),
-        customerCountry(o).toUpperCase(),
-        orderCurrency(o),
-        totals.totalPaidEUR.toFixed(2),
-        totals.saleEUR.toFixed(2),
-        totals.purchaseEUR.toFixed(2),
-        _num(totals.marginEUR, 0).toFixed(2)
-      ].map(csvEscape);
-      lines.push(line.join(","));
-    }
-
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    _downloadBlob(blob, filename);
-    return { ok: true, rows: rows.length, filename };
-  }
-
-  // ---------- expose ----------
-  TOOL.ActionQueue = ActionQueue;
-  TOOL.queue = TOOL.queue || new ActionQueue();
-
-  TOOL.order = {
-    id: orderId,
-    status: orderStatus,
-    createdAt: orderCreatedAt,
-    customer: orderCustomer,
-    totalsEUR: orderTotalsEUR,
-    attention: attentionFlags,
-    searchText: orderSearchText
-  };
-
-  TOOL.filterOrders = filterOrders;
-  TOOL.sortOrders = sortOrders;
-
-  TOOL.views = {
-    list: listViews,
-    set: setView,
-    delete: deleteView,
-    run: runView
-  };
-
-  TOOL.server = {
-    listOrders: listOrdersFromServer,
-    fetchOrdersWithCache,
-    patchOrder,
-    resendConfirmation,
-    refundOrder,
-    bulkPatchStatus,
-    bulkResendConfirmation,
-    bulkRefund
-  };
-
-  TOOL.cache = {
-    cacheOrders,
-    loadCachedOrders
-  };
-
-  TOOL.notes = {
-    set: setOrderNote,
-    get: getOrderNote,
-    list: listOrderNotes
-  };
-
-  TOOL.duplicates = {
-    find: findPotentialDuplicates
-  };
-
-  TOOL.stats = {
-    summarizeOrders
-  };
-
-  TOOL.copy = {
-    copyText,
-    formatAddress,
-    formatOrderSummary,
-    openPrintWindowFromText
-  };
-
-  TOOL.guardrails = {
-    confirmTyped,
-    validateJsonText,
-    jsonDiffSummary
-  };
-
-  TOOL.export = {
-    ordersToCSV: exportOrdersToCSV
-  };
-
-  // Expose tariffs UI controls for code outside this IIFE
-  window.tariffsUiToggle = tariffsUiToggle;
-  window.tariffsUiShow = tariffsUiShow;
-  window.tariffsUiHide = tariffsUiHide;
-  window.tariffsUiRefresh = tariffsUiRefresh;
-
-})();
-/* ===========================
-   TOPBAR ACTIONS (drop-in)
-   Paste anywhere AFTER `state`, `ensureLogin()`, `loadOrdersFromServer()`, `render()`, `toast()`,
-   and `openSettingsModal()` are defined (safest: paste at the very end of script.js).
-   =========================== */
-(function mgmtTopbarMount() {
-  if (window.__mgmtTopbarMounted) return;
-  window.__mgmtTopbarMounted = true;
-
-  // Expose `mount()` so init() can call it safely.
-  // `mount` is a function declaration (hoisted), so this assignment is valid here.
-  window.mount = mount;
-
-  function ttoast(title, desc) {
-    try { if (typeof toast === "function") return toast(title, desc); } catch { }
-    console.log(title, desc);
-  }
-
-  function injectCssOnce() {
-    if (document.getElementById("mgmt-topbar-css")) return;
-    const style = document.createElement("style");
-    style.id = "mgmt-topbar-css";
-    style.textContent = `
-        header.top-topbar { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
-        header.top-topbar .mgmt-topbar-container{
-          display:flex; align-items:center; justify-content:space-between; gap:12px;
-          padding: 10px 12px;
-        }
-        header.top-topbar .mgmt-brand-wrap{ display:flex; align-items:center; gap:10px; min-width:120px; }
-        header.top-topbar .brand { font-weight: 750; letter-spacing: .2px; }
-        .mgmt-topbar-actions{
-          display:flex; align-items:center; gap:8px;
-          overflow-x:auto; overscroll-behavior-x: contain;
-          -webkit-overflow-scrolling: touch;
-          padding: 2px 2px;
-          scrollbar-width: thin;
-        }
-        .mgmt-topbar-actions::-webkit-scrollbar{ height: 8px; }
-        .mgmt-topbar-actions::-webkit-scrollbar-thumb{ border-radius: 999px; }
-        .mgmt-sep{ width:1px; height: 26px; opacity:.35; margin: 0 2px; }
-        .mgmt-btn{
-          appearance:none; border: 1px solid rgba(255,255,255,.12);
-          background: rgba(255,255,255,.06);
-          color: inherit;
-          padding: 8px 10px; border-radius: 12px;
-          font: inherit; line-height: 1;
-          cursor: pointer;
-          display:inline-flex; align-items:center; gap:8px;
-          user-select:none; white-space:nowrap;
-          transition: transform .06s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
-        }
-        .mgmt-btn:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.18); }
-        .mgmt-btn:active{ transform: translateY(1px); }
-        .mgmt-btn[disabled]{ opacity:.55; cursor:not-allowed; }
-        .mgmt-btn.primary{
-          border-color: rgba(79, 158, 255, .55);
-          background: rgba(79, 158, 255, .20);
-        }
-        .mgmt-btn.danger{
-          border-color: rgba(255, 90, 90, .55);
-          background: rgba(255, 90, 90, .18);
-        }
-        .mgmt-pill{
-          display:inline-flex; align-items:center; justify-content:center;
-          min-width: 22px; height: 22px; padding: 0 6px;
-          border-radius: 999px; font-size: 12px; font-weight: 700;
-          border: 1px solid rgba(255,255,255,.14);
-          background: rgba(255,255,255,.06);
-        }
-      `;
-    document.head.appendChild(style);
-  }
-
-  function q(sel) { return document.querySelector(sel); }
-  function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
-
-  function getActiveOrder() {
-    try {
-      const id = state?.openOrderId;
-      if (!id) return null;
-      return (state.orders || []).find(o => o && o.id === id) || null;
-    } catch { return null; }
-  }
-
-  function orderTotalEUR(uiOrder) {
-    const prods = uiOrder?.products || [];
-    let sum = 0;
-    for (const p of prods) sum += (Number(p?.amount || 1) * Number(p?.unitPrice || 0));
-    return sum;
-  }
-
-  function formatAddress(uiOrder) {
-    const c = uiOrder?.customer || {};
-    const nm = [c.name, c.surname].filter(Boolean).join(" ").trim();
-    const lines = [
-      nm || "(no name)",
-      (c.address || "").trim(),
-      [c.postalCode, c.city].filter(Boolean).join(" ").trim(),
-      (c.region || "").trim(),
-      (c.country || "").trim(),
-      c.phone ? `Phone: ${c.phone}` : ""
-    ].filter(Boolean);
-    return lines.join("\n");
-  }
-
-  function formatSummary(uiOrder) {
-    const c = uiOrder?.customer || {};
-    const nm = [c.name, c.surname].filter(Boolean).join(" ").trim();
-    const lines = [];
-    lines.push(`Order: ${uiOrder?.id || ""}`);
-    lines.push(`Created: ${uiOrder?.createdAt || ""}`);
-    lines.push(`Customer: ${nm || "—"}`);
-    lines.push(`Country: ${(c.country || "—")}`);
-    lines.push(`Currency: ${(uiOrder?.currency || "EUR")}`);
-    lines.push(`Total (EUR): ${orderTotalEUR(uiOrder).toFixed(2)}`);
-    lines.push("");
-    lines.push("Items:");
-    const items = uiOrder?.products || [];
-    if (!items.length) lines.push("  (none)");
-    for (const p of items) {
-      const q = Number(p?.amount || 1);
-      const name = String(p?.name || "(item)");
-      const url = String(p?.url || "");
-      const sale = (q * Number(p?.unitPrice || 0)).toFixed(2);
-      lines.push(`  - ${name} x${q} | saleEUR ${sale}${url ? ` | ${url}` : ""}`);
-    }
-    return lines.join("\n");
-  }
-
-  async function copyToClipboard(text) {
-    const t = String(text || "");
-    if (!t) return false;
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(t);
-      return true;
-    }
-    const ta = document.createElement("textarea");
-    ta.value = t;
-    ta.setAttribute("readonly", "true");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    return ok;
-  }
-
-  function downloadTextFile(filename, text, mime = "text/plain;charset=utf-8") {
-    const blob = new Blob([String(text || "")], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function findPotentialDupes(orders, windowMinutes = 30) {
-    const winMs = Math.max(1, Number(windowMinutes || 30)) * 60 * 1000;
-
-    // signature: name+address+postal+city+country + totalEUR(rounded)
-    const buckets = new Map();
-    for (const o of (orders || [])) {
-      if (!o) continue;
-      const c = o.customer || {};
-      const sig = [
-        (c.name || ""), (c.surname || ""),
-        (c.address || ""), (c.postalCode || ""),
-        (c.city || ""), (c.country || "")
-      ].join("|").toLowerCase().replace(/\s+/g, " ").trim();
-
-      if (!sig) continue;
-      const total = Math.round(orderTotalEUR(o) * 100) / 100;
-      const key = `${sig}__${total.toFixed(2)}`;
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key).push(o);
-    }
-
-    const groups = [];
-    for (const [key, arr] of buckets.entries()) {
-      if (arr.length < 2) continue;
-      const sorted = [...arr].sort((a, b) => {
-        const ta = new Date(a.createdAt || 0).getTime() || 0;
-        const tb = new Date(b.createdAt || 0).getTime() || 0;
-        return ta - tb;
-      });
-
-      let g = [sorted[0]];
-      for (let i = 1; i < sorted.length; i++) {
-        const prev = g[g.length - 1];
-        const dt = (new Date(sorted[i].createdAt || 0).getTime() || 0) - (new Date(prev.createdAt || 0).getTime() || 0);
-        if (dt <= winMs) g.push(sorted[i]);
-        else {
-          if (g.length >= 2) groups.push(g);
-          g = [sorted[i]];
-        }
-      }
-      if (g.length >= 2) groups.push(g);
-    }
-
-    return groups.map(g => ({
-      count: g.length,
-      ids: g.map(x => x.id),
-      from: g[0]?.createdAt || null,
-      to: g[g.length - 1]?.createdAt || null,
-      totalEUR: orderTotalEUR(g[0]),
-      customer: g[0]?.customer || {}
-    }));
-  }
-
-  async function safeEnsureLogin() {
-    if (typeof ensureLogin === "function") return ensureLogin();
-    if (window.ensureLogin && typeof window.ensureLogin === "function") return window.ensureLogin();
-  }
-
-  function pickFile({ accept = "*" } = {}) {
-    return new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = accept;
-      input.style.display = "none";
-      input.onchange = () => resolve(input.files && input.files[0] ? input.files[0] : null);
-      document.body.appendChild(input);
-      input.click();
-      setTimeout(() => input.remove(), 0);
-    });
-  }
-
-  async function actionRunner(fn, label) {
-    const btns = Array.from(document.querySelectorAll(".mgmt-topbar-actions .mgmt-btn"));
-    btns.forEach(b => (b.disabled = true));
-
-    try {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          await fn();
-          break;
-        } catch (e) {
-          if (attempt === 0 && isAdminAuthError(e)) {
-            clearAdminSession();
-            ttoast("Session expired", "Re-authenticating...");
-            // Try to refresh session (may be silent if auto-login is enabled)
-            await ensureLogin();
-            continue; // retry action once
-          }
-          throw e;
-        }
-      }
-    } catch (e) {
-      ttoast("Error", `${label || "Action"}: ${String(e?.message || e)}`);
-    } finally {
-      btns.forEach(b => (b.disabled = false));
-    }
-  }
-
-  function mount() {
-    injectCssOnce();
-
-    const headerContainer = q("header.top-topbar > .container");
-    if (!headerContainer) return;
-
-    headerContainer.classList.add("mgmt-topbar-container");
-
-    // Wrap brand for flex stability + preserve existing brand node
-    const brand = headerContainer.querySelector(".brand");
-    let brandWrap = headerContainer.querySelector(".mgmt-brand-wrap");
-    if (!brandWrap) {
-      brandWrap = el("div", "mgmt-brand-wrap");
-      if (brand) brandWrap.appendChild(brand);
-      headerContainer.insertBefore(brandWrap, headerContainer.firstChild);
-    }
-
-    // Project selector (multi-server profiles)
-    let projWrap = headerContainer.querySelector(".mgmt-project-wrap");
-    if (!projWrap) {
-      projWrap = el("div", "mgmt-project-wrap");
-      const sel = el("select", "mgmt-project-select");
-      sel.id = "mgProjectSelect";
-      const manage = el("button", "mgmt-project-btn");
-      manage.id = "mgProjectManage";
-      manage.title = "Manage projects";
-      manage.textContent = "⋯";
-      projWrap.appendChild(sel);
-      projWrap.appendChild(manage);
-      // Insert before brand for top-left placement
-      headerContainer.insertBefore(projWrap, headerContainer.firstChild);
-    }
-
-    // Populate selector
-    const pList = mgEnsureDefaultProject();
-    const pSel = projWrap.querySelector("#mgProjectSelect");
-    if (pSel) {
-      pSel.innerHTML = "";
-      const activeId = mgGetActiveProjectId();
-      for (const p of pList) {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = p.name || p.id;
-        if (p.id === activeId) opt.selected = true;
-        pSel.appendChild(opt);
-      }
-
-      pSel.onchange = () => actionRunner(async () => {
-        const id = String(pSel.value || "");
-        await mgSwitchProject(id, { forceLogin: false });
-      }, "Switch project");
-    }
-
-    const pManageBtn = projWrap.querySelector("#mgProjectManage");
-    if (pManageBtn) {
-      pManageBtn.onclick = () => actionRunner(async () => {
-        const projects = mgEnsureDefaultProject();
-        const activeId = mgGetActiveProjectId();
-        const choice = prompt(
-          "Projects:\n1 = Add new\n2 = Rename active\n3 = Remove active\n\nEnter 1, 2, or 3:",
-          "1"
-        );
-        if (!choice) return;
-
-        if (choice.trim() === "1") {
-          const name = prompt("New project name:", "New project");
-          if (!name) return;
-          const apiBase = prompt("API base (optional, e.g. https://api.example.com):", localStorage.getItem("api_base") || "");
-          const id = "p_" + Date.now();
-          projects.push({ id, name, api_base: apiBase || "", admin_code: "", api_token: "" });
-          mgSaveProjects(projects);
-          // Force a fresh login for the new project
-          await mgSwitchProject(id, { forceLogin: true });
-          // Re-render selector
-          try { mount(); } catch { }
-          return;
+    // Populate selects
+    const currencySelect = document.getElementById("currencySelect");
+    const countrySelect = document.getElementById("countrySelect");
+    const detectedCountry = (localStorage.getItem("detectedCountry") || "US").toUpperCase();
+    const detectedSpan = document.getElementById("detected-country");
+    if (detectedSpan) detectedSpan.textContent = detectedCountry;
+
+    // Currency options
+    if (currencySelect) {
+        currencySelect.innerHTML = "";
+        const codes = Object.keys(exchangeRates || {}).sort();
+        for (const code of codes) {
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = `${currencySymbols?.[code] || ""} ${code}`.trim();
+            currencySelect.appendChild(opt);
         }
 
-        if (choice.trim() === "2") {
-          const idx = projects.findIndex(p => p.id === activeId);
-          if (idx < 0) return;
-          const newName = prompt("Rename active project:", projects[idx].name || activeId);
-          if (!newName) return;
-          projects[idx].name = newName;
-          mgSaveProjects(projects);
-          try { mount(); } catch { }
-          return;
-        }
-
-        if (choice.trim() === "3") {
-          if (projects.length <= 1) {
-            alert("Cannot remove the last project.");
-            return;
-          }
-          const idx = projects.findIndex(p => p.id === activeId);
-          if (idx < 0) return;
-          const ok = confirm(`Remove project "${projects[idx].name || activeId}"?`);
-          if (!ok) return;
-          projects.splice(idx, 1);
-          mgSaveProjects(projects);
-          // Switch to first remaining
-          await mgSwitchProject(projects[0].id, { forceLogin: false });
-          try { mount(); } catch { }
-          return;
-        }
-      }, "Manage projects");
+        selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
+        currencySelect.value = selectedCurrency;
     }
 
-    let actions = headerContainer.querySelector(".mgmt-topbar-actions");
-    if (!actions) {
-      actions = el("div", "mgmt-topbar-actions");
-      headerContainer.appendChild(actions);
+    // Country options
+    if (countrySelect) {
+        countrySelect.innerHTML = "";
+        (window.preloadedData?.countries || [])
+            .slice()
+            .sort((a, b) => String(a.code || "").localeCompare(String(b.code || "")))
+            .forEach((c) => {
+                const code = String(c.code || "").toUpperCase();
+                if (!code) return;
+                const opt = document.createElement("option");
+                opt.value = code;
+                opt.textContent = countryNames?.[code] || code;
+                countrySelect.appendChild(opt);
+            });
+
+        countrySelect.value = detectedCountry;
     }
 
-    // Build buttons (idempotently)
-    // Keep topbar compact: move rarely-used tools into a popover.
-    actions.innerHTML = `
- <button class="mgmt-btn" data-act="refresh">Refresh</button>
-<button class="mgmt-btn" data-act="orders" id="mgOrdersTabBtn">Orders</button>
-<button class="mgmt-btn" data-act="graphs" id="mgGraphsTabBtn">Graphs</button>
-<button class="mgmt-btn" data-act="settings" title="Settings">⚙</button>
-
-        <div class="mgmt-sep"></div>
-  
-        <button class="mgmt-btn" data-act="products" id="mgProductsTabBtn">Products</button>
-        <button class="mgmt-btn" data-act="accounting" id="mgAccountingTabBtn">Accounting</button>
-        <button class="mgmt-btn" data-act="tariffs" id="mgTariffsTabBtn">Tariffs</button>
-  
-        <button class="mgmt-btn" data-act="sync">Sync</button>
-
-        <div class="mgmt-sep"></div>
-
-        <button class="mgmt-btn" data-act="tools" id="mgToolsBtn">Tools ▾</button>
-          
-        <div class="mgmt-sep"></div>
-  
-        <button class="mgmt-btn danger" data-act="logout">Logout</button>
-
-        <div class="mgmt-tools-pop" id="mgToolsPop" hidden>
-          <button class="mgmt-btn" data-tool="health">Health</button>
-          <button class="mgmt-btn" data-tool="rates">Rates</button>
-          <button class="mgmt-btn" data-tool="dupes">Dupes</button>
-          <button class="mgmt-btn" data-tool="excel">Excel</button>
-          <button class="mgmt-btn" data-tool="print">Print slip</button>
-          <div class="mgmt-tools-sep"></div>
-          <button class="mgmt-btn" data-tool="copy-addr">Copy address</button>
-          <button class="mgmt-btn" data-tool="copy-sum">Copy summary</button>
-        </div>
-      `;
-
-    function btn(act) { return actions.querySelector(`[data-act="${act}"]`); }
-    function tbtn(tool) { return actions.querySelector(`[data-tool="${tool}"]`); }
-
-    // Tools popover
-    const toolsBtn = btn("tools");
-    const toolsPop = actions.querySelector("#mgToolsPop");
-    const closeTools = () => { if (toolsPop) toolsPop.hidden = true; };
-    const toggleTools = () => { if (toolsPop) toolsPop.hidden = !toolsPop.hidden; };
-    if (toolsBtn && toolsPop) {
-      toolsBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleTools();
-      };
-      document.addEventListener("click", (e) => {
-        if (!toolsPop.hidden) {
-          const t = e.target;
-          if (t === toolsBtn) return;
-          if (toolsPop.contains(t)) return;
-          closeTools();
-        }
-      });
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeTools();
-      });
-    }
-
-    btn("refresh").onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      try {
-        state.orders = await loadOrdersFromServer();
-      } catch (e) {
-        if (isAdminAuthError(e)) {
-          clearAdminSession();
-          await ensureLogin();
-          state.orders = await loadOrdersFromServer();
-        } else {
-          throw e;
-        }
-      }
-      render();
-
-      ttoast("Refreshed", `Loaded ${state.orders.length} orders`);
-    }, "Refresh");
-
-    tbtn("excel").onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      const from = state.filters.since?.toISOString();
-      const to = state.filters.till?.toISOString();
-      if (!window.adminApi?.exportExcel) throw new Error("adminApi.exportExcel not available");
-      await window.adminApi.exportExcel({ from, to, limit: 10000 });
-      ttoast("Export", "orders.xlsx download started");
-    }, "Excel export");
-
-
-    const obtn = btn("orders");
-    if (obtn) {
-      obtn._mgWired = true;
-      obtn.onclick = () => actionRunner(async () => {
-        await safeEnsureLogin();
-
-        // Close other panels if open
-        try { tariffsUiHide(); } catch (e) { }
-        try { productsUiHide?.(); } catch (e) { }
-        try { accountingUiHide?.(); } catch (e) { }
-        try { window.graphEngine?.close?.(); } catch (e) { }
-
-        localStorage.setItem("mgmt_active_tab", "orders");
-        try { renderFilters(true); } catch (e) { }
-
-        // Ensure orders-only empty placeholder does not leak into other tabs
-        try {
-          const groups = document.getElementById("groups");
-          if (groups) groups.style.display = "";
-        } catch (e) { }
-
-        render();
-      }, "Orders");
-    }
-    const gbtn = btn("graphs");
-    if (gbtn) {
-      // Prevent graphEngine from attaching its own click handler (we control it here)
-      gbtn._mgWired = true;
-
-      gbtn.onclick = () => actionRunner(async () => {
-        await safeEnsureLogin();
-
-        if (window.graphEngine?.install) {
-          await window.graphEngine.install({ adminApi: window.adminApi });
-        }
-
-        // Close other overlays so graphs are visible
-        try { productsUiHide?.(); } catch (e) { }
-        try { accountingUiHide?.(); } catch (e) { }
-        try { tariffsUiHide?.(); } catch (e) { }
-
-        const panel = document.getElementById("graphsTab");
-        const isOpen = panel && !panel.classList.contains("mg-graphs-hidden");
-
-        if (isOpen) {
-          window.graphEngine?.close?.();
-          localStorage.setItem("mgmt_active_tab", "orders");
-        } else {
-          window.graphEngine?.open?.();
-          localStorage.setItem("mgmt_active_tab", "graphs");
-          try { const groups = document.getElementById("groups"); if (groups) groups.innerHTML = ""; } catch (e) { }
-        }
-        try { renderFilters(true); } catch (e) { }
-      }, "Graphs");
-    }
-
-    btn("settings").onclick = () => {
-      try { openSettingsModal(); } catch (e) { ttoast("Error", String(e?.message || e)); }
-    };
-
-    // Products tab
-    const __pb = btn("products");
-    if (__pb) {
-      __pb._mgWired = true;
-      __pb.onclick = () => actionRunner(async () => {
-        await safeEnsureLogin();
-        try { tariffsUiHide?.(); } catch { }
-        try { accountingUiHide?.(); } catch { }
-        try { window.graphEngine?.close?.(); } catch { }
-        localStorage.setItem("mgmt_active_tab", "products");
-        try { updateMgmtTabButtons?.(); } catch { }
-        try { renderFilters(true); } catch { }
-        try { const groups = document.getElementById("groups"); if (groups) groups.innerHTML = ""; } catch { }
-        if (typeof productsUiShow === "function") productsUiShow();
-      }, "Products");
-    }
-
-    // Accounting tab
-    const __ab = btn("accounting");
-    if (__ab) {
-      __ab._mgWired = true;
-      __ab.onclick = () => actionRunner(async () => {
-        await safeEnsureLogin();
-        try { tariffsUiHide?.(); } catch { }
-        try { productsUiHide?.(); } catch { }
-        try { window.graphEngine?.close?.(); } catch { }
-        localStorage.setItem("mgmt_active_tab", "accounting");
-        try { updateMgmtTabButtons?.(); } catch { }
-        try { renderFilters(true); } catch { }
-        try { const groups = document.getElementById("groups"); if (groups) groups.innerHTML = ""; } catch { }
-        if (typeof accountingUiShow === "function") await accountingUiShow();
-      }, "Accounting");
-    }
-
-
-    const __pdl = btn("prod-dl"); if (__pdl) __pdl.onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      if (!window.adminApi?.downloadLocalServerProducts) throw new Error("downloadLocalServerProducts() not found");
-      await window.adminApi.downloadLocalServerProducts();
-      ttoast("Products", "Download started");
-    }, "Products download");
-
-    const __pul = btn("prod-ul"); if (__pul) __pul.onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      if (!window.adminApi?.replaceLocalServerProductsFromFile) throw new Error("replaceLocalServerProductsFromFile() not found");
-      const file = await pickFile({ accept: ".js,.mjs,text/javascript" });
-      if (!file) return;
-      await window.adminApi.replaceLocalServerProductsFromFile(file);
-      ttoast("Products", "Uploaded & replaced");
-    }, "Products upload");
-    btn("tariffs").onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      // Hide other tabs/panels so tariffs are visible
-      try { productsUiHide?.(); } catch (e) { }
-      try { accountingUiHide?.(); } catch (e) { }
-      try { window.graphEngine?.close?.(); } catch (e) { }
-      localStorage.setItem("mgmt_active_tab", "tariffs");
-      try { updateMgmtTabButtons?.(); } catch (e) { }
-      try { renderFilters(true); } catch (e) { }
-      try { const groups = document.getElementById("groups"); if (groups) groups.innerHTML = ""; } catch (e) { }
-      const toggle = window.tariffsUiToggle || (typeof tariffsUiToggle === "function" ? tariffsUiToggle : null);
-      if (!toggle) throw new Error("tariffsUiToggle not available");
-      await toggle();
-    }, "Tariffs");
-
-
-    btn("sync").onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      if (!window.adminApi?.syncProductsWithCanonical) throw new Error("syncProductsWithCanonical() not found (add sync API function first)");
-      const out = await window.adminApi.syncProductsWithCanonical();
-      ttoast("Sync", out?.ok ? "Synced" : "Done");
-    }, "Sync");
-
-    // Tools popover actions
-    const healthBtn = tbtn("health");
-    if (healthBtn) healthBtn.onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      const base = (typeof _adminBase === "function") ? _adminBase() : (localStorage.getItem("api_base") || location.origin);
-      const out = await fetch(`${String(base).replace(/\/+$/, "")}/healthz`, { headers: (typeof _adminHeaders === "function") ? _adminHeaders(false) : {} })
-        .then(r => r.json().catch(() => ({})));
-      ttoast("Health", JSON.stringify(out));
-      closeTools();
-    }, "Health");
-
-    const ratesBtn = tbtn("rates");
-    if (ratesBtn) ratesBtn.onclick = () => actionRunner(async () => {
-      await safeEnsureLogin();
-      const base = (typeof _adminBase === "function") ? _adminBase() : (localStorage.getItem("api_base") || location.origin);
-      const out = await fetch(`${String(base).replace(/\/+$/, "")}/rates`, { headers: (typeof _adminHeaders === "function") ? _adminHeaders(false) : {} })
-        .then(r => r.json().catch(() => ({})));
-      const fxAt = out?.fetchedAt || out?.fetched_at || out?.timestamp || "";
-      ttoast("Rates", fxAt ? `fetchedAt: ${fxAt}` : JSON.stringify(out).slice(0, 180));
-      window.__lastRates = out;
-      closeTools();
-    }, "Rates");
-
-    const dupesBtn = tbtn("dupes");
-    if (dupesBtn) dupesBtn.onclick = () => actionRunner(async () => {
-      const groups = findPotentialDupes(state.orders || [], 30);
-      window.__lastDupes = groups;
-      downloadTextFile("potential-duplicates.json", JSON.stringify(groups, null, 2), "application/json;charset=utf-8");
-      ttoast("Dupes", `${groups.length} groups exported`);
-      closeTools();
-    }, "Dupes");
-
-    const copyAddrBtn = tbtn("copy-addr");
-    if (copyAddrBtn) copyAddrBtn.onclick = () => actionRunner(async () => {
-      const o = getActiveOrder();
-      if (!o) throw new Error("Open an order first (click its card header)");
-      await copyToClipboard(formatAddress(o));
-      ttoast("Copied", "Address copied");
-      closeTools();
-    }, "Copy address");
-
-    const copySumBtn = tbtn("copy-sum");
-    if (copySumBtn) copySumBtn.onclick = () => actionRunner(async () => {
-      const o = getActiveOrder();
-      if (!o) throw new Error("Open an order first (click its card header)");
-      await copyToClipboard(formatSummary(o));
-      ttoast("Copied", "Summary copied");
-      closeTools();
-    }, "Copy summary");
-
-    tbtn("print").onclick = () => actionRunner(async () => {
-      const o = getActiveOrder();
-      if (!o) throw new Error("Open an order first (click its card header)");
-      const text = `PACKING SLIP\n\n${formatSummary(o)}\n\nSHIP TO:\n${formatAddress(o)}\n`;
-      const safeTitle = String(o.id || "Packing slip").replace(/[^\w \-().]/g, "");
-      const w = window.open("", "_blank", "noopener,noreferrer");
-      if (!w) throw new Error("Popup blocked");
-      const body = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-      w.document.open();
-      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${safeTitle}</title>
-          <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:20px;line-height:1.35}</style>
-          </head><body>${body}<script>window.onload=()=>window.print();</script></body></html>`);
-      w.document.close();
-    }, "Print slip");
-
-    btn("logout").onclick = () => actionRunner(async () => {
-      const ok = confirm("Logout? This will clear your admin session on this browser.");
-      if (!ok) return;
-      clearAdminSession();
-      localStorage.removeItem("admin_code");
-      clearRememberedLogin();
-      location.reload();
-    }, "Logout");
-  }
-
-  document.addEventListener("DOMContentLoaded", mount);
-})();
-// ---- Metrics API (Graphs v2) ----
-// ---- Metrics API (Graphs v2) ----
-(function attachMetricsApi() {
-  window.adminApi = window.adminApi || {};
-  const api = window.adminApi;
-
-  function _base() {
-    const b = (localStorage.getItem("api_base") || (location && location.origin) || "").replace(/\/+$/, "");
-    return b || "";
-  }
-
-  function _hdr(json = false) {
-    // Prefer your existing helper if present
-    if (typeof _adminHeaders === "function") return _adminHeaders(!!json);
-
-    const h = json ? { "Content-Type": "application/json" } : {};
-    const token = localStorage.getItem("api_token") || "";
-    const code = localStorage.getItem("admin_code") || "";
-    if (token) h.Authorization = `Bearer ${token}`;
-    if (code) h["X-Admin-Code"] = code;
-    return h;
-  }
-
-  async function _ensure() {
-    if (typeof ensureLogin === "function") await ensureLogin();
-  }
-
-  api.metricsCatalog = api.metricsCatalog || async function metricsCatalog() {
-    await _ensure();
-    const r = await fetch(`${_base()}/admin/metrics/catalog`, { method: "GET", headers: _hdr(false) });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `metricsCatalog failed (${r.status})`);
-    return out;
-  };
-
-  api.metricsDimensions = api.metricsDimensions || async function metricsDimensions(params = {}) {
-    await _ensure();
-    const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(params || {})) {
-      if (v == null || v === "") continue;
-      qs.set(k, String(v));
-    }
-    const r = await fetch(`${_base()}/admin/metrics/dimensions?${qs.toString()}`, { method: "GET", headers: _hdr(false) });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `metricsDimensions failed (${r.status})`);
-    return out;
-  };
-
-  api.metricsTimeseries = api.metricsTimeseries || async function metricsTimeseries(params = {}) {
-    await _ensure();
-    const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(params || {})) {
-      if (v == null || v === "") continue;
-      qs.set(k, String(v));
-    }
-    const r = await fetch(`${_base()}/admin/metrics/timeseries?${qs.toString()}`, { method: "GET", headers: _hdr(false) });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `metricsTimeseries failed (${r.status})`);
-    return out;
-  };
-
-  api.listAnalyticsEvents = api.listAnalyticsEvents || async function listAnalyticsEvents(params = {}) {
-    await _ensure();
-    const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(params || {})) {
-      if (v == null || v === "") continue;
-      qs.set(k, String(v));
-    }
-    const r = await fetch(`${_base()}/admin/analytics/events?${qs.toString()}`, { method: "GET", headers: _hdr(false) });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `listAnalyticsEvents failed (${r.status})`);
-    return out;
-  };
-})();
-
-
-// ===== Accounting & Close Tab =====
-async function loadAccountingSummary() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  const res = await fetch(`${getApiBase()}/admin/accounting/summary?from=${from}&to=${to}`, {
-    headers: authHeaders()
-  });
-  const data = await res.json();
-  document.getElementById("accSummary").textContent = JSON.stringify(data, null, 2);
-
-  if (data.vat && data.vat.thresholdReached) {
-    document.getElementById("vatWarning").textContent =
-      "⚠ VAT threshold reached or close to limit. Consult your accountant.";
-  }
-}
-
-async function exportAccountingCSV() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  await downloadWithAuth(`${getApiBase()}/admin/accounting/export.csv?from=${from}&to=${to}`, "accounting_export.csv");
-}
-
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "accLoad") loadAccountingSummary();
-  if (e.target?.id === "accExport") exportAccountingCSV();
-});
-
-
-// ===== Expenses UI =====
-function fmtEUR(n) {
-  const x = Number(n || 0);
-  return x.toFixed(2);
-}
-
-async function loadExpenses() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  const res = await fetch(`${getApiBase()}/admin/expenses?from=${from}&to=${to}`, { headers: authHeaders() });
-  const data = await res.json();
-  const list = document.getElementById("expensesList");
-
-  if (!data.expenses || !data.expenses.length) {
-    list.textContent = "No expenses in this period.";
-    return;
-  }
-
-  const container = document.createElement("div");
-  container.className = "expenses-table";
-
-  data.expenses.forEach(exp => {
-    const row = document.createElement("div");
-    row.className = "expense-row";
-    row.dataset.id = exp._id;
-
-    const left = document.createElement("div");
-    left.className = "expense-main";
-    left.textContent = `${new Date(exp.date).toLocaleDateString()} • ${exp.vendor || "-"} • ${exp.category || "-"} • €${fmtEUR(exp.amountEUR)} • ${exp.description || ""}`;
-
-    const actions = document.createElement("div");
-    actions.className = "expense-actions";
-
-    const uploadBtn = document.createElement("button");
-    uploadBtn.textContent = "Upload attachment";
-    uploadBtn.onclick = () => openExpenseUpload(exp._id);
-
-    const viewBtn = document.createElement("button");
-    viewBtn.textContent = "View attachments";
-    viewBtn.onclick = () => viewExpenseAttachments(exp);
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Delete";
-    delBtn.onclick = async () => {
-      if (!confirm("Delete this expense and its attachments?")) return;
-      await fetch(`${getApiBase()}/admin/expenses/${exp._id}`, { method: "DELETE", headers: authHeaders() });
-      await loadExpenses();
-    };
-
-    actions.appendChild(uploadBtn);
-    actions.appendChild(viewBtn);
-    actions.appendChild(delBtn);
-
-    row.appendChild(left);
-    row.appendChild(actions);
-    container.appendChild(row);
-  });
-
-  list.innerHTML = "";
-  list.appendChild(container);
-}
-
-function viewExpenseAttachments(exp) {
-  const atts = exp.attachments || [];
-  if (!atts.length) { alert("No attachments."); return; }
-  const lines = atts.map(a => `${a.filename} (${Math.round((a.size || 0) / 1024)} KB)`);
-  alert(lines.join("\n"));
-}
-
-function openExpenseUpload(expenseId) {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.multiple = true;
-  input.accept = ".pdf,.png,.jpg,.jpeg";
-  input.onchange = async () => {
-    const files = Array.from(input.files || []);
-    if (!files.length) return;
-    const fd = new FormData();
-    files.slice(0, 5).forEach(f => fd.append("files", f));
-    const res = await fetch(`${getApiBase()}/admin/expenses/${expenseId}/attachments`, {
-      method: "POST",
-      headers: { "Authorization": authHeaders().Authorization },
-      body: fd
-    });
-    if (!res.ok) alert("Upload failed");
-    await loadExpenses();
-  };
-  input.click();
-}
-
-async function createExpense() {
-  const date = document.getElementById("expDate").value;
-  const vendor = document.getElementById("expVendor").value;
-  const category = document.getElementById("expCategory").value;
-  const amountEUR = document.getElementById("expAmount").value;
-  const description = document.getElementById("expDesc").value;
-
-  const res = await fetch(`${getApiBase()}/admin/expenses`, {
-    method: "POST",
-    headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ date, vendor, category, amountEUR, description })
-  });
-  if (!res.ok) {
-    alert("Failed to create expense");
-    return;
-  }
-  document.getElementById("expVendor").value = "";
-  document.getElementById("expCategory").value = "";
-  document.getElementById("expAmount").value = "";
-  document.getElementById("expDesc").value = "";
-  await loadExpenses();
-  await loadAccountingSummary();
-}
-
-// wire buttons
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "expCreate") createExpense();
-  if (e.target?.id === "expRefresh") loadExpenses();
-});
-
-// when summary loads, also refresh expenses list
-const _origLoadAccountingSummary = loadAccountingSummary;
-loadAccountingSummary = async function () {
-  await _origLoadAccountingSummary();
-  await loadExpenses();
-};
-
-
-// ===== Refunds & Chargebacks (manual tracking) =====
-async function submitRefund(orderId) {
-  const amount = prompt("Refund amount EUR (blank = full order amount):", "");
-  const reason = prompt("Refund reason (optional):", "") || "";
-  const stripeRefundId = prompt("Stripe refund ID (optional):", "") || "";
-
-  const payload = { reason, stripeRefundId };
-  if (amount !== null && amount !== "") payload.amountEUR = Number(amount);
-
-  const res = await fetch(`${getApiBase()}/admin/orders/${orderId}/refund`, {
-    method: "POST",
-    headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) alert("Refund update failed");
-  else alert("Refund saved.");
-}
-
-async function submitChargeback(orderId) {
-  const status = prompt('Chargeback status: "" | open | won | lost', "open") || "open";
-  const stripeDisputeId = prompt("Stripe dispute ID (optional):", "") || "";
-
-  const res = await fetch(`${getApiBase()}/admin/orders/${orderId}/chargeback`, {
-    method: "POST",
-    headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ status, stripeDisputeId })
-  });
-  if (!res.ok) alert("Chargeback update failed");
-  else alert("Chargeback saved.");
-}
-
-
-// ===== Authenticated download helper =====
-async function downloadWithAuth(url, filename) {
-  const res = await fetch(url, { headers: authHeaders() });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    alert(`Download failed (${res.status}). ${t}`);
-    return;
-  }
-  const blob = await res.blob();
-  const a = document.createElement("a");
-  const objectUrl = URL.createObjectURL(blob);
-  a.href = objectUrl;
-  a.download = filename || "download";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-}
-
-
-// ===== Reconciliation UI =====
-function renderSimpleTable(rows, columns) {
-  const table = document.createElement("table");
-  table.style.width = "100%";
-  table.style.borderCollapse = "collapse";
-  const thead = document.createElement("thead");
-  const trh = document.createElement("tr");
-  for (const c of columns) {
-    const th = document.createElement("th");
-    th.textContent = c.label;
-    th.style.textAlign = "left";
-    th.style.borderBottom = "1px solid rgba(255,255,255,0.15)";
-    th.style.padding = "6px";
-    trh.appendChild(th);
-  }
-  thead.appendChild(trh);
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-    for (const c of columns) {
-      const td = document.createElement("td");
-      td.textContent = String(r[c.key] ?? "");
-      td.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
-      td.style.padding = "6px";
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  table.appendChild(tbody);
-  return table;
-}
-
-async function loadReconciliationPayouts() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  const res = await fetch(`${getApiBase()}/admin/reconcile/payouts?from=${from}&to=${to}`, { headers: authHeaders() });
-  const data = await res.json();
-  const out = document.getElementById("reconOut");
-  out.innerHTML = "";
-
-  if (!data.payouts || !data.payouts.length) {
-    out.textContent = "No payouts found for this period.";
-    return;
-  }
-
-  const rows = data.payouts.map(p => ({
-    id: p.id,
-    status: p.status,
-    currency: p.currency,
-    amount_minor: p.amount,
-    created: new Date(p.created * 1000).toISOString().slice(0, 10),
-    arrival: new Date(p.arrival_date * 1000).toISOString().slice(0, 10),
-    gross_minor: p.totalsMinor?.gross ?? "",
-    fees_minor: p.totalsMinor?.fees ?? "",
-    net_minor: p.totalsMinor?.net ?? ""
-  }));
-
-  out.appendChild(renderSimpleTable(rows, [
-    { key: "id", label: "Payout ID" },
-    { key: "status", label: "Status" },
-    { key: "currency", label: "Cur" },
-    { key: "amount_minor", label: "Amount (minor)" },
-    { key: "gross_minor", label: "Gross (minor)" },
-    { key: "fees_minor", label: "Fees (minor)" },
-    { key: "net_minor", label: "Net (minor)" },
-    { key: "created", label: "Created" },
-    { key: "arrival", label: "Arrival" },
-  ]));
-}
-
-async function loadReconciliationUnmatched() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  const res = await fetch(`${getApiBase()}/admin/reconcile/unmatched?from=${from}&to=${to}`, { headers: authHeaders() });
-  const data = await res.json();
-  const out = document.getElementById("reconOut");
-  out.innerHTML = "";
-
-  const arr = data.unmatched || [];
-  if (!arr.length) {
-    out.textContent = `No unmatched payments (checked ${data.checked || 0}).`;
-    return;
-  }
-
-  const rows = arr.map(pi => ({
-    id: pi.id,
-    currency: pi.currency,
-    amount_minor: pi.amount,
-    created: new Date(pi.created * 1000).toISOString().slice(0, 10),
-    receipt_email: pi.receipt_email || ""
-  }));
-
-  out.appendChild(renderSimpleTable(rows, [
-    { key: "id", label: "PaymentIntent" },
-    { key: "currency", label: "Cur" },
-    { key: "amount_minor", label: "Amount (minor)" },
-    { key: "created", label: "Created" },
-    { key: "receipt_email", label: "Receipt email" },
-  ]));
-}
-
-async function exportPayoutsCSV() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  // reuse payouts endpoint and convert client-side to CSV
-  const res = await fetch(`${getApiBase()}/admin/reconcile/payouts?from=${from}&to=${to}`, { headers: authHeaders() });
-  const data = await res.json();
-  const rows = data.payouts || [];
-  if (!rows.length) { alert("No payouts to export."); return; }
-
-  const lines = ["payoutId,status,currency,amountMinor,grossMinor,feesMinor,netMinor,created,arrival"];
-  for (const p of rows) {
-    lines.push([
-      p.id, p.status, p.currency, p.amount,
-      p.totalsMinor?.gross ?? "", p.totalsMinor?.fees ?? "", p.totalsMinor?.net ?? "",
-      new Date(p.created * 1000).toISOString(),
-      new Date(p.arrival_date * 1000).toISOString()
-    ].map(x => `"${String(x).replace(/"/g, '""')}"`).join(","));
-  }
-  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-  const a = document.createElement("a");
-  const u = URL.createObjectURL(blob);
-  a.href = u;
-  a.download = "stripe_payouts.csv";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(u), 5000);
-}
-
-// ===== Backup UI =====
-async function downloadBackupZip() {
-  const include = document.getElementById("backupIncludeAttachments")?.checked ? "1" : "0";
-  await downloadWithAuth(`${getApiBase()}/admin/backup/export.zip?includeAttachments=${include}`, include === "1" ? "snagletshop_backup_with_attachments.zip" : "snagletshop_backup.zip");
-}
-
-// ===== Analytics UI =====
-let _lastAnalytics = null;
-async function loadAnalytics() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
-  const group = document.getElementById("anGroup").value;
-  const res = await fetch(`${getApiBase()}/admin/analytics/profit?from=${from}&to=${to}&group=${group}`, { headers: authHeaders() });
-  const data = await res.json();
-  _lastAnalytics = data;
-
-  const out = document.getElementById("anOut");
-  out.innerHTML = "";
-
-  const rows = data.rows || [];
-  if (!rows.length) { out.textContent = "No data."; return; }
-
-  if (data.group === "country") {
-    out.appendChild(renderSimpleTable(rows, [
-      { key: "key", label: "Country" },
-      { key: "orders", label: "Orders" },
-      { key: "netRevenue", label: "Net revenue" },
-      { key: "fees", label: "Fees" },
-      { key: "shipping", label: "Shipping" },
-      { key: "cogs", label: "COGS" },
-      { key: "profit", label: "Profit" },
-    ]));
-  } else {
-    out.appendChild(renderSimpleTable(rows, [
-      { key: "key", label: "Product key" },
-      { key: "name", label: "Name" },
-      { key: "qty", label: "Qty" },
-      { key: "netRevenue", label: "Net revenue" },
-      { key: "fees", label: "Fees" },
-      { key: "shipping", label: "Shipping" },
-      { key: "cogs", label: "COGS" },
-      { key: "profit", label: "Profit" },
-    ]));
-  }
-}
-
-async function exportAnalyticsCSV() {
-  if (!_lastAnalytics || !_lastAnalytics.rows) { alert("Load analytics first."); return; }
-  const group = _lastAnalytics.group || "product";
-  const rows = _lastAnalytics.rows || [];
-  const cols = group === "country"
-    ? ["country", "orders", "netRevenue", "fees", "shipping", "cogs", "profit"]
-    : ["productKey", "name", "qty", "revenue", "refunds", "netRevenue", "fees", "shipping", "cogs", "profit"];
-
-  const lines = [cols.join(",")];
-  for (const r of rows) {
-    const line = group === "country"
-      ? [r.key, r.orders, r.netRevenue, r.fees, r.shipping, r.cogs, r.profit]
-      : [r.key, r.name, r.qty, r.revenue, r.refunds, r.netRevenue, r.fees, r.shipping, r.cogs, r.profit];
-    lines.push(line.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(","));
-  }
-  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-  const a = document.createElement("a");
-  const u = URL.createObjectURL(blob);
-  a.href = u;
-  a.download = group === "country" ? "analytics_country.csv" : "analytics_product.csv";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(u), 5000);
-}
-
-// Wire buttons
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "reconLoadPayouts") loadReconciliationPayouts();
-  if (e.target?.id === "reconLoadUnmatched") loadReconciliationUnmatched();
-  if (e.target?.id === "reconExportPayouts") exportPayoutsCSV();
-  if (e.target?.id === "backupDownload") downloadBackupZip();
-  if (e.target?.id === "anLoad") loadAnalytics();
-  if (e.target?.id === "anExport") exportAnalyticsCSV();
-});
-
-
-// ===== Product catalogue (pricing management) =====
-let _catalogCache = null;
-
-async function loadProductCatalogue() {
-  try {
-    if (typeof safeEnsureLogin === "function") await safeEnsureLogin();
-    else if (typeof ensureLogin === "function") await ensureLogin();
-  } catch { /* ignore */ }
-
-  let res;
-  try {
-    res = await fetch(`${getApiBase()}/admin/catalog`, { headers: _adminHeaders(false) });
-  } catch (e) {
-    alert("Failed to reach API for catalogue");
-    console.error("loadProductCatalogue fetch failed:", e);
-    return;
-  }
-
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    alert(`Failed to load catalogue (${res.status})`);
-    console.error("loadProductCatalogue error:", res.status, t);
-    return;
-  }
-
-  _catalogCache = await res.json().catch(() => null);
-  renderProductCatalogue();
-}
-
-async function adminGetCatalogFileMode() {
-  try {
-    if (typeof safeEnsureLogin === "function") await safeEnsureLogin();
-    else if (typeof ensureLogin === "function") await ensureLogin();
-  } catch { /* ignore */ }
-
-
-  const r = await fetch(`${getApiBase()}/admin/catalog/filemode`, { headers: _adminHeaders(false) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j?.error || `GET /admin/catalog/filemode failed (${r.status})`);
-  return j;
-}
-
-async function adminSetCatalogFileMode(mode) {
-  try {
-    if (typeof safeEnsureLogin === "function") await safeEnsureLogin();
-    else if (typeof ensureLogin === "function") await ensureLogin();
-  } catch { /* ignore */ }
-
-
-  const r = await fetch(`${getApiBase()}/admin/catalog/filemode`, {
-    method: "POST",
-    headers: _adminHeaders(true),
-    body: JSON.stringify({ mode })
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j?.error || `POST /admin/catalog/filemode failed (${r.status})`);
-  return j;
-}
-
-async function adminConvertProductsJsToSplit() {
-  try {
-    if (typeof safeEnsureLogin === "function") await safeEnsureLogin();
-    else if (typeof ensureLogin === "function") await ensureLogin();
-  } catch { /* ignore */ }
-
-
-  const r = await fetch(`${getApiBase()}/admin/catalog/convert/to-split`, {
-    method: "POST",
-    headers: _adminHeaders(false)
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j?.error || `POST /admin/catalog/convert/to-split failed (${r.status})`);
-  return j;
-}
-
-async function refreshCatalogFileModeUi() {
-  const sel = document.getElementById("catalogFileMode");
-  const status = document.getElementById("catalogFileModeStatus");
-  if (!sel || !status) return;
-
-  status.textContent = "";
-  try {
-    const info = await adminGetCatalogFileMode();
-    if (info && info.mode) sel.value = info.mode;
-    try { localStorage.setItem("catalog_file_mode_last", sel.value); } catch { }
-    const src = info?.catalogSource ? ` (${info.catalogSource})` : "";
-    status.textContent = `Active: ${sel.value}${src}`;
-  } catch (e) {
-    // UI-only fallback: keep last known selection visible
-    const last = (() => { try { return localStorage.getItem("catalog_file_mode_last") || ""; } catch { return ""; } })();
-    if (last) sel.value = last;
-    status.textContent = "Filemode: unavailable";
-  }
-}
-
-
-function renderProductCatalogue() {
-  const tbody = document.getElementById("prodTableBody");
-  const countEl = document.getElementById("prodCount");
-  const search = String(document.getElementById("prodSearch")?.value || "").trim().toLowerCase();
-  const sort = String(document.getElementById("prodSort")?.value || "profit_desc");
-
-  // If the Products tab DOM isn't present (or page HTML changed), do nothing instead of crashing.
-  if (!tbody) return;
-
-  const productsById = _catalogCache?.productsById || {};
-  const ids = Object.keys(productsById);
-
-  const rows = [];
-  for (const id of ids) {
-    const p = productsById[id];
-    const name = String(p?.name || "");
-    if (search) {
-      if (!name.toLowerCase().includes(search) && !String(id).toLowerCase().includes(search)) continue;
-    }
-    const selling = Number(p?.salePriceEUR ?? p?.salePrice ?? p?.priceEUR ?? p?.price ?? 0) || 0;
-    const purchase = Number(p?.purchasePriceEUR ?? p?.purchasePrice ?? p?.expectedPurchasePrice ?? 0) || 0;
-    const profit = selling - purchase;
-    const opts = p?.productOptions;
-    const optsCount = Array.isArray(opts) ? opts.length : (opts && typeof opts === "object" ? Object.keys(opts).length : 0);
-
-    rows.push({ id: String(id), name, selling, purchase, profit, optsCount });
-  }
-
-  const by = {
-    profit_desc: (a, b) => b.profit - a.profit,
-    profit_asc: (a, b) => a.profit - b.profit,
-    sell_desc: (a, b) => b.selling - a.selling,
-    sell_asc: (a, b) => a.selling - b.selling,
-    name_asc: (a, b) => a.name.localeCompare(b.name),
-    id_asc: (a, b) => a.id.localeCompare(b.id),
-  }[sort] || ((a, b) => b.profit - a.profit);
-
-  rows.sort(by);
-
-  // Render
-  tbody.innerHTML = "";
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-
-    // (blank column)
-    const td0 = document.createElement("td");
-    td0.textContent = "";
-    tr.appendChild(td0);
-
-    const tdId = document.createElement("td");
-    tdId.textContent = r.id;
-    tr.appendChild(tdId);
-
-    const tdName = document.createElement("td");
-    tdName.textContent = r.name;
-    tr.appendChild(tdName);
-
-    const tdBuy = document.createElement("td");
-    const buyInput = document.createElement("input");
-    buyInput.type = "number";
-    buyInput.step = "0.01";
-    buyInput.value = r.purchase.toFixed(2);
-    buyInput.style.width = "90px";
-    buyInput.dataset.pid = r.id;
-    buyInput.dataset.field = "purchase";
-    tdBuy.appendChild(buyInput);
-    tr.appendChild(tdBuy);
-
-    const tdSell = document.createElement("td");
-    const sellInput = document.createElement("input");
-    sellInput.type = "number";
-    sellInput.step = "0.01";
-    sellInput.value = r.selling.toFixed(2);
-    sellInput.style.width = "90px";
-    sellInput.dataset.pid = r.id;
-    sellInput.dataset.field = "selling";
-    tdSell.appendChild(sellInput);
-    tr.appendChild(tdSell);
-
-    const tdProfit = document.createElement("td");
-    const profitEl = document.createElement("span");
-    const recompute = () => {
-      const p = (Number(sellInput.value) || 0) - (Number(buyInput.value) || 0);
-      profitEl.textContent = p.toFixed(2);
-    };
-    sellInput.addEventListener("input", recompute);
-    buyInput.addEventListener("input", recompute);
-    recompute();
-    tdProfit.appendChild(profitEl);
-    tr.appendChild(tdProfit);
-
-    const tdOpts = document.createElement("td");
-    tdOpts.textContent = r.optsCount ? String(r.optsCount) : "";
-    tr.appendChild(tdOpts);
-
-    const tdActions = document.createElement("td");
-
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Edit";
-    editBtn.className = "mgmt-btn";
-    editBtn.onclick = () => openProductEditor(r.id);
-
-    const saveBtn = document.createElement("button");
-    saveBtn.textContent = "Save";
-    saveBtn.className = "mgmt-btn primary";
-    saveBtn.onclick = async () => {
-      const sellingPriceEUR = Number(sellInput.value);
-      const purchasePriceEUR = Number(buyInput.value);
-      const resp = await fetch(`${getApiBase()}/admin/products/${encodeURIComponent(r.id)}/pricing`, {
-        method: "PATCH",
-        headers: { ..._adminHeaders(true) },
-        body: JSON.stringify({ sellingPriceEUR, purchasePriceEUR })
-      });
-      if (!resp.ok) {
-        const t = await resp.text().catch(() => "");
-        alert(`Save failed: ${resp.status} ${t}`);
-        return;
-      }
-      await loadProductCatalogue();
-    };
-
-    tdActions.appendChild(editBtn);
-    tdActions.appendChild(saveBtn);
-    tr.appendChild(tdActions);
-
-    tbody.appendChild(tr);
-  }
-
-  if (countEl) countEl.textContent = `${rows.length} item${rows.length === 1 ? "" : "s"}`;
-}
-
-
-// Save all pricing changes from the Products table in one action.
-// Uses bulk endpoint when available; falls back to per-product PATCH.
-async function saveAllPricingChanges() {
-  // Ensure login when possible
-  try {
-    if (typeof safeEnsureLogin === "function") await safeEnsureLogin();
-    else if (typeof ensureLogin === "function") await ensureLogin();
-  } catch { }
-
-  const tbody = document.getElementById("prodTableBody");
-  if (!tbody) return alert("Products table not found");
-
-  // Collect values from inputs
-  const sellingById = new Map();
-  const purchaseById = new Map();
-
-  for (const input of tbody.querySelectorAll("input[data-pid][data-field]")) {
-    const pid = input.dataset.pid;
-    const field = input.dataset.field;
-    const val = Number(input.value);
-    if (!pid) continue;
-    if (field === "selling") sellingById.set(pid, Number.isFinite(val) ? val : 0);
-    if (field === "purchase") purchaseById.set(pid, Number.isFinite(val) ? val : 0);
-  }
-
-  const productsById = _catalogCache?.productsById || {};
-  const updates = [];
-  for (const pid of new Set([...sellingById.keys(), ...purchaseById.keys()])) {
-    const p = productsById[pid] || {};
-    const oldSelling = Number(p?.salePriceEUR ?? p?.salePrice ?? p?.priceEUR ?? p?.price ?? 0) || 0;
-    const oldPurchase = Number(p?.purchasePriceEUR ?? p?.purchasePrice ?? p?.expectedPurchasePrice ?? 0) || 0;
-    const newSelling = sellingById.get(pid);
-    const newPurchase = purchaseById.get(pid);
-
-    // Only send if changed (tolerance for floats)
-    const changed = (Math.abs((newSelling ?? oldSelling) - oldSelling) > 0.0005) || (Math.abs((newPurchase ?? oldPurchase) - oldPurchase) > 0.0005);
-    if (!changed) continue;
-
-    updates.push({
-      productId: pid,
-      sellingPriceEUR: (newSelling ?? oldSelling),
-      purchasePriceEUR: (newPurchase ?? oldPurchase)
-    });
-  }
-
-  if (!updates.length) return alert("No pricing changes to save.");
-
-  // Try bulk endpoint first
-  let bulkOk = false;
-  try {
-    const resp = await fetch(`${getApiBase()}/admin/products/pricing/bulk`, {
-      method: "PATCH",
-      headers: { ..._adminHeaders(true) },
-      body: JSON.stringify({ updates })
-    });
-
-    if (resp.ok) {
-      const j = await resp.json().catch(() => ({}));
-      bulkOk = true;
-      alert(`Saved pricing for ${j.updatedProducts || updates.length} product(s).`);
-    } else {
-      // if endpoint missing or blocked, fall back
-      const t = await resp.text().catch(() => "");
-      console.warn("Bulk save failed:", resp.status, t);
-    }
-  } catch (e) {
-    console.warn("Bulk save request failed:", e);
-  }
-
-  if (!bulkOk) {
-    // Fallback: sequential saves to existing endpoint (slower)
-    let ok = 0, fail = 0;
-    for (const u of updates) {
-      try {
-        const resp = await fetch(`${getApiBase()}/admin/products/${encodeURIComponent(u.productId)}/pricing`, {
-          method: "PATCH",
-          headers: { ..._adminHeaders(true) },
-          body: JSON.stringify({ sellingPriceEUR: u.sellingPriceEUR, purchasePriceEUR: u.purchasePriceEUR })
+    // Destroy previous TomSelect instances (if any)
+    if (currencySelect?.tomselect) currencySelect.tomselect.destroy();
+    if (countrySelect?.tomselect) countrySelect.tomselect.destroy();
+
+    // Attach logic via TomSelect onChange (more reliable than select change)
+    if (currencySelect) {
+        new TomSelect("#currencySelect", {
+            maxOptions: 200,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a currency…",
+            closeAfterSelect: true,
+            onChange: (val) => {
+                if (!val) return;
+                selectedCurrency = val;
+                localStorage.setItem("selectedCurrency", selectedCurrency);
+                localStorage.setItem("manualCurrencyOverride", "true");
+                syncCurrencySelects(selectedCurrency);
+                updateAllPrices();
+            }
         });
-        if (resp.ok) ok++;
-        else fail++;
-      } catch { fail++; }
+        currencySelect.classList.remove("tom-hidden");
     }
-    alert(`Saved: ${ok}, Failed: ${fail} (fallback mode)`);
-  }
 
-  await loadProductCatalogue();
-}
+    if (countrySelect) {
+        new TomSelect("#countrySelect", {
+            maxOptions: 1000,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a country…",
+            closeAfterSelect: true,
+            onChange: (val) => {
+                if (!val) return;
+                const newCountry = String(val).toUpperCase();
+                localStorage.setItem("detectedCountry", newCountry);
+                if (detectedSpan) detectedSpan.textContent = newCountry;
 
-// NOTE: intentionally no "Save all pricing" button (per operator preference).
-// Legacy catalogue table event hooks removed.
-// The current Products tab installs its own handlers inside productsUiShow(),
-// and legacy handlers would override/clear the newer renderer.
-
-
-document.addEventListener("click", async (e) => {
-  if (e.target?.id === "catalogFileModeApply") {
-    const sel = document.getElementById("catalogFileMode");
-    const status = document.getElementById("catalogFileModeStatus");
-    const mode = sel ? sel.value : "products_js";
-    try {
-      await adminSetCatalogFileMode(mode);
-      await refreshCatalogFileModeUi();
-      await loadProductCatalogue();
-    } catch (err) {
-      if (status) status.textContent = String(err?.message || err);
-      else alert(String(err?.message || err));
+                if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+                    const newCurrency = countryToCurrency?.[newCountry];
+                    if (newCurrency) {
+                        selectedCurrency = newCurrency;
+                        localStorage.setItem("selectedCurrency", selectedCurrency);
+                        syncCurrencySelects(selectedCurrency);
+                    }
+                }
+                updateAllPrices();
+            }
+        });
+        countrySelect.classList.remove("tom-hidden");
     }
-  }
 
-  if (e.target?.id === "catalogConvertToSplit") {
-    const status = document.getElementById("catalogFileModeStatus");
-    try {
-      if (status) status.textContent = "Uploading bundled ServerProducts.js…";
+    // Contact form submission logic (matches backend rules: valid email + message length >= 5)
+    const isValidEmailClient = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || "").trim());
 
-      // 1) Replace the local ServerProducts.js on the server using the bundled file (uploaded as strict JSON).
-      //    This makes convert reproducible and avoids backend JSON-parse 400s.
-      await adminReplaceLocalServerProductsFromBundledFile();
+   const cf = document.getElementById("contact-form");
+if (cf) {
+  cf.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-      // 2) Convert to split files.
-      if (status) status.textContent = "Converting to split files…";
-      const out = await adminConvertProductsJsToSplit();
+    const email = document.getElementById("contact-email")?.value?.trim() || "";
+    const message = document.getElementById("contact-message")?.value?.trim() || "";
 
-      // 3) Switch active mode to split_json (file-backed only).
-      try { await adminSetCatalogFileMode("split_json"); } catch { /* ignore (e.g., DB mode) */ }
+    const website = ""; // prevent autofill false-positives (do NOT read #contact-website)
 
-      // 4) Refresh UI + reload catalogue.
-      await refreshCatalogFileModeUi();
-      try {
-        if (typeof window.productsUiReloadAll === "function") await window.productsUiReloadAll(true);
-      } catch { }
-      try { await loadProductCatalogue(); } catch { }
-
-      if (status) status.textContent = `Converted: ${out.products || 0} products / ${out.categories || 0} categories`;
-    } catch (err) {
-      if (status) status.textContent = String(err?.message || err);
-      else alert(String(err?.message || err));
-    }
-  }
-});
-
-// ===== Product editor modal =====
-let _editingProductId = null;
-
-function getProductFromCache(productId) {
-  const productsById = _catalogCache?.productsById || {};
-  return productsById[String(productId || "").trim()] || null;
-}
-
-function openProductEditor(productId) {
-  const p = getProductFromCache(productId);
-  if (!p) { alert("Product not found in cache. Reload catalogue."); return; }
-
-  _editingProductId = String(productId);
-  const selectedCats = Object.entries(_catalogCache?.categories || {}).filter(([cat, ids]) => (ids || []).includes(String(productId))).map(([cat]) => cat);
-  populateCategorySelect(selectedCats.length ? selectedCats : [(typeof currentCategory !== 'undefined' ? currentCategory : null)].filter(Boolean));
-  const newIdEl = document.getElementById("peNewId");
-  if (newIdEl) newIdEl.value = "";
-  document.getElementById("peId").value = _editingProductId;
-  document.getElementById("peName").value = p.name || "";
-  document.getElementById("peLink").value = p.productLink || p.canonicalLink || "";
-  document.getElementById("pePrice").value = (Number(p.price || 0)).toFixed(2);
-  document.getElementById("pePurchase").value = (Number(p.expectedPurchasePrice || 0)).toFixed(2);
-
-  const imgs = Array.isArray(p.images) ? p.images : (Array.isArray(p.imageLinks) ? p.imageLinks : []);
-  document.getElementById("peImages").value = (imgs || []).join("\n");
-
-  // options as JSON text (best-effort)
-  const opts = p.productOptions;
-  document.getElementById("peOptions").value = (opts === undefined || opts === null) ? "" : JSON.stringify(opts, null, 2);
-  const vps = p.variantPrices;
-  const vpEl = document.getElementById("peVariantPrices");
-  if (vpEl) vpEl.value = (vps === undefined || vps === null) ? "" : JSON.stringify(vps, null, 2);
-
-  setImagesToolsFromProduct(p);
-
-  document.getElementById("productEditorModal").hidden = false;
-}
-
-function closeProductEditor() {
-  document.getElementById("productEditorModal").hidden = true;
-  _editingProductId = null;
-}
-
-async function saveProductEditor() {
-  const isCreate = !_editingProductId;
-
-  const name = String(document.getElementById("peName")?.value || "").trim();
-  const newProductId = String(document.getElementById("peNewId")?.value || "").trim();
-  const productLink = String(document.getElementById("peLink")?.value || "").trim();
-  const price = Number(document.getElementById("pePrice")?.value || 0);
-  const expectedPurchasePrice = Number(document.getElementById("pePurchase")?.value || 0);
-
-  const images = String(document.getElementById("peImages")?.value || "")
-    .split(/\r?\n/)
-    .map(x => x.trim())
-    .filter(Boolean);
-
-  const optsRaw = String(document.getElementById("peOptions")?.value || "").trim();
-  let productOptions = undefined;
-  if (optsRaw !== "") {
-    try {
-      productOptions = JSON.parse(optsRaw);
-    } catch (_e) {
-      alert("Product options must be valid JSON.");
+    if (!isValidEmailClient(email)) {
+      alert("Please enter a valid email address (e.g., name@example.com).");
       return;
     }
-  }
-
-const vpRaw = String(document.getElementById("peVariantPrices")?.value || "").trim();
-let variantPrices = undefined;
-if (vpRaw !== "") {
-  try {
-    variantPrices = JSON.parse(vpRaw);
-  } catch (_e) {
-    alert("Variant prices must be valid JSON.");
-    return;
-  }
-}
-
-  // categories (multi-select)
-  const selCats = document.getElementById("peCategory");
-  const cats = selCats ? Array.from(selCats.selectedOptions).map(o => o.value).filter(Boolean) : [];
-
-  const body = {
-    name,
-    productLink,
-    price,
-    expectedPurchasePrice,
-    images
-  };
-  if (productOptions !== undefined) body.productOptions = productOptions;
-  if (variantPrices !== undefined) body.variantPrices = variantPrices;
-
-  if (isCreate) {
-    if (cats.length) body.categories = cats;
-    if (newProductId) body.productId = newProductId; // backend expects productId on create
-  } else {
-    if (cats.length) body.categories = cats;
-    if (newProductId) body.newProductId = newProductId; // backend expects newProductId on update
-  }
-
-  const url = isCreate
-    ? `${getApiBase()}/admin/products`
-    : `${getApiBase()}/admin/products/${encodeURIComponent(_editingProductId)}`;
-
-  const resp = await fetch(url, {
-    method: isCreate ? "POST" : "PATCH",
-    headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-
-  if (!resp.ok) {
-    const t = await resp.text().catch(() => "");
-    alert(`Save failed: ${resp.status} ${t}`);
-    return;
-  }
-
-  // reload cache and rerender
-  await loadProductCatalogue();
-  closeProductEditor();
-}
-
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "peClose") closeProductEditor();
-  if (e.target?.id === "peCancel") closeProductEditor();
-  if (e.target?.id === "peSave") saveProductEditor();
-});
-
-
-// ===== Products subtabs (Editor / Versions) =====
-function showProductSubtab(which) {
-  const a = document.getElementById("subtab-editor");
-  const b = document.getElementById("subtab-versions");
-  if (!a || !b) return;
-  const editorBtn = document.getElementById("subtabEditorBtn");
-  const verBtn = document.getElementById("subtabVersionsBtn");
-  if (which === "versions") {
-    a.hidden = true; b.hidden = false;
-    editorBtn?.classList?.remove("active");
-    verBtn?.classList?.add("active");
-    loadCatalogVersions();
-  } else {
-    a.hidden = false; b.hidden = true;
-    verBtn?.classList?.remove("active");
-    editorBtn?.classList?.add("active");
-  }
-}
-
-async function downloadCurrentCatalog() {
-  await downloadWithAuth(`${getApiBase()}/admin/catalog/file`, "catalog.json");
-}
-
-async function uploadReplaceCatalog() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json,application/json";
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    let bundle = null;
-    try { bundle = JSON.parse(text); } catch { alert("Invalid JSON"); return; }
-    const res = await fetch(`${getApiBase()}/admin/catalog/file`, {
-      method: "PUT",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify(bundle)
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      alert(`Upload failed: ${res.status} ${t}`);
+    if (message.length < 5) {
+      alert("Please enter a message (at least 5 characters).");
       return;
     }
-    alert("Catalog uploaded. DB was synced and a snapshot created.");
-    await loadProductCatalogue();
-    await loadCatalogVersions();
-  };
-  input.click();
-}
 
-async function loadCatalogVersions() {
-  const out = document.getElementById("versionsOut");
-  if (!out) return;
-  out.textContent = "Loading...";
-  const res = await fetch(`${getApiBase()}/admin/catalog/versions`, { headers: authHeaders() });
-  if (!res.ok) { out.textContent = "Failed to load versions."; return; }
-  const data = await res.json();
-  const versions = data.versions || [];
-  if (!versions.length) { out.textContent = "No versions found."; return; }
+    // IMPORTANT: declare BEFORE using it anywhere
+    let turnstileToken = "";
+    try {
+      turnstileToken =
+        (await snagletGetTurnstileToken({ forceFresh: true })) ||
+        document.querySelector('input[name="cf-turnstile-response"]')?.value ||
+        "";
+    } catch {
+      turnstileToken =
+        document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
+    }
 
-  const container = document.createElement("div");
-  container.className = "versions-table";
-
-  for (const v of versions) {
-    const row = document.createElement("div");
-    row.className = "version-row";
-
-    const left = document.createElement("div");
-    left.className = "version-main";
-    left.textContent = `${v.stamp} • ${v.reason || "-"} • products: ${v.products ?? "?"}`;
-
-    const actions = document.createElement("div");
-    actions.className = "version-actions";
-
-    const dlJson = document.createElement("button");
-    dlJson.textContent = "Download JSON";
-    dlJson.onclick = () => downloadWithAuth(`${getApiBase()}/admin/catalog/versions/${encodeURIComponent(v.stamp)}/json`, `catalog_${v.stamp}.json`);
-
-    const dlDb = document.createElement("button");
-    dlDb.textContent = "Download DB snapshot";
-    dlDb.onclick = () => downloadWithAuth(`${getApiBase()}/admin/catalog/versions/${encodeURIComponent(v.stamp)}/db`, `db_products_${v.stamp}.json`);
-
-    const restore = document.createElement("button");
-    restore.textContent = "Restore";
-    restore.onclick = async () => {
-      if (!confirm(`Restore catalog to version ${v.stamp}? This will sync DB and create a new snapshot.`)) return;
-      const r = await fetch(`${getApiBase()}/admin/catalog/versions/${encodeURIComponent(v.stamp)}/restore`, {
+    try {
+      const response = await fetch(`${API_BASE}/send-message`, {
         method: "POST",
-        headers: authHeaders()
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, message, turnstileToken, website }),
       });
-      if (!r.ok) {
-        const t = await r.text().catch(() => "");
-        alert(`Restore failed: ${r.status} ${t}`);
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const msg = result?.message || result?.error || `Failed (${response.status}).`;
+        alert(msg);
         return;
       }
-      alert("Restored. Reloading catalogue...");
-      await loadProductCatalogue();
-      await loadCatalogVersions();
+
+      alert(result.message || "Message sent.");
+      const msgEl = document.getElementById("contact-message");
+      if (msgEl) msgEl.value = "";
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      alert("An error occurred. Try emailing us directly.");
+    }
+  });
+}
+
+
+    // Keep selects in sync + update prices
+    if (currencySelect) syncCurrencySelects(currencySelect.value || selectedCurrency || "EUR");
+}
+
+// helper function for countries
+
+
+function handlesTariffsDropdown(countriesList = []) {
+    try {
+        // Always keep preloadedData coherent, even if Settings UI isn't open
+        window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
+        if (!Array.isArray(countriesList)) countriesList = [];
+        window.preloadedData.countries = countriesList;
+
+        // If the Settings page isn't rendered, stop here (preload must not crash)
+        const select = document.getElementById("countrySelect");
+        if (!select) return;
+
+        // Populate options
+        select.innerHTML = "";
+        const sorted = countriesList
+            .slice()
+            .sort((a, b) => String(a?.code || "").localeCompare(String(b?.code || "")));
+
+        for (const c of sorted) {
+            const code = String(c?.code || "").toUpperCase();
+            if (!code) continue;
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = (typeof countryNames !== "undefined" && countryNames?.[code]) ? countryNames[code] : code;
+            select.appendChild(opt);
+        }
+
+        // Detected label + default value
+        let detected = "US";
+        try { detected = localStorage.getItem("detectedCountry") || "US"; } catch { }
+        const detectedEl = document.getElementById("detected-country");
+        if (detectedEl) detectedEl.textContent = detected;
+        select.value = detected;
+
+        // Attach the change handler once
+        if (!select.dataset.listenerAttached) {
+            select.addEventListener("change", () => {
+                const newCountry = select.value;
+
+                try { localStorage.setItem("detectedCountry", newCountry); } catch { }
+
+                if (typeof AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE !== "undefined"
+                    && AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE
+                    && !localStorage.getItem("manualCurrencyOverride")) {
+                    const newCurrency = (typeof countryToCurrency !== "undefined") ? countryToCurrency?.[newCountry] : null;
+                    if (newCurrency) {
+                        selectedCurrency = newCurrency;
+                        try { localStorage.setItem("selectedCurrency", selectedCurrency); } catch { }
+                        if (typeof syncCurrencySelects === "function") syncCurrencySelects(selectedCurrency);
+                    }
+                }
+
+                if (typeof updateAllPrices === "function") updateAllPrices();
+            });
+
+            select.dataset.listenerAttached = "true";
+        }
+    } catch (e) {
+        console.warn("⚠️ handlesTariffsDropdown failed:", e);
+    }
+}
+
+
+function syncCurrencySelects(newCurrency) {
+    const selects = document.querySelectorAll('#currency-select, #currencySelect');
+    selects.forEach(select => {
+        if (select && select.value !== newCurrency) {
+            select.value = newCurrency;
+        }
+    });
+}
+
+document.getElementById("currency-select")?.addEventListener("change", (e) => {
+    handleCurrencyChange(e.target.value);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const isDarkMode = localStorage.getItem("themeMode") === "dark";
+    document.documentElement.classList.toggle("dark-mode", isDarkMode);
+    document.documentElement.classList.toggle("light-mode", !isDarkMode);
+
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+        themeToggle.checked = isDarkMode;
+    }
+});
+//default them setting
+document.addEventListener("DOMContentLoaded", () => {
+    syncCurrencySelects(selectedCurrency);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const savedTheme = localStorage.getItem("themeMode");
+
+    if (savedTheme) {
+        document.documentElement.classList.toggle("dark-mode", savedTheme === "dark");
+        document.documentElement.classList.toggle("light-mode", savedTheme === "light");
+    } else {
+        // Set default theme to light mode
+        document.documentElement.classList.add("light-mode");
+        localStorage.setItem("themeMode", "light");
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ DOMContentLoaded fired!");
+    const checkProductsLoaded = setInterval(() => {
+        const hasWindowProducts = typeof window !== "undefined"
+            && typeof window.products !== "undefined"
+            && Object.keys(window.products).length > 0;
+        const hasDatabase = productsDatabase && Object.keys(productsDatabase).length > 0;
+
+        if (hasWindowProducts || hasDatabase) {
+            clearInterval(checkProductsLoaded);
+
+            // Keep legacy `products` and new `productsDatabase` in sync
+            if (!hasDatabase && hasWindowProducts) {
+                productsDatabase = window.products;
+            } else if (hasDatabase && !hasWindowProducts) {
+                window.products = productsDatabase;
+            }
+
+            CategoryButtons(); // Now call the function
+        } else {
+            console.error("⚠️ Waiting for products to load...");
+        }
+    }, 100);
+});
+
+
+function CategoryButtons() {
+    const sidebars = document.querySelectorAll("#SideBar, #DesktopSidebar");
+    console.log("CategoryButtons");
+
+    if (typeof productsDatabase === "undefined" || Object.keys(productsDatabase).length === 0) {
+        console.error("❌ Products database not loaded yet.");
+        return;
+    }
+
+    sidebars.forEach(sidebar => {
+        if (!sidebar) return;
+
+        const isMobile = sidebar.id === "SideBar";
+        const categoryContainer = sidebar.querySelector(".sidebar-categories") || sidebar;
+
+        // ✅ Clear previous category buttons
+        while (categoryContainer.firstChild) {
+            categoryContainer.removeChild(categoryContainer.firstChild);
+        }
+
+        // ✅ Rebuild category buttons
+        Object.entries(productsDatabase).forEach(([category, catArray]) => {
+            if (category !== "Default_Page" && Array.isArray(catArray)) {
+                const button = document.createElement("button");
+                button.className = "Category_Button";
+
+                if (category === currentCategory) {
+                    button.classList.add("Active");
+                }
+
+                button.onclick = () => {
+                    currentCategory = category;
+                    const sort = localStorage.getItem("defaultSort") || "NameFirst";
+                    const order = "asc";
+                    navigate("loadProducts", [category, sort, order]);
+                    CategoryButtons(); // Refresh buttons
+                };
+
+                const heading = document.createElement("h3");
+                heading.classList.add("Category_Button_Heading");
+
+                const iconValue = (catArray.length > 0) ? (catArray[0].iconPng || catArray[0].iconPngUrl || catArray[0].iconUrl || catArray[0].icon || null) : null;
+                let iconPath = iconValue;
+                if (typeof iconPath === "string") {
+                    const s = iconPath.trim();
+                    if (s.startsWith("{") && s.endsWith("}")) {
+                        try {
+                            const obj = JSON.parse(s);
+                            if (obj && typeof obj === "object") {
+                                const light = String(obj.light || obj.l || obj.url || obj.icon || "").trim();
+                                const dark = String(obj.dark || obj.d || "").trim();
+                                iconPath = (isDarkModeEnabled() ? (dark || light) : (light || dark)) || iconPath;
+                            }
+                        } catch { }
+                    }
+                }
+                const displayName = category.replace(/_/g, ' ');
+
+
+                if (iconPath) {
+                    const isImageIcon =
+                        typeof iconPath === "string" &&
+                        (iconPath.startsWith("http://") ||
+                            iconPath.startsWith("https://") ||
+                            iconPath.startsWith("data:image/") ||
+                            /\.(png|jpg|jpeg|webp|gif|svg)(\?.*)?$/i.test(iconPath));
+
+                    if (isImageIcon) {
+                        heading.innerHTML = `
+            <span class="category-icon-wrapper">
+                <img class="category-icon-img" src="${iconPath}" alt="${displayName} icon" />
+            </span>
+            <span class="category-label">${displayName}</span>
+        `;
+                    } else {
+                        heading.innerHTML = `
+            <span class="category-icon-wrapper">
+                <svg viewBox="0 0 24 24" class="category-icon-svg">
+                    <path d="${iconPath}" />
+                </svg>
+            </span>
+            <span class="category-label">${displayName}</span>
+        `;
+                    }
+                } else {
+                    heading.textContent = displayName;
+                }
+                button.appendChild(heading);
+                categoryContainer.appendChild(button);
+            }
+        });
+    });
+}
+
+
+
+
+function clearCategoryHighlight() {
+    const buttons = document.querySelectorAll(".Category_Button");
+    buttons.forEach(button => {
+        button.classList.remove("Active");
+    });
+    currentCategory = null;
+}
+function isDarkModeEnabled() {
+    return document.body.classList.contains('dark') ||
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+
+async function createPaymentModal() {
+    if (document.getElementById("paymentModal")) return;
+
+    // Ensure texts/theme data exist (safe even if initPaymentModalLogic calls it again)
+    try { if (typeof preloadSettingsData === "function") await preloadSettingsData(); } catch { }
+
+    const savedTheme = localStorage.getItem("themeMode");
+    if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark-mode");
+        document.documentElement.classList.remove("light-mode");
+    } else {
+        document.documentElement.classList.add("light-mode");
+        document.documentElement.classList.remove("dark-mode");
+    }
+
+    const modal = document.createElement("div");
+    modal.id = "paymentModal";
+    modal.innerHTML = `
+      <div class="payment-modal-card">
+        <span class="payment-modal-close" onclick="closeModal()">&times;</span>
+        <h2>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.TITLE) ? TEXTS.PAYMENT_MODAL.TITLE : "Checkout"}</h2>
+  
+        <form id="paymentForm">
+          <div id="Name_Holder">
+            <div><input type="text" id="Name" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.NAME || "Name"}" required></div>
+            <div><input type="text" id="Surname" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.SURNAME || "Surname"}" required></div>
+          </div>
+  
+          <div><input type="email" id="email" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.EMAIL || "Email"}" required></div>
+  
+          <div id="Address_Holder">
+            <input type="text" id="Street" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.STREET_HOUSE_NUMBER || "Street + number"}" required>
+            <input type="text" id="City" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.CITY || "City"}" required>
+            <input type="text" id="Postal_Code" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.POSTAL_CODE || "Postal code"}" required>
+            <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
+            <input type="text" id="State" placeholder="State / Province / Region">
+            <input type="tel"  id="Phone" placeholder="Phone (for delivery updates)">
+  
+            <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
+            <select id="Country" class="tom-hidden" required style="width: 100%"></select>
+          </div>
+  
+          <div id="payment-request-button" style="margin: 16px 0;"></div>
+          <div id="payment-element" style="margin-top: 16px;"></div>
+  
+          <button class="Submit_Button" id="confirm-payment-button" type="button">
+            ${TEXTS?.PAYMENT_MODAL?.BUTTONS?.SUBMIT || "Pay"}
+          </button>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Minimal styling (keeps layout stable; your global CSS can further refine it)
+    const style = document.createElement("style");
+    style.id = "paymentModalStyle";
+    style.textContent = `
+      #paymentModal{
+        position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+        padding:24px 12px; background: rgba(0,0,0,.55);
+      }
+      #paymentModal .payment-modal-card{
+        width:min(520px, 100%); border-radius:20px; padding:18px 16px;
+        background: var(--Card_Background, #fff);
+        box-shadow: 0 12px 40px rgba(0,0,0,.35);
+        color: var(--Default_Text_Colour, #111);
+        position: relative;
+        border: 1px solid rgba(0,0,0,.08);
+      }
+      #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
+      #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
+      #paymentModal .payment-modal-close{
+        position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
+      }
+      #paymentModal input, #paymentModal select{
+        width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
+        border: 1px solid rgba(0,0,0,.15);
+        background: var(--Input_Background, rgba(255,255,255,.92));
+        color: inherit;
+        outline: none;
+      }
+      #paymentModal input::placeholder{ color: rgba(0,0,0,.45); }
+      #paymentModal input:focus, #paymentModal select:focus{
+        border-color: rgba(0,0,0,.28);
+        box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      }
+      #paymentModal #payment-element{
+        margin-top: 16px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,.15);
+        background: var(--Input_Background, rgba(255,255,255,.92));
+      }
+      #paymentModal #payment-request-button{ margin: 16px 0; }
+      #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+      /* TomSelect (country dropdown) */
+      #paymentModal .ts-control, 
+      #paymentModal .ts-dropdown{
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,.15);
+        background: var(--Input_Background, rgba(255,255,255,.92));
+        color: inherit;
+      }
+      #paymentModal .ts-dropdown .option{ padding: 10px 12px; }
+      #paymentModal .ts-dropdown .active{ background: rgba(0,0,0,.06); }
+
+      .Submit_Button{
+        width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
+        background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
+      }
+      .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
+
+      /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
+
+      html.dark-mode #paymentModal input,
+      html.dark-mode #paymentModal select,
+      html.dark-mode #paymentModal #payment-element{
+        border: 1px solid rgba(255,255,255,.16);
+        background: rgba(255,255,255,.06);
+        color: inherit;
+      }
+      html.dark-mode #paymentModal input::placeholder{ color: rgba(255,255,255,.45); }
+      html.dark-mode #paymentModal input:focus,
+      html.dark-mode #paymentModal select:focus{
+        border-color: rgba(255,255,255,.28);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.20);
+      }
+      html.dark-mode #paymentModal .payment-modal-close{ opacity:.9; }
+
+      html.dark-mode #paymentModal .ts-control,
+      html.dark-mode #paymentModal .ts-dropdown{
+        border: 1px solid rgba(255,255,255,.16);
+        background: rgba(255,255,255,.06);
+        color: inherit;
+      }
+      html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
+    `;
+    document.head.appendChild(style);
+
+    // Restore any draft customer data (name/address/email) saved when closing the modal.
+    // Note: Stripe PaymentElement details (card, etc.) cannot be persisted for compliance reasons.
+    try { restoreCheckoutDraftToModal(); } catch { }
+
+    // Autosave draft while typing (helps when closing by clicking outside / back button)
+    try {
+        const form = document.getElementById("paymentForm");
+        if (form && form.dataset.draftListenerAttached !== "true") {
+            form.dataset.draftListenerAttached = "true";
+            let t;
+            form.addEventListener("input", () => {
+                clearTimeout(t);
+                t = setTimeout(() => saveCheckoutDraftFromModal(), 250);
+            });
+        }
+    } catch { }
+
+    // Close modal when clicking on the overlay (outside the card)
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal({ preserveDraft: true });
+    });
+
+    // Close on Escape key
+    try {
+        const escHandler = (e) => {
+            if (e.key === "Escape") closeModal({ preserveDraft: true });
+        };
+        window.__snagletPaymentModalEscHandler = escHandler;
+        document.addEventListener("keydown", escHandler);
+    } catch { }
+}
+
+function getStripeAppearanceForModal() {
+    const dark = document.documentElement.classList.contains("dark-mode");
+
+    if (dark) {
+        return {
+            theme: "night",
+            variables: {
+                fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+                fontSizeBase: "14px",
+
+                colorBackground: "#0b1220",
+                colorText: "rgba(255,255,255,.92)",
+                colorTextSecondary: "rgba(229,231,235,.70)",
+                colorPrimary: "#3b82f6",
+                colorDanger: "#ef4444",
+                colorSuccess: "#22c55e",
+                colorBorder: "rgba(255,255,255,.14)",
+
+                borderRadius: "14px",
+                spacingUnit: "6px",
+                focusBoxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+            },
+            rules: {
+                ".Block": {
+                    backgroundColor: "transparent",
+                    borderColor: "rgba(255,255,255,.10)"
+                },
+                ".Input": {
+                    backgroundColor: "rgba(255,255,255,.06)",
+                    borderColor: "rgba(255,255,255,.14)",
+                    color: "rgba(255,255,255,.92)",
+                    boxShadow: "none"
+                },
+                ".Input:focus": {
+                    borderColor: "rgba(59,130,246,.55)",
+                    boxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+                },
+                ".Label": {
+                    color: "rgba(229,231,235,.85)"
+                },
+                ".Tab": {
+                    backgroundColor: "rgba(255,255,255,.06)",
+                    borderColor: "rgba(255,255,255,.12)",
+                    color: "rgba(229,231,235,.90)"
+                },
+                ".Tab--selected": {
+                    backgroundColor: "rgba(255,255,255,.12)",
+                    borderColor: "rgba(255,255,255,.22)",
+                    color: "rgba(255,255,255,.98)"
+                }
+
+            }
+        };
+    }
+
+    // Light mode (optional: match your light UI too)
+    return {
+        theme: "flat",
+        variables: {
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+            fontSizeBase: "14px",
+            colorBackground: "#ffffff",
+            colorText: "#111827",
+            colorTextSecondary: "#4b5563",
+            colorPrimary: "#2563eb",
+            colorBorder: "rgba(17,24,39,.15)",
+            borderRadius: "14px",
+            spacingUnit: "6px"
+        }
+    };
+}
+
+// ----------------------------------------------------------------------------
+// Checkout draft persistence (name/address/email only)
+// Stripe Payment Element details cannot be persisted.
+// ----------------------------------------------------------------------------
+const CHECKOUT_DRAFT_STORAGE_KEY = "snaglet_checkout_draft_v1";
+
+function saveCheckoutDraftFromModal() {
+    try {
+        const modal = document.getElementById("paymentModal");
+        if (!modal) return;
+
+        const ids = [
+            "Name",
+            "Surname",
+            "email",
+            "Street",
+            "City",
+            "Postal_Code",
+            "Address_Line2",
+            "State",
+            "Phone"
+        ];
+
+        const draft = {};
+        let any = false;
+
+        for (const id of ids) {
+            const el = modal.querySelector(`#${id}`);
+            const val = (el && typeof el.value === "string") ? el.value.trim() : "";
+            if (val) {
+                draft[id] = val;
+                any = true;
+            }
+        }
+
+        if (any) {
+            sessionStorage.setItem(CHECKOUT_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        } else {
+            sessionStorage.removeItem(CHECKOUT_DRAFT_STORAGE_KEY);
+        }
+    } catch { }
+}
+
+function restoreCheckoutDraftToModal() {
+    try {
+        const raw = sessionStorage.getItem(CHECKOUT_DRAFT_STORAGE_KEY);
+        if (!raw) return;
+
+        const draft = JSON.parse(raw);
+        if (!draft || typeof draft !== "object") return;
+
+        for (const [id, val] of Object.entries(draft)) {
+            const el = document.getElementById(id);
+            if (el && typeof val === "string" && !el.value) {
+                el.value = val;
+            }
+        }
+    } catch { }
+}
+
+function clearCheckoutDraft() {
+    try { sessionStorage.removeItem(CHECKOUT_DRAFT_STORAGE_KEY); } catch { }
+}
+
+function resetWalletPaymentRequestButton() {
+    try { window.paymentRequestButtonElement?.unmount?.(); } catch { }
+    window.paymentRequestButtonElement = null;
+    window.paymentRequestInstance = null;
+    window.prElementsInstance = null;
+
+    const c = document.getElementById("payment-request-button");
+    if (c) c.innerHTML = "";
+}
+
+function _isIso2Country(v) {
+    return /^[A-Z]{2}$/.test(String(v || "").trim().toUpperCase());
+}
+
+function _getWalletButtonTheme() {
+    // Stripe supports: 'dark', 'light', 'light-outline'
+    const isDark = document.documentElement.classList.contains("dark-mode");
+    return isDark ? "dark" : "light";
+}
+
+function _getStripeAppearance() {
+    // Stripe Appearance API supports theme + variables + rules.
+    // We use a dark palette aligned with the payment modal styling.
+    const isDark =
+        document.documentElement.classList.contains("dark-mode") ||
+        localStorage.getItem("themeMode") === "dark";
+
+    if (!isDark) {
+        return {
+            theme: "flat",
+            variables: {
+                fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+                fontSizeBase: "14px",
+                colorBackground: "#ffffff",
+                colorText: "#111827",
+                colorTextSecondary: "#4b5563",
+                colorPrimary: "#2563eb",
+                colorBorder: "rgba(17,24,39,.15)",
+                borderRadius: "14px",
+                spacingUnit: "6px"
+            }
+        };
+    }
+
+    return {
+        theme: "night",
+        variables: {
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+            fontSizeBase: "14px",
+
+            colorBackground: "#0b1220",
+            colorText: "rgba(255,255,255,.92)",
+            colorTextSecondary: "rgba(229,231,235,.70)",
+            colorPrimary: "#3b82f6",
+            colorDanger: "#ef4444",
+            colorSuccess: "#22c55e",
+            colorBorder: "rgba(255,255,255,.14)",
+
+            borderRadius: "14px",
+            spacingUnit: "6px",
+            focusBoxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+        },
+        rules: {
+            ".Block": {
+                backgroundColor: "transparent",
+                borderColor: "rgba(255,255,255,.10)"
+            },
+            ".Input": {
+                backgroundColor: "rgba(255,255,255,.06)",
+                borderColor: "rgba(255,255,255,.14)",
+                color: "rgba(255,255,255,.92)",
+                boxShadow: "none"
+            },
+            ".Input:focus": {
+                borderColor: "rgba(59,130,246,.55)",
+                boxShadow: "0 0 0 3px rgba(59,130,246,.20)"
+            },
+            ".Label": {
+                color: "rgba(229,231,235,.85)"
+            },
+            ".Tab": {
+                backgroundColor: "rgba(255,255,255,.06)",
+                borderColor: "rgba(255,255,255,.12)",
+                color: "rgba(229,231,235,.90)"
+            },
+            ".Tab--selected": {
+                backgroundColor: "rgba(255,255,255,.10)",
+                borderColor: "rgba(59,130,246,.45)"
+            }
+        }
+    };
+}
+
+
+async function setupWalletPaymentRequestButton({
+    stripe,
+    clientSecret,
+    amountCents,
+    currency,
+    country,
+    orderId,
+    paymentIntentId
+}) {
+    const container = document.getElementById("payment-request-button");
+    if (!container || !stripe || !clientSecret) return;
+
+    resetWalletPaymentRequestButton();
+
+    const cc = _isIso2Country(country) ? String(country).trim().toUpperCase() : "US";
+    const cur = String(currency || "EUR").trim().toLowerCase();
+    const amt = parseInt(amountCents, 10);
+
+    if (!Number.isFinite(amt) || amt <= 0) {
+        container.style.display = "none";
+        return;
+    }
+
+    const paymentRequest = stripe.paymentRequest({
+        country: cc,
+        currency: cur,
+        total: { label: "Total", amount: amt }, // amount is in minor units
+        requestPayerName: true,
+        requestPayerEmail: true,
+        requestPayerPhone: true
+        // requestShipping: false (you use your form fields for shipping)
+    });
+
+    const canMakePayment = await paymentRequest.canMakePayment();
+    if (!canMakePayment) {
+        container.style.display = "none";
+        return;
+    }
+
+    container.style.display = "block";
+
+    // Use a separate Elements instance for the wallet button
+    const prElements = stripe.elements({
+        appearance: _getStripeAppearance()
+    });
+
+    const prButton = prElements.create("paymentRequestButton", {
+        paymentRequest,
+        style: {
+            paymentRequestButton: {
+                type: "buy",
+                theme: _getWalletButtonTheme(),
+                height: "44px"
+            }
+        }
+    });
+
+    prButton.mount("#payment-request-button");
+
+    window.paymentRequestInstance = paymentRequest;
+    window.prElementsInstance = prElements;
+    window.paymentRequestButtonElement = prButton;
+
+    paymentRequest.on("paymentmethod", async (ev) => {
+        try {
+            // Require your form to be valid (so shipping/customer pipeline always has data)
+            const form = document.getElementById("paymentForm");
+            if (form && !form.checkValidity()) {
+                form.reportValidity();
+                ev.complete("fail");
+                return;
+            }
+
+            // Build userDetails from your form, then patch missing fields from wallet
+            const userDetails = (typeof readCheckoutForm === "function") ? readCheckoutForm() : {};
+            if (!userDetails.email && ev.payerEmail) userDetails.email = ev.payerEmail;
+            if (!userDetails.phone && ev.payerPhone) userDetails.phone = ev.payerPhone;
+            if ((!userDetails.name || !userDetails.surname) && ev.payerName) {
+                // naive split; your form already requires both, so this is mostly fallback
+                const parts = String(ev.payerName).trim().split(/\s+/);
+                if (!userDetails.name) userDetails.name = parts[0] || "";
+                if (!userDetails.surname) userDetails.surname = parts.slice(1).join(" ") || "";
+            }
+            if (!userDetails.country) userDetails.country = cc;
+
+            // Attach customer details to the SAME order/PI (your pipeline)
+            await fetch(`${API_BASE}/store-user-details`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    paymentIntentId: paymentIntentId || window.latestPaymentIntentId || null,
+                    orderId: orderId || window.latestOrderId || null,
+                    // Backend requires either token OR clientSecret; send both for robustness
+                    clientSecret: (typeof clientSecret !== "undefined" && clientSecret) ? clientSecret : (window.latestClientSecret || null),
+                    token: window.latestOrderPublicToken || null,
+                    userDetails
+                })
+            }).catch(() => { });
+
+            // Confirm the SAME PaymentIntent (do NOT create a new one here)
+            const first = await stripe.confirmCardPayment(
+                clientSecret,
+                { payment_method: ev.paymentMethod.id },
+                { handleActions: false }
+            );
+
+            if (first.error) {
+                ev.complete("fail");
+                alert(first.error.message || "Payment failed.");
+                return;
+            }
+
+            // Close the Apple/Google Pay sheet
+            ev.complete("success");
+
+            let pi = first.paymentIntent;
+
+            // Handle next actions (3DS, etc.)
+            if (pi && pi.status === "requires_action") {
+                const second = await stripe.confirmCardPayment(clientSecret);
+                if (second.error) {
+                    alert(second.error.message || "Authentication failed. Your cart is unchanged.");
+                    return;
+                }
+                pi = second.paymentIntent;
+            }
+
+            // Final handling (same policy as your card flow)
+            if (pi?.status === "succeeded") {
+                clearPaymentPendingFlag();
+                clearBasketCompletely();
+                try { clearCheckoutDraft(); } catch { }
+                setPaymentSuccessFlag({ reloadOnOk: true });
+                window.location.href = window.location.origin;
+                return;
+            }
+
+            if (pi?.id) {
+                // processing / requires_capture / etc.: keep cart, poll server for final
+                setPaymentPendingFlag({ paymentIntentId: pi.id, orderId: orderId || window.latestOrderId || null });
+
+                const r = await pollPendingPaymentUntilFinal({ paymentIntentId: pi.id });
+                if (r.status === "succeeded") {
+                    clearPaymentPendingFlag();
+                    clearBasketCompletely();
+                    try { clearCheckoutDraft(); } catch { }
+                    setPaymentSuccessFlag({ reloadOnOk: true });
+                    window.location.href = window.location.origin;
+                    return;
+                }
+
+                if (r.status === "requires_payment_method" || r.status === "canceled") {
+                    clearPaymentPendingFlag();
+                    alert("Payment did not complete. Your cart is still saved—please try again.");
+                    return;
+                }
+
+                alert("Payment is still processing. Your cart is unchanged.");
+                return;
+            }
+
+            alert("Payment submitted. Your cart is unchanged until confirmation.");
+        } catch (e) {
+            try { ev.complete("fail"); } catch { }
+            console.error("Wallet payment failed:", e);
+            alert(e?.message || "Wallet payment failed. Your cart is unchanged.");
+        }
+    });
+}
+
+// --- PAYMENT SUCCESS (non-blocking UI) ---------------------------
+const PAYMENT_SUCCESS_FLAG_KEY = "payment_successful";
+const PAYMENT_SUCCESS_RELOAD_KEY = "payment_successful_reload_on_ok";
+
+function setPaymentSuccessFlag({ reloadOnOk = true } = {}) {
+    try {
+        localStorage.setItem(PAYMENT_SUCCESS_FLAG_KEY, "1");
+        if (reloadOnOk) localStorage.setItem(PAYMENT_SUCCESS_RELOAD_KEY, "1");
+        else localStorage.removeItem(PAYMENT_SUCCESS_RELOAD_KEY);
+    } catch (e) {
+        console.warn("Could not set payment success flag:", e);
+    }
+}
+
+function showPaymentSuccessOverlay(message) {
+    // Prevent duplicates
+    if (document.getElementById("paymentSuccessOverlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "paymentSuccessOverlay";
+    overlay.style.cssText = [
+        "position:fixed",
+        "inset:0",
+        "z-index:100000",
+        "display:flex",
+        "align-items:center",
+        "justify-content:center",
+        "padding:16px",
+        "background:rgba(0,0,0,0.55)",
+        "backdrop-filter:blur(6px)"
+    ].join(";");
+
+    const card = document.createElement("div");
+    card.style.cssText = [
+        "width:min(520px, calc(100vw - 32px))",
+        "background:#141414",
+        "color:#fff",
+        "border:1px solid rgba(255,255,255,0.12)",
+        "border-radius:14px",
+        "box-shadow:0 20px 60px rgba(0,0,0,0.65)",
+        "padding:16px 16px 14px",
+        "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
+    ].join(";");
+
+    const title = document.createElement("div");
+    title.textContent = "Payment successful";
+    title.style.cssText = "font-size:16px;font-weight:700;margin-bottom:8px;";
+
+    const body = document.createElement("div");
+    body.textContent = message || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!";
+    body.style.cssText = "font-size:14px;opacity:0.92;line-height:1.35;margin-bottom:14px;";
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;justify-content:flex-end;gap:10px;";
+
+    const track = document.createElement("button");
+    track.type = "button";
+    track.textContent = "Track order";
+    track.style.cssText = [
+        "padding:10px 14px",
+        "border-radius:10px",
+        "border:1px solid rgba(255,255,255,0.18)",
+        "background:rgba(255,255,255,0.14)",
+        "color:#fff",
+        "cursor:pointer",
+        "font-weight:700"
+    ].join(";");
+
+    track.onclick = () => {
+        try {
+            openOrderStatusModal({
+                orderId: window.latestOrderId || "",
+                token: window.latestOrderPublicToken || ""
+            });
+        } catch { }
     };
 
-    actions.appendChild(dlJson);
-    actions.appendChild(dlDb);
-    actions.appendChild(restore);
+    const ok = document.createElement("button");
+    ok.type = "button";
+    ok.textContent = "OK";
+    ok.style.cssText = [
+        "padding:10px 14px",
+        "border-radius:10px",
+        "border:1px solid rgba(255,255,255,0.18)",
+        "background:rgba(255,255,255,0.08)",
+        "color:#fff",
+        "cursor:pointer",
+        "font-weight:600"
+    ].join(";");
 
-    row.appendChild(left);
-    row.appendChild(actions);
-    container.appendChild(row);
-  }
+    if (window.latestOrderId && window.latestOrderPublicToken) {
+        actions.appendChild(track);
+    }
+    actions.appendChild(ok);
+    card.appendChild(title);
+    card.appendChild(body);
+    card.appendChild(actions);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
 
-  out.innerHTML = "";
-  out.appendChild(container);
+    const reloadOnOk = (() => {
+        try { return localStorage.getItem(PAYMENT_SUCCESS_RELOAD_KEY) === "1"; }
+        catch { return false; }
+    })();
+
+    const cleanupAndMaybeReload = () => {
+        // Ensure it can't show again
+        try {
+            localStorage.removeItem(PAYMENT_SUCCESS_FLAG_KEY);
+            localStorage.removeItem(PAYMENT_SUCCESS_RELOAD_KEY);
+        } catch { }
+
+        overlay.remove();
+
+        // If you want “OK → reload to origin”
+        if (reloadOnOk) {
+            window.location.replace(window.location.origin);
+        }
+    };
+
+    ok.addEventListener("click", cleanupAndMaybeReload);
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) cleanupAndMaybeReload();
+    });
 }
 
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "subtabEditorBtn") showProductSubtab("editor");
-  if (e.target?.id === "subtabVersionsBtn") showProductSubtab("versions");
-  if (e.target?.id === "catDownloadCurrent") downloadCurrentCatalog();
-  if (e.target?.id === "catUploadBtn") uploadReplaceCatalog();
-  if (e.target?.id === "catRefreshVersions") loadCatalogVersions();
-});
+function checkAndShowPaymentSuccess() {
+    try {
+        const flag = localStorage.getItem(PAYMENT_SUCCESS_FLAG_KEY);
+        if (flag !== "1") return false;
 
-// default subtab
-document.addEventListener("DOMContentLoaded", () => {
-  showProductSubtab("editor");
-});
+        // Do NOT show a blocking alert. Show overlay.
+        // (Keep the flag until user clicks OK; overlay will remove it.)
+        const msg = (typeof TEXTS !== "undefined" && TEXTS?.CHECKOUT_SUCCESS)
+            ? TEXTS.CHECKOUT_SUCCESS
+            : "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!";
 
-
-// ===== Category lists editor (storefront IDs) =====
-async function loadCategoryLists() {
-  const res = await fetch(`${getApiBase()}/admin/catalog/category-lists`, { headers: authHeaders() });
-  const data = await res.json();
-  if (!res.ok) { alert(`Failed to load category lists: ${data?.error || res.status}`); return; }
-  document.getElementById("catListsText").value = JSON.stringify(data.categories || {}, null, 2);
+        // Let initial scripts paint first, but do not block timers like alert()
+        requestAnimationFrame(() => showPaymentSuccessOverlay(msg));
+        return true;
+    } catch (e) {
+        console.warn("Could not check payment success flag:", e);
+        return false;
+    }
 }
 
-async function saveCategoryLists() {
-  let categories = null;
-  const raw = document.getElementById("catListsText").value;
-  try { categories = JSON.parse(raw || "{}"); } catch { alert("Invalid JSON"); return; }
-  const res = await fetch(`${getApiBase()}/admin/catalog/category-lists`, {
-    method: "PUT",
-    headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ categories })
-  });
-  const text = await res.text().catch(() => "");
-  if (!res.ok) { alert(`Save failed: ${res.status} ${text}`); return; }
-  alert("Category lists saved. Snapshot created and DB synced.");
-  await loadProductCatalogue();
-  await loadCatalogVersions();
+
+
+
+
+
+// When the user clicks "Pay Now"
+function handleOutsideClick(event) {
+    const modal = document.getElementById("paymentModal");
+    if (!modal) return;
+
+    // Close only when clicking the overlay itself (outside the card)
+    if (event.target === modal) closeModal({ preserveDraft: true });
 }
 
-async function downloadCategoryLists() {
-  // current category lists are embedded in catalog; download a generated file
-  const res = await fetch(`${getApiBase()}/admin/catalog/category-lists`, { headers: authHeaders() });
-  const data = await res.json();
-  if (!res.ok) { alert("Failed to download category lists."); return; }
-  const blob = new Blob([JSON.stringify(data.categories || {}, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  const u = URL.createObjectURL(blob);
-  a.href = u;
-  a.download = "CategoryLists.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(u), 5000);
+function clearBasketCompletely() {
+    try {
+        if (typeof basket === "object" && basket) {
+            for (const k of Object.keys(basket)) delete basket[k];
+        }
+    } catch { }
+
+    clearBasketStorage("clear_basket");
+    refreshBasketUIIfOpen();
 }
 
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "catListsLoad") loadCategoryLists();
-  if (e.target?.id === "catListsSave") saveCategoryLists();
-  if (e.target?.id === "catListsDownload") downloadCategoryLists();
-});
 
 
-// ===== Graph engine (Chart.js) + Excel export (SheetJS) =====
-let _graphChart = null;
-let _graphRows = null; // last timeseries rows
 
-const METRIC_LABELS = {
-  orders: "Orders",
-  gross: "Gross (EUR)",
-  refunds: "Refunds (EUR)",
-  netRevenue: "Net revenue (EUR)",
-  fees: "Stripe fees (EUR)",
-  shipping: "Shipping (EUR)",
-  cogs: "COGS (EUR)",
-  otherOrderCosts: "Other order costs (EUR)",
-  profit: "Profit (EUR)"
+
+
+
+
+
+
+
+
+// Function to show the modal
+async function openModal() {
+    await createPaymentModal();
+
+    const modal = document.getElementById("paymentModal");
+    if (modal) modal.style.display = "flex";
+
+    history.pushState({ modalOpen: true }, "", window.location.href);
+
+    // ✅ Re-wire modal logic to the new server-truth flow (tariffs + PI + mismatch handling)
+    await initPaymentModalLogic();
+}
+
+function closeModal(opts = {}) {
+    const options = (opts && typeof opts === "object") ? opts : {};
+    const preserveDraft = options.preserveDraft !== false; // default true
+    const clearDraft = options.clearDraft === true;
+
+    if (preserveDraft) saveCheckoutDraftFromModal();
+    if (clearDraft) clearCheckoutDraft();
+
+    // Remove ESC handler if it was attached while the modal was open
+    try {
+        if (window.__snagletPaymentModalEscHandler) {
+            document.removeEventListener("keydown", window.__snagletPaymentModalEscHandler);
+            window.__snagletPaymentModalEscHandler = null;
+        }
+    } catch { }
+
+    const modal = document.getElementById("paymentModal");
+    if (modal) modal.remove();
+
+    // Reset wallet UI
+    resetWalletPaymentRequestButton();
+
+    // Reset Stripe state so reopen is clean
+    try { window.paymentElementInstance?.unmount?.(); } catch { }
+    window.elementsInstance = null;
+    window.paymentElementInstance = null;
+
+    // Keep stripeInstance (fine), but clear “latest” references
+    window.latestClientSecret = null;
+    window.latestOrderId = null;
+    window.latestPaymentIntentId = null;
+}
+
+
+
+
+
+// Format card number (add spaces every 4 digits)
+function formatCardNumber(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-numeric characters
+    value = value.replace(/(.{4})/g, '$1 ').trim(); // Add space every 4 digits
+    e.target.value = value;
+}
+
+// Format expiry date (MM/YY)
+function formatExpiryDate(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-numeric characters
+    if (value.length > 2) {
+        value = value.substring(0, 2) + '/' + value.substring(2);
+    }
+    e.target.value = value;
+}
+
+// Function to calculate total price
+function calculateTotal(cartItems) {
+    return Object.values(cartItems).reduce(
+        (sum, item) => sum + (parseFloat(item.price) * item.quantity),
+        0
+    ).toFixed(2);
+}
+function removeSortContainer() {
+    console.log("✅ SortContainer removed engaged!");
+    let sortContainer = document.getElementById("SortContainer");
+    if (sortContainer) {
+        sortContainer.remove(); // Remove only the sorting dropdown container
+        console.log("✅ SortContainer removed successfully!");
+    } else {
+        console.log("⚠️ SortContainer not found.");
+    }
+}
+
+
+
+
+
+
+
+
+
+// Function to calculate total price
+function calculateTotalAmount() {
+    return Object.values(basket).reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0).toFixed(2);
+}
+
+function basketButtonFunction() {
+    let basketData = encodeURIComponent(JSON.stringify(basket)); // Convert basket to a URL-safe string
+    window.open(`basket.html?data=${basketData}`, "_blank");
 };
 
-async function loadGraphsTimeseries() {
-  const from = document.getElementById("accFrom").value;
-  const to = document.getElementById("accTo").value;
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get("redirect_status");
 
-  const res = await fetch(`${getApiBase()}/admin/analytics/timeseries?from=${from}&to=${to}&interval=day`, { headers: authHeaders() });
-  const data = await res.json();
-  if (!res.ok) { alert(`Failed to load graph data: ${data?.error || res.status}`); return; }
-  _graphRows = data.rows || [];
-  renderGraphsChart();
-}
+    if (redirectStatus === "succeeded") {
+        console.log("✅ Stripe redirect success detected – clearing basket and flagging success.");
 
-function buildDataset(metric, colorHex) {
-  if (!metric) return null;
-  const width = Math.max(1, Math.min(10, Number(document.getElementById("gLineWidth").value || 2)));
-  const tension = Math.max(0, Math.min(1, Number(document.getElementById("gTension").value || 0)));
-  const showPoints = !!document.getElementById("gShowPoints").checked;
-  const fill = !!document.getElementById("gFill").checked;
+        // Clear basket and mark success
+        clearBasketCompletely();
+        try { clearCheckoutDraft(); } catch { }
+        setPaymentSuccessFlag({ reloadOnOk: true }); // OK will reload to origin
 
-  return {
-    label: METRIC_LABELS[metric] || metric,
-    data: (_graphRows || []).map(r => Number(r[metric] || 0)),
-    borderColor: colorHex || "#00bcd4",
-    backgroundColor: (colorHex || "#00bcd4") + "33",
-    borderWidth: width,
-    tension: tension,
-    pointRadius: showPoints ? 3 : 0,
-    pointHoverRadius: showPoints ? 5 : 0,
-    fill: fill
-  };
-}
+        // Clean Stripe params so refresh doesn't re-trigger
+        params.delete("redirect_status");
+        params.delete("payment_intent");
+        params.delete("payment_intent_client_secret");
 
-function renderGraphsChart() {
-  if (!_graphRows) { alert("No graph data loaded yet."); return; }
-  const metricA = document.getElementById("gMetricA").value;
-  const metricB = document.getElementById("gMetricB").value;
-  const colorA = document.getElementById("gColorA").value;
-  const colorB = document.getElementById("gColorB").value;
-  const showGrid = !!document.getElementById("gShowGrid").checked;
+        const newQuery = params.toString();
+        const cleanUrl =
+            window.location.pathname +
+            (newQuery ? "?" + newQuery : "") +
+            window.location.hash;
 
-  const labels = (_graphRows || []).map(r => r.date);
+        // IMPORTANT: no reload here. Just clean the address bar.
+        history.replaceState({}, "", cleanUrl);
 
-  const datasets = [];
-  const dsA = buildDataset(metricA, colorA);
-  if (dsA) datasets.push(dsA);
-  const dsB = buildDataset(metricB, colorB);
-  if (dsB) datasets.push(dsB);
-
-  const ctx = document.getElementById("graphsCanvas");
-  if (!ctx) return;
-
-  if (_graphChart) {
-    _graphChart.destroy();
-    _graphChart = null;
-  }
-
-  _graphChart = new Chart(ctx, {
-    type: "line",
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: true }
-      },
-      scales: {
-        x: {
-          grid: { display: showGrid }
-        },
-        y: {
-          grid: { display: showGrid },
-          ticks: { precision: 0 }
-        }
-      }
+        // Show success overlay (non-blocking)
+        checkAndShowPaymentSuccess();
+        return;
     }
-  });
-}
 
-function applyGraphsStyle() {
-  if (!_graphChart) { renderGraphsChart(); return; }
-  // Rebuild datasets with current style controls
-  renderGraphsChart();
-}
+    // Normal loads: if a previous flow set the flag, show it now
+    checkAndShowPaymentSuccess();
+    checkAndHandlePendingPaymentOnLoad();
 
-function exportGraphsToExcel() {
-  if (!_graphRows || !_graphRows.length) { alert("Load graph data first."); return; }
-  if (typeof XLSX === "undefined") { alert("XLSX library not loaded."); return; }
-
-  const metricA = document.getElementById("gMetricA").value;
-  const metricB = document.getElementById("gMetricB").value;
-
-  const header = ["date"];
-  if (metricA) header.push(metricA);
-  if (metricB) header.push(metricB);
-
-  const data = [header];
-  for (const r of _graphRows) {
-    const row = [r.date];
-    if (metricA) row.push(Number(r[metricA] || 0));
-    if (metricB) row.push(Number(r[metricB] || 0));
-    data.push(row);
-  }
-
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "GraphData");
-
-  // Add a small metadata sheet
-  const meta = [
-    ["exportedAt", new Date().toISOString()],
-    ["metricA", metricA || ""],
-    ["metricB", metricB || ""],
-    ["from", document.getElementById("accFrom").value],
-    ["to", document.getElementById("accTo").value]
-  ];
-  const ws2 = XLSX.utils.aoa_to_sheet(meta);
-  XLSX.utils.book_append_sheet(wb, ws2, "Meta");
-
-  const filename = `graphs_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
-  XLSX.writeFile(wb, filename);
-}
-
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "gLoad") loadGraphsTimeseries();
-  if (e.target?.id === "gApply") applyGraphsStyle();
-  if (e.target?.id === "gExportExcel") exportGraphsToExcel();
 });
 
 
-// ===== Image link auto-generation =====
-function toRoman(n) {
-  const map = [
-    ["X", 10], ["IX", 9], ["V", 5], ["IV", 4], ["I", 1]
-  ];
-  let out = "";
-  for (const [sym, val] of map) {
-    while (n >= val) { out += sym; n -= val; }
-  }
-  return out || "I";
-}
-
-function encodeNameForImages(name) {
-  // encode like URLs in your repo: spaces => %20 etc.
-  return encodeURIComponent(String(name || "").trim()).replace(/%2F/g, "%252F");
-}
-
-function generateImageLinksFromName(name, count, ext, template) {
-  const enc = encodeNameForImages(name);
-  const c = Math.max(0, Math.min(50, Number(count || 0)));
-  const e = String(ext || "avif").trim();
-  const t = String(template || "");
-  const out = [];
-  for (let i = 1; i <= c; i++) {
-    const roman = toRoman(i);
-    out.push(
-      t.replaceAll("{NAME_ENC}", enc)
-        .replaceAll("{ROMAN}", roman)
-        .replaceAll("{INDEX}", String(i))
-        .replaceAll("{EXT}", e)
-    );
-  }
-  return out;
-}
-
-function isAutoImageList(images, name, ext, template) {
-  try {
-    const gen = generateImageLinksFromName(name, images.length, ext, template);
-    if (gen.length !== images.length) return false;
-    for (let i = 0; i < gen.length; i++) if (String(gen[i]) !== String(images[i])) return false;
-    return true;
-  } catch { return false; }
-}
 
 
-function populateCategorySelect(selectedCats) {
-  const sel = document.getElementById("peCategory");
-  if (!sel) return;
-  const cats = Object.keys(_catalogCache?.categories || {}).sort();
-  sel.innerHTML = "";
-  for (const c of cats) {
-    const opt = document.createElement("option");
-    opt.value = c; opt.textContent = c;
-    if (Array.isArray(selectedCats) && selectedCats.includes(c)) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  // allow new category typing? not now; keep select for safety.
-}
-
-function refreshImagesFromTools() {
-  const auto = !!document.getElementById("peAutoImages")?.checked;
-  const name = document.getElementById("peName")?.value || "";
-  const count = Number(document.getElementById("peImageCount")?.value || 0);
-  const ext = document.getElementById("peImageExt")?.value || "avif";
-  const template = document.getElementById("peImageTemplate")?.value || "";
-  const textarea = document.getElementById("peImages");
-
-  if (!textarea) return;
-  if (!auto) return;
-
-  const links = generateImageLinksFromName(name, count, ext, template);
-  textarea.value = links.join("\n");
-}
-
-function setImagesToolsFromProduct(p) {
-  const textarea = document.getElementById("peImages");
-  const name = document.getElementById("peName")?.value || "";
-  const extSel = document.getElementById("peImageExt");
-  const template = document.getElementById("peImageTemplate")?.value || "";
-  const autoChk = document.getElementById("peAutoImages");
-  const cnt = document.getElementById("peImageCount");
-
-  const imgs = Array.isArray(p?.images) ? p.images : (Array.isArray(p?.imageLinks) ? p.imageLinks : []);
-  if (textarea) textarea.value = (imgs || []).join("\n");
-
-  // Infer ext from first image if possible
-  let ext = "avif";
-  if (imgs && imgs.length) {
-    const m = String(imgs[0]).match(/\.([a-z0-9]+)(\?.*)?$/i);
-    if (m) ext = m[1].toLowerCase();
-  }
-  if (extSel) extSel.value = ext;
-
-  if (cnt) cnt.value = String((imgs || []).length || 0);
-
-  // Heuristic: enable auto if matches generated list
-  const auto = imgs && imgs.length ? isAutoImageList(imgs, name, ext, template) : true;
-  if (autoChk) autoChk.checked = auto;
-  if (auto) refreshImagesFromTools();
-}
 
 
-function openNewProductEditor() {
-  _editingProductId = null;
-
-  populateCategorySelect([Object.keys(_catalogCache?.categories || {})[0] || ""].filter(Boolean));
-
-  document.getElementById("peId").value = "(new)";
-  const newIdEl = document.getElementById("peNewId");
-  if (newIdEl) newIdEl.value = "";
-
-  document.getElementById("peName").value = "";
-  document.getElementById("peLink").value = "";
-  document.getElementById("pePrice").value = "0.00";
-  document.getElementById("pePurchase").value = "0.00";
-
-  document.getElementById("peOptions").value = "";
-  const vpEl = document.getElementById("peVariantPrices");
-  if (vpEl) vpEl.value = "";
-  document.getElementById("peAutoImages").checked = true;
-  document.getElementById("peImageCount").value = "6";
-  // keep ext/template defaults
-  refreshImagesFromTools();
-
-  document.getElementById("productEditorModal").hidden = false;
-}
 
 
-document.addEventListener("input", (e) => {
-  if (e.target?.id === "peName") {
-    // live update images if auto enabled
-    refreshImagesFromTools();
-  }
-  if (e.target?.id === "peImageCount" || e.target?.id === "peImageExt" || e.target?.id === "peImageTemplate") {
-    refreshImagesFromTools();
-  }
-});
 
-document.addEventListener("click", (e) => {
-  if (e.target?.id === "peGenImages") refreshImagesFromTools();
-  if (e.target?.id === "peAddImage") {
-    const cntEl = document.getElementById("peImageCount");
-    const auto = !!document.getElementById("peAutoImages")?.checked;
-    if (auto && cntEl) {
-      cntEl.value = String(Number(cntEl.value || 0) + 1);
-      refreshImagesFromTools();
-    } else {
-      // manual mode: append empty line
-      const ta = document.getElementById("peImages");
-      if (ta) ta.value = (ta.value.trim() ? (ta.value.trim() + "\n") : "") + "";
+
+
+
+let searchTimeout;
+
+
+
+
+
+
+
+
+
+
+function handleSortChange(newSort) {
+    localStorage.setItem("defaultSort", newSort);
+    syncSortSelects(newSort); // Updates both dropdowns
+    if (typeof window.currentCategory !== "undefined") {
+        loadProducts(window.currentCategory, newSort, window.currentSortOrder || "asc");
     }
-  }
-  if (e.target?.id === "newProductBtn") openNewProductEditor();
-});
+}
 
 
-// ===================== Products Tab (Catalogue + Categories) =====================
-(function productsWorkbench() {
-  const $ = (sel, root) => (root || document).querySelector(sel);
-  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
 
-  let installed = false;
-  let bundle = null; // {productsById, categories}
-  let activeProductId = null;
-  let editorBaseline = null;
-  const newlyCreatedIds = new Set();
-let history = [];
-  let histIndex = -1;
-  let categoriesDraft = null;
-  let categoriesMetaDraft = {};
-  let catMetaTarget = null;
-  let activeCategory = null;
-  let catSortable = null;
-  let imgSortable = null;
-  const stateKey = "mg_products_hist_collapsed";
 
-  // Catalogue sorting (clickable table headers)
-  const sortKeyStorage = "mg_catalogue_sort_v1";
-  let catalogueSort = (() => {
+
+
+function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
+    lastCategory = category;
+    if (window.matchMedia("(max-width: 680px)").matches) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    sortBy = sortBy || "NameFirst";
+    sortOrder = sortOrder || "asc";
+    category = category || Object.keys(productsDatabase).find(k => Array.isArray(productsDatabase[k]) && productsDatabase[k].length) || "Default_Page";
+
+    document.getElementById('Viewer').innerHTML = '';
+
+    if (category === "Default_Page") {
+        clearCategoryHighlight();
+    }
+
+    let savedSort = localStorage.getItem("defaultSort") || "NameFirst";
+    const viewer = document.getElementById("Viewer");
+    window.currentCategory = category;
+
+    let wrapper = document.getElementById("ProductWrapper");
+    if (!wrapper) {
+        wrapper = document.createElement("div");
+        wrapper.id = "ProductWrapper";
+        viewer.parentNode.insertBefore(wrapper, viewer);
+        wrapper.appendChild(viewer);
+    }
+
+    viewer.innerHTML = "";
+    cart = {};
+
+    if (!products.hasOwnProperty(category) || !Array.isArray(products[category])) {
+        console.warn(`⚠️ Category '${category}' is invalid or does not contain a valid product list.`);
+        return;
+    }
+
+    let productList = [...products[category]];
+
+    productList.sort((a, b) => {
+        if (sortBy === "Cheapest") return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
+        if (sortBy === "Priciest") return sortOrder === "asc" ? b.price - a.price : a.price - b.price;
+        if (sortBy === "NameFirst") return sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        if (sortBy === "NameLast") return sortOrder === "asc" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+    });
+
+    removeSortContainer();
+
+    let sortContainer = document.getElementById("SortContainer");
+    if (!sortContainer) {
+        sortContainer = document.createElement("div");
+        sortContainer.id = "SortContainer";
+        sortContainer.className = "SortContainer";
+        sortContainer.innerHTML = `
+            <label for="sortSelect" class="SortSelectLabel">${TEXTS.SORTING.LABEL}</label>
+            <select id="sortSelect" class="sortSelect" onchange="updateSorting()">
+                <option value="NameFirst" selected>${TEXTS.SORTING.OPTIONS.NAME_ASC}</option>
+                <option value="NameLast">${TEXTS.SORTING.OPTIONS.NAME_DESC}</option>
+                <option value="Cheapest">${TEXTS.SORTING.OPTIONS.PRICE_ASC}</option>
+                <option value="Priciest">${TEXTS.SORTING.OPTIONS.PRICE_DESC}</option>
+            </select>
+        `;
+        wrapper.insertBefore(sortContainer, viewer);
+    }
+
+    let sortSelectElement = document.getElementById("sortSelect");
+    if (sortSelectElement) {
+        sortSelectElement.value = sortBy;
+    }
+
+    productList.forEach(product => {
+        if (!product.name) return;
+        cart[product.name] = 1;
+
+        const productDiv = document.createElement("div");
+        productDiv.classList.add("product");
+
+        const card = document.createElement("div");
+        card.className = "product-card";
+
+        // Clickable product name as a link
+        const nameLink = document.createElement("a");
+        nameLink.className = "product-name";
+        nameLink.style.textDecoration = "none"; // Removes underline
+
+
+        nameLink.textContent = product.name;
+        nameLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            navigate("GoToProductPage", [
+                product.name,
+                product.price,
+                product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+            ]);
+        });
+        nameLink.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
+        nameLink.target = "_blank"; // Open in new tab
+
+        const img = document.createElement("img");
+        img.className = "Clickable_Image";
+        img.src = product.image;
+        img.alt = product.name;
+        img.dataset.name = product.name;
+        img.dataset.price = product.price;
+        img.dataset.imageurl = product.image;
+        img.dataset.description = product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER;
+
+        img.addEventListener("click", () => {
+            navigate("GoToProductPage", [
+                product.name,
+                product.price,
+                product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+            ]);
+        });
+
+        const priceP = document.createElement("p");
+        priceP.className = "product-price";
+        priceP.textContent = `${product.price}${TEXTS.CURRENCIES.EUR}`;
+
+        const quantityContainer = document.createElement("div");
+        quantityContainer.className = "quantity-container";
+
+        const quantityControls = document.createElement("div");
+        quantityControls.className = "quantity-controls";
+
+        const decBtn = document.createElement("button");
+        decBtn.className = "Button";
+        decBtn.textContent = TEXTS.BASKET.BUTTONS.DECREASE;
+        decBtn.addEventListener("click", () => decreaseQuantity(product.name));
+
+        const quantitySpan = document.createElement("span");
+        quantitySpan.className = "WhiteText";
+        quantitySpan.id = `quantity-${product.name}`;
+        quantitySpan.textContent = "1";
+
+        const incBtn = document.createElement("button");
+        incBtn.className = "Button";
+        incBtn.textContent = TEXTS.BASKET.BUTTONS.INCREASE;
+        incBtn.addEventListener("click", () => increaseQuantity(product.name));
+
+        const addToCartBtn = document.createElement("button");
+        addToCartBtn.className = "add-to-cart";
+
+        // Use flexbox to align text and SVG
+        addToCartBtn.innerHTML = `
+        <span style="display: flex; align-items: center;">
+          ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
+          <svg class="cart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      `;
+
+
+        addToCartBtn.addEventListener("click", () => {
+            addToCart(
+                product.name,
+                product.price,
+                product.image,
+                product.expectedPurchasePrice,
+                product.productLink,
+                product.description,
+                "",
+                __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
+            );
+        });
+
+
+
+        quantityControls.append(decBtn, quantitySpan, incBtn);
+        quantityContainer.append(quantityControls, addToCartBtn);
+
+        card.append(nameLink, img, priceP, quantityContainer);
+        productDiv.appendChild(card);
+        viewer.appendChild(productDiv);
+    });
     try {
-      const raw = localStorage.getItem(sortKeyStorage);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && typeof parsed === "object" && parsed.key && parsed.dir) return parsed;
-    } catch { }
-    return { key: "profit", dir: "desc" };
-  })();
+        preloadProductImages(category); // only current category thumbnails, throttled
+    } catch (e) {
+        console.warn("⚠️ preloadProductImages failed:", e);
+    }
 
-  function apiBase() {
-    if (typeof getApiBase === "function") return getApiBase().replace(/\/+$/, "");
-    return (localStorage.getItem("api_base") || location.origin).replace(/\/+$/, "");
-  }
-  function authHead(json = true) {
-    if (typeof authHeaders === "function") return authHeaders(json);
-    if (typeof _adminHeaders === "function") return _adminHeaders(json);
-    const h = json ? { "Content-Type": "application/json" } : {};
-    const token = localStorage.getItem("api_token") || "";
-    const code = localStorage.getItem("admin_code") || "";
-    if (token) h.Authorization = `Bearer ${token}`;
-    if (code) h["X-Admin-Code"] = code;
-    return h;
-  }
+    CategoryButtons();
 
-  async function fetchCatalog() {
-    const r = await fetch(`${apiBase()}/admin/catalog`, { headers: authHead(false) });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `GET /admin/catalog failed (${r.status})`);
-    return out;
-  }
 
-  async function fetchCategoriesMeta() {
-    const r = await fetch(`${apiBase()}/admin/catalog/categories-meta`, { headers: authHead(false) });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `GET /admin/catalog/categories-meta failed (${r.status})`);
-    return out;
-  }
+}
 
-  function _parseDualIcon(iconStr) {
-    const s = String(iconStr || "").trim();
-    if (!s) return { light: "", dark: "" };
-    if (s.startsWith("{") && s.endsWith("}")) {
-      try {
-        const obj = JSON.parse(s);
-        if (obj && typeof obj === "object") {
-          const light = String(obj.light || obj.l || obj.url || obj.icon || "").trim();
-          const dark = String(obj.dark || obj.d || "").trim();
-          return { light, dark };
+
+
+
+function syncSortSelects(newSort) {
+    document.querySelectorAll('#sortSelect, #defaultSort').forEach(select => {
+        if (select && select.value !== newSort) {
+            select.value = newSort;
         }
-      } catch { }
-    }
-    return { light: s, dark: "" };
-  }
-
-  function _buildIconStringFromInputs(light, dark) {
-    const l = String(light || "").trim();
-    const d = String(dark || "").trim();
-    if (!l && !d) return "";
-    if (l && d) return JSON.stringify({ light: l, dark: d });
-    return l || d;
-  }
-
-
-async function downloadCatalogs() {
-  const r = await fetch(`${apiBase()}/admin/catalog`, { headers: authHead(false) });
-  const txt = await r.text();
-  if (!r.ok) {
-    let msg = txt;
-    try { msg = JSON.parse(txt)?.error || msg; } catch { }
-    throw new Error(msg || `GET /admin/catalog failed (${r.status})`);
-  }
-
-  // Keep the server payload as-is, but ensure it's valid JSON for download.
-  let payload = null;
-  try { payload = JSON.parse(txt); } catch { payload = { raw: txt }; }
-
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const filename = `catalog_bundle_${stamp}.json`;
-
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch { } a.remove(); }, 0);
-
-  try { pushHistory("Downloaded catalogs", filename); } catch { }
-  try { ttoast("Downloaded", filename); } catch { }
-}
-
-  async function putCatalogFile(newBundle) {
-    const r = await fetch(`${apiBase()}/admin/catalog/file`, {
-      method: "PUT",
-      headers: authHead(true),
-      body: JSON.stringify(newBundle)
     });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `PUT /admin/catalog/file failed (${r.status})`);
-    return out;
-  }
-  async function putCategoryLists(catLists) {
-    const r = await fetch(`${apiBase()}/admin/catalog/category-lists`, {
-      method: "PUT",
-      headers: authHead(true),
-      body: JSON.stringify(catLists)
-    });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `PUT /admin/catalog/category-lists failed (${r.status})`);
-    return out;
-  }
-
-  function showPane(name) {
-    $$("#productsTab .mg-prod-pane").forEach(p => p.classList.toggle("hidden", p.getAttribute("data-pane") !== name));
-    $$("#productsTab .mg-subtab").forEach(b => b.classList.toggle("active", b.getAttribute("data-subtab") === name));
-    localStorage.setItem("mg_products_subtab", name);
-  }
-
-  function fmt2(n) { const x = Number(n || 0); return (Number.isFinite(x) ? x : 0).toFixed(2); }
-  function esc(s) { return (typeof escHtml === "function") ? escHtml(String(s ?? "")) : String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-
-  function normalizeBundle(raw) {
-    const productsById = raw?.productsById || raw?.products_by_id || {};
-    const categories = raw?.categories || {};
-    return { productsById, categories };
-  }
-
-  
-// ===== Product option groups (multi-variant) helpers =====
-function mgSafeJsonParseMaybe(v) {
-  if (typeof v !== "string") return v;
-  const s = v.trim();
-  if (!s) return v;
-  if (!(s.startsWith("{") || s.startsWith("["))) return v;
-  try { return JSON.parse(s); } catch { return v; }
 }
 
-function mgNormalizeOptionGroups(raw) {
-  let v = mgSafeJsonParseMaybe(raw);
 
-  // Preferred: optionGroups already
-  if (Array.isArray(v) && v.length && v[0] && typeof v[0] === "object" && !Array.isArray(v[0])) {
-    const out = [];
-    for (const g of v.slice(0, 10)) {
-      const label = String(g.label ?? g.name ?? "").trim().replace(/:$/, "");
-      const opts = Array.isArray(g.options) ? g.options : [];
-      const options = opts.map(x => String(x ?? "").trim()).filter(Boolean).slice(0, 200);
-      if (!label || !options.length) continue;
-      const keyBase = label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_\-]/g, "");
-      const key = String(g.key ?? keyBase ?? `opt${out.length + 1}`).trim().slice(0, 64) || `opt${out.length + 1}`;
-      const imageByOption = (g.imageByOption && typeof g.imageByOption === "object") ? g.imageByOption : undefined;
-      out.push({ key, label, options, ...(imageByOption ? { imageByOption } : {}) });
+function updateSorting() {
+    const selectedSort = document.getElementById("sortSelect")?.value;
+    if (selectedSort) {
+        handleSortChange(selectedSort);
     }
-    return out;
-  }
-
-  // Back-compat: legacy single group array: ["Color:", "Red", "Blue"]
-  if (Array.isArray(v) && (v.length === 0 || typeof v[0] === "string")) {
-    const arr = v.map(x => String(x ?? "").trim()).filter(Boolean);
-    if (arr.length < 2) return [];
-    const label = String(arr[0] || "Option").replace(/:$/, "").trim();
-    const options = arr.slice(1);
-    return [{ key: label.toLowerCase().replace(/\s+/g, "_"), label, options }];
-  }
-
-  // Back-compat: array of arrays: [[label, ...opts], [label2, ...opts2]]
-  if (Array.isArray(v) && v.length && Array.isArray(v[0])) {
-    const out = [];
-    for (const a of v.slice(0, 10)) {
-      const arr = Array.isArray(a) ? a : [];
-      const [labelRaw, ...optsRaw] = arr;
-      const label = String(labelRaw ?? "Option").trim().replace(/:$/, "");
-      const options = optsRaw.map(x => String(x ?? "").trim()).filter(Boolean).slice(0, 200);
-      if (!label || !options.length) continue;
-      out.push({ key: label.toLowerCase().replace(/\s+/g, "_"), label, options });
-    }
-    return out;
-  }
-
-  return [];
 }
 
-function mgFirstGroupToLegacyProductOptions(groups) {
-  const arr = Array.isArray(groups) ? groups : [];
-  const g = arr[0];
-  if (!g || typeof g !== "object") return [];
-  const labelRaw = String(g.label ?? g.name ?? "Option").trim().replace(/:$/, "");
-  const label = labelRaw ? (labelRaw.endsWith(":") ? labelRaw : (labelRaw + ":")) : "Option:";
-  const opts = Array.isArray(g.options) ? g.options : [];
-  const options = opts.map(x => String(x ?? "").trim()).filter(Boolean).slice(0, 300);
-  return options.length ? [label, ...options] : [];
+
+
+
+function getProductDescription(productName) {
+    let product = Object.values(products || {}).flat().find(p => p.name === productName);
+    return product ? product.description : "N/A";
 }
-function getProductList() {
-    if (!bundle) return [];
-    // In split_json mode, product objects often do NOT contain their ID field
-    // (the ID is the key in productsById). Always fall back to the map key.
-    const byId = bundle.productsById || {};
-    return Object.entries(byId).map(([idKey, p]) => ({
-      id: String(p?.productId || p?.id || idKey || "").trim(),
-      name: String(p?.name || p?.productName || ""),
-      buy: Number(p?.purchasePriceEUR ?? p?.purchasePrice ?? p?.expectedPurchasePrice ?? p?.expectedPurchasePriceEUR ?? 0),
-      sell: Number(p?.salePriceEUR ?? p?.salePrice ?? p?.priceEUR ?? p?.price ?? p?.sellingPrice ?? 0),
-      link: String(p?.productLink || ""),
-      description: String(p?.description || ""),
-      options: mgNormalizeOptionGroups(p?.optionGroups ?? p?.productOptions ?? p?.options ?? []),
-      images: Array.isArray(p?.images) ? p.images : Array.isArray(p?.imageLinks) ? p.imageLinks : []
-    })).filter(p => p.id);
-  }
+window.__alreadyRetriedBrokenProduct = false;
+window.lastProductName = null;
+window.lastProductPrice = null;
+window.lastProductDescription = null;
 
-  function _defaultDirForKey(k) {
-    return (k === "name" || k === "id") ? "asc" : "desc";
-  }
 
-  function setCatalogueSort(key) {
-    const k = String(key || "").trim();
-    if (!k) return;
-    if (catalogueSort.key === k) catalogueSort.dir = (catalogueSort.dir === "asc") ? "desc" : "asc";
-    else {
-      catalogueSort.key = k;
-      catalogueSort.dir = _defaultDirForKey(k);
+function preloadProductImages(category) {
+    if (typeof products === "undefined" || !products) return;
+
+    // Default to the current/last category so we DON'T preload the entire catalog.
+    const cat =
+        category ||
+        (typeof lastCategory !== "undefined" && lastCategory) ||
+        window.currentCategory ||
+        "Default_Page";
+
+    const list = Array.isArray(products[cat]) ? products[cat] : [];
+    if (!list.length) return;
+
+    // Tune these:
+    const MAX_PRODUCTS = 20;     // how many product thumbnails to warm up
+    const CONCURRENCY = 4;       // how many simultaneous image requests
+
+    // Pick ONE thumbnail URL per product (not the whole images[] array)
+    const urls = [];
+    for (let i = 0; i < Math.min(MAX_PRODUCTS, list.length); i++) {
+        const p = list[i];
+        let url = "";
+
+        if (p && typeof p.image === "string" && p.image.trim()) {
+            url = p.image.trim();
+        } else if (p && Array.isArray(p.images)) {
+            const first = p.images.find(u => typeof u === "string" && u.trim());
+            if (first) url = first.trim();
+        }
+
+        if (!url) continue;
+
+        // Basic relative handling (keeps current behavior from breaking if some are relative)
+        if (!/^https?:\/\//i.test(url) && !/^data:/i.test(url) && !/^blob:/i.test(url)) {
+            if (url.startsWith("/")) url = `${window.location.origin}${url}`;
+            else url = `${window.location.origin}/${url}`;
+        }
+
+        if (!preloadedImages.has(url)) urls.push(url);
     }
-    try { localStorage.setItem(sortKeyStorage, JSON.stringify(catalogueSort)); } catch { }
-    updateCatalogueSortIndicators();
-    renderCatalogue();
-  }
 
-  function updateCatalogueSortIndicators() {
-    const ths = $$("#productsTab .mg-cat-table thead th.mg-sortable");
-    const key = String(catalogueSort?.key || "");
-    const dir = (String(catalogueSort?.dir || "desc").toLowerCase() === "asc") ? "asc" : "desc";
-    for (const th of ths) {
-      const k = th.getAttribute("data-sort-key") || "";
-      const active = (k === key);
-      th.classList.toggle("active", active);
-      th.setAttribute("aria-sort", active ? (dir === "asc" ? "ascending" : "descending") : "none");
-      const arrow = th.querySelector(".mg-sort-arrow");
-      if (arrow) arrow.textContent = active ? (dir === "asc" ? "▲" : "▼") : "";
-    }
-  }
+    if (!urls.length) return;
 
-  function installCatalogueSortHeaders() {
-    const ths = $$("#productsTab .mg-cat-table thead th.mg-sortable");
-    for (const th of ths) {
-      if (th.getAttribute("data-sort-installed") === "1") continue;
-      th.setAttribute("data-sort-installed", "1");
-      th.addEventListener("click", () => setCatalogueSort(th.getAttribute("data-sort-key")));
-    }
-    updateCatalogueSortIndicators();
-  }
+    // Avoid restarting the same preload repeatedly
+    const key = `${cat}::${urls.length}`;
+    if (preloadProductImages.__lastKey === key && preloadProductImages.__running) return;
+    preloadProductImages.__lastKey = key;
 
-  function sortProducts(list) {
-    const key = String(catalogueSort?.key || "profit");
-    const dir = (String(catalogueSort?.dir || "desc").toLowerCase() === "asc") ? "asc" : "desc";
-    const mul = (dir === "asc") ? 1 : -1;
+    const run = () => {
+        preloadProductImages.__running = true;
 
-    const num = (v) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
+        let idx = 0;
+        let active = 0;
+
+        const pump = () => {
+            while (active < CONCURRENCY && idx < urls.length) {
+                const url = urls[idx++];
+                if (!url || preloadedImages.has(url)) continue;
+
+                active++;
+
+                const img = new Image();
+                img.decoding = "async";
+
+                const done = () => {
+                    active--;
+                    preloadedImages.add(url);
+                    if (idx >= urls.length && active === 0) {
+                        preloadProductImages.__running = false;
+                        return;
+                    }
+                    pump();
+                };
+
+                img.onload = done;
+                img.onerror = done;
+                img.src = url;
+            }
+        };
+
+        pump();
     };
-    const str = (v) => String(v ?? "");
-    const optsCount = (p) => Array.isArray(p?.options) ? p.options.length : (p?.options && typeof p.options === "object" ? Object.keys(p.options).length : 0);
 
-    return [...list].sort((a, b) => {
-      let cmp = 0;
-      if (key === "name") cmp = str(a.name).localeCompare(str(b.name));
-      else if (key === "id") cmp = str(a.id).localeCompare(str(b.id));
-      else if (key === "buy") cmp = (num(a.buy) - num(b.buy)) * mul;
-      else if (key === "sell") cmp = (num(a.sell) - num(b.sell)) * mul;
-      else if (key === "profit") cmp = ((num(a.sell) - num(a.buy)) - (num(b.sell) - num(b.buy))) * mul;
-      else if (key === "opts") cmp = (optsCount(a) - optsCount(b)) * mul;
-      else cmp = 0;
+    // Don’t fight the initial render
+    if ("requestIdleCallback" in window) {
+        requestIdleCallback(run, { timeout: 1200 });
+    } else {
+        setTimeout(run, 0);
+    }
+}
 
-      // Tie-breakers for stability/readability
-      if (cmp === 0) cmp = str(a.name).localeCompare(str(b.name));
-      if (cmp === 0) cmp = str(a.id).localeCompare(str(b.id));
-      return cmp;
+
+
+function attachSwipeListeners() {
+    const image = document.getElementById("mainImage");
+    if (!image) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    image.addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
     });
-  }
 
-  function renderCatalogue() {
-    const body = $("#prodTableBody");
-    if (!body) return;
+    image.addEventListener("touchend", (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipeGesture();
+    });
 
-    const search = ($("#prodSearch")?.value || "").trim().toLowerCase();
+    function handleSwipeGesture() {
+        const diff = touchEndX - touchStartX;
 
-    let list = getProductList();
-    if (search) {
-      const sNum = Number(String(search).replace(/,/g, "."));
-      const isNum = Number.isFinite(sNum);
-      list = list.filter(p => {
-        const hay = [
-          p.id,
-          p.name,
-          p.description,
-          p.link,
-          fmt2(p.buy),
-          fmt2(p.sell),
-          String(p.buy ?? ""),
-          String(p.sell ?? "")
-        ].map(x => String(x ?? "").toLowerCase());
+        if (Math.abs(diff) < 50) return; // avoid tiny swipes
 
-        if (hay.some(x => x.includes(search))) return true;
-        // Allow numeric exact match for convenience (e.g. type 12.99)
-        if (isNum) {
-          const buy = Number(p.buy ?? NaN);
-          const sell = Number(p.sell ?? NaN);
-          if (Number.isFinite(buy) && Math.abs(buy - sNum) < 0.0005) return true;
-          if (Number.isFinite(sell) && Math.abs(sell - sNum) < 0.0005) return true;
+        if (diff > 0) {
+            // Swipe right → go to previous image
+            if (window.currentIndex > 0) {
+                window.currentIndex--;
+                updateMainImage("left"); // swipe right, image slides left
+            }
+        } else {
+            // Swipe left → go to next image
+            if (window.currentIndex < window.currentProductImages.length - 1) {
+                window.currentIndex++;
+                updateMainImage("right"); // swipe left, image slides right
+            }
+        }
+    }
+}
+
+
+
+let currentImageIndex = 0;
+let startX = 0;
+
+const carousel = document.getElementById("imageCarousel");
+const images = carousel ? carousel.querySelectorAll(".carousel-image") : [];
+
+if (carousel && images && images.length) {
+    // Ensure the first image is visible (best-effort)
+    try { images[0].style.display = "block"; } catch { }
+
+    carousel.addEventListener("touchstart", (e) => {
+        startX = e.changedTouches[0].clientX;
+    }, { passive: true });
+
+    carousel.addEventListener("touchend", (e) => {
+        const endX = e.changedTouches[0].clientX;
+        const diff = startX - endX;
+
+        if (Math.abs(diff) > 50) {
+            // Guard against empty list
+            if (!images[currentImageIndex]) return;
+
+            images[currentImageIndex].style.display = "none";
+
+            if (diff > 0) {
+                // Swipe left
+                currentImageIndex = (currentImageIndex + 1) % images.length;
+            } else {
+                // Swipe right
+                currentImageIndex =
+                    (currentImageIndex - 1 + images.length) % images.length;
+            }
+
+            if (images[currentImageIndex]) {
+                images[currentImageIndex].style.display = "block";
+            }
+        }
+    }, { passive: true });
+}
+function selectProductOption(button, optionValue) {
+    document.querySelectorAll(".Product_Option_Button").forEach(btn => btn.classList.remove("selected"));
+    button.classList.add("selected");
+
+    window.selectedProductOption = optionValue;
+
+    const productName = document.querySelector(".Product_Name_Heading")?.textContent?.trim();
+    if (productName && basket[productName]) {
+        basket[productName].selectedOption = optionValue;
+        persistBasket("option_change");
+        console.log(`🟢 Saved selected option "${optionValue}" for "${productName}"`);
+    }
+}
+
+
+
+
+
+
+
+
+function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "") {
+    console.log(productName, productPrice, imageUrl, selectedOption);
+    let quantity = parseInt(document.getElementById(`quantity-${productName}`).innerText) || 1;
+    addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption);
+    navigate("GoToCart");
+
+}
+
+// Function to update the displayed image
+function updateImage(direction = 'none') {
+    const imageElement = document.getElementById("mainImage");
+
+    if (imageElement) {
+        if (direction === 'right') {
+            imageElement.style.transform = 'translateX(100vw)';
+            setTimeout(() => {
+                imageElement.src = window.currentProductImages[window.currentIndex];
+                imageElement.style.transition = 'none';
+                imageElement.style.transform = 'translateX(-100vw)';
+                void imageElement.offsetWidth;
+                imageElement.style.transition = 'transform 0.4s ease';
+                imageElement.style.transform = 'translateX(0)';
+            }, 100);
+        } else if (direction === 'left') {
+            imageElement.style.transform = 'translateX(-100vw)';
+            setTimeout(() => {
+                imageElement.src = window.currentProductImages[window.currentIndex];
+                imageElement.style.transition = 'none';
+                imageElement.style.transform = 'translateX(100vw)';
+                void imageElement.offsetWidth;
+                imageElement.style.transition = 'transform 0.4s ease';
+                imageElement.style.transform = 'translateX(0)';
+            }, 100);
+        } else {
+            imageElement.src = window.currentProductImages[window.currentIndex];
+        }
+    }
+
+    document.querySelectorAll(".Thumbnail").forEach(img => img.classList.remove("active"));
+    const currentImage = window.currentProductImages[window.currentIndex];
+    document.querySelector(`.Thumbnail[src="${currentImage}"]`)?.classList.add("active");
+}
+
+function prevImage() {
+    window.currentIndex = (window.currentIndex - 1 + window.currentProductImages.length) % window.currentProductImages.length;
+    updateImage('right');
+}
+
+function nextImage() {
+    window.currentIndex = (window.currentIndex + 1) % window.currentProductImages.length;
+    updateImage('left');
+}
+
+
+
+
+
+
+
+function changeImage(imgSrc) {
+    const index = window.currentProductImages.indexOf(imgSrc);
+    if (index !== -1) {
+        window.currentIndex = index;
+        updateImage();
+    }
+}
+
+
+function increaseQuantity(productName) {
+    if (!cart[productName]) {
+        cart[productName] = 1;
+    }
+    cart[productName] += 1;
+    document.getElementById(`quantity-${productName}`).innerText = cart[productName];
+}
+
+function decreaseQuantity(productName) {
+    if (!cart[productName]) {
+        cart[productName] = 1;
+    }
+    if (cart[productName] > 1) {
+        cart[productName] -= 1;
+        document.getElementById(`quantity-${productName}`).innerText = cart[productName];
+    }
+}
+
+function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {// analytics: add to cart
+    try {
+        const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink });
+        payload.extra = { selectedOption: selectedOption || "" };
+        sendAnalyticsEvent('add_to_cart', payload);
+    } catch { }
+
+    let quantity = cart[productName] || 1;
+    cart[productName] = 1;
+
+    const key = selectedOption ? `${productName} - ${selectedOption}` : productName;
+
+    if (quantity > 0) {
+        if (basket[key]) {
+            basket[key].quantity += quantity;
+        } else {
+            basket[key] = {
+                name: productName,
+                price,
+                image: imageUrl,
+                quantity,
+                expectedPurchasePrice,
+                productLink,
+                description: productDescription,
+                ...(selectedOption && { selectedOption })
+            };
+        }
+
+        localStorage.setItem("basket", JSON.stringify(basket));
+        alert(`${quantity} x ${productName}${selectedOption ? ' (' + selectedOption + ')' : ''} added to cart!`);
+    } else {
+        alert("Please select at least one item.");
+    }
+}
+
+
+
+
+function GoToCart() {
+    clearCategoryHighlight()
+    const viewer = document.getElementById("Viewer");
+
+    if (!viewer) {
+        console.error("❌ Viewer element not found.");
+        return;
+    }
+
+    viewer.innerHTML = ""; // Clear previous products
+
+    let Basket_Viewer = document.createElement("div");
+    Basket_Viewer.id = "Basket_Viewer";
+    Basket_Viewer.classList.add("Basket_Viewer");
+
+    viewer.appendChild(Basket_Viewer); // Append the container to the viewer
+
+    // Delay updating the basket to ensure the UI is fully created
+    setTimeout(() => {
+        updateBasket();
+    }, 100);
+
+    removeSortContainer();
+}
+
+
+
+function updateBasket() {
+    let basketContainer = document.getElementById("Basket_Viewer");
+
+    if (!basketContainer) {
+        console.error("❌ Basket_Viewer not found. Creating it...");
+
+        let viewer = document.getElementById("Viewer");
+        if (!viewer) {
+            console.error("❌ Viewer element not found.");
+            return;
+        }
+
+        basketContainer = document.createElement("div");
+        basketContainer.id = "Basket_Viewer";
+        basketContainer.classList.add("Basket_Viewer");
+        viewer.appendChild(basketContainer);
+    }
+
+    basketContainer.innerHTML = "";
+
+    
+    // Ensure option chips + layout overrides are available
+    __ssEnsureOptionChipStyles();
+if (Object.keys(basket).length === 0) {
+        basketContainer.innerHTML = `<p class='EmptyBasketMessage'>The basket is empty!</p>`;
+        return;
+    }
+
+    let BasketTotalPrice = 0;
+
+    Object.entries(basket).forEach(([key, item]) => {
+        let productDiv = document.createElement("div");
+        productDiv.classList.add("Basket_Item_Container");
+
+        let value = parseFloat(item.price);
+        let totalPrice = (value * item.quantity).toFixed(2);
+
+        console.log(`🔹 Product: ${item.name}`);
+        console.log(`   🔹 Expected Purchase Price: ${item.expectedPurchasePrice}`);
+        console.log(`   🔹 Product Link: ${item.productLink}`);
+        console.log(`   🔹 Product IMAGELINK: ${item.image}`);
+        console.log(`   🔹 Product description: ${item.description}`);
+
+        const product = (() => {
+    try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
+})();
+
+const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+
+const encodedName = encodeURIComponent(item.name);
+        productDiv.innerHTML = `
+        <div class="Basket-Item">
+            <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank">
+                <img class="Basket_Image" 
+                     src="${item.image}" 
+                     alt="${item.name}" 
+                     data-name="${item.name}" 
+                     data-price="${item.price}" 
+                     data-description="${item.description}" 
+                     data-imageurl="${item.image}">
+            </a>
+            <div class="Item-Details">
+                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
+                    <strong class="BasketText">${item.name.length > 15 ? item.name.slice(0, 15) + "…" : item.name}</strong>
+
+                </a>
+                <p class="BasketTextDescription">${item.description}</p>
+                                       ${optionChipsHTML}
+            </div>
+<div class="Quantity-Controls-Basket">
+  <div class="BasketQtyRow">
+    <button class="BasketChangeQuantityButton" type="button"
+            data-key="${encodeURIComponent(key)}" data-delta="-1">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
+    <span class="BasketChangeQuantityText">${item.quantity}</span>
+    <button class="BasketChangeQuantityButton" type="button"
+            data-key="${encodeURIComponent(key)}" data-delta="1">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
+  </div>
+  <p class="basket-item-price basket-item-price-right" data-eur="${totalPrice}">${totalPrice}€</p>
+</div>
+
+        </div>
+    `;
+
+
+        basketContainer.appendChild(productDiv);
+        BasketTotalPrice += value * item.quantity;
+    });
+
+
+    let totalSum = 0;
+    let receiptDiv = document.createElement("div");
+    receiptDiv.classList.add("BasketReceipt");
+
+    let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
+
+    Object.entries(basket).forEach(([key, item]) => {
+        let itemPrice = parseFloat(item.price);
+        let itemTotal = itemPrice * item.quantity;
+        totalSum += itemTotal;
+
+        const productForReceipt = (() => {
+    try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
+})();
+const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
+
+receiptContent += `
+    <tr>
+        <td>${item.quantity} ×</td>
+        <td>
+            <div class="ReceiptItemName">${__ssEscHtml(item.name)}</div>
+            ${receiptChipsHTML}
+        </td>
+        <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+    </tr>
+`;
+});
+
+    receiptContent += `</table></div>`;
+    receiptContent += `
+        <div class="ReceiptFooter">
+            <button class="PayButton">${TEXTS.PRODUCT_SECTION.BUY_NOW}</button>
+            <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
+        </div>
+    `;
+
+    receiptDiv.innerHTML = receiptContent;
+    basketContainer.appendChild(receiptDiv);
+    // Bind once per Basket_Viewer (works across re-renders)
+    if (!basketContainer.dataset.qtyBound) {
+        basketContainer.dataset.qtyBound = "1";
+        basketContainer.addEventListener("click", (e) => {
+            const btn = e.target.closest(".BasketChangeQuantityButton");
+            if (!btn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const k = decodeURIComponent(btn.dataset.key || "");
+            const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+            changeQuantity(k, delta);
+        });
+    }
+
+    // ✅ Ensure the basket "Pay" button always works (even if delegated handlers weren't attached yet)
+    const payBtn = receiptDiv.querySelector(".PayButton");
+    if (payBtn) {
+        payBtn.type = "button"; // prevent accidental form submit
+        if (!payBtn.dataset.bound) {
+            payBtn.dataset.bound = "1";
+            payBtn.addEventListener("click", async (event) => {
+                event.preventDefault();
+                event.stopPropagation(); // prevent the delegated handler from firing too
+
+                const wasDisabled = payBtn.disabled;
+                payBtn.disabled = true;
+
+                try {
+                    await openModal(); // creates & opens the payment modal
+                } catch (e) {
+                    console.error("openModal() failed:", e);
+                    alert("Could not initialize checkout. Please try again.");
+                } finally {
+                    payBtn.disabled = wasDisabled;
+                }
+            });
+        }
+    }
+
+    document.querySelectorAll(".Basket_Image").forEach((img) => {
+        img.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const productName = this.dataset.name;
+            const productPrice = this.dataset.price;
+            let productDescription = this.dataset.description;
+
+            if (!productDescription || productDescription === "undefined") {
+                const product = Object.values(products).flat().find(p => p.name === productName);
+                if (product) productDescription = product.description;
+            }
+
+            navigate("GoToProductPage", [productName, productPrice, productDescription]);
+        });
+
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+}
+
+
+
+// Attach once: open the checkout modal + mount Stripe Elements
+
+
+function changeQuantity(itemKey, amount) {
+    if (!basket || !basket[itemKey]) return;
+
+    const currentQty = Number(basket[itemKey].quantity) || 0;
+    const nextQty = currentQty + (Number(amount) || 0);
+
+    if (nextQty <= 0) {
+        delete basket[itemKey];
+    } else {
+        basket[itemKey].quantity = nextQty;
+    }
+
+    // keep your multi-tab sync working
+    if (typeof persistBasket === "function") {
+        persistBasket("qty_change");
+    } else {
+        localStorage.setItem("basket", JSON.stringify(basket));
+    }
+
+    updateBasket();
+}
+
+
+function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {
+    let quantity = cart[productName] || 1;
+    cart[productName] = 1;
+
+    const key = selectedOption ? `${productName} - ${selectedOption}` : productName;
+
+    if (quantity > 0) {
+        if (basket[key]) {
+            basket[key].quantity += quantity;
+        } else {
+            basket[key] = {
+                name: productName,
+                price,
+                image: imageUrl,
+                quantity,
+                expectedPurchasePrice,
+                productLink,
+                description: productDescription,
+                ...(selectedOption && { selectedOption })
+            };
+        }
+
+        persistBasket("add_to_cart");
+        alert(`${quantity} x ${productName}${selectedOption ? ' (' + selectedOption + ')' : ''} added to cart!`);
+    } else {
+        alert("Please select at least one item.");
+    }
+}
+
+
+
+function loadBasket() {
+    updateBasket();
+}
+
+
+function filterProducts(searchTerm) {
+    const filtered = [];
+
+    for (const category in products) {
+        const productList = products[category];
+
+        if (Array.isArray(productList)) {
+            const matches = productList.filter(product =>
+                product.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            filtered.push(...matches);
+        } else {
+            console.warn(`⚠️ Skipped invalid product list in category: ${category}`);
+        }
+    }
+
+    return filtered;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// ✅ Function to Navigate to a Product & Update URL
+
+
+function slugifyName(name) {
+    return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+}
+
+function findProductById(productId) {
+    const id = String(productId || "").trim();
+    if (!id) return null;
+    const byId = window.productsById || null;
+    if (byId && byId[id]) return byId[id];
+    // fallback: scan catalog
+    try {
+        const cats = window.products || productsDatabase || {};
+        for (const arr of Object.values(cats)) {
+            for (const p of (arr || [])) {
+                if (String(p?.productId || "") === id) return p;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+function findProductBySlug(slug) {
+    const s = String(slug || "").trim().toLowerCase();
+    if (!s) return null;
+    try {
+        const cats = window.products || productsDatabase || {};
+        for (const arr of Object.values(cats)) {
+            for (const p of (arr || [])) {
+                const n = p?.name || "";
+                if (slugifyName(n) === s) return p;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+function findProductByName(name) {
+    const nrm = normalizeProductKey(name);
+    try {
+        const cats = window.products || productsDatabase || {};
+        for (const arr of Object.values(cats)) {
+            for (const p of (arr || [])) {
+                if (normalizeProductKey(p?.name || "") === nrm) return p;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+function parseIncomingProductRef() {
+    const sp = new URLSearchParams(window.location.search || "");
+    const pid = sp.get("pid") || "";
+    const pname = sp.get("product") || "";
+    const path = String(window.location.pathname || "");
+
+    // /p/<id>
+    if (path.startsWith("/p/")) {
+        const id = decodeURIComponent(path.slice(3).split("/")[0] || "");
+        return { type: "id", value: id };
+    }
+
+    // /<slug> (ignore root and known routes)
+    if (path && path !== "/" && !path.includes(".") && !path.startsWith("/order-status/")) {
+        const slug = decodeURIComponent(path.slice(1).split("/")[0] || "");
+        if (slug) return { type: "slug", value: slug };
+    }
+
+    if (pid) return { type: "id", value: pid };
+    if (pname) return { type: "name", value: pname };
+    return null;
+}
+
+function navigateToProduct(productName) {
+    const formattedName = productName.toLowerCase().replace(/\s+/g, "-");
+
+    // analytics: product clicked
+    sendAnalyticsEvent('product_click', buildAnalyticsProductPayload(productName));
+
+    history.pushState({}, "", `/${formattedName}`);
+    GoToProductPage(productName, getProductPrice(productName), getProductDescription(productName));
+}
+
+
+// ✅ Function to Get Product Price
+function getProductPrice(productName) {
+    let product = Object.values(products).flat().find(p => p.name === productName);
+    return product ? product.price : "N/A";
+}
+
+// ---------- CHECKOUT HELPERS (DROP-IN) ----------
+
+// Reads a value from an input if present; returns "" if missing.
+function _val(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+}
+
+// Build a sanitized snapshot of the cart you already send to the server
+
+
+// Helper for safe value access by ID (modal fields)
+
+// Collects user details from your current checkout modal.
+// IDs must match your inputs (Name, Surname, email, Street, City, Postal_Code, Country, Phone, State/Region, AddressLine2, OrderNote).
+function collectUserDetails() {
+    const v = _val;
+
+    // Existing fields
+    const name = v("Name");
+    const surname = v("Surname");
+    const email = v("email");
+    const street = v("Street");        // Address line 1
+    const city = v("City");
+    const postalCode = v("Postal_Code");
+    const country = v("Country");       // Prefer ISO-2 code if possible
+
+    // New / optional
+    const phone = v("Phone");                 // Important for shipping labels
+    const region = v("State") || v("Region");  // State / province / region
+    const address2 = v("AddressLine2");          // Apt / Suite / Unit
+    const orderNote = v("OrderNote");
+
+    return { name, surname, email, phone, street, address2, city, region, postalCode, country, orderNote };
+}
+
+
+
+
+function readCheckoutForm() {
+    const get = (...ids) => {
+        for (const id of ids) {
+            const el = document.getElementById(id);
+            if (el && typeof el.value === "string") {
+                const v = el.value.trim();
+                if (v) return v;
+            }
+        }
+        return "";
+    };
+
+    // Prefer your existing collector if it exists, but still fallback robustly
+    let d = null;
+    try { if (typeof collectUserDetails === "function") d = collectUserDetails(); } catch { d = null; }
+
+    return {
+        name: (d?.name || get("Name")) || "",
+        surname: (d?.surname || get("Surname")) || "",
+        email: (d?.email || get("email")) || "",
+        phone: (d?.phone || get("Phone")) || "",
+        street: (d?.street || get("Street")) || "",
+        address2: (d?.address2 || get("Address_Line2", "AddressLine2")) || "",
+        city: (d?.city || get("City")) || "",
+        state: (d?.region || d?.state || get("State", "Region")) || "",
+        postalCode: (d?.postalCode || get("Postal_Code", "PostalCode")) || "",
+        country: (d?.country || get("Country")) || "" // should be ISO-2 if your select uses ISO codes
+    };
+}
+
+
+
+
+
+
+
+// ---- Stripe globals (keep only one set of these in the whole file) ----
+
+function getApiBase() {
+    // Uses your existing API_BASE if you have it, otherwise falls back to same-origin.
+    return (typeof API_BASE !== "undefined" && API_BASE) ? API_BASE : "";
+}
+
+function readBasket() {
+    try {
+        const raw = localStorage.getItem("basket");
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
+
+
+
+function buildStripeSafeCart(fullCart) {
+    return (fullCart || []).map((i) => {
+        const out = {
+            name: i.name,
+            quantity: i.quantity,
+            productId: i.productId || "",
+            // price is not trusted by the server (server recomputes), but keep it for display/debug
+            price: Number(i.unitPriceEUR || i.price || 0),
+            selectedOption: i.selectedOption || "",
+            selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
+        };
+        if (i.productId) out.productId = String(i.productId).trim();
+        if (i.productLink) out.productLink = String(i.productLink).trim();
+        return out;
+    });
+}
+
+function buildFullCartFromBasket() {
+    const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
+        try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
+    })();
+
+    const items = Object.values(basketObj || {});
+    const flat = __ssGetCatalogFlat();
+
+    return items
+        .map((item) => {
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+
+            const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+            const legacySel = String(item?.selectedOption || "").trim();
+
+            // Attempt to rehydrate from current catalog
+            const pid = String(item?.productId || "").trim();
+            const canon = canonicalizeProductLink(item?.productLink || "");
+            const prod =
+                (pid ? flat.find(p => String(p?.productId || "").trim() === pid) : null) ||
+                (canon ? flat.find(p => canonicalizeProductLink(p?.productLink || "") === canon) : null) ||
+                (item?.name ? flat.find(p => String(p?.name || "").trim() === String(item.name).trim()) : null) ||
+                null;
+
+            const unitEURFromBasket = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
+            const unitEUR = Number((__ssResolveVariantPriceEUR(prod || {}, sel, legacySel) || unitEURFromBasket || 0).toFixed(2));
+
+            const expectedFromBasket = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
+            const expectedFromProd = Number(parseFloat(prod?.expectedPurchasePrice ?? 0) || 0);
+            const expected = Number(((expectedFromProd || expectedFromBasket || unitEUR) || 0).toFixed(2));
+
+            const out = {
+                name: String(item?.name || prod?.name || "").slice(0, 120),
+                productId: String(item?.productId || "").slice(0, 80),
+                quantity: qty,
+                unitPriceEUR: unitEUR,
+                price: unitEUR,
+                expectedPurchasePrice: expected,
+                productLink: String(item?.productLink || prod?.productLink || "N/A").slice(0, 800),
+                image: String(item?.image || prod?.image || "").slice(0, 800),
+                description: String(item?.description || prod?.description || "").slice(0, 2000)
+            };
+
+            const outPid = String(pid || prod?.productId || "").trim();
+            if (outPid) out.productId = outPid;
+
+            if (legacySel) out.selectedOption = String(legacySel).slice(0, 120);
+            if (sel.length) out.selectedOptions = sel;
+
+            return out;
+        })
+        .filter((x) => x && x.name && x.quantity > 0);
+}
+
+
+function getSelectedCountryCode() {
+    const v =
+        document.getElementById("countrySelect")?.value ||
+        localStorage.getItem("detectedCountry") ||
+        "US";
+    return String(v).trim().toUpperCase();
+}
+
+function getApplyTariffFlag() {
+    if (typeof serverApplyTariff === "boolean") return serverApplyTariff;
+    const v = localStorage.getItem("applyTariff");
+    if (v == null) return true;
+    return v === "true";
+}
+
+function round2(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 0;
+    return Math.round(x * 100) / 100;
+}
+
+function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
+    const cur = String(currency || "EUR").toUpperCase();
+    const cc = String(countryCode || "").toUpperCase();
+
+    const baseEUR = (fullCart || []).reduce((sum, i) => {
+        const qty = Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1);
+        const unit = Number(i?.unitPriceEUR ?? i?.price ?? 0) || 0;
+        return sum + unit * qty;
+    }, 0);
+
+    let totalEUR = baseEUR;
+
+    // NOTE: your tariffs.json values are decimals like 0.2 (= +20%), so use (1 + tariff).
+    if (getApplyTariffFlag()) {
+        const tariff = Number(tariffMultipliers?.[cc] ?? 0) || 0;
+        totalEUR = totalEUR * (1 + tariff);
+    }
+
+    const rate = cur === "EUR" ? 1 : (Number(exchangeRates?.[cur] ?? 0) || 0);
+    const totalInCurrency = cur === "EUR" ? totalEUR : (rate ? totalEUR * rate : 0);
+
+    return round2(totalInCurrency);
+}
+
+function buildStripeOrderSummary(stripeCart) {
+    return (stripeCart || [])
+        .map((item) => {
+            const name = String(item?.name || "");
+            const shortName = name.length > 30 ? name.slice(0, 30) + "…" : name;
+            const option = item?.selectedOption ? ` (${String(item.selectedOption).slice(0, 40)})` : "";
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+            return `${qty}x ${shortName}${option}`;
+        })
+        .join(", ")
+        .slice(0, 499);
+}
+
+async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        await preloadSettingsData();
+
+        const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
+        const order_summary = buildStripeOrderSummary(stripeCart);
+
+        const fxFetchedAt =
+            (typeof exchangeRatesFetchedAt !== "undefined" && Number(exchangeRatesFetchedAt) > 0)
+                ? Number(exchangeRatesFetchedAt)
+                : (Number(window.exchangeRatesFetchedAt || 0) > 0 ? Number(window.exchangeRatesFetchedAt) : null);
+
+        const turnstileToken = await snagletGetTurnstileToken({ forceFresh: true });
+
+        const res = await fetch(`${API_BASE}/create-payment-intent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                websiteOrigin,
+                currency,
+                country,
+                products: stripeCart,
+                productsFull: fullCart,
+                expectedClientTotal,
+                applyTariff: getApplyTariffFlag(),
+                metadata: { order_summary },
+                fxFetchedAt,
+                turnstileToken
+            })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) return data;
+
+        const code = data?.error || data?.code;
+
+        // Retry once: cache may be stale vs server FX history (especially after backend restart)
+        if (res.status === 409 && attempt === 1 && (code === "FX_SNAPSHOT_NOT_FOUND" || code === "TOTAL_MISMATCH")) {
+            // Backend may have restarted and forgotten the FX snapshot we cached.
+            // Force a fresh settings preload and retry once.
+            try { localStorage.removeItem(SETTINGS_CACHE_KEY); } catch { }
+            window.exchangeRatesFetchedAt = 0;
+            try { if (typeof exchangeRatesFetchedAt !== "undefined") exchangeRatesFetchedAt = 0; } catch { }
+            try { _preloadSettingsPromise = null; } catch { }
+            continue;
+        }
+
+        // existing error handling
+        if (res.status === 409 && code === "FX_SNAPSHOT_NOT_FOUND") {
+            const err = new Error(data?.message || "Exchange rate snapshot expired. Please refresh and try again.");
+            err.code = "FX_SNAPSHOT_NOT_FOUND";
+            err.details = data;
+            throw err;
+        }
+
+        if (res.status === 409 && code === "TOTAL_MISMATCH") {
+            const err = new Error(data?.message || "Pricing changed. Please refresh and try again.");
+            err.code = "TOTAL_MISMATCH";
+            err.details = data;
+            throw err;
+        }
+
+        throw new Error(data?.error || data?.message || `Failed to create payment intent (${res.status})`);
+    }
+}
+
+
+async function initStripePaymentUI(selectedCurrency) {
+    // Ensure catalog data is loaded before rehydrating basket prices
+    try {
+        if (typeof initProducts === "function") await initProducts();
+    } catch { }
+
+    const fullCart = buildFullCartFromBasket();
+    const stripeCart = buildStripeSafeCart(fullCart);
+
+    if (!stripeCart.length) throw new Error("Basket is empty.");
+
+    // analytics: begin checkout
+    try {
+        const items = buildAnalyticsCartItems(stripeCart);
+        sendAnalyticsEvent('begin_checkout', {
+            extra: {
+                currency: selectedCurrency,
+                country: getSelectedCountryCode(),
+                itemsCount: items.length,
+                items
+            }
+        });
+    } catch { }
+    const country = getSelectedCountryCode();
+
+    const fallbackPk =
+        "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
+
+    const publishableKey =
+        window.STRIPE_PUBLISHABLE_KEY ||
+        window.STRIPE_PUBLISHABLE ||
+        fallbackPk;
+
+    if (!window.stripeInstance) window.stripeInstance = Stripe(publishableKey);
+
+    const websiteOrigin = window.location.origin;
+
+    const data = await createPaymentIntentOnServer({
+        websiteOrigin,
+        currency: selectedCurrency,
+        country,
+        fullCart,
+        stripeCart
+    });
+
+    const { clientSecret, orderId, paymentIntentId, amountCents, currency, orderPublicToken, orderStatusUrl } = data;
+
+    // analytics: payment intent created (checkout progressing)
+    try {
+        sendAnalyticsEvent('checkout_intent_created', {
+            extra: {
+                orderId: data?.orderId || null,
+                paymentIntentId: data?.paymentIntentId || null,
+                amountCents: data?.amountCents || null,
+                currency: data?.currency || null
+            }
+        });
+    } catch { }
+    window.latestClientSecret = clientSecret;
+    window.latestOrderId = orderId || null;
+    window.latestPaymentIntentId = paymentIntentId || null;
+
+    window.latestOrderPublicToken = orderPublicToken || window.latestOrderPublicToken || null;
+    window.latestOrderStatusUrl = orderStatusUrl || window.latestOrderStatusUrl || null;
+
+    // Persist for customer self-service tracking (exercises GET /order-status)
+    if (orderId && (orderPublicToken || window.latestOrderPublicToken)) {
+        addRecentOrder({
+            orderId,
+            token: orderPublicToken || window.latestOrderPublicToken,
+            orderStatusUrl: orderStatusUrl || null,
+            paymentIntentId: paymentIntentId || null
+        });
+    }
+
+    try { window.paymentElementInstance?.unmount?.(); } catch { }
+    const paymentElContainer = document.getElementById("payment-element");
+    if (paymentElContainer) paymentElContainer.innerHTML = "";
+
+    window.elementsInstance = window.stripeInstance.elements({
+        clientSecret,
+        appearance: _getStripeAppearance()
+    });
+
+    window.paymentElementInstance = window.elementsInstance.create("payment");
+    window.paymentElementInstance.mount("#payment-element");
+
+    await setupWalletPaymentRequestButton({
+        stripe: window.stripeInstance,
+        clientSecret,
+        amountCents,
+        currency: (currency || selectedCurrency),
+        country,
+        orderId,
+        paymentIntentId
+    });
+}
+
+
+
+
+function attachConfirmHandlerOnce() {
+    const btn = document.getElementById("confirm-payment-button");
+    if (!btn || btn.dataset.listenerAttached === "true") return;
+
+    btn.dataset.listenerAttached = "true";
+
+    btn.addEventListener("click", async () => {
+        const form = document.getElementById("paymentForm");
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Processing…";
+
+        try {
+            // Best-effort user details attach (same as your current pipeline)
+            const userDetails = readCheckoutForm?.() || {};
+            if (window.latestPaymentIntentId || window.latestOrderId) {
+                await fetch(`${API_BASE}/store-user-details`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        paymentIntentId: window.latestPaymentIntentId,
+                        orderId: window.latestOrderId,
+                        clientSecret: window.latestClientSecret || null,
+                        token: window.latestOrderPublicToken || null,
+                        userDetails
+                    })
+                }).catch(() => { });
+            }
+
+            const clientSecret = window.latestClientSecret || null;
+            const orderId = window.latestOrderId || null;
+            const paymentIntentId = window.latestPaymentIntentId || null;
+
+            // CRITICAL FIX: set pending BEFORE confirmPayment so redirects are safe
+            setPaymentPendingFlag({ paymentIntentId, orderId, clientSecret });
+
+            // return_url must be stable; Stripe will append redirect_status + PI params
+            const returnUrl = new URL(window.location.href);
+            stripStripeReturnParamsFromUrl(returnUrl);
+            returnUrl.searchParams.set("stripe_return", "1");
+
+            const { error, paymentIntent } = await window.stripeInstance.confirmPayment({
+                elements: window.elementsInstance,
+                confirmParams: { return_url: returnUrl.toString() },
+                redirect: "if_required"
+            });
+
+            if (error) {
+                // confirm not submitted successfully
+                clearPaymentPendingFlag();
+                throw error;
+            }
+
+            // If Stripe did NOT redirect, we may get a PI back
+            if (paymentIntent?.status === "succeeded") {
+                clearPaymentPendingFlag();
+                clearBasketCompletely();
+                try { clearCheckoutDraft(); } catch { }
+                setPaymentSuccessFlag({ reloadOnOk: true });
+                window.location.replace(window.location.origin);
+                return;
+            }
+
+            if (paymentIntent?.id) {
+                // Keep pending + poll server until final (processing, etc.)
+                setPaymentPendingFlag({
+                    paymentIntentId: paymentIntent.id,
+                    orderId: orderId || null,
+                    clientSecret
+                });
+
+                const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: paymentIntent.id });
+
+                if (status === "succeeded") {
+                    clearPaymentPendingFlag();
+                    clearBasketCompletely();
+                    try { clearCheckoutDraft(); } catch { }
+                    setPaymentSuccessFlag({ reloadOnOk: true });
+                    window.location.replace(window.location.origin);
+                    return;
+                }
+
+                if (status === "requires_payment_method" || status === "canceled") {
+                    clearPaymentPendingFlag();
+                    alert("Payment did not complete. Your cart is still saved—please try again.");
+                    return;
+                }
+
+                alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+                return;
+            }
+
+            // If Stripe redirected, this code path usually won’t run.
+            // Pending flag is already set; the return handler will resolve it.
+        } catch (e) {
+            console.error("confirmPayment failed:", e);
+            alert(e?.message || "Payment could not be completed.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+}
+
+
+
+
+async function setupCheckoutFlow(selectedCurrency) {
+    const payBtn = document.getElementById("confirm-payment-button");
+    const paymentSlot = document.getElementById("payment-element");
+    const walletSlot = document.getElementById("payment-request-button");
+
+    try {
+        if (payBtn) payBtn.disabled = true;
+        if (walletSlot) walletSlot.innerHTML = "";
+
+        if (paymentSlot) {
+            paymentSlot.innerHTML = `
+          <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
+            Loading payment options…
+          </div>`;
+        }
+
+        // Mounts Stripe elements into #payment-element
+        await initStripePaymentUI(selectedCurrency);
+
+        attachConfirmHandlerOnce();
+
+        if (payBtn) payBtn.disabled = false;
+    } catch (e) {
+        console.error("setupCheckoutFlow failed:", e);
+
+        if (payBtn) payBtn.disabled = true;
+
+        if (paymentSlot) {
+            const msg = String(e?.message || "Checkout initialization failed.");
+            paymentSlot.innerHTML = `
+          <div style="padding:10px 12px;border:1px solid rgba(255,0,0,.35);border-radius:12px">
+            <strong>Payment UI could not load.</strong><br>${msg}<br><br>
+            Common causes: Stripe.js blocked, API error, or empty cart.
+          </div>`;
+        }
+
+        alert(e?.message || "Checkout initialization failed. Please try again.");
+    }
+}
+
+
+function _replaceWithClone(el) {
+    if (!el || !el.parentNode) return el;
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    return clone;
+}
+
+function _getDetectedCountry() {
+    return String(localStorage.getItem("detectedCountry") || "US").toUpperCase();
+}
+
+function _syncSelectedCurrencyFromCountry(countryCode) {
+    if (localStorage.getItem("manualCurrencyOverride")) return;
+
+    const cc = String(countryCode || "").toUpperCase();
+    const next = countryToCurrency?.[cc];
+    if (next) {
+        selectedCurrency = next;
+        localStorage.setItem("selectedCurrency", selectedCurrency);
+        if (typeof syncCurrencySelects === "function") syncCurrencySelects(selectedCurrency);
+    }
+}
+
+function _fillCountrySelectOptions(selectEl) {
+    // Prefer preloadedData (built from /tariffs in your earlier changes)
+    const arr =
+        (window.preloadedData?.countries?.length && window.preloadedData.countries) ||
+        (typeof tariffsObjectToCountriesArray === "function"
+            ? tariffsObjectToCountriesArray(tariffMultipliers)
+            : []);
+
+    selectEl.innerHTML = "";
+    for (const c of arr) {
+        const code = String(c.code || "").toUpperCase();
+        if (!code) continue;
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = (typeof countryNames === "object" && countryNames?.[code]) ? countryNames[code] : code;
+        selectEl.appendChild(opt);
+    }
+}
+
+function _setupTomSelectCountry(selectEl) {
+    try { if (selectEl.tomselect) selectEl.tomselect.destroy(); } catch { }
+    if (typeof TomSelect !== "function") return;
+
+    new TomSelect(selectEl, {
+        maxOptions: 1000,
+        sortField: { field: "text", direction: "asc" },
+        closeAfterSelect: true,
+        placeholder: "Select a country…"
+    });
+}
+
+async function initPaymentModalLogic() {
+    // Ensure tariffs + rates exist (from your earlier preloadSettingsData rewrite)
+    if (typeof preloadSettingsData === "function") {
+        await preloadSettingsData();
+    }
+    if (typeof fetchTariffs === "function") {
+        await fetchTariffs();
+    }
+
+    // Remove legacy listeners that may still exist inside createPaymentModal()
+    let confirmBtn = document.getElementById("confirm-payment-button");
+    if (confirmBtn) confirmBtn = _replaceWithClone(confirmBtn);
+
+    let countrySelect = document.getElementById("Country");
+    if (countrySelect) countrySelect = _replaceWithClone(countrySelect);
+
+    // Populate + initialize Country select (modal)
+    if (countrySelect) {
+        _fillCountrySelectOptions(countrySelect);
+
+        const detected = _getDetectedCountry();
+        countrySelect.value = detected;
+        localStorage.setItem("detectedCountry", detected);
+
+        _setupTomSelectCountry(countrySelect);
+
+        countrySelect.addEventListener("change", async () => {
+            const cc = String(countrySelect.value || "").toUpperCase();
+            localStorage.setItem("detectedCountry", cc);
+
+            _syncSelectedCurrencyFromCountry(cc);
+
+            if (typeof updateAllPrices === "function") updateAllPrices();
+
+            // Recreate PI + remount Stripe Elements (server-truth)
+            await setupCheckoutFlow(selectedCurrency);
+        });
+    }
+
+    // Initialize Stripe UI once on open (server-truth)
+    selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
+    await setupCheckoutFlow(selectedCurrency);
+}
+
+
+
+
+(function attachPayButtonHandlerOnce() {
+    if (window.__payButtonHandlerAttached) return;
+    window.__payButtonHandlerAttached = true;
+
+    const onClick = async (event) => {
+        const btn = event?.target?.closest?.(".PayButton");
+        if (!btn) return;
+
+        event.preventDefault();
+
+        // Avoid double-clicks creating multiple modals
+        const wasDisabled = btn.disabled;
+        btn.disabled = true;
+
+        try {
+            await openModal();
+        } catch (e) {
+            console.error("openModal() failed:", e);
+            alert("Could not initialize checkout. Please try again.");
+        } finally {
+            btn.disabled = wasDisabled;
+        }
+    };
+
+    // Safer than `document.body` if the script runs in <head>
+    document.addEventListener("click", onClick);
+})();
+
+
+/* ===== PATCH 2026-01-29: Storefront security + multi-options + option→image =====
+   - Eliminates stored XSS vectors on product page rendering (no innerHTML for product fields)
+   - Supports multiple option groups (productOptions, productOptions2, ... OR optionGroups[])
+   - Supports option→image mapping (productOptionImageMap, productOptionImageMap2, ... OR optionGroups[].imageByOption)
+   - Persists selectedOptions[] into basket + checkout payload for backend/admin
+*/
+function __ssEscHtml(input) {
+    const s = String(input ?? "");
+    return s.replace(/[&<>"'`]/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+        "`": "&#96;"
+    }[ch] || ch));
+}
+
+function __ssGetCatalogFlat() {
+    try {
+        if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) {
+            return window.productsFlatFromServer;
+        }
+
+        const base =
+            (typeof products !== "undefined" && products) ? products :
+                ((typeof productsDatabase !== "undefined" && productsDatabase) ? productsDatabase : (window.products || {}));
+        return Object.values(base || {}).flat();
+    } catch {
+        return [];
+    }
+}
+
+function __ssExtractOptionGroups(product) {
+    const p = product || {};
+    // Preferred: optionGroups
+    if (Array.isArray(p.optionGroups) && p.optionGroups.length) {
+        return p.optionGroups
+            .map((g, idx) => {
+                const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
+                const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
+                const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
+                const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
+                return { key, label, options, imageByOption };
+            })
+            .filter(g => g.options.length > 0);
+    }
+
+    // Legacy: productOptions / productOptions2 / ...
+    const groups = [];
+    for (let i = 1; i <= 10; i++) {
+        const k = (i === 1) ? "productOptions" : `productOptions${i}`;
+        const arr = p[k];
+        if (!Array.isArray(arr) || arr.length < 2) continue;
+
+        const [labelRaw, ...optsRaw] = arr;
+        const label = String(labelRaw ?? `Option ${i}`).trim().replace(/:$/, "");
+        const options = optsRaw.map(x => String(x).trim()).filter(Boolean);
+        if (!options.length) continue;
+
+        const map =
+            (i === 1)
+                ? (p.productOptionImageMap || p.productOptionImageMap1 || null)
+                : (p[`productOptionImageMap${i}`] || null);
+
+        groups.push({
+            key: label.toLowerCase().replace(/\s+/g, "_") || `opt${i}`,
+            label,
+            options,
+            imageByOption: (map && typeof map === "object") ? map : null
+        });
+    }
+    return groups;
+}
+
+function __ssNormalizeSelectedOptions(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const x of raw) {
+        const label = String(x?.label ?? "").trim().replace(/:$/, "");
+        const value = String(x?.value ?? "").trim();
+        if (!label || !value) continue;
+        out.push({ label, value });
+        if (out.length >= 10) break;
+    }
+    return out;
+}
+
+function __ssDefaultSelectedOptions(groups) {
+    return (groups || [])
+        .map(g => ({ label: String(g.label || "Option").trim().replace(/:$/, ""), value: String(g.options?.[0] ?? "").trim() }))
+        .filter(o => o.label && o.value);
+}
+
+function __ssFormatSelectedOptionsDisplay(selectedOptions) {
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    return sel.map(o => `${o.label}: ${o.value}`).join(", ");
+}
+
+function __ssFormatSelectedOptionsKey(selectedOptions) {
+    const sel = __ssNormalizeSelectedOptions(selectedOptions);
+    return sel.map(o => `${o.label}=${o.value}`).join(" | ");
+}
+
+
+
+function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = "") {
+    const base = Number(parseFloat(product?.price ?? 0) || 0);
+    const map = (product && typeof product === "object") ? product.variantPrices : null;
+    if (!map || typeof map !== "object" || Array.isArray(map)) return base;
+
+    const sel = __ssNormalizeSelectedOptions(selectedOptions || []);
+    const candidates = [];
+
+    const fullKey = sel.length ? __ssFormatSelectedOptionsKey(sel) : "";
+    if (fullKey) candidates.push(fullKey);
+
+    if (sel.length) {
+        const vOnly = sel.map(o => String(o.value || "").trim()).filter(Boolean).join(" | ");
+        if (vOnly && vOnly !== fullKey) candidates.push(vOnly);
+    }
+
+    if (sel.length === 1) {
+        const l = String(sel[0].label || "").trim();
+        const v = String(sel[0].value || "").trim();
+        if (l && v) candidates.push(`${l}=${v}`);
+        if (v) candidates.push(v);
+    }
+
+    const legacy = String(legacySelectedOption || "").trim();
+    if (legacy) candidates.push(legacy);
+
+    for (const k of candidates) {
+        const key = String(k || "").trim();
+        if (!key) continue;
+        const num = Number(parseFloat(map[key]) || 0);
+        if (Number.isFinite(num) && num > 0) return Math.round(num * 100) / 100;
+    }
+
+    return base;
+}
+
+
+function __ssCleanOptionLabel(label) {
+    return String(label ?? "")
+        .trim()
+        .replace(/\s*[:\-–—]\s*$/, "");
+}
+
+function __ssEnsureOptionChipStyles() {
+    if (document.getElementById("__ss-option-chip-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "__ss-option-chip-styles";
+    style.textContent = `
+/* Hide legacy inline "Selected ..." label (we use chips instead) */
+.BasketSelectedOption{display:none !important;}
+
+/* Basket layout: remove fixed aspect ratio so extra lines (chips) don't overlap */
+.Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;height:auto !important;}
+.Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
+.Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
+
+.BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+/* Quantity controls: compact vertical stack, centered */
+
+
+.Quantity-Controls-Basket .BasketChangeQuantityButton:hover{
+  background:rgba(0,0,0,0.06);
+}
+.Quantity-Controls-Basket .BasketChangeQuantityText{
+  font-family:'Afacad',sans-serif;
+  font-size:20px;
+  line-height:1;
+  margin:0;
+  padding:0;
+  min-width:1.5em;
+  text-align:center;
+}
+/* Option chips */
+.BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:flex-start;}
+.BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.05;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
+
+/* Receipt */
+.Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
+.ReceiptTable{width:100% !important;border-collapse:collapse;}
+.ReceiptTable td{vertical-align:top;padding:6px 8px;}
+.ReceiptItemName{display:block;}
+.ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.ReceiptOptionChips .BasketOptionChip{padding:5px 10px;font-size:15px;}
+
+@media (max-width: 700px){
+
+.Quantity-Controls-Basket{gap:10px !important;min-width:56px !important;}
+.Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
+.Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
+  .Basket-Item{padding:12px 12px !important;gap:12px !important;}
+
+  .BasketOptionChip{font-size:14px;padding:5px 10px;}
+  .BasketTextDescription{-webkit-line-clamp:2;}
+  .ReceiptOptionChips .BasketOptionChip{font-size:13px;}
+}
+`;
+    document.head.appendChild(style);
+}
+
+function __ssGetSelectedOptionsForDisplay(item, product) {
+    const multi = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+    const out = [];
+
+    if (multi.length) {
+        multi.forEach(o => {
+            const label = __ssCleanOptionLabel(o.label || o.key || "Option");
+            const value = String(o.value ?? "").trim();
+            if (!value) return;
+            out.push({ label, value });
+        });
+        return out;
+    }
+
+    if (item?.selectedOption) {
+        let label = "Option";
+        if (product?.optionGroups && Array.isArray(product.optionGroups) && product.optionGroups.length && product.optionGroups[0]?.label) {
+            label = product.optionGroups[0].label;
+        } else if (product?.productOptions && product.productOptions.length > 1) {
+            label = product.productOptions[0];
+        }
+        label = __ssCleanOptionLabel(label);
+        const value = String(item.selectedOption ?? "").trim();
+        if (value) out.push({ label, value });
+    }
+
+    return out;
+}
+
+function __ssBuildOptionChipsHTML(displayOptions, isReceipt) {
+    if (!Array.isArray(displayOptions) || displayOptions.length === 0) return "";
+    const cls = isReceipt ? "BasketOptionChips ReceiptOptionChips" : "BasketOptionChips";
+    return `<div class="${cls}">` + displayOptions.map(o => {
+        const label = __ssEscHtml(__ssCleanOptionLabel(o.label || "Option"));
+        const value = __ssEscHtml(String(o.value ?? "").trim());
+        return `<span class="BasketOptionChip">${label}: ${value}</span>`;
+    }).join("") + `</div>`;
+}
+
+function __ssApplyOptionImageMapping(group, optionValue, validImages) {
+    const map = (group && typeof group.imageByOption === "object" && group.imageByOption) ? group.imageByOption : null;
+    if (!map) return false;
+    const mapped = map[optionValue];
+    if (mapped === undefined || mapped === null || mapped === "") return false;
+
+    const imgs = Array.isArray(validImages) ? validImages : (window.currentProductImages || []);
+    const main = document.getElementById("mainImage");
+
+    if (typeof mapped === "number" && Number.isFinite(mapped)) {
+        const idx = Math.max(0, Math.min(imgs.length - 1, Math.floor(mapped)));
+        if (imgs[idx]) {
+            window.currentIndex = idx;
+            updateImage();
+            return true;
         }
         return false;
-      });
     }
-    list = sortProducts(list);
-    updateCatalogueSortIndicators();
 
-    if ($("#prodCount")) $("#prodCount").textContent = `${list.length} items`;
+    const url = String(mapped).trim();
+    if (!url) return false;
 
-    body.innerHTML = "";
-    for (const p of list) {
-      const tr = document.createElement("tr");
-      if (activeProductId === p.id) tr.classList.add("active");
-      const profit = p.sell - p.buy;
-      const thumb = p.images?.[0] || "";
-      tr.innerHTML = `
-        <td>${thumb ? `<img class="mg-thumb" src="${esc(thumb)}" alt="">` : `<div class="mg-thumb"></div>`}</td>
-        <td>${esc(p.id)}</td>
-        <td title="${esc(p.name)}">${esc(p.name)}</td>
-        <td>${fmt2(p.buy)}</td>
-        <td>${fmt2(p.sell)}</td>
-        <td class="mg-profit ${profit >= 0 ? "pos" : "neg"}">${fmt2(profit)}</td>
-        <td>${Array.isArray(p.options) ? p.options.length : 0}</td>
-        <td><div style="display:flex;gap:8px;justify-content:flex-end;"><button class="Buttony" data-edit="1">Edit</button><button class="Buttony danger" data-del="1" title="Delete">🗑</button></div></td>
-      `;
-      tr.querySelector('[data-edit="1"]').onclick = () => openEditor(p.id);
-      const delBtn = tr.querySelector('[data-del="1"]');
-      if (delBtn) delBtn.onclick = (ev) => { ev.stopPropagation(); actionRunner(async () => { await deleteProduct(p.id); }, `Delete ${p.id}`); };
-      tr.onclick = (ev) => { if (ev.target?.tagName === "BUTTON") return; openEditor(p.id); };
-      body.appendChild(tr);
+    const idx = imgs.indexOf(url);
+    if (idx !== -1) {
+        window.currentIndex = idx;
+        updateImage();
+        return true;
     }
-  }
 
-  function pushHistory(label, details = "") {
-    const item = { at: new Date().toISOString(), label, details, productId: activeProductId };
-    history.push(item);
-    histIndex = history.length - 1;
-    renderHistory();
-  }
-  function renderHistory() {
-    const list = $("#prodHistoryList");
-    if (!list) return;
-    list.innerHTML = "";
-    history.slice().reverse().slice(0, 60).forEach((h, idx) => {
-      const row = document.createElement("div");
-      row.className = "mg-cat-item";
-      row.innerHTML = `<div style="min-width:0">
-        <div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.label)}</div>
-        <div style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.details || h.at)}</div>
-      </div><div class="mg-pill">↩</div>`;
-      row.onclick = () => { if (h.productId) openEditor(h.productId); };
-      list.appendChild(row);
-    });
-  }
-
-  function setDirty(isDirty) {
-    const badge = $("#prodDirty");
-    if (!badge) return;
-    badge.classList.toggle("hidden", !isDirty);
-  }
-
-  function readEditor() {
-    const id = $("#pe_id")?.value?.trim() || "";
-    const name = $("#pe_name")?.value?.trim() || "";
-    const link = $("#pe_link")?.value?.trim() || "";
-    const buy = Number($("#pe_buy")?.value || 0);
-    const sell = Number($("#pe_sell")?.value || 0);
-    const description = $("#pe_desc")?.value || "";
-    const optionsJson = $("#pe_opts")?.value || "[]";
-    let options = [];
-    try { options = JSON.parse(optionsJson); } catch { }
-    options = mgNormalizeOptionGroups(options);
-    // images are stored on container dataset
-    const imgs = $$("#pe_images .mg-img-item").map(it => it.getAttribute("data-url")).filter(Boolean);
-    return { id, name, link, buy, sell, description, options, images: imgs };
-  }
-
-
-// === Image URL auto-generation (GitHub raw pattern) ===
-const _IMAGE_BASE = "https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/refs/heads/main/";
-const _ROMANS = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX","XXXI","XXXII","XXXIII","XXXIV","XXXV","XXXVI","XXXVII","XXXVIII","XXXIX","XL","XLI","XLII","XLIII","XLIV","XLV","XLVI","XLVII","XLVIII","XLIX","L"];
-
-function _romanForIndex(i1) {
-  const n = Number(i1) || 1;
-  return _ROMANS[n - 1] || String(n);
+    if (main) {
+        main.src = url;
+        return true;
+    }
+    return false;
 }
 
-function _extFromUrl(u) {
-  const s = String(u || "");
-  const m = s.match(/\.([a-z0-9]+)(?:\?|#|$)/i);
-  return (m && m[1]) ? m[1].toLowerCase() : "avif";
+function __ssSetSelectedOptions(sel) {
+    const norm = __ssNormalizeSelectedOptions(sel);
+    window.selectedProductOptions = norm;
+    window.selectedProductOption = norm?.[0]?.value || "";
 }
 
-function _buildImageUrlFromName(name, i1, ext = "avif") {
-  const safeName = String(name || "").trim();
-  const folder = encodeURIComponent(`SnagletShop--Product_Images/${safeName}/Modified`);
-  const r = _romanForIndex(i1);
-  const e = String(ext || "avif").replace(/[^a-z0-9]/gi, "") || "avif";
-  return `${_IMAGE_BASE}${folder}/Image_${r}.${e}`;
+function __ssGetSelectedOptions() {
+    return __ssNormalizeSelectedOptions(window.selectedProductOptions || []);
 }
 
-function syncEditorImagesToName(silent = false) {
-  const name = ($("#pe_name")?.value || "").trim();
-  if (!name) return false;
-
-  const cur = $$("#pe_images .mg-img-item").map(it => it.getAttribute("data-url")).filter(Boolean);
-  if (!cur.length) return false;
-
-  const exts = cur.map(_extFromUrl);
-  const urls = exts.map((ext, idx) => _buildImageUrlFromName(name, idx + 1, ext));
-
-  renderImages(urls);
-  if (!silent) {
-    try { setDirty(true); } catch { }
-    try { pushHistory("Synced image URLs", `${urls.length} images`); } catch { }
-  }
-  return true;
-}
-
-
-  function renderImages(urls) {
-    const grid = $("#pe_images");
-    if (!grid) return;
-    grid.innerHTML = "";
-    for (const u of (urls || [])) {
-      const it = document.createElement("div");
-      it.className = "mg-img-item";
-      it.setAttribute("data-url", u);
-      it.innerHTML = `
-        <img src="${esc(u)}" alt="">
-        <div class="mg-img-actions">
-          <button class="trash" title="Delete">🗑</button>
-          <button class="edit" title="Edit URL">✎</button>
-        </div>
-        <div class="mg-img-url">${esc(u)}</div>
-      `;
-      it.querySelector("img").onclick = () => window.open(u, "_blank", "noopener,noreferrer");
-      it.querySelector("button.trash").onclick = (ev) => { ev.stopPropagation(); it.remove(); setDirty(true); pushHistory("Removed image", u); };
-      it.querySelector("button.edit").onclick = (ev) => {
-        ev.stopPropagation();
-        const nu = prompt("Image URL:", u);
-        if (!nu) return;
-        it.setAttribute("data-url", nu);
-        it.querySelector("img").src = nu;
-        it.querySelector(".mg-img-url").textContent = nu;
-        setDirty(true);
-        pushHistory("Edited image URL", nu);
-      };
-      grid.appendChild(it);
-    }
-
-    // sortable reorder
-    try {
-      if (window.Sortable) {
-        if (imgSortable) imgSortable.destroy();
-        imgSortable = window.Sortable.create(grid, {
-          animation: 120,
-          onEnd: () => { try { syncEditorImagesToName(true); } catch { } setDirty(true); pushHistory("Reordered images"); }
-        });
-      }
-    } catch { }
-  }
-
-  function renderEditor(product) {
-    const body = $("#prodEditorBody");
-    if (!body) return;
-
-    const p = product;
-    const profit = Number(p.sell || 0) - Number(p.buy || 0);
-
-    body.innerHTML = `
-      <div class="mg-editor-card">
-        <h3>Basics</h3>
-        <div class="mg-form-row">
-          <div><label>ID</label><input id="pe_id" value="${esc(p.id)}"></div>
-          <div><label>Name</label><input id="pe_name" value="${esc(p.name)}"></div>
-        </div>
-        <div class="mg-form-row">
-          <div><label>Product link</label><input id="pe_link" value="${esc(p.link)}"></div>
-          <div>
-            <label>Profit</label>
-            <input value="${fmt2(profit)}" disabled>
-          </div>
-        </div>
-      </div>
-
-
-      <div class="mg-editor-card">
-        <h3>Categories</h3>
-        <div class="mg-form-row" style="grid-template-columns:1fr;">
-          <div>
-            <div id="pe_cat_checks" class="mg-cat-checks"></div>
-            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
-              <input id="pe_new_cat" placeholder="Create new category…" />
-              <button class="Buttony" id="pe_create_cat">Create + add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mg-editor-card">
-        <h3>Pricing</h3>
-        <div class="mg-form-row">
-          <div><label>Purchase (EUR)</label><input id="pe_buy" type="number" step="0.01" value="${fmt2(p.buy)}"></div>
-          <div><label>Selling (EUR)</label><input id="pe_sell" type="number" step="0.01" value="${fmt2(p.sell)}"></div>
-        </div>
-      </div>
-
-      <div class="mg-editor-card">
-        <h3>Description</h3>
-        <div class="mg-form-row" style="grid-template-columns:1fr;">
-          <div><textarea id="pe_desc" placeholder="Description…">${esc(p.description || "")}</textarea></div>
-        </div>
-      </div>
-
-      <div class="mg-editor-card">
-        <h3>Options</h3>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button class="Buttony" id="pe_opt_add_group">+ Add option group</button>
-        </div>
-        <div class="mg-form-row" style="grid-template-columns:1fr;">
-          <div><textarea id="pe_opts" placeholder='[]'>${esc(JSON.stringify(p.options || [], null, 2))}</textarea></div>
-        </div>
-      </div>
-
-      <div class="mg-editor-card">
-        <h3>Images</h3>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button class="Buttony" id="pe_add_img">+ Add image</button>
-          <button class="Buttony" id="pe_gen_imgs">Generate N from name</button>
-        </div>
-        <div id="pe_images" class="mg-img-grid"></div>
-      </div>
-    `;
-
-    const mark = () => { setDirty(true); };
-    ["pe_id", "pe_name", "pe_link", "pe_buy", "pe_sell", "pe_desc", "pe_opts"].forEach(id => {
-      const n = $("#" + id);
-      if (n) n.addEventListener("input", mark);
-    });
-
-    // Categories multi-assign + create
-    let catBoundId = p.id;
-    const catWrap = $("#pe_cat_checks");
-
-    function replaceIdInCategories(oldId, newId) {
-      const o = String(oldId || "").trim();
-      const n = String(newId || "").trim();
-      if (!o || !n || o === n) return;
-      for (const cat of Object.keys(categoriesDraft || {})) {
-        const arr = categoriesDraft[cat];
-        if (!Array.isArray(arr)) continue;
-        for (let i = 0; i < arr.length; i++) {
-          if (String(arr[i]) === o) arr[i] = n;
-        }
-        // de-dupe
-        categoriesDraft[cat] = Array.from(new Set(arr.map(x => String(x))));
-      }
-    }
-
-    function renderCatChecks() {
-      if (!catWrap) return;
-      const cats = Object.keys(categoriesDraft || {}).sort((a, b) => a.localeCompare(b));
-      const selected = new Set(categoriesForProduct(catBoundId));
-      catWrap.innerHTML = cats.map(c => {
-        const checked = selected.has(c) ? "checked" : "";
-        return `<label class="mg-cat-check"><input type="checkbox" data-cat="${esc(c)}" ${checked}> <span>${esc(c)}</span></label>`;
-      }).join("") || `<div style="color:#6b7280;font-size:12px;">No categories yet.</div>`;
-
-      catWrap.querySelectorAll('input[type="checkbox"][data-cat]').forEach(cb => {
-        cb.addEventListener("change", () => {
-          const cat = cb.dataset.cat;
-          if (!categoriesDraft) categoriesDraft = {};
-          if (!Array.isArray(categoriesDraft[cat])) categoriesDraft[cat] = [];
-          if (cb.checked) {
-            if (!categoriesDraft[cat].some(x => String(x) === String(catBoundId))) categoriesDraft[cat].push(String(catBoundId));
-          } else {
-            categoriesDraft[cat] = (categoriesDraft[cat] || []).filter(x => String(x) !== String(catBoundId));
-          }
-          setDirty(true);
-          renderCategoriesList();
-          if (activeCategory === cat) renderCategoryProducts();
-        });
-      });
-    }
-
-    // If ID is edited, keep categories pointing to the new id immediately.
-    const idEl = $("#pe_id");
-    if (idEl) {
-      idEl.addEventListener("input", () => {
-        const nid = String(idEl.value || "").trim();
-        if (!nid || nid === catBoundId) return;
-        replaceIdInCategories(catBoundId, nid);
-        catBoundId = nid;
-        renderCatChecks();
-        renderCategoriesList();
-        renderCategoryProducts();
-      });
-    }
-
-    const createCatBtn = $("#pe_create_cat");
-    const newCatEl = $("#pe_new_cat");
-    if (createCatBtn && newCatEl) {
-      createCatBtn.onclick = () => {
-        const name = String(newCatEl.value || "").trim();
-        if (!name) return;
-        if (!categoriesDraft) categoriesDraft = {};
-        if (!Array.isArray(categoriesDraft[name])) categoriesDraft[name] = [];
-        if (!categoriesDraft[name].some(x => String(x) === String(catBoundId))) categoriesDraft[name].push(String(catBoundId));
-        newCatEl.value = "";
-        setDirty(true);
-        renderCatChecks();
-        renderCategoriesList();
-      };
-    }
-
-    // initial render
-    renderCatChecks();
-
-    // Keep image URLs in sync with name (auto updates on rename)
-    try {
-      const nEl = $("#pe_name");
-      if (nEl) nEl.addEventListener("input", () => { try { syncEditorImagesToName(true); } catch { } });
-    } catch { }
-
-    // Add another option group (multi-level options)
-    const addGroupBtn = $("#pe_opt_add_group");
-    if (addGroupBtn) {
-      addGroupBtn.onclick = () => {
-        const ta = $("#pe_opts");
-        let raw = [];
-        try { raw = JSON.parse(String(ta?.value || "[]")); } catch { raw = []; }
-
-        const groups = mgNormalizeOptionGroups(raw);
-        const n = groups.length + 1;
-        groups.push({ key: `opt${n}`, label: `Option ${n}`, options: ["Value"] });
-
-        if (ta) {
-          ta.value = JSON.stringify(groups, null, 2);
-          ta.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      };
-    }
-
-$("#pe_add_img").onclick = () => {
-  const name = ($("#pe_name")?.value || "").trim();
-  if (!name) {
-    try { ttoast("Name required", "Set product name first"); } catch { alert("Set product name first"); }
-    return;
-  }
-  const cur = $$("#pe_images .mg-img-item").map(it => it.getAttribute("data-url")).filter(Boolean);
-  const exts = cur.map(_extFromUrl);
-  exts.push("avif");
-  const urls = exts.map((ext, idx) => _buildImageUrlFromName(name, idx + 1, ext));
-  renderImages(urls);
-  setDirty(true);
-  pushHistory("Added image", urls[urls.length - 1]);
-};
-
-$("#pe_gen_imgs").onclick = () => {
-  const name = ($("#pe_name")?.value || "").trim();
-  if (!name) {
-    try { ttoast("Name required", "Set product name first"); } catch { alert("Set product name first"); }
-    return;
-  }
-
-  const curCount = $$("#pe_images .mg-img-item").length;
-  const n = Math.max(1, Math.min(50, curCount || 6));
-  const urls = [];
-  for (let i = 0; i < n; i++) urls.push(_buildImageUrlFromName(name, i + 1, "avif"));
-
-  renderImages(urls);
-  setDirty(true);
-  pushHistory("Generated images", `${n} for ${name}`);
-};
-
-
-    renderImages(p.images || []);
-  }
-
-  function openEditor(productId) {
-    const p = getProductList().find(x => x.id === productId);
-    if (!p) return;
-    activeProductId = p.id;
-    editorBaseline = JSON.parse(JSON.stringify(p));
-    $("#prodEditorTitle").textContent = `Editing: ${p.name || p.id}`;
-    setDirty(false);
-    renderEditor(p);
-    renderCatalogue();
-  }
-
-  function upsertProductFromEditor() {
-    const draft = readEditor();
-    if (!draft.id) throw new Error("Product ID is required");
-    // build canonical shape
-    const canonical = {
-      productId: draft.id,
-      name: draft.name,
-      productLink: draft.link,
-      purchasePriceEUR: Number(draft.buy || 0),
-      salePriceEUR: Number(draft.sell || 0),
-      description: draft.description || "",
-      optionGroups: mgNormalizeOptionGroups(draft.options || []),
-      productOptions: mgFirstGroupToLegacyProductOptions(mgNormalizeOptionGroups(draft.options || [])),
-      images: draft.images || []
-    };
-
-    // remove old key if id renamed
-    const oldId = activeProductId;
-    if (oldId && oldId !== draft.id) {
-      delete bundle.productsById[oldId];
-      // categories: swap id references
-      for (const [cat, ids] of Object.entries(bundle.categories || {})) {
-        bundle.categories[cat] = (ids || []).map(x => x === oldId ? draft.id : x);
-      }
-    }
-    bundle.productsById[draft.id] = canonical;
-    activeProductId = draft.id;
-    return canonical;
-  }
-
-  function categoriesForProduct(productId) {
-  const id = String(productId || "").trim();
-  const out = [];
-  for (const [cat, ids] of Object.entries(categoriesDraft || {})) {
-    const arr = Array.isArray(ids) ? ids.map(x => String(x)) : [];
-    if (arr.includes(id)) out.push(String(cat));
-  }
-  return out;
-}
-
-async function adminCreateProduct(payload) {
-  const r = await fetch(`${apiBase()}/admin/products`, {
-    method: "POST",
-    headers: authHead(true),
-    body: JSON.stringify(payload)
-  });
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(out?.error || `POST /admin/products failed (${r.status})`);
-  return out;
-}
-
-async function adminPatchProduct(productId, payload) {
-  const r = await fetch(`${apiBase()}/admin/products/${encodeURIComponent(productId)}`, {
-    method: "PATCH",
-    headers: authHead(true),
-    body: JSON.stringify(payload)
-  });
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(out?.error || `PATCH /admin/products/${productId} failed (${r.status})`);
-  return out;
-}
-
-
-async function adminDeleteProduct(productId) {
-  const pid = String(productId || "").trim();
-  const r = await fetch(`${apiBase()}/admin/products/${encodeURIComponent(pid)}`, {
-    method: "DELETE",
-    headers: authHead(false)
-  });
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(out?.error || `DELETE /admin/products/${pid} failed (${r.status})`);
-  return out;
-}
-
-async function deleteProduct(productId) {
-  const pid = String(productId || "").trim();
-  if (!pid) return;
-  const ok = confirm(`Delete product ${pid}?\n\nThis will remove it from the catalogue and all categories.`);
-  if (!ok) return;
-
-  await adminDeleteProduct(pid);
-
-  // Best-effort local cleanup so UI doesn't glitch before reload.
-  try { if (bundle?.productsById) delete bundle.productsById[pid]; } catch { }
-  try {
-    for (const c of Object.keys(categoriesDraft || {})) {
-      categoriesDraft[c] = (categoriesDraft[c] || []).filter(x => String(x) !== pid);
-    }
-  } catch { }
-
-  if (activeProductId === pid) {
-    activeProductId = null;
-    editorBaseline = null;
-    try { $("#prodEditorBody").innerHTML = `<div class="mg-empty">Select a product or click “New product”.</div>`; } catch { }
-    try { $("#prodEditorTitle").textContent = "Product editor"; } catch { }
-    try { setDirty(false); } catch { }
-  }
-
-  pushHistory("Deleted product", pid);
-  await reloadAll(false);
-  renderCategoriesList();
-}
-
-
-async function saveActiveProduct() {
-  if (!bundle) throw new Error("Catalogue not loaded");
-  if (!editorBaseline) throw new Error("No product selected");
-
-  // Ensure image URLs follow the current name pattern before reading
-  try { syncEditorImagesToName(true); } catch { }
-
-  const draft = readEditor();
-  const oldId = String(editorBaseline.id || "").trim();
-  const newId = String(draft.id || "").trim();
-
-  if (!newId) throw new Error("Product ID is required");
-  if (!draft.name) throw new Error("Product name is required");
-
-  // Categories: derive from current category lists. If none, fall back.
-  let categories = categoriesForProduct(oldId);
-  if (!categories.length) categories = categoriesForProduct(newId);
-  if (!categories.length) {
-    const fallbackCat = activeCategory || Object.keys(categoriesDraft || {})[0] || "Uncategorized";
-    categories = [fallbackCat];
-  }
-
-  // If ID changed, update category lists in memory (so UI stays consistent)
-  if (oldId && newId !== oldId) {
-    for (const cat of Object.keys(categoriesDraft || {})) {
-      const arr = categoriesDraft[cat];
-      if (!Array.isArray(arr)) continue;
-      for (let i = 0; i < arr.length; i++) {
-        if (String(arr[i]) === oldId) arr[i] = newId;
-      }
-    }
-  }
-
-  const payloadCreate = {
-    productId: newId,
-    categories,
-    name: draft.name,
-    productLink: draft.link || "",
-    price: Number(draft.sell || 0),
-    expectedPurchasePrice: Number(draft.buy || 0),
-    description: draft.description || "",
-    images: Array.isArray(draft.images) ? draft.images : [],
-    optionGroups: mgNormalizeOptionGroups(draft.options ?? []),
-    productOptions: mgFirstGroupToLegacyProductOptions(mgNormalizeOptionGroups(draft.options ?? []))
-  };
-
-  if (newlyCreatedIds.has(oldId) || newlyCreatedIds.has(newId)) {
-    await adminCreateProduct(payloadCreate);
-    newlyCreatedIds.delete(oldId);
-    newlyCreatedIds.delete(newId);
-  } else {
-    const payloadPatch = {
-      categories,
-      name: draft.name,
-      productLink: draft.link || "",
-      price: Number(draft.sell || 0),
-      expectedPurchasePrice: Number(draft.buy || 0),
-      description: draft.description || "",
-      images: Array.isArray(draft.images) ? draft.images : [],
-      optionGroups: mgNormalizeOptionGroups(draft.options ?? []),
-      productOptions: mgFirstGroupToLegacyProductOptions(mgNormalizeOptionGroups(draft.options ?? []))
-    };
-    if (newId !== oldId) payloadPatch.newProductId = newId;
-    await adminPatchProduct(oldId, payloadPatch);
-  }
-
-  setDirty(false);
-  pushHistory("Saved product", newId);
-  await reloadAll(false);
-  openEditor(newId);
-  renderCategoriesList();
-}
-
-
-  function _randHex(bytesLen = 6) {
-  try {
-    const a = new Uint8Array(bytesLen);
-    (crypto || window.crypto).getRandomValues(a);
-    return Array.from(a).map(b => b.toString(16).padStart(2, "0")).join("");
-  } catch {
-    return Math.random().toString(16).slice(2, 2 + bytesLen * 2).padEnd(bytesLen * 2, "0");
-  }
-}
-
-function generateUnusedProductId() {
-  const existing = new Set(Object.keys(bundle?.productsById || {}).map(x => String(x).trim()));
-
-  // Digits only: 13-digit ms timestamp + 6 random digits = 19 digits
-  for (let i = 0; i < 500; i++) {
-    const ts = Date.now().toString(); // digits only
-    const rand = Math.floor(Math.random() * 1e6).toString().padStart(6, "0");
-    const id = ts + rand;
-    if (!existing.has(id)) return id;
-  }
-
-  // Fallback (still digits only)
-  let id;
-  do {
-    const ts = Date.now().toString();
-    const rand = Math.floor(Math.random() * 1e9).toString().padStart(9, "0");
-    id = ts + rand;
-  } while (existing.has(id));
-  return id;
-}
-
-
-function newProduct() {
-  if (!bundle) throw new Error("Catalogue not loaded");
-
-  const id = generateUnusedProductId();
-
-  if (!bundle.productsById) bundle.productsById = {};
-  bundle.productsById[id] = {
-    productId: id,
-    name: "",
-    productLink: "",
-    purchasePriceEUR: 0,
-    salePriceEUR: 0,
-    description: "",
-    optionGroups: [],
-    productOptions: [],
-    images: []
-  };
-
-  // Put new product into the currently selected category (or first available).
-  const fallbackCat = (activeCategory || Object.keys(categoriesDraft || {})[0] || "Uncategorized");
-  if (!categoriesDraft) categoriesDraft = {};
-  if (!Array.isArray(categoriesDraft[fallbackCat])) categoriesDraft[fallbackCat] = [];
-  if (!categoriesDraft[fallbackCat].includes(id)) categoriesDraft[fallbackCat].push(id);
-
-  newlyCreatedIds.add(id);
-
-  pushHistory("Created product", id);
-  renderCatalogue();
-  renderCategoriesList();
-  openEditor(id);
-}
-
-
-  async function reloadAll(keepSelection = true) {
-    const raw = await fetchCatalog();
-    bundle = normalizeBundle(raw);
-    categoriesDraft = JSON.parse(JSON.stringify(bundle.categories || {}));
-    try {
-      const meta = await fetchCategoriesMeta();
-      categoriesMetaDraft = (meta && meta.categoriesMeta) ? meta.categoriesMeta : {};
-    } catch {
-      categoriesMetaDraft = {};
-    }
-    renderCatalogue();
-    renderCategoriesList();
-    if (keepSelection && activeProductId && bundle.productsById?.[activeProductId]) {
-      openEditor(activeProductId);
-    } else {
-      $("#prodEditorBody").innerHTML = `<div class="mg-empty">Select a product or click “New product”.</div>`;
-      $("#prodEditorTitle").textContent = "Product editor";
-      activeProductId = null;
-      setDirty(false);
-    }
-  }
-
-  // Expose a safe reload helper for other UI actions (e.g., one-click convert).
-  // This avoids reaching into closure scope from global handlers.
-  try { window.productsUiReloadAll = reloadAll; } catch { }
-
-  // ---- Categories UI ----
-  function renderCategoriesList() {
-    const list = $("#catList");
-    if (!list) return;
-    const search = ($("#catSearch")?.value || "").trim().toLowerCase();
-    list.innerHTML = "";
-    const cats = Object.keys(categoriesDraft || {}).sort((a, b) => a.localeCompare(b));
-
-    for (const c of cats) {
-      if (search && !c.toLowerCase().includes(search)) continue;
-
-      const row = document.createElement("div");
-      row.className = "mg-cat-item" + (activeCategory === c ? " active" : "");
-
-      const left = document.createElement("div");
-      left.style.minWidth = "0";
-      left.style.overflow = "hidden";
-      left.style.textOverflow = "ellipsis";
-      left.style.whiteSpace = "nowrap";
-      left.textContent = c;
-
-      const right = document.createElement("div");
-      right.className = "mg-cat-right";
-
-      const count = (categoriesDraft[c] || []).length;
-      const pill = document.createElement("div");
-      pill.className = "mg-pill";
-      pill.textContent = String(count);
-
-      const menu = document.createElement("button");
-      menu.type = "button";
-      menu.className = "mg-cat-menu";
-      menu.title = "Category options";
-      menu.textContent = "⋮";
-      menu.onclick = (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        openCatMetaModal(c);
-      };
-
-      right.appendChild(pill);
-      right.appendChild(menu);
-
-      row.appendChild(left);
-      row.appendChild(right);
-
-      row.onclick = () => { activeCategory = c; renderCategoriesList(); renderCategoryProducts(); };
-      list.appendChild(row);
-    }
-
-    if (!activeCategory && cats.length) { activeCategory = cats[0]; renderCategoriesList(); renderCategoryProducts(); }
-  }
-function renderCategoryProducts() {
-    const box = $("#catProducts");
-    if (!box) return;
-    const cat = activeCategory;
-    $("#catEditorTitle").textContent = cat ? `Category: ${cat}` : "Category";
-    let ids = (categoriesDraft?.[cat] || []).slice();
-    const q = ($("#catAddSearch")?.value || "").trim().toLowerCase();
-    const products = getProductList();
-    const byId = new Map(products.map(p => [p.id, p]));
-    if (q) {
-      ids = ids.filter(pid => String(pid).toLowerCase().includes(q) || String(byId.get(pid)?.name || "").toLowerCase().includes(q));
-    }
-    box.innerHTML = "";
-    const wrap = document.createElement("div");
-    wrap.className = "mg-cat-products";
-    ids.forEach(pid => {
-      const p = byId.get(pid);
-      const row = document.createElement("div");
-      row.className = "mg-cat-prod-row";
-      row.setAttribute("data-id", pid);
-      row.innerHTML = `<div class="name">${esc(pid)}${p?.name ? ` — ${esc(p.name)}` : ""}</div>
-        <button class="trash" title="Remove">🗑</button>`;
-      row.querySelector("button.trash").onclick = () => {
-        categoriesDraft[cat] = (categoriesDraft[cat] || []).filter(x => x !== pid);
-        renderCategoryProducts();
-        renderCategoriesList();
-      };
-      wrap.appendChild(row);
-    });
-    box.appendChild(wrap);
-
-    // sortable
-    try {
-      if (window.Sortable) {
-        if (catSortable) catSortable.destroy();
-        catSortable = window.Sortable.create(wrap, {
-          animation: 120,
-          onEnd: () => {
-            const newIds = $$("#catProducts .mg-cat-prod-row").map(n => n.getAttribute("data-id")).filter(Boolean);
-            categoriesDraft[cat] = newIds;
-            renderCategoriesList();
-          }
-        });
-      }
-    } catch { }
-  }
-
-  function addProductToCategoryBySearch() {
-    const q = ($("#catAddSearch")?.value || "").trim().toLowerCase();
-    if (!q || !activeCategory) return;
-    const products = getProductList();
-    const hit = products.find(p => p.id.toLowerCase() === q) ||
-      products.find(p => (p.name || "").toLowerCase().includes(q)) ||
-      products.find(p => p.id.toLowerCase().includes(q));
-    if (!hit) { alert("No product match"); return; }
-    const ids = categoriesDraft[activeCategory] || (categoriesDraft[activeCategory] = []);
-    if (ids.includes(hit.id)) { $("#catAddSearch").value = ""; return; }
-    ids.push(hit.id);
-    $("#catAddSearch").value = "";
-    renderCategoryProducts();
-    renderCategoriesList();
-  }
-
-
-  // ---- Category product picker modal (add/remove products) ----
-  function _catPickerEls() {
-    return {
-      modal: $("#catProductPickerModal"),
-      backdrop: $("#catProductPickerBackdrop"),
-      close: $("#catProductPickerClose"),
-      title: $("#catProductPickerTitle"),
-      search: $("#catProductPickerSearch"),
-      body: $("#catProductPickerBody")
-    };
-  }
-
-  function closeCatProductPickerModal() {
-    const { modal } = _catPickerEls();
-    if (!modal) return;
-    modal.classList.add("hidden");
-    modal.setAttribute("aria-hidden", "true");
-  }
-
-  function openCatProductPickerModal() {
-    if (!activeCategory) return alert("Select a category first.");
-    const { modal, title, search } = _catPickerEls();
-    if (!modal) return alert("Modal missing in index.html");
-    if (title) title.textContent = `Manage products in: ${activeCategory}`;
-    if (search) search.value = "";
-    modal.classList.remove("hidden");
-    modal.setAttribute("aria-hidden", "false");
-    renderCatProductPicker();
-  }
-
-  function renderCatProductPicker() {
-    const { body, search } = _catPickerEls();
-    if (!body) return;
-    const q = String(search?.value || "").trim().toLowerCase();
-    const cat = activeCategory;
-    const ids = categoriesDraft?.[cat] || [];
-    const inCat = new Set((ids || []).map(x => String(x)));
-
-    let list = getProductList();
-    if (q) {
-      list = list.filter(p =>
-        String(p.id || "").toLowerCase().includes(q) ||
-        String(p.name || "").toLowerCase().includes(q)
-      );
-    }
-    list.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
-
-    body.innerHTML = "";
-    for (const p of list) {
-      const added = inCat.has(String(p.id));
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${esc(p.id)}</td>
-        <td>${esc(p.name || "")}</td>
-        <td>${added ? "Yes" : "No"}</td>
-        <td style="text-align:right;">
-          <button class="mgmt-btn ${added ? "danger" : "success"}" data-act="1">${added ? "Remove" : "Add"}</button>
-        </td>
-      `;
-      tr.querySelector('[data-act="1"]').onclick = () => {
-        if (!categoriesDraft) categoriesDraft = {};
-        if (!Array.isArray(categoriesDraft[cat])) categoriesDraft[cat] = [];
-        if (added) {
-          categoriesDraft[cat] = categoriesDraft[cat].filter(x => String(x) !== String(p.id));
+/* Override: safer thumbnail active handling */
+function updateImage(direction = "none") {
+    const imageElement = document.getElementById("mainImage");
+    const imgs = window.currentProductImages || [];
+    const idx = Number(window.currentIndex || 0);
+
+    if (imageElement && imgs[idx]) {
+        if (direction === "right") {
+            imageElement.style.transform = "translateX(100vw)";
+            setTimeout(() => {
+                imageElement.src = imgs[idx];
+                imageElement.style.transition = "none";
+                imageElement.style.transform = "translateX(-100vw)";
+                void imageElement.offsetWidth;
+                imageElement.style.transition = "transform 0.4s ease";
+                imageElement.style.transform = "translateX(0)";
+            }, 100);
+        } else if (direction === "left") {
+            imageElement.style.transform = "translateX(-100vw)";
+            setTimeout(() => {
+                imageElement.src = imgs[idx];
+                imageElement.style.transition = "none";
+                imageElement.style.transform = "translateX(100vw)";
+                void imageElement.offsetWidth;
+                imageElement.style.transition = "transform 0.4s ease";
+                imageElement.style.transform = "translateX(0)";
+            }, 100);
         } else {
-          if (!categoriesDraft[cat].some(x => String(x) === String(p.id))) categoriesDraft[cat].push(String(p.id));
+            imageElement.src = imgs[idx];
         }
-        setDirty(true);
-        renderCategoriesList();
-        renderCategoryProducts();
-        renderCatProductPicker(); // re-render to update buttons
-      };
-      body.appendChild(tr);
     }
-  }
 
+    const thumbs = document.querySelectorAll(".Thumbnail");
+    thumbs.forEach(t => t.classList.remove("active"));
+    if (thumbs[idx]) thumbs[idx].classList.add("active");
+}
 
-  
-  // ---- Category options modal (rename + icon URLs) ----
-  function _catMetaEls() {
-    return {
-      modal: $("#catMetaModal"),
-      backdrop: $("#catMetaBackdrop"),
-      close: $("#catMetaClose"),
-      cancel: $("#catMetaCancel"),
-      save: $("#catMetaSave"),
-      current: $("#catMetaCurrentName"),
-      newName: $("#catMetaNewName"),
-      light: $("#catMetaIconLight"),
-      dark: $("#catMetaIconDark"),
-    };
-  }
+/* Override: safe product page with multi-options + option→image mapping */
+function GoToProductPage(productName, productPrice, productDescription) {
+    console.log("Product clicked:", productName);
+    // analytics: product opened (viewer)
+    sendAnalyticsEvent('product_open', buildAnalyticsProductPayload(productName, { priceEUR: productPrice }));
+    try { clearCategoryHighlight(); } catch { }
 
-  function closeCatMetaModal() {
-    const { modal } = _catMetaEls();
-    if (!modal) return;
-    modal.classList.add("hidden");
-    modal.setAttribute("aria-hidden", "true");
-    catMetaTarget = null;
-  }
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) {
+        console.error(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Viewer not found.");
+        return;
+    }
 
-  function openCatMetaModal(catName) {
-    const { modal, current, newName, light, dark } = _catMetaEls();
-    if (!modal) return alert("Category options modal missing in index.html");
-    const cat = String(catName || "").trim();
-    if (!cat) return;
+    viewer.innerHTML = "";
+    try { removeSortContainer(); } catch { }
 
-    catMetaTarget = cat;
+    const product = __ssGetCatalogFlat().find(p => p?.name === productName);
+    if (!product || !Array.isArray(product.images) || product.images.length === 0) {
+        console.error("❌ Product not found or no images:", productName);
+        return;
+    }
 
-    if (current) current.textContent = cat;
-    if (newName) newName.value = cat;
+    const imagePromises = product.images.map(src => new Promise(resolve => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => resolve(src);
+        img.onerror = () => resolve(null);
+    }));
 
-    const iconRaw = (categoriesMetaDraft && categoriesMetaDraft[cat])
-      ? (typeof categoriesMetaDraft[cat] === "string" ? categoriesMetaDraft[cat] : categoriesMetaDraft[cat].icon)
-      : "";
-    const dual = _parseDualIcon(iconRaw || "");
-    if (light) light.value = dual.light || "";
-    if (dark) dark.value = dual.dark || "";
-
-    modal.classList.remove("hidden");
-    modal.setAttribute("aria-hidden", "false");
-  }
-
-  async function saveCatMetaModal() {
-    const { newName, light, dark } = _catMetaEls();
-    const oldName = String(catMetaTarget || "").trim();
-    if (!oldName) return closeCatMetaModal();
-
-    const nextName = String(newName?.value || "").trim();
-    if (!nextName) return alert("New name cannot be empty.");
-
-    const iconStr = _buildIconStringFromInputs(light?.value || "", dark?.value || "");
-
-    const payload = {
-      category: oldName,
-      newName: nextName,
-      icon: iconStr,          // backward compat (server accepts)
-      iconLightUrl: String(light?.value || "").trim(),
-      iconDarkUrl: String(dark?.value || "").trim()
-    };
-
-    const r = await fetch(`${apiBase()}/admin/catalog/category-meta`, {
-      method: "POST",
-      headers: authHead(true),
-      body: JSON.stringify(payload)
+    Promise.all(imagePromises).then(loadedImages => {
+        const validImages = loadedImages.filter(Boolean);
+        if (validImages.length === 0) {
+            console.error("❌ No valid images loaded for:", productName);
+            viewer.innerHTML = `<p>${__ssEscHtml(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Products not loaded")}</p>`;
+            return;
+        }
+        renderProductPage(product, validImages, productName, productPrice, productDescription);
     });
-    const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out?.error || `POST /admin/catalog/category-meta failed (${r.status})`);
+}
 
-    // Keep selection if we renamed the active category
-    if (activeCategory === oldName) activeCategory = nextName;
+function renderProductPage(product, validImages, productName, productPrice, productDescription) {
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) return;
 
-    pushHistory(`Category updated: ${oldName}${oldName !== nextName ? " → " + nextName : ""}`);
-    closeCatMetaModal();
-    await reloadAll(true);
-  }
+    const existing = document.getElementById("Product_Viewer");
+    if (existing) existing.remove();
 
+    const Product_Viewer = document.createElement("div");
+    Product_Viewer.id = "Product_Viewer";
+    Product_Viewer.className = "Product_Viewer";
 
-async function saveCategories() {
-    if (!categoriesDraft) throw new Error("No categories loaded");
-    await putCategoryLists(categoriesDraft);
-    pushHistory("Saved categories");
-    await reloadAll(true);
-  }
+    window.currentProductImages = Array.isArray(validImages) ? validImages : [];
+    window.currentIndex = 0;
 
-  // ---- Public show/hide/install ----
-  window.productsUiHide = function () {
-    const tab = $("#productsTab");
-    if (tab) {
-      tab.classList.add("hidden");
-      tab.style.display = "none";
-      tab.setAttribute("aria-hidden", "true");
-      // Ensure it cannot intercept clicks even if some CSS keeps it around
-      tab.style.pointerEvents = "none";
+    if (typeof cart === "object" && cart) cart[productName] = 1;
+
+    const productDiv = document.createElement("div");
+    productDiv.className = "Product_Detail_Page";
+
+    const details = document.createElement("div");
+    details.className = "Product_Details";
+
+    // ----- Images column -----
+    const imagesCol = document.createElement("div");
+    imagesCol.className = "Product_Images";
+
+    const imageControl = document.createElement("div");
+    imageControl.className = "ImageControl";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "ImageControlButtonPrevious";
+    prevBtn.type = "button";
+    prevBtn.addEventListener("click", (e) => { e.preventDefault(); try { prevImage(); } catch { } });
+
+    const prevTxt = document.createElement("div");
+    prevTxt.className = "ImageControlButtonText";
+    prevTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.PREVIOUS || "Prev";
+    prevBtn.appendChild(prevTxt);
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "image-slider-wrapper";
+
+    const mainImg = document.createElement("img");
+    mainImg.id = "mainImage";
+    mainImg.className = "mainImage slide-image";
+    mainImg.src = window.currentProductImages[0] || "";
+    mainImg.alt = productName || "";
+    wrapper.appendChild(mainImg);
+
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "ImageControlButtonNext";
+    nextBtn.type = "button";
+    nextBtn.addEventListener("click", (e) => { e.preventDefault(); try { nextImage(); } catch { } });
+
+    const nextTxt = document.createElement("div");
+    nextTxt.className = "ImageControlButtonText";
+    nextTxt.textContent = TEXTS?.PRODUCT_SECTION?.IMAGE_NAV?.NEXT || "Next";
+    nextBtn.appendChild(nextTxt);
+
+    imageControl.append(prevBtn, wrapper, nextBtn);
+
+    const thumbsHolder = document.createElement("div");
+    thumbsHolder.className = "ThumbnailsHolder";
+
+    (window.currentProductImages || []).forEach((src, idx) => {
+        const t = document.createElement("img");
+        t.className = `Thumbnail${idx === 0 ? " active" : ""}`;
+        t.src = src;
+        t.alt = `${productName || "image"} ${idx + 1}`;
+        t.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.currentIndex = idx;
+            updateImage();
+        });
+        thumbsHolder.appendChild(t);
+    });
+
+    imagesCol.append(imageControl, thumbsHolder);
+
+    // ----- Info column -----
+    const infoCol = document.createElement("div");
+    infoCol.className = "Product_Info";
+
+    const heading = document.createElement("div");
+    heading.className = "Product_Name_Heading";
+    heading.textContent = productName || "";
+
+    const desc = document.createElement("div");
+    desc.className = "Product_Description";
+    desc.textContent = (productDescription && String(productDescription).trim())
+        ? String(productDescription)
+        : (TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || "");
+
+    infoCol.append(heading, desc);
+
+    // Options (multi)
+    const groups = __ssExtractOptionGroups(product);
+    const defaultSel = __ssDefaultSelectedOptions(groups);
+    __ssSetSelectedOptions(defaultSel);
+
+    if (groups.length) {
+        groups.forEach((g, gIdx) => {
+            const container = document.createElement("div");
+            container.className = "Product_Options_Container";
+            container.dataset.groupIndex = String(gIdx);
+
+            const labelWrap = document.createElement("div");
+            labelWrap.className = "Product_Option_Label";
+
+            const strong = document.createElement("strong");
+            strong.textContent = `${g.label}:`;
+            labelWrap.appendChild(strong);
+
+            const btnWrap = document.createElement("div");
+            btnWrap.className = "Product_Option_Buttons";
+
+            const selVal = defaultSel?.[gIdx]?.value || g.options[0];
+
+            g.options.forEach((opt) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = `Product_Option_Button${opt === selVal ? " selected" : ""}`;
+                b.textContent = opt;
+
+                b.addEventListener("click", (e) => {
+                    e.preventDefault();
+
+                    // toggle selected class within this group only
+                    btnWrap.querySelectorAll(".Product_Option_Button").forEach(x => x.classList.remove("selected"));
+                    b.classList.add("selected");
+
+                    const current = __ssGetSelectedOptions();
+                    while (current.length < groups.length) {
+                        const gg = groups[current.length];
+                        current.push({ label: gg.label, value: gg.options[0] });
+                    }
+                    current[gIdx] = { label: g.label, value: opt };
+                    __ssSetSelectedOptions(current);
+
+                    // Update price for current variant (if configured)
+                    try {
+                        const priceEl = document.getElementById("product-page-price");
+                        if (priceEl) {
+                            const eur = __ssResolveVariantPriceEUR(product, current, current?.[0]?.value || "");
+                            priceEl.dataset.eur = String(eur ?? "");
+                            // Base EUR text; updateAllPrices() will convert if needed
+                            priceEl.textContent = `${eur} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
+                            if (typeof updateAllPrices === "function") updateAllPrices();
+                        }
+                    } catch { }
+
+                    // Option→image mapping (if configured)
+                    __ssApplyOptionImageMapping(g, opt, window.currentProductImages);
+                });
+
+                btnWrap.appendChild(b);
+            });
+
+            container.append(labelWrap, btnWrap);
+            infoCol.appendChild(container);
+        });
+
+        // Apply mapping for default selections (first group that has a mapping hit)
+        for (let i = 0; i < groups.length; i++) {
+            const sel = __ssGetSelectedOptions();
+            const v = sel?.[i]?.value;
+            if (__ssApplyOptionImageMapping(groups[i], v, window.currentProductImages)) break;
+        }
     }
-  };
-  window.productsUiShow = async function () {
-    const tab = $("#productsTab");
-    if (!tab) throw new Error("productsTab missing in index.html");
-    tab.classList.remove("hidden");
-    tab.style.display = "";
-    tab.style.pointerEvents = "";
-    tab.setAttribute("aria-hidden", "false");
 
-    // Always reflect the server's current storage mode when opening the tab.
-    try { await refreshCatalogFileModeUi(); } catch { }
-    if (!installed) {
-      installed = true;
-      // subtabs
-      $("#mgProdSubCatalogue")?.addEventListener("click", () => showPane("catalogue"));
-      $("#mgProdSubCategories")?.addEventListener("click", () => showPane("categories"));
-      const pref = localStorage.getItem("mg_products_subtab") || "catalogue";
-      showPane(pref);
+    // Price
+    const priceLabel = document.createElement("div");
+    priceLabel.className = "Product_Price_Label";
 
-      // history collapse
-      const hist = $("#prodHistory");
-      const isCollapsed = localStorage.getItem(stateKey) === "1";
-      if (hist && isCollapsed) hist.classList.add("collapsed");
-      $("#histToggle")?.addEventListener("click", () => {
-        hist?.classList.toggle("collapsed");
-        localStorage.setItem(stateKey, hist?.classList.contains("collapsed") ? "1" : "0");
-      });
-      $("#histPrev")?.addEventListener("click", () => {
-        histIndex = Math.max(-1, histIndex - 1);
-        const h = history[histIndex];
-        if (h?.productId) openEditor(h.productId);
-      });
-      $("#histNext")?.addEventListener("click", () => {
-        histIndex = Math.min(history.length - 1, histIndex + 1);
-        const h = history[histIndex];
-        if (h?.productId) openEditor(h.productId);
-      });
+    const pStrong = document.createElement("strong");
+    pStrong.textContent = `${TEXTS?.PRODUCT_SECTION?.PRICE_LABEL || "Price"} `;
+    const pSpan = document.createElement("span");
+    pSpan.id = "product-page-price";
+    pSpan.className = "productPrice";
+    const _selInit = __ssGetSelectedOptions();
+    const _eurInit = __ssResolveVariantPriceEUR(product, _selInit, _selInit?.[0]?.value || "");
+    pSpan.dataset.eur = String(_eurInit ?? "");
+    pSpan.textContent = `${_eurInit} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
 
-      // catalogue controls
-      $("#prodReload")?.addEventListener("click", () => actionRunner(reloadAll, "Reload catalogue"));
-      $("#prodNew")?.addEventListener("click", () => actionRunner(async () => { newProduct(); }, "New product"));
-      $("#catalogDownload")?.addEventListener("click", () => actionRunner(downloadCatalogs, "Download catalogs"));
-      $("#prodSearch")?.addEventListener("input", renderCatalogue);
-      installCatalogueSortHeaders();
-      $("#prodSave")?.addEventListener("click", () => actionRunner(saveActiveProduct, "Save product"));
-      $("#prodDiscard")?.addEventListener("click", () => {
-        if (!editorBaseline) return;
-        openEditor(editorBaseline.id);
-        setDirty(false);
-        pushHistory("Discarded changes");
-      });
+    priceLabel.append(pStrong, pSpan);
+    infoCol.appendChild(priceLabel);
 
-      // categories controls
-      $("#catReload")?.addEventListener("click", () => actionRunner(reloadAll, "Reload categories"));
-      $("#catSave")?.addEventListener("click", () => actionRunner(saveCategories, "Save categories"));
-      $("#catSearch")?.addEventListener("input", renderCategoriesList);
-      $("#catAddSearch")?.addEventListener("input", renderCategoryProducts);
-      $("#catAddProductBtn")?.addEventListener("click", () => openCatProductPickerModal());
+    // Quantity + Add to cart
+    const qtyWrap = document.createElement("div");
+    qtyWrap.className = "ProductPageQuantityContainer";
 
-      // modal events
-      $("#catProductPickerClose")?.addEventListener("click", closeCatProductPickerModal);
-      $("#catProductPickerBackdrop")?.addEventListener("click", closeCatProductPickerModal);
-      $("#catProductPickerSearch")?.addEventListener("input", renderCatProductPicker);
-      $("#catMetaClose")?.addEventListener("click", closeCatMetaModal);
-      $("#catMetaCancel")?.addEventListener("click", closeCatMetaModal);
-      $("#catMetaBackdrop")?.addEventListener("click", closeCatMetaModal);
-      $("#catMetaSave")?.addEventListener("click", () => actionRunner(saveCatMetaModal, "Save category options"));
+    const qtyControls = document.createElement("div");
+    qtyControls.className = "Quantity_Controls_ProductPage";
+
+    const dec = document.createElement("button");
+    dec.className = "Button";
+    dec.type = "button";
+    dec.textContent = TEXTS?.BASKET?.BUTTONS?.DECREASE || "-";
+    dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(productName); } catch { } });
+
+    const qtySpan = document.createElement("span");
+    qtySpan.className = "WhiteText";
+    qtySpan.id = `quantity-${productName}`;
+    qtySpan.textContent = "1";
+
+    const inc = document.createElement("button");
+    inc.className = "Button";
+    inc.type = "button";
+    inc.textContent = TEXTS?.BASKET?.BUTTONS?.INCREASE || "+";
+    inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(productName); } catch { } });
+
+    qtyControls.append(dec, qtySpan, inc);
+
+    const addBtn = document.createElement("button");
+    addBtn.className = "add-to-cart-product";
+    addBtn.type = "button";
+    addBtn.innerHTML = `
+    <span style="display:flex;align-items:center;gap:6px;">
+      ${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
+      <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+        <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  `;
+
+    addBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
+        const sel = __ssGetSelectedOptions();
+        const legacy = sel?.[0]?.value || "";
+        addToCart(
+            productName,
+            (parseFloat(document.getElementById("product-page-price")?.dataset?.eur || "") || parseFloat(productPrice) || Number(productPrice) || 0),
+            mainSrc,
+            product.expectedPurchasePrice,
+            product.productLink,
+            productDescription,
+            legacy,
+            sel
+        );
+    });
+
+    qtyWrap.append(qtyControls, addBtn);
+    infoCol.appendChild(qtyWrap);
+
+    const buyBtn = document.createElement("button");
+    buyBtn.className = "ProductPageBuyButton";
+    buyBtn.type = "button";
+    buyBtn.textContent = TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now";
+    buyBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
+        const sel = __ssGetSelectedOptions();
+        const legacy = sel?.[0]?.value || "";
+        buyNow(
+            productName,
+            (parseFloat(document.getElementById("product-page-price")?.dataset?.eur || "") || parseFloat(productPrice) || Number(productPrice) || 0),
+            mainSrc,
+            product.expectedPurchasePrice,
+            product.productLink,
+            productDescription,
+            legacy,
+            sel
+        );
+    });
+
+    infoCol.appendChild(buyBtn);
+
+    // Assemble
+    details.append(imagesCol, infoCol);
+    productDiv.appendChild(details);
+    Product_Viewer.appendChild(productDiv);
+    viewer.appendChild(Product_Viewer);
+
+    // Swipe support (non-breaking)
+    try {
+        let touchStartX = 0;
+        let touchEndX = 0;
+        mainImg.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].screenX; });
+        mainImg.addEventListener("touchend", (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const threshold = 50;
+            if (touchEndX < touchStartX - threshold) nextImage();
+            else if (touchEndX > touchStartX + threshold) prevImage();
+        });
+    } catch { }
+
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { }
+    try { updateAllPrices(); } catch { }
+    try { updateImage(); } catch { }
+}
+
+/* Override: buyNow forwards selectedOptions */
+function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
+    const qtyEl = document.getElementById(`quantity-${productName}`);
+    const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
+    if (typeof cart === "object" && cart) cart[productName] = quantity;
+    addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption, selectedOptions);
+    try { navigate("GoToCart"); } catch { try { GoToCart(); } catch { } }
+}
+
+/* Override: addToCart stores selectedOptions and uses option-combo key */
+
+function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
+    let pRef = findProductByNameParam(productName) || {};
+    let productIdForCart = String(pRef.productId || "").trim();
+
+    if (!productIdForCart) {
+        const canon = canonicalizeProductLink(productLink || "");
+        const found = canon ? __ssGetCatalogFlat().find(pp => canonicalizeProductLink(pp?.productLink || "") === canon) : null;
+        if (found) {
+            pRef = found;
+            productIdForCart = String(found.productId || "").trim();
+        }
     }
 
-    // load data if needed
-    if (!bundle) await reloadAll(true);
-  };
+    if (!productIdForCart) productIdForCart = null;
+
+
+    const qty = (typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1;
+    if (typeof cart === "object" && cart) cart[productName] = 1;
+
+    // Normalize selected options
+    let selOpts = __ssNormalizeSelectedOptions(selectedOptions);
+
+    // Back-compat: if only legacy selectedOption provided, wrap it
+    if (!selOpts.length && selectedOption) {
+        const p = __ssGetCatalogFlat().find(pp => pp?.name === productName) || {};
+        const groups = __ssExtractOptionGroups(p);
+        const label = (groups?.[0]?.label) ? groups[0].label : "Option";
+        selOpts = [{ label, value: String(selectedOption).trim() }];
+    }
+
+    // Ensure legacy selectedOption reflects first group
+    if (!selectedOption && selOpts.length) selectedOption = selOpts[0].value;
+
+    const priceEUR = __ssResolveVariantPriceEUR(pRef, selOpts, selectedOption) || (parseFloat(price) || Number(price) || 0);
+    price = priceEUR;
+
+    const key = selOpts.length ? `${productName} - ${__ssFormatSelectedOptionsKey(selOpts)}` : (selectedOption ? `${productName} - ${selectedOption}` : productName);
+
+    if (qty > 0) {
+        if (basket && basket[key]) {
+            basket[key].quantity += qty;
+            basket[key].price = price;
+            if (!basket[key].productId && productIdForCart) basket[key].productId = productIdForCart;
+            // keep latest selections
+            if (selOpts.length) basket[key].selectedOptions = selOpts;
+            if (selectedOption) basket[key].selectedOption = selectedOption;
+        } else {
+            basket[key] = {
+                name: productName,
+                price,
+                image: imageUrl,
+                quantity: qty,
+                productId: productIdForCart,
+                expectedPurchasePrice,
+                productLink,
+                description: productDescription,
+                ...(selectedOption ? { selectedOption } : {}),
+                ...(selOpts.length ? { selectedOptions: selOpts } : {})
+            };
+        }
+
+        try {
+            if (typeof persistBasket === "function") persistBasket("add_to_cart");
+            else localStorage.setItem("basket", JSON.stringify(basket));
+        } catch {
+            try { localStorage.setItem("basket", JSON.stringify(basket)); } catch { }
+        }
+
+        // analytics: add to cart
+        try {
+            const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink, productId: productIdForCart });
+            payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
+            sendAnalyticsEvent('add_to_cart', payload);
+        } catch { }
+        const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
+        alert(`${qty} x ${productName}${optMsg} added to cart!`);
+    } else {
+        alert("Please select at least one item.");
+    }
+}
+
+/* Override: checkout cart builders include selectedOptions */
+function buildStripeSafeCart(fullCart) {
+    return (fullCart || []).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        productId: i.productId || "",
+        price: Number(i.unitPriceEUR || i.price || 0),
+        selectedOption: i.selectedOption || "",
+        selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
+    }));
+}
+
+function buildFullCartFromBasket() {
+    const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
+        try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
+    })();
+
+    const items = Object.values(basketObj || {});
+    return items
+        .map((item) => {
+            const unitEUR = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
+            const expected = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+
+            const out = {
+                name: String(item?.name || "").slice(0, 120),
+                quantity: qty,
+                unitPriceEUR: Number(unitEUR.toFixed(2)),
+                price: Number(unitEUR.toFixed(2)),
+                expectedPurchasePrice: Number((expected || unitEUR).toFixed(2)),
+                productLink: String(item?.productLink || "N/A").slice(0, 800),
+                image: String(item?.image || "").slice(0, 800),
+                description: String(item?.description || "").slice(0, 2000)
+            };
+
+            if (item?.selectedOption) out.selectedOption = String(item.selectedOption).slice(0, 120);
+            const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+            if (sel.length) out.selectedOptions = sel;
+
+            return out;
+        })
+        .filter((i) => i.name && i.quantity > 0 && Number(i.price) > 0);
+}
+
+function buildStripeOrderSummary(stripeCart) {
+    return (stripeCart || [])
+        .map((item) => {
+            const name = String(item?.name || "");
+            const shortName = name.length > 30 ? name.slice(0, 30) + "…" : name;
+            const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
+            const opt = sel.length ? ` (${__ssFormatSelectedOptionsDisplay(sel).slice(0, 80)})` :
+                (item?.selectedOption ? ` (${String(item.selectedOption).slice(0, 40)})` : "");
+            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
+            return `${qty}x ${shortName}${opt}`;
+        })
+        .join(", ")
+        .slice(0, 499);
+}
+
+/* Override: basket rendering escapes user/product strings and shows multi-options */
+function updateBasket() {
+    let basketContainer = document.getElementById("Basket_Viewer");
+
+    if (!basketContainer) {
+        const viewer = document.getElementById("Viewer");
+        if (!viewer) return;
+        basketContainer = document.createElement("div");
+        basketContainer.id = "Basket_Viewer";
+        basketContainer.classList.add("Basket_Viewer");
+        viewer.appendChild(basketContainer);
+    }
+
+    basketContainer.innerHTML = "";
+
+    // Ensure option chips + layout overrides are available
+    __ssEnsureOptionChipStyles();
+
+    if (!basket || Object.keys(basket).length === 0) {
+        basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
+        return;
+    }
+
+    let totalSum = 0;
+
+    Object.entries(basket).forEach(([key, item]) => {
+        const productDiv = document.createElement("div");
+        productDiv.classList.add("Basket_Item_Container");
+
+        const value = Number(parseFloat(item?.price) || 0);
+        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+        const itemTotal = (value * qty);
+        totalSum += itemTotal;
+
+        const encName = encodeURIComponent(String(item?.name || ""));
+        const safeName = __ssEscHtml(item?.name || "");
+        const safeDesc = __ssEscHtml(item?.description || "");
+        const safeImg = __ssEscHtml(item?.image || "");
+
+        const product = (() => {
+    try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
 })();
 
-// ===== Accounting tab (local-first, uses Orders tab costs as source of truth) =====
-(function () {
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
 
-  const cats = [
-    "Advertising", "Software", "Hosting", "Professional services", "Equipment", "Packaging", "Shipping", "Banking/Fees", "Tax", "Other"
-  ];
-
-  function pid() { try { return mgGetActiveProjectId?.() || "default"; } catch { return "default"; } }
-  function kSettings() { return `mg_acc_settings_${pid()}`; }
-  function kExpenses() { return `mg_acc_expenses_${pid()}`; }
-
-  function loadSettings() {
-    const d = { vatStartDate: "", taxReservePct: 30, cashBuffer: 500, adMaxPctGrossProfit: 40 };
-    try {
-      const raw = localStorage.getItem(kSettings());
-      const parsed = raw ? JSON.parse(raw) : {};
-      return { ...d, ...(parsed || {}) };
-    } catch { return d; }
-  }
-  function saveSettings(s) { localStorage.setItem(kSettings(), JSON.stringify(s)); }
-
-  function loadExpenses() {
-    try { const a = JSON.parse(localStorage.getItem(kExpenses()) || "[]"); return Array.isArray(a) ? a : []; } catch { return []; }
-  }
-  function saveExpenses(list) { localStorage.setItem(kExpenses(), JSON.stringify(list || [])); }
-
-  function toDateKey(d) {
-    if (!d) return "";
-    const dt = (d instanceof Date) ? d : new Date(d);
-    if (isNaN(dt)) return "";
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth() + 1).padStart(2, "0");
-    const da = String(dt.getDate()).padStart(2, "0");
-    return `${y}-${m}-${da}`;
-  }
-
-  function moneyEUR(n) {
-    const v = Number(n || 0);
-    return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  function orderDate(o) {
-    return o?.paidAt || o?.createdAt || o?.created || o?.date || o?.updatedAt || null;
-  }
-
-  function inRange(d, from, to) {
-    if (!d) return true;
-    const dt = new Date(d);
-    if (isNaN(dt)) return true;
-    if (from && dt < from) return false;
-    if (to && dt > to) return false;
-    return true;
-  }
-
-  function calcOrdersSummary(orders, settings) {
-    const from = state?.filters?.till ? new Date(state.filters.till) : null; // note: your UI labels are swapped; we treat both inclusively
-    const to = state?.filters?.since ? new Date(state.filters.since) : null;
-    // If the user uses the existing Orders filters, since is latest and to is oldest; normalize:
-    let min = null, max = null;
-    if (from && !isNaN(from)) min = from;
-    if (to && !isNaN(to)) max = to;
-    if (min && max && min > max) { const tmp = min; min = max; max = tmp; }
-
-    let revenue = 0, purchase = 0, shipping = 0, stripe = 0, profit = 0, count = 0, vatCount = 0, vatRevenue = 0;
-    const vatStart = settings?.vatStartDate ? new Date(settings.vatStartDate) : null;
-    orders.forEach(o => {
-      const od = orderDate(o);
-      if (!inRange(od, min, max)) return;
-      const sale = Number(o?.paidEUR || 0);
-      const pur = Array.isArray(o?.products) ? o.products.reduce((s, p) => s + Number(p?.expectedPurchase || p?.purchasePrice || 0) * Number(p?.amount || 0), 0) : 0;
-      const ship = Number(o?.shipping?.aliExpress || 0) + Number(o?.shipping?.thirdParty1 || 0) + Number(o?.shipping?.thirdParty2 || 0);
-      const sf = Number(o?.stripeFeeEUR || 0);
-      const prof = sale - (pur + ship + sf);
-      revenue += sale; purchase += pur; shipping += ship; stripe += sf; profit += prof; count++;
-      if (vatStart && !isNaN(vatStart)) {
-        const d = od ? new Date(od) : null;
-        if (d && !isNaN(d) && d >= vatStart) { vatCount++; vatRevenue += sale; }
-      }
-    });
-    return { count, revenue, purchase, shipping, stripe, profit, vatCount, vatRevenue };
-  }
-
-  function renderKpis(sum, expTotal, settings) {
-    const k = $("#accKpis");
-    if (!k) return;
-    const gross = sum.revenue - (sum.purchase + sum.shipping + sum.stripe);
-    const net = gross - expTotal;
-    const reserve = Math.max(0, net) * (Number(settings.taxReservePct || 0) / 100);
-    const adCapByPct = Math.max(0, gross) * (Number(settings.adMaxPctGrossProfit || 0) / 100);
-    k.innerHTML = `
-      <div class="mg-acc-kpi"><div class="label">Orders in range</div><div class="value">${sum.count}</div></div>
-      <div class="mg-acc-kpi"><div class="label">Revenue (EUR)</div><div class="value">${moneyEUR(sum.revenue)}</div></div>
-      <div class="mg-acc-kpi"><div class="label">COGS (buy+ship+fees)</div><div class="value">${moneyEUR(sum.purchase + sum.shipping + sum.stripe)}</div></div>
-      <div class="mg-acc-kpi"><div class="label">Gross profit</div><div class="value">${moneyEUR(gross)}</div></div>
-      <div class="mg-acc-kpi"><div class="label">Expenses (manual)</div><div class="value">${moneyEUR(expTotal)}</div></div>
-      <div class="mg-acc-kpi"><div class="label">Net (pre-tax)</div><div class="value">${moneyEUR(net)}</div></div>
-    `;
-    const os = $("#accOrdersSummary");
-    if (os) {
-      os.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
-          <div><div style="font-size:12px;color:#6b7280">Purchase</div><div style="font-weight:700">€${moneyEUR(sum.purchase)}</div></div>
-          <div><div style="font-size:12px;color:#6b7280">Shipping</div><div style="font-weight:700">€${moneyEUR(sum.shipping)}</div></div>
-          <div><div style="font-size:12px;color:#6b7280">Stripe fees</div><div style="font-weight:700">€${moneyEUR(sum.stripe)}</div></div>
-          <div><div style="font-size:12px;color:#6b7280">Profit</div><div style="font-weight:700">€${moneyEUR(sum.profit)}</div></div>
+productDiv.innerHTML = `
+      <div class="Basket-Item">
+        <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer">
+          <img class="Basket_Image"
+               src="${safeImg}"
+               alt="${safeName}"
+               data-name="${safeName}"
+               data-price="${__ssEscHtml(item?.price ?? "")}"
+               data-description="${safeDesc}"
+               data-imageurl="${safeImg}">
+        </a>
+        <div class="Item-Details">
+          <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer" class="BasketText">
+            <strong class="BasketText BasketTitle">${safeName}</strong>
+          </a>
+          ${optionChipsHTML}
+          <p class="BasketTextDescription">${safeDesc}</p>
+</div>
+        <div class="Quantity-Controls-Basket">
+          <button class="BasketChangeQuantityButton" type="button"
+                  data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
+          <span class="BasketChangeQuantityText">${qty}</span>
+          <button class="BasketChangeQuantityButton" type="button"
+                  data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
         </div>
-        ${settings.vatStartDate ? `<div style="margin-top:10px;color:#6b7280;font-size:12px">VAT period orders: <b>${sum.vatCount}</b>, VAT period revenue: <b>€${moneyEUR(sum.vatRevenue)}</b> (from ${esc(settings.vatStartDate)})</div>` : ""}
-      `;
-    }
-    const g = $("#accGuidance");
-    if (g) {
-      g.innerHTML = `
-        <div style="display:grid;gap:8px">
-          <div style="color:#6b7280;font-size:12px">This is operational guidance (cash & risk), not legal advice.</div>
-          <div><b>Suggested tax reserve:</b> €${moneyEUR(reserve)} (${Number(settings.taxReservePct || 0)}%)</div>
-          <div><b>Ad spend cap (policy):</b> €${moneyEUR(adCapByPct)} (${Number(settings.adMaxPctGrossProfit || 0)}% of gross profit)</div>
-          <div><b>Cash buffer (policy):</b> €${moneyEUR(settings.cashBuffer || 0)}</div>
-        </div>
-      `;
-    }
-  }
-
-  function expenseCategoriesSelect(sel) {
-    if (!sel) return;
-    sel.innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  }
-
-  function renderExpenseForm(e) {
-    const root = $("#accExpForm");
-    if (!root) return;
-    const ex = e || { id: "", date: toDateKey(new Date()), vendor: "", category: "Advertising", amount: 0, currency: "EUR", fxRate: 1, eur: 0, note: "" };
-    root.innerHTML = `
-      <div class="mg-acc-field"><label>Date</label><input id="accF_date" type="date" value="${esc(ex.date || "")}" /></div>
-      <div class="mg-acc-field"><label>Vendor</label><input id="accF_vendor" value="${esc(ex.vendor || "")}" placeholder="Meta, Google, Hetzner…" /></div>
-      <div class="mg-acc-field"><label>Category</label><select id="accF_category">${cats.map(c => `<option ${c === ex.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
-      <div class="mg-acc-field"><label>Amount</label><input id="accF_amount" type="number" step="0.01" value="${esc(ex.amount ?? 0)}" /></div>
-      <div class="mg-acc-field"><label>Currency</label><select id="accF_currency"><option ${ex.currency === "EUR" ? "selected" : ""}>EUR</option><option ${ex.currency === "USD" ? "selected" : ""}>USD</option><option ${ex.currency === "GBP" ? "selected" : ""}>GBP</option></select></div>
-      <div class="mg-acc-field"><label>FX rate to EUR</label><input id="accF_fx" type="number" step="0.0001" value="${esc(ex.fxRate ?? 1)}" /></div>
-      <div class="mg-acc-field"><label>Amount (EUR)</label><input id="accF_eur" type="number" step="0.01" value="${esc(ex.eur ?? 0)}" /></div>
-      <div class="mg-acc-field"><label>Note</label><textarea id="accF_note" placeholder="campaign, invoice no., purpose…">${esc(ex.note || "")}</textarea></div>
-    `;
-    // live EUR calc
-    const amt = $("#accF_amount");
-    const cur = $("#accF_currency");
-    const fx = $("#accF_fx");
-    const eur = $("#accF_eur");
-    const recalc = () => {
-      const a = Number(amt?.value || 0);
-      const c = String(cur?.value || "EUR");
-      const r = Number(fx?.value || 1);
-      if (c === "EUR") eur.value = String(a || 0);
-      else eur.value = String((a || 0) * (r || 0));
-    };
-    [amt, cur, fx].forEach(n => n && n.addEventListener("input", recalc));
-  }
-
-  let installed = false;
-  let activePane = "dashboard";
-  let expenses = [];
-  let activeExpenseId = null;
-
-  function showPane(name) {
-    activePane = name;
-    localStorage.setItem(`mg_acc_subtab_${pid()}`, name);
-    $$("#accountingTab .mg-acc-pane").forEach(p => p.classList.toggle("hidden", p.getAttribute("data-pane") !== name));
-    $$("#accountingTab .mg-subtab").forEach(b => b.classList.toggle("active", b.getAttribute("data-subtab") === name));
-  }
-
-  function filterExpenses() {
-    const q = ($("#accExpSearch")?.value || "").trim().toLowerCase();
-    const cat = $("#accExpCat")?.value || "";
-    const fromK = $("#accExpFrom")?.value || "";
-    const toK = $("#accExpTo")?.value || "";
-    const from = fromK ? new Date(fromK) : null;
-    const to = toK ? new Date(toK) : null;
-    return (expenses || []).filter(e => {
-      if (cat && e.category !== cat) return false;
-      if (q) {
-        const blob = `${e.vendor || ""} ${e.category || ""} ${e.note || ""}`.toLowerCase();
-        if (!blob.includes(q)) return false;
-      }
-      if (from || to) {
-        const d = e.date ? new Date(e.date) : null;
-        if (d && !inRange(d, from, to)) return false;
-      }
-      return true;
-    }).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-  }
-
-  function renderExpenses() {
-    const tb = $("#accExpTbody");
-    if (!tb) return;
-    const list = filterExpenses();
-    tb.innerHTML = list.map(e => {
-      const active = e.id === activeExpenseId;
-      const eur = Number(e.eur || (e.currency === "EUR" ? e.amount : (Number(e.amount || 0) * Number(e.fxRate || 0))));
-      return `
-        <tr class="${active ? "active" : ""}" data-id="${esc(e.id)}">
-          <td>${esc(e.date || "")}</td>
-          <td>${esc(e.vendor || "")}</td>
-          <td>${esc(e.category || "")}</td>
-          <td>${esc(String(e.amount || 0))} ${esc(e.currency || "EUR")}</td>
-          <td>€${moneyEUR(eur)}</td>
-          <td style="text-align:right"><button class="Buttony" data-open>Open</button></td>
-        </tr>`;
-    }).join("");
-    tb.querySelectorAll("tr").forEach(tr => {
-      tr.addEventListener("click", () => {
-        const id = tr.getAttribute("data-id");
-        openExpense(id);
-      });
-    });
-  }
-
-  function openExpense(id) {
-    const e = expenses.find(x => x.id === id);
-    if (!e) return;
-    activeExpenseId = id;
-    $("#accExpEditorTitle").textContent = `Expense`;
-    renderExpenseForm(e);
-    renderExpenses();
-  }
-
-  function newExpense() {
-    const id = `ex_${Date.now()}`;
-    const e = { id, date: toDateKey(new Date()), vendor: "", category: "Advertising", amount: 0, currency: "EUR", fxRate: 1, eur: 0, note: "" };
-    expenses.unshift(e);
-    saveExpenses(expenses);
-    activeExpenseId = id;
-    renderExpenseForm(e);
-    renderExpenses();
-  }
-
-  function readExpenseForm() {
-    const id = activeExpenseId;
-    if (!id) return null;
-    const e = expenses.find(x => x.id === id);
-    if (!e) return null;
-    e.date = $("#accF_date")?.value || "";
-    e.vendor = $("#accF_vendor")?.value || "";
-    e.category = $("#accF_category")?.value || "Other";
-    e.amount = Number($("#accF_amount")?.value || 0);
-    e.currency = $("#accF_currency")?.value || "EUR";
-    e.fxRate = Number($("#accF_fx")?.value || 1);
-    e.eur = Number($("#accF_eur")?.value || 0);
-    e.note = $("#accF_note")?.value || "";
-    return e;
-  }
-
-  function exportCsv() {
-    const rows = [
-      ["id", "date", "vendor", "category", "amount", "currency", "fxRate", "eur", "note"],
-      ...(expenses || []).map(e => [
-        e.id, e.date, e.vendor, e.category, e.amount, e.currency, e.fxRate, e.eur, (e.note || "").replace(/\r?\n/g, " ")
-      ])
-    ];
-    const csv = rows.map(r => r.map(v => {
-      const s = String(v ?? "");
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    }).join(",")).join("\n");
-    downloadTextFile(`expenses_${toDateKey(new Date())}.csv`, csv, "text/csv;charset=utf-8");
-  }
-
-  function renderSettingsForm(s) {
-    const root = $("#accSettingsForm");
-    if (!root) return;
-    root.innerHTML = `
-      <div class="mg-acc-field"><label>VAT effective date (leave empty until registered)</label><input id="accS_vat" type="date" value="${esc(s.vatStartDate || "")}" /></div>
-      <div class="mg-acc-field"><label>Tax reserve (policy % of net profit)</label><input id="accS_tax" type="number" step="1" value="${esc(s.taxReservePct ?? 30)}" /></div>
-      <div class="mg-acc-field"><label>Cash buffer (EUR)</label><input id="accS_buf" type="number" step="1" value="${esc(s.cashBuffer ?? 500)}" /></div>
-      <div class="mg-acc-field"><label>Ad spend cap (policy % of gross profit)</label><input id="accS_ad" type="number" step="1" value="${esc(s.adMaxPctGrossProfit ?? 40)}" /></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-        <button class="Buttony" id="accS_save" type="button">Save settings</button>
-        <span style="font-size:12px;color:#6b7280">Saved per project/server.</span>
       </div>
     `;
-    $("#accS_save")?.addEventListener("click", () => {
-      const ns = {
-        vatStartDate: $("#accS_vat")?.value || "",
-        taxReservePct: Number($("#accS_tax")?.value || 0),
-        cashBuffer: Number($("#accS_buf")?.value || 0),
-        adMaxPctGrossProfit: Number($("#accS_ad")?.value || 0)
-      };
-      saveSettings(ns);
-      toast?.("Saved", "Accounting settings saved");
-      // refresh dashboard
-      try { renderDashboard(); } catch { }
+
+        basketContainer.appendChild(productDiv);
     });
-  }
 
-  function totalExpensesInRange() {
-    // Use same range inputs as expenses filters if set; else total all
-    const fromK = $("#accExpFrom")?.value || "";
-    const toK = $("#accExpTo")?.value || "";
-    const from = fromK ? new Date(fromK) : null;
-    const to = toK ? new Date(toK) : null;
-    let sum = 0;
-    (expenses || []).forEach(e => {
-      const d = e.date ? new Date(e.date) : null;
-      if (from || to) { if (d && !inRange(d, from, to)) return; }
-      const eur = Number(e.eur || (e.currency === "EUR" ? e.amount : (Number(e.amount || 0) * Number(e.fxRate || 0))));
-      sum += eur;
-    });
-    return sum;
-  }
+    const receiptDiv = document.createElement("div");
+    receiptDiv.classList.add("BasketReceipt");
 
-  async function renderDashboard() {
-    const s = loadSettings();
-    if (!state.orders || !Array.isArray(state.orders) || state.orders.length === 0) {
-      try { await safeEnsureLogin(); state.orders = await loadOrdersFromServer(); } catch { }
-    }
-    const sum = calcOrdersSummary(state.orders || [], s);
-    const expTotal = totalExpensesInRange();
-    renderKpis(sum, expTotal, s);
-  }
+    let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
 
-  // Public show/hide
-  window.accountingUiHide = function () {
-    const tab = $("#accountingTab");
-    if (tab) { tab.classList.add("hidden"); tab.style.display = "none"; tab.style.pointerEvents = "none"; tab.setAttribute("aria-hidden", "true"); }
-  };
-  window.accountingUiShow = async function () {
-    const tab = $("#accountingTab");
-    if (!tab) throw new Error("accountingTab missing in index.html");
-    tab.classList.remove("hidden"); tab.style.display = ""; tab.style.pointerEvents = ""; tab.setAttribute("aria-hidden", "false");
+    Object.entries(basket).forEach(([k, item]) => {
+        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+        const unit = Number(parseFloat(item?.price) || 0);
+        const itemTotal = unit * qty;
 
-    if (!installed) {
-      installed = true;
-      // subtabs
-      $("#mgAccSubDash")?.addEventListener("click", () => showPane("dashboard"));
-      $("#mgAccSubExpenses")?.addEventListener("click", () => showPane("expenses"));
-      $("#mgAccSubSettings")?.addEventListener("click", () => showPane("settings"));
-      const pref = localStorage.getItem(`mg_acc_subtab_${pid()}`) || "dashboard";
-      showPane(pref);
+            const name = __ssEscHtml(item?.name || "");
+    const productForReceipt = (() => {
+        try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
+    })();
+    const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+    const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
 
-      // expenses
-      expenseCategoriesSelect($("#accExpCat"));
-      $("#accExpSearch")?.addEventListener("input", renderExpenses);
-      $("#accExpCat")?.addEventListener("change", renderExpenses);
-      $("#accExpFrom")?.addEventListener("change", () => { renderExpenses(); renderDashboard(); });
-      $("#accExpTo")?.addEventListener("change", () => { renderExpenses(); renderDashboard(); });
-      $("#accExpNew")?.addEventListener("click", newExpense);
-      $("#accExpSave")?.addEventListener("click", () => {
-        const e = readExpenseForm();
-        if (!e) return;
-        saveExpenses(expenses);
-        toast?.("Saved", "Expense saved");
-        renderExpenses();
-        renderDashboard();
-      });
-      $("#accExpDelete")?.addEventListener("click", () => {
-        if (!activeExpenseId) return;
-        const ok = confirm("Delete this expense?");
-        if (!ok) return;
-        expenses = expenses.filter(x => x.id !== activeExpenseId);
-        saveExpenses(expenses);
-        activeExpenseId = expenses[0]?.id || null;
-        if (activeExpenseId) renderExpenseForm(expenses.find(x => x.id === activeExpenseId)); else renderExpenseForm(null);
-        renderExpenses();
-        renderDashboard();
-      });
-      $("#accExpExport")?.addEventListener("click", exportCsv);
+    receiptContent += `
+  <tr>
+    <td>${qty} ×</td>
+    <td>
+      <div class="ReceiptItemName">${name}</div>
+      ${receiptChipsHTML}
+    </td>
+    <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+  </tr>
+`;
+});
 
-      // dashboard
-      $("#accRecalc")?.addEventListener("click", () => actionRunner(async () => { await renderDashboard(); }, "Recalculate"));
+    receiptContent += `</table></div>`;
+    receiptContent += `
+    <div class="ReceiptFooter">
+      <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
+      <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
+    </div>
+  `;
+
+    receiptDiv.innerHTML = receiptContent;
+    basketContainer.appendChild(receiptDiv);
+
+    // Keep existing event delegation behavior for qty buttons
+    if (!basketContainer.dataset.qtyBound) {
+        basketContainer.dataset.qtyBound = "1";
+        basketContainer.addEventListener("click", (e) => {
+            const btn = e.target.closest(".BasketChangeQuantityButton");
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const k = decodeURIComponent(btn.dataset.key || "");
+            const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+            try { changeQuantity(k, delta); } catch { }
+        });
     }
 
-    // reload per project
-    expenses = loadExpenses();
-    if (!expenses.length) { /* no-op */ }
-    activeExpenseId = expenses[0]?.id || null;
-    expenseCategoriesSelect($("#accExpCat"));
-    renderExpenses();
-    renderExpenseForm(activeExpenseId ? expenses.find(x => x.id === activeExpenseId) : null);
-    renderSettingsForm(loadSettings());
-    await renderDashboard();
-  };
-})();
+    try { updateAllPrices(); } catch { }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
