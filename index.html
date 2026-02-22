@@ -1,4933 +1,707 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="api-base" content="https://api.snagletshop.com">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer">
-    <meta name="turnstile-sitekey" content="__TURNSTILE_SITE_KEY__">
-    <meta name="stripe-publishable-key" content="__STRIPE_PUBLISHABLE_KEY__">
-    <link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
-    <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/Logo_I.png"
-        type="image/png">
-    <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/favicon.png"
-        type="image/png">
-
-    <title>SnagletShop</title>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
-    <script src="script.js" defer></script>
-    <script src="https://js.stripe.com/v3/"></script>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style id="appBootLoaderStyles">
-        @keyframes appLoaderSpin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        #appBootLoaderOverlay {
-            position: fixed;
-            inset: 0;
-            z-index: 90000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            background: rgba(0, 0, 0, .45);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-
-        #appBootLoaderOverlay .card {
-            width: min(520px, calc(100vw - 32px));
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            background: rgba(20, 20, 20, 0.9);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, .65);
-            padding: 16px;
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-            color: #fff;
-        }
-
-        #appBootLoaderOverlay .row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        #appBootLoaderOverlay .spinner {
-            width: 22px;
-            height: 22px;
-            border-radius: 999px;
-            border: 3px solid rgba(255, 255, 255, 0.22);
-            border-top-color: rgba(255, 255, 255, 0.95);
-            animation: appLoaderSpin 900ms linear infinite;
-            flex: 0 0 auto;
-        }
-
-        #appBootLoaderOverlay .title {
-            font-weight: 700;
-            font-size: 15px;
-            line-height: 1.2;
-        }
-
-        #appBootLoaderOverlay .sub {
-            margin-top: 6px;
-            font-size: 13px;
-            opacity: .85;
-            line-height: 1.35;
-        }
-    </style>
-
-    <style>
-        :root {
-            --body_Background_Colour: #FFFCF7;
-            /* Warm off-white background */
-            --TopBar_Background_Colour: #F4F1EB;
-            /* Matches soft beige tone */
-            --SideBar_Background_Colour: #FFFFFF;
-            --SearchBar_Background_Colour: #EFECE8;
-            --Modal_Background_Colour: #FFFFFF;
-            --BasketReceipt_Background_Colour: #F4F1EB;
-            /* Same soft beige */
-            --Thumbnail_Active_Border: #FF5722;
-            --ButtonHoverState_Background_Colour: #59a3f2;
-
-            --Default_Text_Colour: #2A2A2A;
-            --Muted_Text_Colour: #777777;
-            /* Slightly softer muted text */
-
-            --Primary_Button_Colour: #59a3f2;
-            /* Blue buttons */
-            --Primary_Button_Hover: #0056b3;
-
-            --Input_Background: #FFFFFF;
-            --Input_Border: #DDDDDD;
-
-            --Option_Button_Border: #DDDDDD;
-            /* For +/- and quantity selectors */
-
-            --Danger_Colour: #D9534F;
-            --Info_Link_Colour: #5BC0DE;
-            --Category_Button_Text_Colour: #2A2A2A;
-            /* or white for dark mode */
-
-            /* Add-to-basket toast (light mode defaults)
-               Edit these to change the new "added to basket" popup colors.
-            */
-            --AddToBasketToast_Background: rgba(255, 255, 255, 0.92);
-            --AddToBasketToast_Text: #1f1f1f;
-            --AddToBasketToast_Border: rgba(0, 0, 0, 0.10);
-            --AddToBasketToast_Shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-
-        }
-
-        .light-mode {
-            --body_Background_Colour: #FFFCF7;
-            /* Warm off-white background */
-            --TopBar_Background_Colour: #F4F1EB;
-            /* Matches soft beige tone */
-            --SideBar_Background_Colour: #FFFFFF;
-            --SearchBar_Background_Colour: #EFECE8;
-            --Modal_Background_Colour: #FFFFFF;
-            --BasketReceipt_Background_Colour: #F4F1EB;
-            /* Same soft beige */
-            --Thumbnail_Active_Border: #FF5722;
-            --ButtonHoverState_Background_Colour: #59a3f2;
-
-            --Default_Text_Colour: #2A2A2A;
-            --Muted_Text_Colour: #777777;
-            /* Slightly softer muted text */
-
-            --Primary_Button_Colour: #59a3f2;
-            /* Blue buttons */
-            --Primary_Button_Hover: #0056b3;
-
-            --Input_Background: #FFFFFF;
-            --Input_Border: #DDDDDD;
-
-            --Option_Button_Border: #DDDDDD;
-            /* For +/- and quantity selectors */
-
-            --Danger_Colour: #D9534F;
-            --Info_Link_Colour: #5BC0DE;
-            --Category_Button_Text_Colour: #2A2A2A;
-            /* or white for dark mode */
-
-        }
-
-
-
-        .dark-mode {
-            --body_Background_Colour: #1A1A1A;
-            --TopBar_Background_Colour: #1a1919;
-            --SideBar_Background_Colour: #181818;
-            --SearchBar_Background_Colour: #1C1C1C;
-            --Modal_Background_Colour: #181818;
-            --BasketReceipt_Background_Colour: #22222200;
-            --ButtonHoverState_Background_Colour: #0056b3;
-            --Default_Text_Colour: #ffffff;
-            --Borders_Colour: #232D34;
-            --Primary_Button_Colour: #007BFF;
-            --Primary_Button_Hover: #0056b3;
-            --Input_Background: #333;
-            --Input_Border: #555;
-            --Danger_Colour: red;
-            --Info_Link_Colour: lightblue;
-            --Muted_Text_Colour: gray;
-            --Option_Button_Border: #ccc;
-            --Category_Button_Text_Colour: #ffffff;
-            /* or white for dark mode */
-            --Thumbnail_Active_Border: #4DABFF;
-
-            /* Add-to-basket toast (dark mode)
-               Edit these to change the new "added to basket" popup colors.
-            */
-            --AddToBasketToast_Background: rgba(20, 20, 20, 0.92);
-            --AddToBasketToast_Text: #ffffff;
-            --AddToBasketToast_Border: rgba(255, 255, 255, 0.14);
-            --AddToBasketToast_Shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-        }
-
-        /* ---------------- Add-to-basket toast popup ----------------
-           Styled via CSS variables above so it automatically follows
-           your light/dark theme, and is easy to tweak later.
-        */
-        .ss-basket-toast {
-            position: fixed;
-            z-index: 999999;
-            pointer-events: none;
-            padding: 10px 12px;
-            border-radius: 14px;
-            background: var(--AddToBasketToast_Background);
-            color: var(--AddToBasketToast_Text);
-            border: 1px solid var(--AddToBasketToast_Border);
-            font-size: 13px;
-            line-height: 1.2;
-            box-shadow: var(--AddToBasketToast_Shadow);
-            -webkit-backdrop-filter: blur(6px);
-            backdrop-filter: blur(6px);
-            transform: translate(-50%, -50%) scale(0.78);
-            opacity: 0;
-            transition: transform 220ms ease, opacity 220ms ease, top 220ms ease, left 220ms ease;
-            max-width: min(340px, 84vw);
-            overflow: hidden;
-        }
-
-        .ss-basket-toast.ss-show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .ss-basket-toast.ss-hide {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.96);
-        }
-
-        .ss-basket-toast-title {
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            margin-bottom: 3px;
-        }
-
-        .ss-basket-toast-sub {
-            opacity: 0.92;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        @keyframes ss-basket-pulse {
-            0% {
-                transform: scale(1)
-            }
-
-            45% {
-                transform: scale(1.06)
-            }
-
-            100% {
-                transform: scale(1)
-            }
-        }
-
-        .ss-basket-pulse {
-            animation: ss-basket-pulse 240ms ease;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .ss-basket-toast {
-                transition: none;
-            }
-
-            .ss-basket-pulse {
-                animation: none;
-            }
-        }
-
-
-
-
-        /* Hide scrollbar (still scrollable) */
-        #paymentModal,
-        #paymentModal .payment-modal-card {
-            -ms-overflow-style: none;
-            /* IE/Edge legacy */
-            scrollbar-width: none;
-            /* Firefox */
-        }
-
-        #paymentModal::-webkit-scrollbar,
-        #paymentModal .payment-modal-card::-webkit-scrollbar {
-            width: 0;
-            height: 0;
-            display: none;
-            /* Chrome/Safari */
-        }
-
-        /* ===== Payment modal dark mode ===== */
-        .dark-mode #paymentModal {
-            background: rgba(0, 0, 0, .72);
-        }
-
-        .dark-mode #paymentModal .payment-modal-card {
-            background: var(--Modal_Background_Colour);
-            color: #e5e7eb;
-            border: 1px solid rgba(255, 255, 255, .10);
-        }
-
-        .dark-mode #paymentModal .payment-modal-close {
-            color: rgba(229, 231, 235, .90);
-        }
-
-        .dark-mode #paymentModal label {
-            color: rgba(229, 231, 235, .90);
-        }
-
-        .dark-mode #paymentModal input,
-        .dark-mode #paymentModal select,
-        .dark-mode #paymentModal textarea {
-            background: rgba(255, 255, 255, .06);
-            border-color: rgba(255, 255, 255, .14);
-            color: #e5e7eb;
-        }
-
-        .dark-mode #paymentModal input::placeholder,
-        .dark-mode #paymentModal textarea::placeholder {
-            color: rgba(229, 231, 235, .55);
-        }
-
-        .dark-mode #paymentModal input:focus,
-        .dark-mode #paymentModal select:focus,
-        .dark-mode #paymentModal textarea:focus {
-            border-color: rgba(59, 130, 246, .55);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .20);
-        }
-
-        /* TomSelect inside the modal (Country) */
-        .dark-mode #paymentModal .ts-control,
-        .dark-mode #paymentModal .ts-dropdown {
-            background: #0b1220;
-            color: #e5e7eb;
-            border-color: rgba(255, 255, 255, .14);
-        }
-
-        .dark-mode #paymentModal .ts-dropdown .option.active {
-            background: rgba(59, 130, 246, .22);
-        }
-
-        @media (min-width: 680px) {
-
-            .mobileTopBar,
-            .mobileSearch_Bar,
-            .mobileNavButtonDiv,
-            .mobileCurrencySelect,
-            .mobileBasketButton,
-            .mobileSettingsButton,
-            .mobileSideBar,
-            .mobileViewer,
-            .mobileModalDiv,
-            .mobileLogo,
-            .mobileMainPage {
-                display: none;
-            }
-
-
-            body {
-                width: auto;
-                /* Default: Matches viewport width at 100% zoom */
-                height: auto;
-                margin: 0;
-                display: grid;
-                grid-template-columns: minmax(0, auto) 1fr;
-                /* First column fits content but stays within viewport */
-                background-color: var(--body_Background_Colour);
-                overflow-x: hidden;
-                min-height: 100vh;
-                /* ← add this */
-            }
-
-
-            /* When zoom level is above 100%, allow scrolling instead of shrinking */
-
-            /* Default: hide the menu button on desktop */
-            .MenuButton {
-                display: none;
-            }
-
-            .Category_Button_Heading {
-                color: var(--Category_Button_Text_Colour);
-                margin: 0;
-            }
-
-            .ts-dropdown-content {
-                background-color: var(--Input_Background);
-                color: var(--Default_Text_Colour);
-
-            }
-
-            .category-icon-svg {
-                fill: var(--Default_Text_Colour);
-
-            }
-
-
-
-            .category-icon-img {
-                width: 24px;
-                height: 24px;
-                object-fit: contain;
-                display: block;
-            }
-
-            .Button {
-                color: var(--Default_Text_Colour);
-                width: 100%;
-                font-size: 14px;
-                border: none;
-                border-radius: 5%;
-                aspect-ratio: 1/1;
-                width: 25%;
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                margin-top: 0px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-
-            .Logo {
-                grid-row: 1 / 1;
-                grid-column: 1 / 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 8vh;
-                width: 31.5vh;
-                background-color: var(--SideBar_Background_Colour);
-                /* <-- applied always */
-                color: var(--Default_Text_Colour);
-                font-size: 2.5vh;
-                font-weight: bold;
-                font-family: 'Afacad', sans-serif;
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
-            }
-
-            .ts-dropdown {
-                max-height: 240px;
-                /* Adjust based on item height. ~10 items */
-                overflow-y: auto;
-            }
-
-
-            .MainPage {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-
-                font-size: 4vh;
-                color: var(--Default_Text_Colour);
-
-                /* remove button styling */
-                background: none;
-                border: none;
-                border-radius: 0;
-                box-shadow: none;
-                padding: 0;
-
-                appearance: none;
-                -webkit-appearance: none;
-                cursor: pointer;
-                /* still shows it’s clickable */
-            }
-
-
-
-            .MainPage h1 {
-                font-size: 4vh;
-                /* Scale with height */
-                font-size: 4vh;
-                font-family: Inter, Montserrat, Poppins, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-                font-weight: 800;
-                letter-spacing: -0.02em;
-            }
-
-            /* Fix TopBar shifting */
-            .TopBar {
-                position: relative;
-                top: 0;
-
-                /* Match the sidebar width */
-                right: 0;
-
-                height: 8vh;
-                background-color: var(--TopBar_Background_Colour);
-
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 2vh;
-            }
-
-            .currency-select {
-                flex-shrink: 0;
-                max-height: 100%;
-                aspect-ratio: 1 / 0.75;
-                height: 100%;
-                font-size: 2.5vh;
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                margin-left: 1%;
-                padding: 0.5vh;
-                appearance: none;
-                /* Removes default browser styling */
-                -webkit-appearance: none;
-                /* For Safari */
-                -moz-appearance: none;
-                /* For Firefox */
-                text-align: center;
-                display: none;
-
-            }
-
-
-
-
-
-            .SideBar {
-                background-color: var(--SideBar_Background_Colour);
-                grid-row: 2 / 3;
-                grid-column: 1 / 2;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                max-width: 31.5vh;
-                min-width: 31.5vh;
-                justify-content: start;
-
-            }
-
-
-            .Viewer {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(308px, 1fr));
-                grid-column-gap: 15px;
-                /* or column-gap */
-                grid-row-gap: 15px;
-                background-color: var(--body_Background_Colour);
-                padding-top: 15px;
-                width: 98%;
-                max-width: 100%;
-                margin: 0 1rem;
-                justify-content: center;
-                height: auto;
-                align-self: stretch;
-            }
-
-            .Search_Bar {
-                max-height: 50%;
-                min-height: 50%;
-                width: 50%;
-                height: 50%;
-                font-size: 2vh;
-                border-radius: 25px;
-                padding-left: 1%;
-                margin-left: 1%;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                overflow-x: auto;
-                font-weight: 600;
-                font-family: sans-serif;
-            }
-
-
-            /* Fix button spacing issue */
-            .Category_Button.Active {
-                background-color: var(--Accent_Colour);
-
-                color: var(--Danger_Colour);
-                font-weight: bold;
-                border-radius: 5px;
-
-            }
-
-            .ReceiptTable td {
-                color: var(--Default_Text_Colour);
-                          font-family: 'Afacad', sans-serif;
-            }
-
-
-            .Category_Button {
-                width: 95%;
-                height: 6vh;
-                background-color: var(--body_Background_Colour);
-                font-size: 2.5vh;
-                /* Scales with button height */
-                display: flex;
-                align-items: center;
-                border-radius: 5px;
-                justify-content: left;
-                box-sizing: border-box;
-                border: 0.1em solid var(--Borders_Colour);
-                /* Scales with font size */
-            }
-
-            .Category_Button h3 {
-                font-size: 2vh;
-                /* Ensures text scales with button */
-                white-space: nowrap;
-                border-radius: 5px;
-            
-            }
-
-            .Category_Button_Heading {
-                display: flex;
-                align-items: center;
-                gap: 1vw;
-            }
-
-            .product {
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border: 1px solid var(--Input_Background);
-                border-radius: 8px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                padding: 10px;
-                width: 300px;
-                /* Allow grid to define width */
-                max-width: 300px;
-                /* Ensures uniform width */
-                height: 475px;
-                max-height: 475px;
-                display: flex;
-                justify-content: center;
-            }
-
-            .Clickable_Image {
-
-                max-height: 280px;
-                aspect-ratio: 1/1;
-                margin-left: 10px;
-                border-radius: 2%;
-
-            }
-
-            .quantity-container {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 8px;
-                width: 100%;
-                padding-bottom: 15px;
-            }
-
-            .quantity-controls {
-                display: flex;
-                justify-content: left;
-                align-items: center;
-                width: 50%;
-
-                gap: 5%;
-                /* Take up 1/2 of the available space */
-                color: var(--Default_Text_Colour);
-
-            }
-
-            .add-to-cart {
-                background-color: var(--Primary_Button_Colour);
-                color: #fff;
-                font-size: 20px;
-                min-width: max-content;
-                border: none;
-                aspect-ratio: 1/0.25;
-                width: 50%;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-                flex: 1;
-                /* Take up the remaining space */
-                text-align: center;
-
-                font-family: 'Rubik', sans-serif;
-            }
-
-            .add-to-cart-product {
-                background-color: var(--Primary_Button_Colour);
-                color: #fff;
-                font-size: 25px;
-                min-width: max-content;
-                border: none;
-                aspect-ratio: 1/0.25;
-                width: 50%;
-                border-radius: 4px;
-                padding-left: 8%;
-                cursor: pointer;
-                transition: background-color 0.3s;
-                flex: 1;
-                /* Take up the remaining space */
-                text-align: center;
-
-                font-family: 'Rubik', sans-serif;
-            }
-
-            .add-to-cart:hover {
-                background-color: var(--ButtonHoverState_Background_Colour);
-            }
-
-
-
-
-
-            .NavButtonDiv {
-                height: 6vh;
-                width: 20%;
-
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                gap: 5px;
-
-                /* Remove fixed positioning */
-                position: static;
-            }
-
-
-
-
-            .BasketButton,
-            .SettingsButton {
-                aspect-ratio: 1 / 1;
-                height: 100%;
-                width: auto;
-                max-width: 100%;
-                border-radius: 5px;
-
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border: 1px solid var(--Borders_Colour);
-                font-size: 2.5vh;
-                font-weight: bold;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-
-            }
-
-            .ts-wrapper.single .ts-control,
-            .ts-wrapper.single .ts-control input {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .Quantity-Controls-Basket {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 8px;
-                width: 20%;
-                padding-right: 10px;
-            }
-
-            .Item-Details {
-                display: grid;
-
-                gap: 0px;
-                
-                width: 50%;
-                height: 140%
-            }
-
-            .ProductPageBuyButton {
-                color: var(--Default_Text_Colour);
-                height: 65px;
-                width: auto;
-                max-width: 100%;
-                border-radius: 5px;
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                min-width: 100%;
-            }
-
-            .BasketText {
-                font-size: 40px;
-                /* Scales based on view
-            7port width */
-                text-decoration: none;
-                padding-bottom: 10px;
-
-                overflow: hidden;
-                /* Prevents text from wrapping */
-                color: var(--Default_Text_Colour);
-                height: 40px;
-                max-width: 26ch;
-                word-wrap: normal;
-                word-break: normal;
-                unicode-bidi: normal;
-                text-decoration: none;
-                text-overflow: ellipsis;
-            }
-
-            .BasketTextDescription {
-                font-size: 20px;
-                color: var(--Default_Text_Colour);
-                line-height: 1.2em;
-                /* 👈 Controls line height */
-                height: calc(1.2em * 6);
-                /* 👈 Ensures 6-line height */
-                font-family: 'Rubik', sans-serif;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-box-orient: vertical;
-                font-family: 'Afacad', sans-serif;
-                -webkit-line-clamp: 6;
-                text-overflow: ellipsis;
-            }
-/* Restore “old” basket +/- look: slightly angular + horizontal row */
-.Quantity-Controls-Basket{
-  display:flex !important;
-  flex-direction:row !important;
-  align-items:center !important;
-  justify-content:flex-end !important;
-  gap:14px !important;
-  align-self:center !important;
-}
-
-/* Buttons: slightly angular rectangles (not circles) */
-
-
-/* Quantity number */
-.Quantity-Controls-Basket .qty,
-.Quantity-Controls-Basket span{
-  min-width:28px !important;
-  text-align:center !important;
-  font-size:24px !important;
-  line-height:1 !important;
-}
-
-/* Optional: subtle hover like before */
-.Quantity-Controls-Basket button:hover,
-.Quantity-Controls-Basket .qty-btn:hover{
-  background:rgba(0,0,0,.04) !important;
-}
-
-
-
-            .BasketChangeQuantityButton {
-                width: 50%;
-                background-color: var(--body_Background_Colour);
-                aspect-ratio: 1/1;
-                font-size: 200%;
-                color: var(--Default_Text_Colour);
-
-                color: var(--Default_Text_Colour);
-
-
-                border: none;
-                border-radius: 5%;
-                aspect-ratio: 1 / 1;
-
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                margin-top: 0px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-
-            .BasketChangeQuantityText {
-                font-size: 37.5px;
-                color: var(--Default_Text_Colour);
-            }
-
-            .SortContainer {
-                background-color: var(--TopBar_Background_Colour);
-                grid-row: 1 / 1;
-                grid-column: 2 / 3;
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: left;
-                padding: 0 3vh;
-                /* Fixed padding syntax */
-                width: 100%;
-                /* Ensures it spans the entire column */
-                height: 5vh;
-                max-width: 100%;
-                /* Fixed max-width */
-                max-height: 5vh;
-                color: var(--Default_Text_Colour);
-                font-size: 2.5vh;
-                font-weight: 600;
-            }
-
-            /* Ensure the dropdown doesn't resize */
-            #sortSelect {
-                min-width: 10.5%;
-                /* Minimum width */
-                max-width: 100%;
-                /* Allow it to expand */
-                width: auto;
-                /* Adjust width dynamically */
-                height: 4vh;
-                font-size: 50%;
-                border: 0px solid var(--Borders_Colour);
-                border-radius: 3px;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                margin-left: 1%;
-                padding: 0.5vh;
-                text-align: left;
-                appearance: none;
-                /* Removes default browser styling */
-                -webkit-appearance: none;
-                /* For Safari */
-                -moz-appearance: none;
-                /* For Firefox */
-                font-family: 'Rubik', sans-serif;
-                font-weight: 600;
-            }
-
-            #sortSelect:focus {
-                outline: none;
-                box-shadow: none;
-                /* Optional: removes any glow or shadow */
-            }
-
-
-
-
-            .BasketTotalPrice {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 1000px;
-                height: 350px;
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-                /* Scales with font size */
-            }
-
-            .Basket-Item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 1000px;
-                max-width: 2000px;
-                aspect-ratio: 5.25/1;
-                height: auto;
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-            }
-
-            .Basket_Item_Container {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 1000px;
-                max-width: 2000px;
-                aspect-ratio: 5.25/1;
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-                /* Scales with font size */
-            }
-
-            .Basket_Image {
-                max-width: 250px;
-                aspect-ratio: 1/1;
-                margin-left: 5px;
-            }
-
-            .Basket_Viewer {
-                display: grid;
-                width: 100%;
-                max-width: 100%;
-                margin: 0 1rem;
-                row-gap: 10px;
-                max-height: 15vh;
-                height: 15vh;
-            }
-
-            .WhiteText {
-                color: var(--Default_Text_Colour);
-                font-family: 'Afacad', sans-serif;
-                font-size: 150%;
-            }
-
-            .ProductPrice {
-                color: var(--Default_Text_Colour);
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .ProductName {
-                color: var(--Default_Text_Colour);
-            }
-
-            .product-name {
-                color: var(--Default_Text_Colour);
-                font-size: 20px;
-                font-family: 'Rubik', sans-serif;
-                font-weight: 600;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                line-height: 1.4em;
-                /* adjust as needed */
-                height: calc(1.4em * 2);
-                /* force exactly 2 lines of height */
-                margin-top: 10px;
-                margin-bottom: 10px;
-                margin-left: 10px;
-            }
-
-
-            .Product_Viewer {
-                margin-top: 24px;
-                width: 1300px;
-                height: auto;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                position: relative;
-                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                padding: 32px 80px;
-                overflow: visible;
-                font-size: 16px;
-            }
-
-            .image-slider-wrapper {
-                position: relative;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-
-                border-radius: 5px;
-
-                height: 500px;
-                width: 500px;
-                overflow: hidden;
-            }
-
-            #mainImage {
-                position: relative;
-                overflow: hidden;
-                border-radius: 5px;
-                top: 0;
-                left: 0;
-                width: 100%;
-                /* ✅ Full width */
-                height: 100%;
-                /* ✅ Full height */
-                object-fit: contain;
-                transition: none;
-            }
-
-            .slide-image {
-                transition: transform 0.2s ease;
-                will-change: transform;
-            }
-
-            .Thumbnail {
-                display: flex;
-                width: 80px;
-                height: 80px;
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
-            }
-
-            .Thumbnail.active {
-                border: 1px solid var(--Thumbnail_Active_Border);
-                /* Thicker border on selected image */
-                box-shadow: 0 0 5px var(--Accent_Colour);
-                /* Optional glow effect */
-            }
-
-            .ThumbnailsHolder {
-                display: grid;
-                grid-template-columns: repeat(5, 80px);
-                gap: 10px;
-                padding-right: 40px;
-                max-width: 500px;
-                width: 500px;
-                margin-top: 5px;
-                height: auto;
-                padding-left: 0;
-                /* remove left padding */
-                justify-content: center;
-                /* center the grid content */
-                align-self: center;
-                /* center ThumbnailsHolder in Product_Images */
-            }
-
-            .thumbnails img {
-                width: 80px;
-                max-width: 80px;
-                height: 80px;
-                max-height: 80px;
-                cursor: pointer;
-            }
-
-            .Product_Info {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                width: 520px;
-                max-height: auto;
-                color: var(--Default_Text_Colour);
-            }
-
-            .Add_To_Cart_Product {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .Product_Option_Button {
-                margin: 5px;
-                padding: 8px 14px;
-                border: 1px solid var(--Option_Button_Border);
-                cursor: pointer;
-                border-radius: 6px;
-                font-family: 'Afacad', sans-serif;
-                transition: 0.2s ease;
-            }
-
-            .Product_Option_Button.selected {
-                background-color: var(--Primary_Button_Colour);
-                color: var(--Default_Text_Colour);
-                border-color: var(--Primary_Button_Colour);
-            }
-
-            .Product_Option_Buttons {
-                display: flex;
-                flex-wrap: wrap;
-            }
-
-            .Product_Option_Label {
-                margin: 10px 0 5px 0;
-            }
-
-
-
-
-
-            .ImageControl {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-
-                padding-right: 15vh;
-
-            }
-
-            .ImageControlButtonPrevious,
-            .ImageControlButtonNext {
-                position: relative;
-                background-color: transparent;
-                color: var(--Default_Text_Colour);
-                font-size: 50px;
-                border: none;
-                cursor: pointer;
-                height: 60px;
-                width: 60px;
-                border-radius: 5px;
-                margin-bottom: 25px;
-                aspect-ratio: 1 / 1;
-                overflow: visible;
-                padding-bottom: 15px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-
-            .ButtonText {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                height: 100%;
-                /* ✅ Ensures proper centering */
-                aspect-ratio: 1/1;
-            }
-
-            .ImageControlButtonText {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                height: 100%;
-                /* ✅ Ensures proper centering */
-                margin-top: 12.5px;
-                aspect-ratio: 1/1;
-            }
-
-            .ImageControlButtonPrevious::before,
-            .ImageControlButtonNext::before {
-                content: "";
-                position: absolute;
-                left: 50%;
-                bottom: 100%;
-                width: 80%;
-
-                height: 0px;
-                background: rgba(0, 0, 0, 0.3);
-                filter: blur(5px);
-                opacity: 0;
-                transform: translateX(-50%);
-                transition: opacity 0.3s ease-in-out;
-            }
-
-
-
-            .mainImage {
-                max-width: 500px;
-                max-height: 500px;
-                width: 500px;
-                height: 500px;
-                aspect-ratio: 1 / 1;
-                border: 1px solid var(--Borders_Colour);
-                /* 0.1rem ≈ 1.6px */
-                box-sizing: border-box;
-            }
-
-
-
-
-            .Quantity_Controls_ProductPage {
-                display: flex;
-                justify-content: left;
-                align-items: center;
-                width: 50%;
-
-                gap: 5%;
-                /* Take up 1/2 of the available space */
-                color: var(--Default_Text_Colour);
-            }
-
-            .ProductPageQuantityContainer {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 8px;
-                width: 100%;
-                padding-bottom: 15px;
-
-            }
-
-
-
-
-            .BasketReceipt {
-                background: rgba(255, 255, 255, 0);
-                color: rgb(255, 255, 255);
-                width: 1000px;
-                height: 300px;
-            }
-
-            .ReceiptTable {
-                width: 1000px;
-                max-width: 1000px;
-                border-collapse: collapse;
-                background-color: rgba(255, 255, 255, 0);
-                filter: none !important;
-                text-shadow: none !important;
-                opacity: 1 !important;
-                border: 1px solid var(--Borders_Colour);
-            }
-
-
-            .ReceiptTable td {
-                padding: 15px;
-                border-bottom: 1px solid var(--Borders_Colour);
-                /* Keep individual row borders */
-                font-size: 30px;
-                    vertical-align: top;
-    padding: 6px 8px;
-    width: 0px;
-    margin-left: 10px;
-    /* white-space: nowrap; */
-    padding-left: 15px;
-            }
-
-            .ReceiptTable td:nth-child(3) {
-
-                text-align: right;
-                font-size: 30px;
-
-                /* Pushes the price slightly away from the right edge */
-            }
-
-            .ReceiptTable td:nth-child(2) {
-                text-align: left;
-                color: var(--Default_Text_Colour);
-                overflow: hidden;
-                text-overflow: ellipsis;
-
-                unicode-bidi: normal;
-                text-overflow: ellipsis;
-                word-wrap: normal;
-                word-break: normal;
-                max-width: 26ch;
-                /* Adjust spacing */
-                font-size: 30px;
-                white-space: nowrap;
-            }
-
-            .ReceiptFooter {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-
-                border: 1px solid var(--Borders_Colour);
-                gap: 20%;
-                height: auto;
-                max-width: 2000px;
-                aspect-ratio: 15/1;
-            }
-
-            .PriceAndOptionRow {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .BasketSelectedOption {
-                font-size: 25px;
-                color: var(--Default_Text_Colour);
-                height: 30px;
-                margin-top: -3px;
-                text-align: left;
-                margin-bottom: 25px;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .PayButton {
-                background: var(--Primary_Button_Colour);
-                color: var(--Default_Text_Colour);
-
-                border: none;
-                cursor: pointer;
-                width: 50%;
-                margin-left: 0.5%;
-                height: 90%;
-                font-size: auto;
-
-            }
-
-            .PayTotalText {
-                color: var(--Default_Text_Colour);
-                margin-left: auto;
-                text-align: right;
-                font-size: 35px;
-                margin-right: 15px;
-                max-height: auto;
-                height: auto;
-                width: 40%;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .Basket-Item-Pay {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 1000px;
-                box-sizing: border-box;
-                border: 1px var(--Borders_Colour);
-            }
-
-            .basket-item-price {
-                font-size: 25px;
-                /* Scales based on viewport width */
-                white-space: nowrap;
-                /* Prevents text from wrapping */
-                color: var(--Default_Text_Colour);
-                text-align: left;
-                max-width: 100%;
-                height: 30px;
-                margin-top: -3px;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .EmptyBasketMessage {
-                text-align: center;
-                min-width: fit-content;
-                font-size: 2vw;
-                color: var(--Muted_Text_Colour);
-                padding: 10px;
-                space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                font-family: sans-serif;
-                font-weight: 600;
-            }
-
-
-
-            /* Modal Styles */
-            .modal {
-                display: none;
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.5);
-            }
-
-            input {
-                width: 100%;
-                background: var(--Input_Background);
-                /* Dark input background */
-                border: 1px solid var(--Input_Border);
-                /* Subtle border */
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                outline: none;
-            }
-
-
-            .modal-content {
-                position: relative;
-                background-color: var(--Modal_Background_Colour);
-                color: var(--Default_Text_Colour);
-                margin: 10% auto;
-                padding: 20px;
-                border-radius: 10px;
-                width: 50%;
-                text-align: center;
-                max-height: 90vh;
-                /* Prevents overflow beyond viewport */
-                overflow-y: auto;
-                /* Enables scrolling if content exceeds max height */
-                margin: auto;
-                display: flex;
-                flex-direction: column;
-                max-width: 500px;
-                /* min-width: 00px; */
-            }
-
-            .modal-content input {
-                width: 90%;
-                padding: 10px;
-                margin: 5px;
-                border: 1px solid #272626;
-                border-radius: 5px;
-            }
-
-            .card-details {
-                display: flex;
-                justify-content: space-between;
-            }
-
-            .card-details div {
-                width: 48%;
-            }
-
-
-            .Button {
-                color: var(--Default_Text_Colour);
-                width: 100%;
-                font-size: 14px;
-                border: none;
-                border-radius: 5%;
-                aspect-ratio: 1/1;
-                width: 25%;
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                margin-top: 0px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-
-
-
-            .Submit_Button {
-                background-color: var(--ButtonHoverState_Background_Colour);
-                width: 100%;
-                height: 10%;
-                aspect-ratio: 10 / 1;
-                margin-top: 15px;
-                color: var(--Default_Text_Colour);
-                box-shadow: none;
-                border: none;
-                /* ✅ Removes any border */
-                outline: none;
-                /* ✅ Removes any focus outline */
-                appearance: none;
-                /* ✅ Prevents browser default styling (especially in Safari) */
-                background-image: none;
-                /* ✅ Disables any gradient or highlight layer */
-            }
-
-
-
-            .close {
-                position: absolute;
-                top: 10px;
-                right: 15px;
-                font-size: 24px;
-                cursor: pointer;
-                color: var(--Default_Text_Colour);
-
-            }
-
-            /* Dark Mode Toggle */
-            .dark-mode-toggle {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 20px;
-            }
-
-            .switch {
-                position: relative;
-                width: 40px;
-                height: 20px;
-                display: inline-block;
-                vertical-align: middle;
-                margin-left: 10px;
-            }
-
-            .switch input {
-                display: none;
-            }
-
-            .slider {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: black;
-                border-radius: 20px;
-                cursor: pointer;
-                transition: 0.4s;
-            }
-
-            .slider::before {
-                content: "";
-                position: absolute;
-                width: 14px;
-                height: 14px;
-                left: 3px;
-                bottom: 3px;
-                background: white;
-                border-radius: 50%;
-                transition: 0.3s;
-            }
-
-            input:checked+.slider {
-                background: white;
-            }
-
-            input:checked+.slider::before {
-                transform: translateX(20px);
-                background: black;
-            }
-
-            /* Entire Page Dark Mode */
-            .dark-mode {
-                background: #222;
-                color: var(--Default_Text_Colour);
-            }
-
-            /* Settings Container */
-            #Settings_Viewer {
-                width: 350px;
-                padding: 20px;
-                background: white;
-                border: 2px solid black;
-                border-radius: 10px;
-                box-shadow: 5px 5px 0px black;
-                font-family: Arial, sans-serif;
-            }
-
-            .dark-mode #Settings_Viewer {
-                background: var(--Input_Background);
-                color: var(--Default_Text_Colour);
-                border-color: white;
-                box-shadow: 5px 5px 0px white;
-            }
-
-            /* Settings Panel */
-            .settings-panel {
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                max-width: 700px;
-                width: 700px;
-                margin-top: 40px;
-                margin-left: 40px;
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 0 15px #00000066;
-                font-family: Arial, sans-serif;
-            }
-
-            /* Individual section */
-            .settings-section {
-                margin-bottom: 30px;
-                border-bottom: 1px solid var(--Borders_Colour);
-                padding-bottom: 20px;
-            }
-
-            .cart-icon {
-                stroke: white;
-                height: 20px;
-                width: 20px;
-                align-items: flex-end;
-                margin-left: 5px;
-            }
-
-            .cart-icon-product {
-                stroke: white;
-                height: 30px;
-                width: 30px;
-                align-items: flex-end;
-                margin-left: 5px;
-            }
-
-            .settings-section h3 {
-                font-size: 22px;
-                margin-bottom: 12px;
-            }
-
-            .settings-section label {
-                font-size: 16px;
-                font-weight: bold;
-                margin-top: 10px;
-                margin-bottom: 5px;
-                display: block;
-                background-color: transparent;
-                /* Fixes "input-like" look */
-            }
-
-            .MessageTextArea {
-                font-size: 16px;
-                margin-top: 10px;
-                display: block;
-                width: 100%;
-                background-color: var(--Input_Background);
-                border: 1px solid var(--Borders_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                padding: 10px;
-                box-sizing: border-box;
-                min-height: 500px;
-                height: fit-content;
-                overflow-y: auto;
-            }
-
-            .settings-section input {
-                font-size: 16px;
-                margin-top: 10px;
-                display: block;
-                width: 100%;
-                background-color: var(--Input_Background);
-                border: 1px solid var(--Borders_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                padding: 10px;
-                box-sizing: border-box;
-            }
-
-
-
-            /* Buttons */
-            .settings-section button {
-                margin-top: 10px;
-                padding: 12px;
-                background-color: var(--ButtonHoverState_Background_Colour);
-                border: none;
-                border-radius: 5px;
-                color: var(--Default_Text_Colour);
-                font-weight: bold;
-                cursor: pointer;
-                width: 100%;
-            }
-
-            .settings-section {
-                width: auto;
-                padding: 10px 20px;
-                color: var(--Default_Text_Colour);
-            }
-
-            .clearDataButton {
-                width: auto;
-                color: var(--Default_Text_Colour);
-                background-color: var(--Primary_Button_Colour);
-            }
-
-            .settings-section button:hover {
-                background-color: #004080;
-            }
-
-            /* Info message */
-            .contact-note {
-                font-size: 14px;
-                margin-top: 10px;
-            }
-
-            .contact-note a {
-                color: var(--Info_Link_Colour);
-                text-decoration: underline;
-            }
-
-            /* Product section extras */
-            #ProductWrapper {
-                background-color: var(--body_Background_Colour);
-            }
-
-            .Product_Name_Heading {
-                font-family: 'Rubik', sans-serif;
-                font-weight: 700;
-                /* or 600, 500, etc. */
-                font-size: 30px;
-                color: var(--Default_Text_Colour);
-                margin-bottom: 10px;
-
-            }
-
-            .Product_Description {
-                font-family: 'Afacad', sans-serif;
-                font-size: 20px;
-                color: var(--Default_Text_Colour);
-                line-height: 1.4;
-                display: -webkit-box;
-                white-space: pre-line;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                text-overflow: ellipsis;
-
-            }
-
-            .Product_Price_Label {
-                font-size: 20px;
-                color: var(--accent-color);
-                margin-top: 10px;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .currencySelect {
-                width: auto;
-                display: inline-block;
-                padding: 0.5vh;
-                font-size: 30px;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-
-
-                appearance: none;
-                /* optional: removes native arrow styling */
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                text-align: left;
-                width: 175px;
-            }
-
-            /* When dark mode is active (e.g., body has class "dark-mode") */
-            .SettingsIcon {
-
-                color: var(--Default_Text_Colour);
-                /* Will adapt with your theme */
-
-            }
-
-            .BasketIcon {
-
-                color: var(--Default_Text_Colour);
-            }
-
-            .category-icon-wrapper {
-                width: 2.5vh;
-                aspect-ratio: 1/1;
-            }
-
-            .ts-wrapper.single .ts-control,
-            .ts-wrapper.single .ts-control input {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .ts-dropdown.single {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .ts-control,
-            .ts-wrapper.single.input-active .ts-control {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .option.active {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .ts-wrapper.active {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-        }
-
-        @media (max-width: 680px) {
-
-            .ts-wrapper.single .ts-control,
-            .ts-wrapper.single .ts-control input {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .ts-dropdown.single {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .ts-control,
-            .ts-wrapper.single.input-active .ts-control {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .option.active {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            .ts-wrapper.active {
-                color: var(--Default_Text_Colour);
-                background-color: var(--Input_Background);
-                border: var(--Borders_Colour);
-                border: 1px;
-            }
-
-            html,
-            body {
-                max-width: 100%;
-                overflow-x: hidden;
-                min-height: 100vh;
-            }
-
-            #mainImage {
-                position: relative;
-                overflow: hidden;
-
-                top: 0;
-                left: 0;
-                width: 100%;
-                /* ✅ Full width */
-                height: 100%;
-                /* ✅ Full height */
-                object-fit: contain;
-                transition: none;
-            }
-
-            .mobileTopBar,
-            .mobileSearch_Bar,
-            .mobileNavButtonDiv,
-            .mobileCurrencySelect,
-            .mobileBasketButton,
-            .mobileSettingsButton,
-            .mobileSideBar,
-            .mobileViewer,
-            .mobileModalDiv,
-            .mobileLogo,
-            .mobileMainPage {
-                display: flex;
-
-                /* Light red to see its area */
-            }
-
-
-            .ts-dropdown-content {
-                background-color: var(--Input_Background);
-                color: var(--Default_Text_Colour);
-
-            }
-
-            .Icon {
-
-                color: var(--Default_Text_Colour);
-            }
-
-            .ts-dropdown {
-                max-height: 240px;
-                /* Adjust based on item height. ~10 items */
-                overflow-y: auto;
-            }
-
-            .Category_Button_Heading {
-                display: flex;
-                align-items: center;
-                gap: 4vw;
-            }
-
-            .Category_Button_Heading {
-                color: var(--Category_Button_Text_Colour);
-                margin: 0;
-            }
-
-            .sidebar-header {
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                gap: 1rem;
-                margin-bottom: 1rem;
-                width: 100%;
-            }
-
-
-
-            .sidebar-categories {
-                flex-grow: 1;
-                overflow-y: auto;
-                margin-top: 1rem;
-                width: 100%;
-                padding-right: 0.5rem;
-                /* Optional: add a max height if needed */
-            }
-
-
-            .ModalDiv {
-                display: none;
-            }
-
-
-
-
-
-            .mobileViewer {
-                background-color: var(--body_Background_Colour);
-                min-height: 100vh;
-                height: auto;
-
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                /* Two equal-width columns */
-                gap: 5vw;
-                /* Optional spacing between items */
-                padding: 3vw;
-                /* Optional padding inside the container */
-            }
-
-
-            .TopBar {
-                display: none !important;
-            }
-
-            .mobileSearchRow {
-                width: 96vw;
-                margin-left: 2vw;
-                margin-right: 2vw;
-            }
-
-            .Search_Bar {
-                display: none !important;
-            }
-
-            .NavButtonDiv {
-                display: none !important;
-            }
-
-            .CurrencySelect {
-                display: none !important;
-            }
-
-            .BasketButton {
-                display: none !important;
-            }
-
-            .SettingsButton {
-                display: none !important;
-            }
-
-            .SideBar {
-                display: none !important;
-            }
-
-
-
-            .mobileModalDiv.active {
-
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-
-                display: flex;
-                justify-content: center;
-                /* centers horizontally */
-                align-items: center;
-                /* centers vertically */
-
-                background-color: rgba(0, 0, 0, 0.5);
-                z-index: 1001;
-            }
-
-
-
-
-
-            .Logo {
-                display: none !important;
-            }
-
-            .SettingsButton {
-                display: none !important;
-            }
-
-            .BasketButton {
-                display: none !important;
-            }
-
-            .currency-select {
-                display: none !important;
-            }
-
-            .MainPage {
-                display: none !important;
-            }
-
-
-
-            body {
-                width: auto;
-                /* Default: Matches viewport width at 100% zoom */
-                height: auto;
-                margin: 0;
-                display: grid;
-                grid-template-columns: minmax(0, auto) 1fr;
-                /* First column fits content but stays within viewport */
-                background-color: var(--body_Background_Colour);
-                overflow-x: hidden;
-
-                /* Prevents scrolling at 100% zoom */
-            }
-
-            /* When zoom level is above 100%, allow scrolling instead of shrinking */
-
-            /* Default: hide the menu button on desktop */
-            .MenuButton {
-                display: none;
-            }
-
-
-
-            /* Top bar */
-            .mobileTopBar {
-                display: flex;
-                align-items: center;
-                overflow-x: auto;
-                white-space: nowrap;
-                background-color: var(--TopBar_Background_Colour);
-                padding: 8px;
-                gap: 10px;
-                width: 100vw;
-                position: relative;
-                /* Added this to enable z-index */
-                z-index: 995;
-            }
-
-
-
-
-            .mobileNavButtonDiv {
-                height: 80%;
-                display: flex;
-                align-items: center;
-                /* Proper vertical alignment */
-                justify-content: flex-end;
-                /* Align children to the right */
-                gap: 5px;
-                margin-right: 2vw;
-                margin-left: auto;
-                /* Push div itself to the right */
-                flex-wrap: nowrap;
-                /* Prevent wrap, or change to 'wrap' if space is tight */
-                max-width: 100%;
-                /* Prevent overflow */
-            }
-
-
-            .mobileHamburgerMenu {
-                font-size: 2rem;
-                background: none;
-                border: none;
-                color: var(--Default_Text_Colour);
-                cursor: pointer;
-            }
-
-            .mobileSettingsButton,
-            .mobileBasketButton {
-                font-size: 1.9rem;
-                background: none;
-                border: none;
-                color: var(--Default_Text_Colour);
-                cursor: pointer;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 6px;
-            }
-
-            /* 🔧 Target the actual <svg> inside */
-            .mobileSettingsButton .Icon,
-            .mobileBasketButton .Icon {
-                width: 1.9rem;
-                height: 1.9rem;
-                color: inherit;
-                /* ← uses the button's text color */
-            }
-
-            .mobileLogo h1 {
-                color: var(--Default_Text_Colour);
-                margin: 0;
-                font-size: 1.9rem;
-            }
-
-            .mobileSearch_Bar {
-                padding: 4px;
-                width: 94vw;
-                font-size: 1rem;
-                background-color: var(--SearchBar_Background_Colour);
-                min-width: 20px;
-                font-family: 'Rubik', sans-serif;
-            }
-
-            .mobileCurrencySelect {
-                padding: 4px;
-                color: var(--Default_Text_Colour);
-                font-size: 1rem;
-                background-color: var(--SearchBar_Background_Colour);
-                display: none;
-
-
-
-            }
-
-
-            .Logo {
-                grid-row: 1 / 1;
-                grid-column: 1 / 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-
-                height: 8vh;
-                width: 31.5vh;
-
-                background-color: var(--SideBar_Background_Colour);
-                /* <-- applied always */
-                color: var(--Default_Text_Colour);
-                font-size: 2.5vh;
-                font-weight: bold;
-
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
-
-            }
-
-
-
-            .MainPage {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-
-                font-size: 4vh;
-                color: var(--Default_Text_Colour);
-                /* Match logo text */
-                background-color: var(--body_Background_Colour);
-                /* Match logo bg */
-
-                border: 0.15em solid var(--Borders_Colour);
-                /* Same as logo */
-                border-radius: 5px;
-
-                box-sizing: border-box;
-                font-weight: bold;
-            }
-
-
-            .MainPage h1 {
-                font-size: 5vh;
-                /* Scale with height */
-            }
-
-            /* Fix TopBar shifting */
-
-
-            .currency-select {
-                flex-shrink: 0;
-                max-height: 100%;
-                aspect-ratio: 1 / 0.75;
-                height: 100%;
-                font-size: 2.5vh;
-                border: 1px solid var(--Borders_Colour);
-                border-radius: 5px;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                margin-left: 1%;
-                padding: 0.5vh;
-                appearance: none;
-                /* Removes default browser styling */
-                -webkit-appearance: none;
-                /* For Safari */
-                -moz-appearance: none;
-                /* For Firefox */
-                text-align: center;
-            }
-
-
-
-            .mobileSideBar {
-                background-color: var(--SideBar_Background_Colour);
-                grid-row: 2 / 3;
-                grid-column: 1 / 2;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: start;
-
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: auto;
-                max-width: auto;
-                height: 100vh;
-
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                overflow-y: auto;
-                z-index: 990;
-                padding: 1rem 1rem 5rem;
-                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            }
-
-            .category-icon-wrapper {
-                width: 5vw;
-                aspect-ratio: 1/1;
-            }
-
-            .mobileSideBar.open {
-                transform: translateX(0%);
-                z-index: 2000;
-            }
-
-            .MenuButton {
-                display: block;
-                font-size: 4vh;
-                background-color: transparent;
-                color: var(--Default_Text_Colour);
-                border: none;
-                cursor: pointer;
-                margin-right: 1vh;
-            }
-
-            .SideBar-open {
-                transform: translateX(0%);
-            }
-
-            .sidebar {
-                position: fixed;
-                left: -250px;
-                top: 0;
-                width: 250px;
-                height: 100%;
-                background: var(--Input_Background);
-                color: var(--Default_Text_Colour);
-                transition: left 0.3s ease;
-                z-index: 1000;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-
-
-
-            .main-content.SideBar-open {
-                margin-left: 250px;
-                transition: margin 0.3s ease;
-            }
-
-            .SideBar button {
-                display: block;
-                width: 100%;
-                padding: 10px 15px;
-                background: none;
-                border: none;
-                text-align: left;
-                color: #ddd;
-                font-size: 14px;
-                border-bottom: 1px solid var(--Input_Background);
-                cursor: pointer;
-            }
-
-            .SideBar button:hover {
-                background: #2c3e50;
-                color: var(--Default_Text_Colour);
-            }
-
-            .Viewer {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                grid-column-gap: 3vw;
-                /* or column-gap */
-                grid-row-gap: 3vw;
-                /* or row-gap */
-                background-color: var(--body_Background_Colour);
-                padding: 0px;
-                width: 98%;
-                max-width: 98%;
-                margin: 0 2vw;
-                justify-content: center;
-                min-height: 100vh;
-                /* 👈 Ensures background fills full viewport height */
-            }
-
-
-
-
-            .Search_Bar {
-                max-height: 50%;
-                min-height: 50%;
-                width: 50%;
-                height: 50%;
-                font-size: 2vh;
-                border-radius: 5px;
-                border: 0.05em solid var(--Borders_Colour);
-                border-color: var(--Borders_Colour);
-                padding-left: 1%;
-                margin-left: 1%;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                overflow-x: auto;
-
-            }
-
-
-            /* Fix button spacing issue */
-            .Category_Button.Active {
-                background-color: var(--Accent_Colour);
-
-                color: var(--Danger_Colour);
-                font-weight: bold;
-                border-radius: 5px;
-
-            }
-
-
-
-            .Category_Button {
-                width: 95%;
-                height: 7vh;
-                margin-left: 0%;
-                background-color: var(--SideBar_Background_Colour);
-                font-size: 4vh;
-                /* Scales with button height */
-                display: flex;
-                align-items: flex-start;
-                border-radius: 5px;
-                justify-content: left;
-                box-sizing: border-box;
-                border: 0px solid var(--Borders_Colour);
-                /* Scales with font size */
-            }
-
-            .Category_Button h3 {
-                font-size: 2.75vh;
-                /* Ensures text scales with button */
-                white-space: nowrap;
-                border-radius: 5px;
-                margin-left: 0;
-
-            }
-
-            .product {
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border: 1px solid var(--Input_Background);
-                border-radius: 8px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                padding: 10px;
-                width: 40vw;
-                aspect-ratio: 1 /1.867;
-                /* Allow grid to define width */
-                max-width: 300px;
-                /* Ensures uniform width */
-                height: fit-content;
-                max-height: 450px;
-                display: flex;
-                justify-content: center;
-            }
-
-            .Clickable_Image {
-
-                max-width: 36vw;
-                aspect-ratio: 1/1;
-                margin-left: 2vw;
-                border-radius: 2%;
-            }
-
-            .quantity-container {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 8px;
-                width: 100%;
-                padding-bottom: 15px;
-            }
-
-            .quantity-controls {
-                display: flex;
-                justify-content: left;
-                align-items: center;
-                width: 50%;
-
-                gap: 5%;
-                /* Take up 1/2 of the available space */
-                color: var(--Default_Text_Colour);
-
-            }
-
-            .Product_Option_Button {
-                min-width: 15vw;
-                width: auto;
-
-                padding-top: 2vw;
-                font-family: 'Afacad', sans-serif;
-                padding-bottom: 2vw;
-                margin-left: 2vw;
-                border: 1px solid var(--Option_Button_Border);
-                background-color: white;
-                cursor: pointer;
-                border-radius: 1vw;
-                transition: 0.2s ease;
-                font-size: 3.5vw;
-            }
-
-            .Product_Option_Button.selected {
-                background-color: var(--Primary_Button_Colour);
-                color: var(--Default_Text_Colour);
-                border-color: var(--Primary_Button_Colour);
-            }
-
-            .Product_Options_Container {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: left;
-                width: 100%;
-                height: auto;
-            }
-
-            .Product_Option_Buttons {
-                display: flex;
-                flex-wrap: wrap;
-            }
-
-            .Product_Option_Label {
-                margin-top: auto;
-                margin-bottom: auto;
-                font-size: 3.5vw;
-            }
-
-            .Product_Options_Container {
-                display: flex;
-                margin-right: auto;
-            }
-
-            .add-to-cart {
-                background-color: var(--Primary_Button_Colour);
-                color: #fff;
-                font-weight: bold;
-                border: none;
-                aspect-ratio: 1/0.4;
-                width: 50%;
-                min-width: max-content;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-                font-size: 2.4vw;
-                /* Take up the remaining space */
-                text-align: center;
-                font-family: 'Rubik', sans-serif;
-            }
-
-            .product-price {
-                font-weight: 550;
-                font-size: 4vw;
-                color: var(--Default_Text_Colour);
-                font-family: 'Afacad', sans-serif;
-            }
-
-
-            .add-to-cart:hover {
-                background-color: var(--ButtonHoverState_Background_Colour);
-            }
-
-            .NavButtonDiv {
-                height: 6vh;
-                width: 20%;
-
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                gap: 5px;
-
-                /* Remove fixed positioning */
-                position: static;
-            }
-
-
-
-
-            .BasketButton,
-            .SettingsButton {
-                aspect-ratio: 1 / 1;
-                height: 100%;
-                width: auto;
-                max-width: 100%;
-                border-radius: 5px;
-
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border: 1px solid var(--Borders_Colour);
-                font-size: 2.5vh;
-                font-weight: bold;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-
-            }
-
-            .Quantity-Controls-Basket {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 1vw;
-                width: 20%;
-                height: 50%;
-                margin-right: auto;
-                margin-left: auto;
-                   margin-top: auto;
-                margin-bottom: auto;
-            }
-
-            .Item-Details {
-                display: grid;
-
-                gap: 0px;
-                grid-template-rows: 0fr 0fr;
-                width: 50%;
-                height: 140%
-            }
-
-            .ProductPageBuyButton {
-                color: var(--Default_Text_Colour);
-                aspect-ratio: 7/1;
-                width: 85vw;
-                max-width: 90vw;
-                border-radius: 5px;
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                        margin-top: auto;
-        margin-bottom: auto;
-    
-            }
-
-            .BasketText {
-                font-size: 5vw;
-                /* Scales based on view
-            7port width */
-                text-decoration: none;
-                padding-bottom: 1vw;
-                text-decoration: none;
-         
-                overflow: hidden;
-                /* Prevents text from wrapping */
-                color: var(--Default_Text_Colour);
-                height: 5vw;
-                max-width: 26ch;
-                word-wrap: normal;
-                word-break: normal;
-                unicode-bidi: normal;
-                text-overflow: ellipsis;
-            }
-
-            .BasketTextDescription {
-                font-size: 2vw;
-                color: var(--Default_Text_Colour);
-                line-height: 1.2em;
-                font-family: 'Afacad', sans-serif;
-                /* 👈 Controls line height */
-                height: calc(1.2em * 3);
-                /* 👈 Ensures 6-line height */
-                font-family: 'Rubik', sans-serif;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-box-orient: vertical;
-                -webkit-line-clamp: 3;
-                text-overflow: ellipsis;
-                /* margin-top: -5px; */
-            }
-
-
-
-            .BasketChangeQuantityButton {
-                height: 7.5vw;
-                width: 7.5vw;
-                background-color: var(--body_Background_Colour);
-                aspect-ratio: 1/1;
-                font-size: auto;
-                color: var(--Default_Text_Colour);
-
-                border-radius: 0.1rem;
-                color: var(--Default_Text_Colour);
-
-
-                border: none;
-                border-radius: 5%;
-                aspect-ratio: 1 / 1;
-
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                margin-top: 0px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-
-            .BasketChangeQuantityText {
-                color: var(--Default_Text_Colour);
-                white-space: nowrap;
-                font-size: 5vw;
-                max-width: fit-content;
-
-                transition: font-size 0s ease;
-            }
-
-
-            .SortContainer {
-                background-color: var(--TopBar_Background_Colour);
-                grid-row: 1 / 1;
-                grid-column: 2 / 3;
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: left;
-                padding: 0 3vh;
-                /* Fixed padding syntax */
-                width: 100%;
-                /* Ensures it spans the entire column */
-                height: 5vh;
-                max-width: 100%;
-                /* Fixed max-width */
-                max-height: 5vh;
-                color: var(--Default_Text_Colour);
-                font-size: 3vh;
-            }
-
-            /* Ensure the dropdown doesn't resize */
-            #sortSelect {
-                min-width: 10.5%;
-                /* Minimum width */
-                max-width: 100%;
-                /* Allow it to expand */
-                width: auto;
-                /* Adjust width dynamically */
-                height: 3vh;
-                font-size: 60%;
-                border: 0px solid var(--Borders_Colour);
-                border-radius: 3px;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                margin-left: 1%;
-                padding: 0.5vh;
-                text-align: left;
-                appearance: none;
-                /* Removes default browser styling */
-                -webkit-appearance: none;
-                /* For Safari */
-                font-family: 'Rubik', sans-serif;
-                -moz-appearance: none;
-                /* For Firefox */
-            }
-
-            #sortSelect:focus {
-                outline: none;
-                box-shadow: none;
-                /* Optional: removes any glow or shadow */
-            }
-
-            .SortSelectLabel {
-                font-size: 60%;
-                color: var(--Default_Text_Colour);
-                font-family: 'Rubik', sans-serif;
-            }
-
-
-            .BasketTotalPrice {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 1000px;
-                height: 350px;
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-                /* Scales with font size */
-            }
-
-            .Basket-Item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 95vw;
-                max-width: 2000px;
-                aspect-ratio: 5.75/1;
-                height: auto;
-                box-sizing: border-box;
-                border: 0px solid var(--Borders_Colour);
-            }
-
-            .Basket_Item_Container {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 95vw;
-                margin-top: 1vw;
-                max-width: 2000px;
-                aspect-ratio: 5.25/1;
-                box-sizing: border-box;
-                border: 1px solid var(--Borders_Colour);
-                /* Scales with font size */
-            }
-
-            .Basket_Image {
-                max-width: 20vw;
-                aspect-ratio: 1/1;
-                margin-left: 1vw;
-                margin-right: 1vw;
-                border-radius: 0.2rem;
-            }
-
-            .cart-icon {
-                stroke: white;
-                height: 3vw;
-                width: 3vw;
-            }
-
-            .cart-icon-product {
-                stroke: white;
-                height: 6vw;
-                width: 6vw;
-                align-items: center;
-                margin-left: 5px;
-            }
-
-            .Basket_Viewer {
-                display: grid;
-                width: 100%;
-                max-width: 100%;
-                padding-top: 3vw;
-                row-gap: 0vw;
-                max-height: 15vw;
-                height: 15vw;
-            }
-
-            .WhiteText {
-                color: var(--Default_Text_Colour);
-                font-size: 150%;
-                height: 100%;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .ProductPrice {
-                color: var(--Default_Text_Colour);
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .ProductName {
-                color: var(--Default_Text_Colour);
-            }
-
-            .product-name {
-                color: var(--Default_Text_Colour);
-                font-size: 3.5vw;
-                min-height: 7vw;
-                height: auto;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                /* 👈 Allow up to 2 lines */
-                -webkit-box-orient: vertical;
-                /* 👈 Set box direction */
-                overflow: hidden;
-                text-overflow: ellipsis;
-                font-family: 'Rubik', sans-serif;
-                font-weight: 600;
-                line-clamp: 2;
-                margin-top: 3vw;
-                margin-bottom: 2vw;
-                margin-left: 2vw;
-                /* Optional fallback for modern browsers */
-            }
-
-
-            .Product_Details {
-                display: flex;
-                gap: 20px;
-                width: 100%;
-                height: fit-content;
-            }
-
-
-            .Product_Images {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                width: 100vw;
-                /* Ensure full width for centering */
-                /* justify-content: center; */
-            }
-
-            .ImageControl {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 2vw;
-                /* Space between arrows and image */
-                width: 90vw;
-                margin-bottom: 2vw;
-            }
-
-            .image-slider-wrapper {
-                overflow: hidden;
-                width: 100%;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: relative;
-            }
-
-
-            .slide-image {
-                transition: transform 0.2s ease;
-                will-change: transform;
-            }
-
-
-            .ImageControlButtonPrevious,
-            .ImageControlButtonNext {
-                position: relative;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 12vw;
-                /* or suitable size */
-                height: 12vw;
-                background: transparent;
-                border: none;
-                cursor: pointer;
-            }
-
-
-
-
-            .ThumbnailsHolder {
-                display: grid;
-                grid-template-columns: repeat(5, 10vw);
-                /* 5 fixed 10vw columns */
-                gap: 1vw;
-                width: fit-content;
-                margin-top: 2vw;
-                justify-content: center;
-                margin-left: auto;
-                margin-right: auto;
-                /* ✅ centers the thumbnails */
-            }
-
-            .Thumbnail {
-                width: 10vw;
-                height: 10vw;
-                object-fit: cover;
-                border: 0.3vw solid var(--Borders_Colour);
-                cursor: pointer;
-
-                border-radius: 0.1rem;
-            }
-
-            .Thumbnail.active {
-                border: 0.3vw solid var(--Thumbnail_Active_Border);
-                box-shadow: 0 0 0.5vw var(--Accent_Colour);
-                border-radius: 0.1rem;
-            }
-
-
-
-
-            .Product_Info {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                width: 85vw;
-                max-width: 520px;
-                color: var(--Default_Text_Colour);
-
-                margin: 0 auto;
-                /* Center horizontally */
-                align-items: center;
-                /* Center children inside */
-            }
-
-            .Add_To_Cart_Product {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-            }
-
-
-
-
-
-
-            .ButtonText {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                height: 100%;
-                /* ✅ Ensures proper centering */
-                aspect-ratio: 1/1;
-            }
-
-            .ImageControlButtonText {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                height: 100%;
-                /* Remove margin to avoid vertical offset */
-                margin: 0;
-                font-size: 200%;
-                color: var(--Default_Text_Colour);
-                aspect-ratio: 1 / 1;
-                /* Optional if you want it square */
-                text-align: center;
-                pointer-events: none;
-                /* So text doesn’t block button clicks */
-            }
-
-
-
-
-
-
-
-
-            .mainImage {
-                max-width: 99%;
-                max-height: 99%;
-                width: 99%;
-                height: 99%;
-                aspect-ratio: 1 / 1;
-                border: 1.6px solid var(--Borders_Colour);
-                /* 0.1rem ≈ 1.6px */
-                box-sizing: border-box;
-
-                border-radius: 0.3rem;
-
-                /* Fixed image size in vw */
-
-                object-fit: cover;
-
-
-            }
-
-
-
-
-            .Quantity_Controls_ProductPage {
-                display: flex;
-                justify-content: left;
-                align-items: center;
-                width: 40vw;
-
-                gap: 5%;
-                /* Take up 1/2 of the available space */
-                color: var(--Default_Text_Colour);
-            }
-
-            .ProductPageQuantityContainer {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 5vw;
-                width: 85vw;
-                padding-bottom: 15px;
-
-            }
-
-
-
-
-            .BasketReceipt {
-                background: rgba(255, 255, 255, 0);
-                color: rgb(255, 255, 255);
-                width: 95vw;
-                height: auto;
-            }
-
-            .ReceiptTable {
-                width: 95vw;
-                max-width: 1000px;
-                margin-top: 2vw;
-                border-collapse: collapse;
-                background-color: rgba(255, 255, 255, 0);
-                filter: none !important;
-                text-shadow: none !important;
-                opacity: 1 !important;
-                border: 1px solid var(--Borders_Colour);
-                height: 5vw;
-            }
-
-            .modal {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                /* ✅ Vertically center it */
-                position: fixed;
-                z-index: 1000;
-                top: 0;
-                left: 0;
-                height: 100vh;
-                width: 100vw;
-                background-color: rgba(0, 0, 0, 0.5);
-            }
-
-            .ReceiptTable td {
-                padding-left: 5vw;
-                padding-top: 2vw;
-                padding-bottom: 1vw;
-                margin-top: 1vw;
-                margin-bottom: 1vw;
-                border-bottom: 1px solid var(--Borders_Colour);
-                /* Keep individual row borders */
-                font-size: 3vw;
-            }
-
-            .ReceiptTable td:nth-child(3) {
-
-                text-align: right;
-                font-size: 3vw;
-                padding-right: 3.5vw;
-                /* Pushes the price slightly away from the right edge */
-            }
-
-            .ReceiptTable td:nth-child(2) {
-                text-align: left;
-                    font-family: 'Afacad', sans-serif;
-                color: var(--Default_Text_Colour);
-                overflow: hidden;
-                text-overflow: ellipsis;
-
-                unicode-bidi: normal;
-                text-overflow: ellipsis;
-                word-wrap: normal;
-                word-break: normal;
-                max-width: 26ch;
-                /* Adjust spacing */
-                font-size: 3vw;
-                white-space: nowrap;
-            }
-
-            .ReceiptFooter {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-
-                border: 1px solid var(--Borders_Colour);
-                gap: 20%;
-                height: auto;
-                max-width: 2000px;
-                aspect-ratio: 15/1;
-            }
-
-            .PriceAndOptionRow {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .BasketSelectedOption {
-                font-size: 3vw;
-                color: var(--Default_Text_Colour);
-                height: 3.5vw;
-                margin-top: auto;
-                margin-bottom: 1.5vw;
-                text-align: left;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .PayButton {
-                background: var(--Primary_Button_Colour);
-                color: var(--Default_Text_Colour);
-
-                border: none;
-                cursor: pointer;
-                width: 50%;
-                padding-left: 1vw;
-                margin-left: 0.5%;
-                height: 90%;
-                font-size: auto;
-
-            }
-
-            .category-icon-svg {
-                fill: var(--Default_Text_Colour);
-                aspect-ratio: 1/1;
-                height: 2.75vh;
-            }
-
-            .PayTotalText {
-                color: var(--Default_Text_Colour);
-                margin-left: auto;
-                text-align: right;
-                font-size: 3vw;
-                margin-right: 15px;
-                max-height: auto;
-                height: auto;
-                width: 40%;
-            }
-
-            .Basket-Item-Pay {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                grid-template-columns: 1fr 5fr;
-                width: 1000px;
-                box-sizing: border-box;
-                border: 1px var(--Borders_Colour);
-            }
-
-            .basket-item-price {
-                font-size: 3vw;
-                /* Scales based on viewport width */
-                white-space: nowrap;
-                /* Prevents text from wrapping */
-                color: var(--Default_Text_Colour);
-                text-align: left;
-                max-width: 100%;
-                height: 3.5vw;
-                margin-top: auto;
-                margin-bottom: 1.5vw;
-                font-family: 'Afacad', sans-serif;
-            }
-
-            .EmptyBasketMessage {
-                text-align: center;
-                font-size: 5vw;
-                width: 90vw;
-                color: var(--Muted_Text_Colour);
-                padding: 10px;
-            }
-
-
-
-            /* Modal Styles */
-
-            input {
-                width: 100%;
-                background: var(--Input_Background);
-                /* Dark input background */
-                border: 1px solid var(--Input_Border);
-                /* Subtle border */
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                outline: none;
-            }
-
-
-            .modal-content {
-                position: relative;
-                width: 90vw;
-                max-width: 500px;
-                background-color: var(--Modal_Background_Colour);
-                border-radius: 10px;
-                padding: 20px;
-                overflow-y: auto;
-                max-height: 90vh;
-                /* ✅ Avoids going off screen */
-            }
-
-
-
-            .modal-content input {
-                width: 90%;
-                padding: 10px;
-                margin: 5px;
-                border: 1px solid #272626;
-                border-radius: 5px;
-            }
-
-            .card-details {
-                display: flex;
-                justify-content: space-between;
-            }
-
-            .card-details div {
-                width: 48%;
-            }
-
-
-            .Button {
-                color: var(--Default_Text_Colour);
-                width: 100%;
-                font-size: 5vw;
-                border: none;
-                border-radius: 10%;
-                aspect-ratio: 1/1;
-                width: 50%;
-                background-color: var(--body_Background_Colour);
-                border: 1px solid var(--Borders_Colour);
-                margin-top: 0px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-
-
-
-            .Submit_Button {
-                background-color: var(--ButtonHoverState_Background_Colour);
-                width: 100%;
-                height: 10%;
-                aspect-ratio: 5 / 1;
-                margin-top: 15px;
-                color: var(--Default_Text_Colour);
-                box-shadow: none;
-                border: none;
-                /* ✅ Removes any border */
-                outline: none;
-                /* ✅ Removes any focus outline */
-                appearance: none;
-                /* ✅ Prevents browser default styling (especially in Safari) */
-                background-image: none;
-            }
-
-            .close {
-                position: absolute;
-                top: 10px;
-                right: 15px;
-                font-size: 24px;
-                cursor: pointer;
-                color: var(--Default_Text_Colour);
-
-            }
-
-            /* Dark Mode Toggle */
-            .dark-mode-toggle {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 20px;
-            }
-
-            .switch {
-                position: relative;
-                width: 40px;
-                height: 20px;
-                display: inline-block;
-                vertical-align: middle;
-                margin-left: 10px;
-            }
-
-            .switch input {
-                display: none;
-            }
-
-            .slider {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: black;
-                border-radius: 20px;
-                cursor: pointer;
-                transition: 0.4s;
-            }
-
-            .slider::before {
-                content: "";
-                position: absolute;
-                width: 14px;
-                height: 14px;
-                left: 3px;
-                bottom: 3px;
-                background: white;
-                border-radius: 50%;
-                transition: 0.3s;
-            }
-
-            input:checked+.slider {
-                background: white;
-            }
-
-            input:checked+.slider::before {
-                transform: translateX(20px);
-                background: black;
-            }
-
-            /* Entire Page Dark Mode */
-            .dark-mode {
-                background: #222;
-                color: var(--Default_Text_Colour);
-            }
-
-            /* Settings Container */
-            #Settings_Viewer {
-                width: 350px;
-                padding: 20px;
-                background: white;
-                border: 2px solid black;
-                border-radius: 10px;
-                box-shadow: 5px 5px 0px black;
-                font-family: Arial, sans-serif;
-            }
-
-            .dark-mode #Settings_Viewer {
-                background: var(--Input_Background);
-                color: var(--Default_Text_Colour);
-                border-color: white;
-                box-shadow: 5px 5px 0px white;
-            }
-
-            /* Settings Panel */
-            .settings-panel {
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                max-width: 700px;
-                width: 80vw;
-                margin-left: auto;
-                margin-right: auto;
-                margin-top: 40px;
-                border-radius: 12px;
-                padding: 30px;
-                box-shadow: 0 0 15px #00000066;
-                font-family: Arial, sans-serif;
-            }
-
-            body {
-                padding-top: 85px;
-                /* Adjust based on actual header height */
-                width: 100vw;
-            }
-
-            /* Individual section */
-            .settings-section {
-
-                border-bottom: 1px solid var(--Borders_Colour);
-
-            }
-
-            .settings-section h3 {
-                font-size: 22px;
-                margin-bottom: 12px;
-            }
-
-            .settings-section label {
-                font-size: 16px;
-                font-weight: bold;
-                margin-top: 10px;
-                margin-bottom: 5px;
-                display: block;
-                background-color: transparent;
-                /* Fixes "input-like" look */
-            }
-
-            .MessageTextArea {
-                font-size: 16px;
-                margin-top: 10px;
-                display: block;
-                width: 100%;
-                background-color: var(--Input_Background);
-                border: 1px solid var(--Borders_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                padding: 10px;
-                box-sizing: border-box;
-                min-height: 500px;
-                height: fit-content;
-                overflow-y: auto;
-            }
-
-            .settings-section input {
-                font-size: 16px;
-                margin-top: 10px;
-                display: block;
-                width: 100%;
-                background-color: var(--Input_Background);
-                border: 1px solid var(--Borders_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                padding: 10px;
-                box-sizing: border-box;
-            }
-
-
-
-            /* Buttons */
-            .settings-section button {
-                margin-top: 10px;
-                padding: 12px;
-                background-color: var(--ButtonHoverState_Background_Colour);
-                border: none;
-                border-radius: 5px;
-                color: var(--Default_Text_Colour);
-                font-weight: bold;
-                cursor: pointer;
-                width: 100%;
-            }
-
-            .settings-section {
-                width: auto;
-                padding: 10px;
-                padding-bottom: 30px;
-            }
-
-            .clearDataButton {
-                width: auto;
-                color: var(--Default_Text_Colour);
-                background-color: var(--Primary_Button_Colour);
-            }
-
-            .settings-section button:hover {
-                background-color: #004080;
-            }
-
-            /* Info message */
-            .contact-note {
-                font-size: 14px;
-                margin-top: 10px;
-            }
-
-            .contact-note a {
-                color: var(--Info_Link_Colour);
-                text-decoration: underline;
-            }
-
-            /* Product section extras */
-            #ProductWrapper {
-                background-color: var(--body_Background_Colour);
-
-            }
-
-            .Product_Name_Heading {
-                font-family: 'Rubik', sans-serif;
-                font-weight: 700;
-                /* or 600, 500, etc. */
-                font-size: 5vw;
-                color: var(--Default_Text_Colour);
-                margin-bottom: 10px;
-                width: 80vw;
-            }
-
-            .add-to-cart-product {
-                background-color: var(--Primary_Button_Colour);
-                color: #fff;
-                font-weight: bold;
-                border: none;
-                min-width: max-content;
-                aspect-ratio: 1/0.4;
-                padding-left: 6vw;
-                width: 50%;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-                font-size: 4vw;
-                /* Take up the remaining space */
-                text-align: center;
-                font-family: 'Rubik', sans-serif;
-            }
-
-            .Product_Description {
-
-                font-family: 'Afacad', sans-serif;
-                white-space: pre-line;
-                font-size: 4.5vw;
-                color: var(--Default_Text_Colour);
-                line-height: 1.4;
-                display: -webkit-box;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                width: 80vw;
-                margin-left: 4.5vw;
-            }
-
-            .ReceiptTable td {
-                color: var(--Default_Text_Colour);
-            }
-
-            .Product_Price_Label {
-                font-size: 4vw;
-                color: var(--accent-color);
-                margin-top: 10px;
-                text-align: left;
-                /* Aligns text to the left */
-                align-self: flex-start;
-                font-family: 'Afacad', sans-serif;
-                /* Ensures the container itself aligns left in flex layout */
-            }
-
-
-            .currencySelect {
-                width: auto;
-                display: inline-block;
-
-                font-size: 30px;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-
-
-                appearance: none;
-                /* optional: removes native arrow styling */
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                text-align: left;
-                width: 175px;
-            }
-
-            .mobileHeaderWrapper {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 1000;
-                padding-bottom: 2vw;
-                background-color: var(--TopBar_Background_Colour);
-                /* or your preferred color */
-                width: 100%;
-            }
-
-
-
-
-
-        }
-
-        /* === PAYMENT MODAL – OVERLAY, LAYOUT, TYPOGRAPHY ======================= */
-
-        #paymentModal {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 12px;
-            box-sizing: border-box;
-            overflow: hidden;
-            /* no horizontal scroll */
-            font-family: system-ui, -apple-system, BlinkMacSystemFont,
-                "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-        }
-
-        /* make all inner elements respect the width */
-        #paymentModal * {
-            box-sizing: border-box;
-        }
-
-        /* light overlay */
-        .light-mode #paymentModal {
-            background: rgba(15, 23, 42, 0.30);
-        }
-
-        /* dark overlay – tuned to match reference */
-        .dark-mode #paymentModal {
-            background: #00000087;
-        }
-
-        /* === CARD CONTAINER ==================================================== */
-
-        #paymentModal .modal-content {
-            position: relative;
-            width: min(520px, 100%);
-            max-height: calc(100vh - 8px);
-            overflow-y: auto;
-            padding: 30px 28px 26px;
-            border-radius: 28px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            /* box-shadow: 0 24px 60px rgba(15, 23, 42, 0.65); */
-        }
-
-        /* dark card – deep navy, soft highlight like screenshot */
-        .dark-mode #paymentModal .modal-content {
-            background: #14161E;
-            border: 1px solid #282839;
-            /* color: #e5e7eb; */
-        }
-
-        /* light card */
-        .light-mode #paymentModal .modal-content {
-            background: #ffffff;
-            color: #0f172a;
-        }
-
-        /* === HEADER & CLOSE BUTTON ============================================ */
-
-        #paymentModal h2 {
-            margin: 0 0 26px;
-            font-size: 22px;
-            font-weight: 600;
-            font-family: sans-serif;
-            text-align: center;
-        }
-
-        #paymentModal .close {
-            position: absolute;
-            top: 16px;
-            right: 22px;
-            font-size: 22px;
-            cursor: pointer;
-            color: inherit;
-            opacity: 0.7;
-            transition: opacity 0.15s ease, transform 0.15s ease;
-        }
-
-        #paymentModal .close:hover {
-            opacity: 1;
-            transform: scale(1.05);
-        }
-
-        /* === FORM LAYOUT ======================================================= */
-
-        #paymentModal #paymentForm {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        #paymentModal #Name_Holder,
-        #paymentModal #Address_Holder {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        /* === INPUTS & SELECTS ================================================== */
-
-        #paymentModal input[type="text"],
-        #paymentModal input[type="email"],
-        #paymentModal input[type="tel"],
-        #paymentModal input[type="number"],
-        #paymentModal select {
-            width: 100%;
-            border-radius: 14px;
-            border: 1px solid rgba(148, 163, 184, 0.45);
-            padding: 13px 14px;
-            font-size: 14px;
-            background: rgba(249, 250, 251, 1);
-            /* color: #111827; */
-            outline: none;
-            transition:
-                border-color 0.15s ease,
-                box-shadow 0.15s ease,
-                background-color 0.15s ease,
-                transform 0.07s ease;
-        }
-
-        /* dark fields – slightly lighter than card, bluish tint */
-        .dark-mode #paymentModal input[type="text"],
-        .dark-mode #paymentModal input[type="email"],
-        .dark-mode #paymentModal input[type="tel"],
-        .dark-mode #paymentModal input[type="number"],
-        .dark-mode #paymentModal select {
-
-
-            color: #e5e7eb;
-        }
-
-        #paymentModal input::placeholder {
-            color: rgba(148, 163, 184, 0.85);
-        }
-
-        .dark-mode #paymentModal input::placeholder {
-            color: #64748b;
-        }
-
-        #paymentModal input:focus,
-        #paymentModal select:focus {
-            border-color: #22c55e;
-            box-shadow:
-                0 0 0 1px rgba(34, 197, 94, 0.95),
-                0 0 0 6px rgba(34, 197, 94, 0.14);
-            transform: translateY(-0.5px);
-        }
-
-        /* Country of Residence label */
-        #paymentModal #Address_Holder label {
-            font-size: 15px;
-            font-weight: 500;
-            margin-top: 4px;
-            color: inherit;
-            opacity: 0.9;
-            text-align: center;
-            font-family: 'Afacad';
-            font-weight: 600;
-        }
-
-        /* === TOMSELECT (Country of Residence dropdown) ======================== */
-
-        #paymentModal .ts-wrapper.single .ts-control {
-            border-radius: 14px !important;
-
-            min-height: 48px;
-            padding: 0 12px !important;
-
-            color: #111827 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            /* center text horizontally */
-            text-align: center !important;
-            box-shadow: none !important;
-        }
-
-        /* dark version – same tone as inputs */
-        .dark-mode #paymentModal .ts-wrapper.single .ts-control {
-
-
-            color: #e5e7eb !important;
-        }
-
-        #paymentModal .ts-wrapper .ts-control .item,
-        #paymentModal .ts-control input {
-            text-align: center !important;
-        }
-
-        /* dropdown menu */
-        #paymentModal .ts-dropdown {
-            border-radius: 14px !important;
-            border: 1px solid rgba(148, 163, 184, 0.45) !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-        }
-
-        .dark-mode #paymentModal .ts-dropdown {
-            background: #020617 !important;
-            color: #e5e7eb !important;
-        }
-
-        /* === STRIPE ELEMENT CONTAINERS ======================================== */
-
-        #paymentModal #payment-request-button {
-            margin: 20px 0 12px;
-        }
-
-        /* round Link/Apple/Google pay button */
-        #paymentModal #payment-request-button .StripeElement {
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-
-        /* container around Payment Element tabs etc. */
-        #paymentModal #payment-element {
-            margin-top: 14px;
-            padding: 14px 14px 12px;
-            border-radius: 18px;
-            background: #ffffff;
-            /* border: 1px solid rgba(148, 163, 184, 0.45); */
-        }
-
-        /* dark: same card tone as screenshot */
-        .dark-mode #paymentModal #payment-element {
-            background: var(--Modal_Background_Colour);
-            border: none;
-        }
-
-
-        /* === SUBMIT BUTTON ===================================================== */
-
-        #paymentModal .Submit_Button {
-            margin-top: 22px;
-            width: 100%;
-            border-radius: 9999px;
-            border: none;
-            /* padding: 14px 18px; */
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            background: #386400 !important;
-            color: #f9fafb !important;
-            text-align: center;
-            transition:
-                background-color 0.15s ease,
-                box-shadow 0.15s ease,
-                transform 0.07s ease,
-                opacity 0.15s ease;
-        }
-
-        .light-mode #paymentModal .Submit_Button {
-            background: #020617 !important;
-        }
-
-        #paymentModal .Submit_Button:hover:not(:disabled) {
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
-            transform: translateY(-1px);
-        }
-
-        #paymentModal .Submit_Button:disabled {
-            opacity: 0.6;
-            cursor: default;
-        }
-
-        /* === SIDE BAR REFINEMENT – DESKTOP (>= 680px) ======================= */
-
-        :root {
-            /* extra tokens just for sidebar buttons */
-            --Sidebar_Button_BG: #F4F1EB;
-            --Sidebar_Button_BG_Hover: #E9E1D6;
-            --Sidebar_Button_BG_Active: #59a3f2;
-            --Sidebar_Button_Border: #E0D7C9;
-        }
-
-        .light-mode {
-            --Sidebar_Button_BG: #F4F1EB;
-            --Sidebar_Button_BG_Hover: #E9E1D6;
-            --Sidebar_Button_BG_Active: #59a3f2;
-            --Sidebar_Button_Border: #E0D7C9;
-        }
-
-        .dark-mode {
-            /* keep sidebar readable in dark mode too */
-            --Sidebar_Button_BG: #262626;
-            --Sidebar_Button_BG_Hover: #303030;
-            --Sidebar_Button_BG_Active: #007BFF;
-            --Sidebar_Button_Border: #3A3A3A;
-        }
-
-        @media (min-width: 680px) {
-
-            /* sidebar container */
-            .SideBar {
-                background-color: var(--TopBar_Background_Colour);
-                /* max-width: 280px; */
-                min-width: 280px;
-                padding: 5px 10px 50px;
-                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.06);
-                /* border-right: 1px solid rgba(0, 0, 0, 0.04); */
-                /* row-gap: 10px; */
-                align-self: stretch;
-                min-height: calc(100vh - 8vh);
-            }
-
-            /* logo block more like a card */
-            .Logo {
-                width: 100%;
-                border-radius: 10px;
-                background-color: var(--TopBar_Background_Colour);
-                border: 1px solid var(--Sidebar_Button_Border);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-                font-family: 'Inter', system-ui, sans-serif;
-                font-size: 26px;
-                letter-spacing: 0.03em;
-                /* margin-bottom: 18px; */
-                padding-bottom: 10px;
-                /* margin-left: 5px; */
-                /* margin-right: 5px; */
-            }
-
-            /* category buttons -> soft beige cards */
-            .Category_Button {
-                width: 100%;
-                min-width: fit-content;
-                min-height: 48px;
-                height: auto;
-                margin: 4px 0;
-                padding: 9px 11px;
-                border-radius: 10px;
-                border: 1px solid var(--Sidebar_Button_Border);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                cursor: pointer;
-                transition:
-                    background-color 0.15s ease,
-                    border-color 0.15s ease,
-                    box-shadow 0.15s ease,
-                    transform 0.15s ease;
-            }
-
-            .Category_Button:hover {
-                background-color: var(--Sidebar_Button_BG_Hover);
-                border-color: var(--Sidebar_Button_BG_Hover);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-                transform: translateY(-1px);
-            }
-
-            /* active category → blue pill from mock */
-
-
-
-            /* text + icon layout inside buttons */
-            .Category_Button_Heading {
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                gap: 0.8rem;
-                width: 100%;
-            }
-
-            .Category_Button_Heading h3 {
-                margin: 0;
-                font-family: 'Inter', system-ui, sans-serif;
-                font-size: 14px;
-                font-weight: 500;
-                letter-spacing: 0.02em;
-                color: var(--Category_Button_Text_Colour);
-                white-space: nowrap;
-            }
-
-            /* circular icon background, smaller SVG */
-            .category-icon-wrapper {
-                width: 28px;
-                height: 28px;
-                border-radius: 999px;
-                background-color: rgba(0, 0, 0, 0.04);
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-
-            .category-icon-svg {
-                width: 16px;
-                height: 16px;
-                fill: var(--Default_Text_Colour);
-            }
-        }
-
-        /* === OPTIONAL: MOBILE SIDEBAR TO MATCH DESKTOP STYLE =============== */
-
-        @media (max-width: 680px) {
-            .mobileSideBar {
-                background-color: var(--SideBar_Background_Colour);
-                padding-top: 16px;
-                padding-bottom: 32px;
-                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.14);
-            }
-
-            .mobileSideBar .Category_Button {
-                background-color: var(--Sidebar_Button_BG);
-                border-radius: 10px;
-                border: 1px solid var(--Sidebar_Button_Border);
-                margin: 4px 0;
-                padding: 10px 12px;
-                box-shadow: 0 2px 6px;
-            }
-        }
-
-
-        /* === OVERRIDE PRODUCT DETAIL LAYOUT (desktop + mobile) === */
-
-        @media (min-width: 681px) {
-            .Product_Viewer {
-                margin-top: 24px;
-                max-width: 1300px;
-                margin-left: 25px;
-                height: auto;
-                background-color: var(--SearchBar_Background_Colour);
-                color: var(--Default_Text_Colour);
-                border-radius: 5px;
-                position: relative;
-                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                padding: 32px 80px;
-                overflow: visible;
-                font-size: 16px;
-            }
-
-            .Product_Details {
-                display: flex;
-                gap: 40px;
-                width: 100%;
-                align-items: flex-start;
-                height: auto;
-            }
-
-            .Product_Images {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                width: 650px;
-                height: auto;
-                justify-content: center;
-                align-items: center;
-            }
-
-            .Product_Info {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                width: 520px;
-                max-width: 520px;
-                margin: 0;
-                align-items: flex-start;
-                color: var(--Default_Text_Colour);
-            }
-
-            .ThumbnailsHolder {
-                display: grid;
-                grid-template-columns: repeat(5, 80px);
-                gap: 10px;
-                padding-right: 40px;
-                max-width: 500px;
-                width: 500px;
-                margin-top: 5px;
-                padding-left: 0;
-                justify-content: center;
-                align-self: flex-start;
-            }
-        }
-
-        @media (max-width: 680px) {
-            .Product_Viewer {
-                margin-top: 20px;
-                width: 100%;
-                max-width: 100%;
-                padding: 6vw;
-                box-shadow: none;
-            }
-
-            .Product_Details {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                width: 100%;
-                height: auto;
-            }
-
-            .Product_Images {
-                width: 100%;
-                align-items: center;
-                margin-left: -5vw;
-            }
-
-            .Product_Info {
-                width: 100%;
-                max-width: 100%;
-                margin: 0;
-                align-items: flex-start;
-            }
-
-            .ThumbnailsHolder {
-                display: grid;
-                grid-template-columns: repeat(5, 10vw);
-                gap: 1vw;
-                width: fit-content;
-                margin-top: 2vw;
-                justify-content: center;
-                margin-left: auto;
-                margin-right: auto;
-            }
-        }
-
-        @media (max-width: 680px) {
-            .mobileSideBar .Category_Button {
-                background-color: var(--SideBar_Background_Colour);
-                border-radius: 10px;
-                border: 0px solid var(--Sidebar_Button_Border) !important;
-                margin: 4px 0;
-                padding: 10px 12px;
-                box-shadow: 0 0px 0px;
-
-            }
-        }
-
-        #paymentModal {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 12px;
-            background: rgba(0, 0, 0, .55);
-
-            /* key: allow scrolling when content is taller than screen */
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        #paymentModal .payment-modal-card {
-            width: min(520px, 100%);
-            border-radius: 20px;
-            padding: 18px 16px;
-            background: var(--Card_Background, #fff);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
-            color: var(--Default_Text_Colour, #111);
-            position: relative;
-
-            /* key: cap height + scroll inside the card */
-            max-height: calc(100vh - 48px);
-            max-height: calc(100dvh - 48px);
-            /* better on mobile browser UI */
-            overflow-y: auto;
-            overscroll-behavior: contain;
-        }
-/* Mobile basket: make option chips compact + prevent layout blow-ups */
-@media (max-width: 520px){
-
-  /* Ensure the item grid can shrink instead of overflowing */
-  .basket-item{
-    display:grid !important;
-    grid-template-columns: 72px 1fr 64px !important; /* img | content | qty */
-    column-gap: 10px !important;
-    row-gap: 8px !important;
-    align-items:start !important;
-  }
-  .basket-item > *{ min-width:0 !important; }  /* critical for wrapping */
-
-  /* Chips container: tighter spacing, allow wrapping */
-  .ss-optchips,
-  .BasketOptionChips,
-  .basket-option-chips{
-    display:flex !important;
-    flex-wrap:wrap !important;
-    gap:6px !important;
-  margin-bottom: 6px;
-    max-width:100% !important;
-  }
-
-  /* Chips: smaller text/padding, clamp max width, ellipsis */
-  .ss-chip,
-  .BasketOptionChip,
-  .basket-option-chip{
-    font-size:6px !important;
-    padding:4px 4px !important;
-    border-radius:999px !important;
-    line-height:1.15 !important;
-    max-width: 46vw !important;          /* prevents giant pills */
-    white-space:nowrap !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-  }
-
-  /* If you have many chips: keep them from pushing everything down */
-  .basket-item .ss-optchips{ max-height: 3.2em !important; overflow:hidden !important; }
-
-  /* Qty controls: keep compact */
-  .Quantity-Controls-Basket{
-    justify-content:center !important;
-
-  }
-  .Quantity-Controls-Basket button{
-    width:36px !important;
-    height:32px !important;
-    border-radius:10px !important;
-    font-size:18px !important;
-  }
-  .Quantity-Controls-Basket .qty,
-  .Quantity-Controls-Basket span{
-    font-size:18px !important;
-    min-width:18px !important;
-  }
-}
-
-        @media (min-width: 681px) {
-            .ImageControl {
-                width: 100%;
-                /* match the 650px parent */
-                max-width: 650px;
-                padding-right: 170px;
-                /* remove vh-based shifting */
-                box-sizing: border-box;
-                justify-content: center;
-                gap: 16px;
-                /* or whatever you want */
-            }
-
-            .ImageControl {
-                width: 650px;
-                padding: 0 16px;
-                /* symmetric padding */
-                box-sizing: border-box;
-                justify-content: space-between;
-            }
-
-            .ImageControl {
-                display: grid;
-                grid-template-columns: 60px 500px 60px;
-                align-items: center;
-                justify-content: center;
-                padding-right: 175px;
-                width: 650px;
-            }
-        }
-        @media (max-width: 680px) {
-    .ss-chip, .BasketOptionChip, .basket-option-chip {
-        font-size: 6px !important;
-        padding: 4px 4px !important;
-        border-radius: 999px !important;
-        line-height: 1.15 !important;
-        max-width: 46vw !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        margin-bottom: -10px;
+  <meta charset="utf-8" />
+  <meta name="api-base" content="https://api.snagletshop.com">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shop — Management Frontend</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+
+  <!-- Minimal modal styles (safe even if you already have some) -->
+  <style>
+    .hidden {
+      display: none !important;
     }
-}
-    </style>
+
+    .mgmt-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+    }
+
+    .mgmt-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+    }
+
+    .mgmt-modal-panel {
+      position: relative;
+      width: min(920px, calc(100vw - 24px));
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      margin: 12px auto;
+      background: #0f1115;
+      color: #e8eaf0;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 16px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+      padding: 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .mgmt-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mgmt-modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .mgmt-modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mgmt-modal-body {
+      margin-top: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .mgmt-field label {
+      display: block;
+      font-size: 12px;
+      opacity: .85;
+      margin-bottom: 6px;
+    }
+
+    .mgmt-field input[type="text"],
+    .mgmt-field input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: inherit;
+      outline: none;
+    }
+
+    .mgmt-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mgmt-hr {
+      height: 1px;
+      background: rgba(255, 255, 255, .12);
+      border: 0;
+      margin: 6px 0;
+    }
+
+    .mgmt-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .mgmt-btn.primary {
+      background: rgba(0, 153, 255, .25);
+      border-color: rgba(0, 153, 255, .45);
+    }
+
+    
+    .mgmt-btn.success {
+      background: rgba(34, 197, 94, .22);
+      border-color: rgba(34, 197, 94, .45);
+    }
+    .mgmt-btn.danger {
+      background: rgba(220, 38, 38, .18);
+      border-color: rgba(220, 38, 38, .45);
+    }
+    .Buttony.danger {
+      border-color: var(--ui-danger-border);
+      background: var(--ui-danger-bg);
+    }
+    .Buttony.success {
+      border-color: rgba(34, 197, 94, .45);
+      background: rgba(34, 197, 94, .10);
+    }
+    .mg-cat-checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+      padding: 6px 0;
+    }
+    .mg-cat-check {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: #334155;
+    }
+    .mg-cat-check input { width: 16px; height: 16px; }
+    .mg-cat-picker-table td, .mg-cat-picker-table th { vertical-align: middle; }
+.drag-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .05);
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    .drag-item .meta {
+      opacity: .7;
+      font-size: 12px;
+    }
+
+    .drag-ghost {
+      opacity: .6;
+    }
+
+    .mgmt-radio-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+    }
+
+    .mgmt-radio-row label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0;
+    }
+  </style>
 </head>
 
 <body>
-    <div class="TopBar">
-        <input type="text" class="Search_Bar" id="Search_Bar" placeholder="Search">
-        <div class="NavButtonDiv">
-            <select id="currency-select" class="currency-select">
-                <option value="EUR">EUR €</option>
-                <option value="USD">USD $</option>
-                <option value="GBP">GBP £</option>
-                <option value="CAD">CAD C$</option>
-                <option value="AUD">AUD A$</option>
-            </select>
-            <button class="BasketButton" id="BasketButton" onclick="trackedGoToCart()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
-                </svg>
+  <header class="top-topbar">
+    <div class="container">
 
-            </button>
-            <button class="SettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">
-                <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path fill="currentColor"
-                        d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
-                </svg>
-            </button>
+    </div>
+  </header>
+
+
+  <!-- Login Screen (no prompts; credentials can be remembered on this device) -->
+  <div id="loginScreen" class="login-screen" aria-hidden="false">
+    <div class="login-card" role="dialog" aria-modal="true" aria-label="Admin login">
+      <div class="login-brand">
+        <div class="login-logo">SnagletShop</div>
+        <div class="login-sub">Management Console</div>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="on">
+
+        <label class="login-label" for="loginApiBase">Server URL</label>
+        <input id="loginApiBase" class="login-input" name="apiBase" autocomplete="url"
+          placeholder="https://api.snagletshop.com" />
+        <div class="login-hint">Example: https://api.snagletshop.com</div>
+
+        <label class="login-label" for="loginUsername">Username</label>
+        <input id="loginUsername" class="login-input" name="username" autocomplete="username"
+          placeholder="Admin username" />
+
+        <label class="login-label" for="loginPassword">Password</label>
+        <div class="login-password-row">
+          <input id="loginPassword" class="login-input" name="password" type="password" autocomplete="current-password"
+            placeholder="Admin password" />
+          <button id="togglePw" class="login-toggle" type="button" aria-label="Show password">Show</button>
         </div>
+
+        <label class="login-label" for="loginAdminCode">Admin code (optional)</label>
+        <input id="loginAdminCode" class="login-input" name="adminCode" autocomplete="one-time-code"
+          placeholder="X-Admin-Code / Admin code" />
+
+        <div class="login-actions">
+          <label class="login-remember">
+            <input id="rememberCreds" type="checkbox" checked />
+            Remember on this device
+          </label>
+
+          <button id="loginBtn" class="login-btn" type="submit">Sign in</button>
+        </div>
+
+        <div id="loginStatus" class="login-status" role="status" aria-live="polite"></div>
+      </form>
+
+      <div class="login-foot">
+        <button id="logoutBtn" class="login-link" type="button" title="Clears the token and returns to login">Log
+          out</button>
+      </div>
     </div>
+  </div>
+
+
+  <section class="container">
+    <div id="filters" class="filters"></div>
+    <div id="groups" class="groups"></div>
+
+    <div id="productsTab" class="mg-tab hidden" aria-hidden="true">
+      <div class="mg-subtabs">
+        <button class="mg-subtab active" data-subtab="catalogue" id="mgProdSubCatalogue">Catalogue</button>
+        <button class="mg-subtab" data-subtab="categories" id="mgProdSubCategories">Categories</button>
+      </div>
+
+      <!-- Catalogue workbench -->
+      <div class="mg-prod-pane" data-pane="catalogue">
+        <div class="mg-products-grid">
+          <section class="mg-cat-list">
+            <header class="mg-cat-toolbar">
+              <input id="prodSearch" placeholder="Search by name or ID…" />
+              <button id="prodReload">Reload</button>
+              <button id="prodNew">New product</button>              <button id="catalogDownload">Download catalogs</button>
+<span class="mg-count" id="prodCount"></span>
+            </header>
+
+            <div class="mg-cat-table-wrap">
+              <table class="mg-cat-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th class="mg-sortable" data-sort-key="id" aria-sort="none">ID <span class="mg-sort-arrow" aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="name" aria-sort="none">Name <span class="mg-sort-arrow" aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="buy" aria-sort="none">Buy <span class="mg-sort-arrow" aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="sell" aria-sort="none">Sell <span class="mg-sort-arrow" aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="profit" aria-sort="none">Profit <span class="mg-sort-arrow" aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="opts" aria-sort="none">Opts <span class="mg-sort-arrow" aria-hidden="true"></span></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="prodTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="mg-cat-editor">
+            <header class="mg-editor-head">
+              <strong id="prodEditorTitle">Product editor</strong>
+              <span id="prodDirty" class="mg-dirty hidden">● Unsaved</span>
+              <span class="spacer"></span>
+              <button id="prodSave" class="primary">Save</button>
+              <button id="prodDiscard">Discard</button>
+            </header>
+            <div id="prodEditorBody" class="mg-editor-body">
+              <div class="mg-empty">Select a product or click “New product”.</div>
+            </div>
+          </section>
+
+          <aside class="mg-cat-history" id="prodHistory">
+            <header>
+              <strong>History</strong>
+              <span class="spacer"></span>
+              <button id="histPrev">◀</button>
+              <button id="histNext">▶</button>
+              <button id="histToggle">⤢</button>
+            </header>
+            <div id="prodHistoryList"></div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- Categories editor -->
+      <div class="mg-prod-pane hidden" data-pane="categories">
+        <div class="mg-categories-grid">
+          <section class="mg-catcats">
+            <header class="mg-cat-toolbar">
+              <input id="catSearch" placeholder="Search categories…" />
+              <button id="catReload">Reload</button>
+              <button id="catSave" class="primary">Save</button>
+            </header>
+            <div class="mg-cat-listbox" id="catList"></div>
+          </section>
+
+          <section class="mg-cat-editor">
+            <header class="mg-editor-head">
+              <strong id="catEditorTitle">Category</strong>
+              <span class="spacer"></span>
+              <input id="catAddSearch" placeholder="Search products in this category…" />
+              <button id="catAddProductBtn">Add product</button>
+            </header>
+            <div class="mg-editor-body">
+              <div id="catProducts"></div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
-    <div class="SideBar" id="SideBar">
 
+    <div id="accountingTab" class="mg-tab hidden" aria-hidden="true">
+      <div class="mg-subtabs">
+        <button class="mg-subtab active" data-subtab="dashboard" id="mgAccSubDash">Dashboard</button>
+        <button class="mg-subtab" data-subtab="expenses" id="mgAccSubExpenses">Expenses</button>
+        <button class="mg-subtab" data-subtab="settings" id="mgAccSubSettings">Settings</button>
+      </div>
 
+      <div class="mg-acc-pane" data-pane="dashboard">
+        <div class="mg-acc-kpis" id="accKpis"></div>
+        <div class="mg-acc-grid">
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong>Orders (from Orders tab data)</strong>
+              <span class="spacer"></span>
+              <button class="Buttony" id="accRecalc">Recalculate</button>
+            </header>
+            <div class="mg-acc-card-body" id="accOrdersSummary"></div>
+          </section>
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong>Spending guidance</strong>
+            </header>
+            <div class="mg-acc-card-body" id="accGuidance"></div>
+          </section>
+        </div>
+      </div>
 
+      <div class="mg-acc-pane hidden" data-pane="expenses">
+        <div class="mg-acc-expenses">
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong>Expenses</strong>
+              <span class="spacer"></span>
+              <button class="Buttony" id="accExpExport">Export CSV</button>
+              <button class="Buttony" id="accExpNew">New</button>
+            </header>
+            <div class="mg-acc-exp-filters">
+              <input id="accExpSearch" placeholder="Search vendor / note / category" />
+              <select id="accExpCat"></select>
+              <input id="accExpFrom" type="date" />
+              <input id="accExpTo" type="date" />
+            </div>
+            <div class="mg-acc-table-wrap">
+              <table class="mg-acc-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Vendor</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>EUR</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="accExpTbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong id="accExpEditorTitle">Expense</strong>
+              <span class="spacer"></span>
+              <button class="Buttony" id="accExpDelete">Delete</button>
+              <button class="Buttony" id="accExpSave">Save</button>
+            </header>
+            <div class="mg-acc-card-body">
+              <div class="mg-acc-form" id="accExpForm"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="mg-acc-pane hidden" data-pane="settings">
+        <div class="mg-acc-grid">
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head"><strong>Tax & VAT</strong></header>
+            <div class="mg-acc-card-body">
+              <div class="mg-acc-form" id="accSettingsForm"></div>
+            </div>
+          </section>
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head"><strong>Notes</strong></header>
+            <div class="mg-acc-card-body" style="color:#6b7280;line-height:1.45">
+              Configure a VAT effective date now (even if empty). When you set it later, the dashboard will mark orders
+              from that date as "VAT period".
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
-    <div id="Viewer" class="Viewer">
 
+    <div id="tariffsTab" class="mg-tab hidden" aria-hidden="true"></div>
+    <div id="graphsTab" class="mg-tab hidden mg-graphs-hidden" aria-hidden="true"></div>
+
+  </section>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Settings Modal (required by setupSettingsModal/openSettingsModal in script.js) -->
+  <div id="settingsModal" class="mgmt-modal hidden" aria-hidden="true">
+    <div class="mgmt-modal-backdrop" data-close-modal></div>
+
+    <div class="mgmt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="mgmt-modal-header">
+        <h2 id="settingsTitle">Settings</h2>
+        <div class="mgmt-modal-actions">
+          <button id="settingsClose" class="mgmt-btn" type="button" data-close-modal>Close</button>
+          <button id="settingsSave" class="mgmt-btn primary" type="button">Save</button>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-body">
+        <div class="mgmt-grid-2">
+          <div class="mgmt-field">
+            <label for="apiBaseInput">API base</label>
+            <input id="apiBaseInput" type="text" placeholder="https://www.snagletshop.com" />
+          </div>
+          <div class="mgmt-field">
+            <label for="adminCodeInput">Admin code (X-Admin-Code)</label>
+            <input id="adminCodeInput" type="text" placeholder="optional" />
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Done indicator (per-order)</label>
+          <div class="mgmt-radio-row">
+            <label style="display:flex;gap:10px;align-items:center;">
+              <input id="doneIndicatorBg" type="checkbox" />
+              Background (green/red)
+            </label>
+            <label style="display:flex;gap:10px;align-items:center;">
+              <input id="doneIndicatorText" type="checkbox" />
+              Text color (green/red)
+            </label>
+          </div>
+          <div class="login-hint" style="margin-top:8px;">Applies to the done status (check icon + “Time done” box).</div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Open products button</label>
+          <div class="mgmt-radio-row">
+            <label><input type="radio" name="openProdMode" value="launcher" /> Open navigation page (recommended)</label>
+            <label><input type="radio" name="openProdMode" value="direct" /> Open all products immediately</label>
+          </div>
+
+          <div class="mgmt-radio-row" style="margin-top:10px;">
+            <label><input type="radio" name="openProdTarget" value="newWindow" /> Open in a dedicated order window (keeps orders separated)</label>
+            <label><input type="radio" name="openProdTarget" value="sameWindow" /> Open as tabs in the same browser window as this admin page</label>
+          </div>
+
+          <label style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+            <input id="openProductsPreferWindow" type="checkbox" />
+            Try to open in a separate browser window (best-effort)
+          </label>
+
+          <label style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+            <input id="openProductsIncludeSummaryTab" type="checkbox" />
+            Add an “Order summary” as the last tab
+          </label>
+
+          <div class="login-hint" style="margin-top:8px;">
+            Your browser may open a new tab instead of a new window. If pop-ups are blocked, use the navigation page mode.
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Default “Since”</label>
+          <div class="mgmt-radio-row">
+            <label><input type="radio" name="defSince" value="today" /> Today</label>
+            <label><input type="radio" name="defSince" value="yesterday" /> Yesterday</label>
+            <label><input type="radio" name="defSince" value="specific" /> Specific date</label>
+          </div>
+          <div style="margin-top:10px;">
+            <input id="defSinceDate" type="date" />
+          </div>
+        </div>
+
+        <div class="mgmt-field">
+          <label>Default “To”</label>
+          <div class="mgmt-radio-row">
+            <label><input type="radio" name="defTill" value="startOfYear" /> Start of year</label>
+            <label><input type="radio" name="defTill" value="specific" /> Specific date</label>
+          </div>
+          <div class="mgmt-grid-2" style="margin-top:10px;">
+            <div>
+              <label style="font-size:12px;opacity:.85;margin:0 0 6px;">Specific To date</label>
+              <input id="defTillDate" type="date" />
+            </div>
+            <label style="display:flex;gap:10px;align-items:center;margin-top:22px;">
+              <input id="rollYear" type="checkbox" />
+              Roll “To” year to current year
+            </label>
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Done highlighting</label>
+          <label style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input id="doneBgHighlightToggle" type="checkbox" />
+            Highlight done status background (green/red)
+          </label>
+          <label style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input id="doneTextHighlightToggle" type="checkbox" />
+            Highlight done status text (green/red)
+          </label>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Row order (drag & drop)</label>
+          <div id="dragList"></div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div id="ModalDiv" class="ModalDiv">
+  <!-- Required for drag&drop row order -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="script.js?v=10"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="graphEngine.js"></script>
+  
+  <!-- Category product picker modal -->
+  <div id="catProductPickerModal" class="mgmt-modal hidden" aria-hidden="true">
+    <div class="mgmt-modal-backdrop" id="catProductPickerBackdrop"></div>
 
+    <div class="mgmt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="catProductPickerTitle">
+      <div class="mgmt-modal-header">
+        <h2 id="catProductPickerTitle">Manage category products</h2>
+        <div class="mgmt-modal-actions" style="align-items:center;">
+          <input id="catProductPickerSearch" type="text" placeholder="Search products…" style="width:260px;max-width:40vw;" />
+          <button id="catProductPickerClose" class="mgmt-btn" type="button">Close</button>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-body">
+        <div style="overflow:auto;">
+          <table class="mg-cat-table mg-cat-picker-table" style="min-width:720px;">
+            <thead>
+              <tr>
+                <th style="width:200px;">ID</th>
+                <th>Name</th>
+                <th style="width:110px;">Added</th>
+                <th style="width:130px;"></th>
+              </tr>
+            </thead>
+            <tbody id="catProductPickerBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="Logo" , onclick="loadProducts('Default_Page', 'NameFirst' , 'asc')">
-        <button class="MainPage">
-            <h1 style=" color: var(--Default_Text_Colour); margin: 0;">SnagletShop</h1>
-        </button>
-    </div>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
+  </div>
 
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Offscreen Turnstile widget (used to protect API actions like /create-payment-intent) -->
-    <div id="snaglet-turnstile"
-        style="position:fixed; bottom:12px; right:12px; width:150px; min-height:140px; z-index:2147483647;"></div>
+<div id="productEditorModal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit product</h3>
+        <button id="peClose" class="modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="pe-grid">
+          <label>Categories
+            <select id="peCategory" multiple size="6"></select>
+            <div class="pe-hint">Select multiple categories (Ctrl/Shift). Product will appear in all selected
+              categories.</div>
+          </label>
+          <label>Product ID
+            <input type="text" id="peId" readonly />
+          </label>
+          <label>Name
+            <input type="text" id="peName" />
+          </label>
+          <label>AliExpress link
+            <input type="text" id="peLink" placeholder="https://www.aliexpress.com/item/..." />
+          </label>
+          <label>Selling price (EUR)
+            <input type="number" id="pePrice" step="0.01" />
+          </label>
+          <label>Purchase price (EUR)
+            <input type="number" id="pePurchase" step="0.01" />
+          </label>
+        </div>
+
+        <div class="pe-section">
+          <div class="pe-section-head">
+            <h4>Image links</h4>
+            <div class="pe-hint">One URL per line. Empty lines are ignored.</div>
+          </div>
+          <textarea id="peImages" rows="6" placeholder="https://..."></textarea>
+        </div>
+
+        <div class="pe-section">
+          <div class="pe-section-head">
+            <h4>Product options (JSON)</h4>
+            <div class="pe-hint">Use JSON (object/array/string). Leave blank to keep unchanged.</div>
+          </div>
+          <textarea id="peOptions" rows="8"
+            placeholder='Example: {"Color":["Red","Blue"],"Size":["S","M","L"]}'></textarea>
+  
+<div class="pe-section">
+  <div class="pe-section-head">
+    <h4>Variant prices (JSON)</h4>
+    <div class="pe-hint">Optional map of option-combo key → EUR price. Key format: "Color=Red | Size=M". Leave blank to keep unchanged. Use {} (or null) to clear.</div>
+  </div>
+  <textarea id="peVariantPrices" rows="6"
+    placeholder='Example: {"Color=Red | Size=M": 24.99, "Color=Blue | Size=M": 23.99}'></textarea>
+</div>
+
+      </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="peSave">Save changes</button>
+        <button id="peCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category options modal (rename + icon URLs) -->
+  <div id="catMetaModal" class="mgmt-modal hidden" aria-hidden="true">
+    <div class="mgmt-modal-backdrop" id="catMetaBackdrop"></div>
+
+    <div class="mgmt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="catMetaTitle" style="width:min(720px, calc(100vw - 24px));">
+      <div class="mgmt-modal-header">
+        <h2 id="catMetaTitle">Category options</h2>
+        <div class="mgmt-modal-actions" style="align-items:center;">
+          <button id="catMetaClose" class="mgmt-btn" type="button">Close</button>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-body">
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px 12px;align-items:center;">
+          <div style="font-weight:700;opacity:.8;">Current name</div>
+          <div id="catMetaCurrentName" style="font-weight:800;"></div>
+
+          <div style="font-weight:700;opacity:.8;">New name</div>
+          <input id="catMetaNewName" type="text" placeholder="e.g., Home &amp; Kitchen" />
+
+          <div style="font-weight:700;opacity:.8;">Icon URL (light)</div>
+          <div>
+            <input id="catMetaIconLight" type="text" placeholder="https://..." style="width:100%;" />
+            <div style="font-size:12px;opacity:.7;margin-top:4px;">Links only (png/jpg/webp/svg/avif). No uploads.</div>
+          </div>
+
+          <div style="font-weight:700;opacity:.8;">Icon URL (dark)</div>
+          <div>
+            <input id="catMetaIconDark" type="text" placeholder="https://... (optional)" style="width:100%;" />
+            <div style="font-size:12px;opacity:.7;margin-top:4px;">If set, storefront uses this in dark mode.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-footer" style="display:flex;justify-content:flex-end;gap:10px;">
+        <button id="catMetaCancel" class="mgmt-btn" type="button">Cancel</button>
+        <button id="catMetaSave" class="mgmt-btn primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 
-
-<body>
-    <div id="appBootLoaderOverlay" role="status" aria-live="polite">
-        <div class="card">
-            <div class="row">
-                <div class="spinner" aria-hidden="true"></div>
-                <div class="title">Loading SnagletShop</div>
-            </div>
-            <div class="sub" id="appBootLoaderOverlay_text">Loading products…</div>
-        </div>
-    </div>
-
-    <!-- Container for both rows -->
-    <div class="mobileHeaderWrapper">
-        <!-- First row -->
-        <div class="mobileTopBar">
-            <button id="openSidebarButton" class="mobileHamburgerMenu">☰</button>
-
-
-            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
-                <h1>SnagletShop</h1>
-            </div>
-
-            <!-- Wrapped buttons and select in navButtonDiv -->
-            <div class="mobileNavButtonDiv">
-
-
-                <button class="mobileBasketButton" id="BasketButton" onclick="trackedGoToCart()">
-                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-
-                        <path
-                            d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
-                    </svg>
-
-                </button>
-
-                <button class="mobileSettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">
-                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
-                    </svg>
-                </button>
-
-            </div>
-        </div>
-
-        <!-- Second row (search bar only) -->
-        <div class="mobileSearchRow">
-            <input type="text" class="mobileSearch_Bar" id="Mobile_Search_Bar" placeholder="Search" />
-
-
-        </div>
-    </div>
-
-
-    <div id="SideBar" class="mobileSideBar">
-        <!-- First row: Hamburger + Logo -->
-        <div class="sidebar-header">
-            <button id="closeSidebarButton" class="mobileHamburgerMenu">☰</button>
-            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
-                <h1>SnagletShop</h1>
-            </div>
-        </div>
-
-        <!-- Scrollable area for category buttons -->
-        <div id="SidebarCategories" class="sidebar-categories"></div>
-    </div>
-
-
-
-    <div class="mobileModalDiv" id="ModalDiv"></div>
-
-
-    <script>
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock("portrait").catch(function (err) {
-                console.warn("Orientation lock failed:", err);
-            });
-        }
-    </script>
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const sidebar = document.querySelector(".mobileSideBar");
-            const modal = document.querySelector(".mobileModalDiv");
-            const openBtn = document.getElementById("openSidebarButton");
-            const closeBtn = document.getElementById("closeSidebarButton");
-            const sidebarLogo = document.querySelector("#SideBar .mobileLogo");
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-
-            function toggleSidebar() {
-                sidebar.classList.toggle("open");
-                modal.classList.toggle("active");
-            }
-
-            const boundHandlers = {
-                open: () => toggleSidebar(),
-                close: () => toggleSidebar(),
-                modal: () => toggleSidebar(),
-                categoryClick: function (e) {
-                    const target = e.target.closest(".Category_Button");
-                    if (target) {
-                        toggleSidebar();
-                    }
-                },
-                sidebarLogoClick: () => toggleSidebar()
-            };
-
-            function addListeners() {
-                openBtn?.addEventListener("click", boundHandlers.open);
-                closeBtn?.addEventListener("click", boundHandlers.close);
-                modal?.addEventListener("click", boundHandlers.modal);
-                document.body.addEventListener("click", boundHandlers.categoryClick);
-                sidebarLogo?.addEventListener("click", boundHandlers.sidebarLogoClick);
-            }
-
-            function removeListeners() {
-                openBtn?.removeEventListener("click", boundHandlers.open);
-                closeBtn?.removeEventListener("click", boundHandlers.close);
-                modal?.removeEventListener("click", boundHandlers.modal);
-                document.body.removeEventListener("click", boundHandlers.categoryClick);
-                sidebarLogo?.removeEventListener("click", boundHandlers.sidebarLogoClick);
-            }
-
-            function handleResize(e) {
-                if (e.matches) {
-                    addListeners();
-                } else {
-                    removeListeners();
-                }
-            }
-
-            // Initial setup
-            handleResize(mediaQuery);
-            mediaQuery.addEventListener("change", handleResize);
-        });
-    </script>
-
-
-
-
-
-
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-
-            function moveImagesIfNeeded(productWrapper) {
-                const imagesDiv = productWrapper.querySelector(".Product_Images");
-                const productNameHeading = productWrapper.querySelector(".Product_Name_Heading");
-
-                if (!imagesDiv || !productNameHeading) return;
-
-                // Save original parent and index if not already stored
-                if (!imagesDiv.dataset.originalParentId) {
-                    const parent = imagesDiv.parentElement;
-                    if (!parent.id) {
-                        parent.id = "original-parent-" + Math.random().toString(36).substr(2, 9);
-                    }
-                    imagesDiv.dataset.originalParentId = parent.id;
-
-                    const siblings = Array.from(parent.children);
-                    imagesDiv.dataset.originalIndex = siblings.indexOf(imagesDiv);
-                }
-
-                function moveImages() {
-                    if (mediaQuery.matches) {
-                        // Mobile: move under name heading
-                        if (productNameHeading.nextElementSibling !== imagesDiv) {
-                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextElementSibling);
-                        }
-                    } else {
-                        // Desktop: move back to original spot
-                        const originalParent = document.getElementById(imagesDiv.dataset.originalParentId);
-                        const originalIndex = parseInt(imagesDiv.dataset.originalIndex, 10);
-                        if (originalParent && originalParent.children[originalIndex] !== imagesDiv) {
-                            const referenceNode = originalParent.children[originalIndex] || null;
-                            originalParent.insertBefore(imagesDiv, referenceNode);
-                        }
-                    }
-                }
-
-                // Run initially and on screen size change
-                moveImages();
-                mediaQuery.addEventListener("change", moveImages);
-            }
-
-            // Observe body for dynamically inserted Product Detail pages
-            const globalObserver = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1) {
-                            const detailPage = node.matches(".Product_Detail_Page")
-                                ? node
-                                : node.querySelector(".Product_Detail_Page");
-                            if (detailPage) moveImagesIfNeeded(detailPage);
-                        }
-                    });
-                });
-            });
-
-            globalObserver.observe(document.body, { childList: true, subtree: true });
-
-            // Also check immediately if a page is already loaded
-            const existingPage = document.querySelector(".Product_Detail_Page");
-            if (existingPage) moveImagesIfNeeded(existingPage);
-        });
-    </script>
-
-
-
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-            let placeholder = null;
-            const moveDownBy = 4;  // Number of places to move down
-
-            function moveProductWrapper() {
-                const productWrapper = document.getElementById("ProductWrapper");
-                const modalDiv = document.getElementById("ModalDiv");
-                const sideBar = document.getElementById("SideBar");
-
-                if (!productWrapper || !modalDiv || !sideBar) {
-
-                    return;
-                }
-
-                if (mediaQuery.matches) {
-
-
-                    // Store placeholder for original location only once
-                    if (!placeholder) {
-                        placeholder = document.createComment("Original ProductWrapper location");
-                        productWrapper.parentNode.insertBefore(placeholder, productWrapper);
-
-                    }
-
-                    // Move ProductWrapper down by 'moveDownBy' places
-                    let targetElement = modalDiv;
-                    for (let i = 0; i < moveDownBy; i++) {
-                        if (targetElement.nextElementSibling) {
-                            targetElement = targetElement.nextElementSibling;
-                        } else {
-                            break;  // Exit if there aren't enough siblings
-                        }
-                    }
-
-                    // Insert ProductWrapper after the target element
-                    if (targetElement.nextElementSibling) {
-                        document.body.insertBefore(productWrapper, targetElement.nextElementSibling);
-                    } else {
-                        document.body.appendChild(productWrapper); // If there's no sibling, append at the end
-                    }
-
-                } else {
-
-
-                    if (placeholder && placeholder.parentNode) {
-                        placeholder.parentNode.insertBefore(productWrapper, placeholder);
-
-                    } else {
-
-                    }
-                }
-            }
-
-            // Wait until ProductWrapper appears
-            const observer = new MutationObserver(() => {
-                const productWrapper = document.getElementById("ProductWrapper");
-                if (productWrapper) {
-                    console.log("✅ ProductWrapper found");
-                    moveProductWrapper();
-                    mediaQuery.addEventListener("change", moveProductWrapper);
-                    observer.disconnect();
-                }
-            });
-
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+</html>
