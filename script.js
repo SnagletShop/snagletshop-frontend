@@ -68,7 +68,7 @@ const API_BASE = (() => {
    Set exactly one of these to true.
 */
 const USE_ADD_TO_CART_POPUP_LEGACY_ALERT = false;
-const USE_ADD_TO_CART_POPUP_BASKET_TOAST = true;
+const USE_ADD_TO_CART_POPUP_BASKET_TOAST = false;
 
 function __ssEnsureBasketToastStyles() {
     // Styles are defined in index.html (using CSS variables for light/dark mode).
@@ -7324,6 +7324,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
