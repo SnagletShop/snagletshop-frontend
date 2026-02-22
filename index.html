@@ -123,6 +123,14 @@
             --Category_Button_Text_Colour: #2A2A2A;
             /* or white for dark mode */
 
+            /* Add-to-basket toast (light mode defaults)
+               Edit these to change the new "added to basket" popup colors.
+            */
+            --AddToBasketToast_Background: rgba(255, 255, 255, 0.92);
+            --AddToBasketToast_Text: #1f1f1f;
+            --AddToBasketToast_Border: rgba(0, 0, 0, 0.10);
+            --AddToBasketToast_Shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+
         }
 
         .light-mode {
@@ -182,6 +190,90 @@
             --Category_Button_Text_Colour: #ffffff;
             /* or white for dark mode */
             --Thumbnail_Active_Border: #4DABFF;
+
+            /* Add-to-basket toast (dark mode)
+               Edit these to change the new "added to basket" popup colors.
+            */
+            --AddToBasketToast_Background: rgba(20, 20, 20, 0.92);
+            --AddToBasketToast_Text: #ffffff;
+            --AddToBasketToast_Border: rgba(255, 255, 255, 0.14);
+            --AddToBasketToast_Shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ---------------- Add-to-basket toast popup ----------------
+           Styled via CSS variables above so it automatically follows
+           your light/dark theme, and is easy to tweak later.
+        */
+        .ss-basket-toast {
+            position: fixed;
+            z-index: 999999;
+            pointer-events: none;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: var(--AddToBasketToast_Background);
+            color: var(--AddToBasketToast_Text);
+            border: 1px solid var(--AddToBasketToast_Border);
+            font-size: 13px;
+            line-height: 1.2;
+            box-shadow: var(--AddToBasketToast_Shadow);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            transform: translate(-50%, -50%) scale(0.78);
+            opacity: 0;
+            transition: transform 220ms ease, opacity 220ms ease, top 220ms ease, left 220ms ease;
+            max-width: min(340px, 84vw);
+            overflow: hidden;
+        }
+
+        .ss-basket-toast.ss-show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .ss-basket-toast.ss-hide {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.96);
+        }
+
+        .ss-basket-toast-title {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            margin-bottom: 3px;
+        }
+
+        .ss-basket-toast-sub {
+            opacity: 0.92;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @keyframes ss-basket-pulse {
+            0% {
+                transform: scale(1)
+            }
+
+            45% {
+                transform: scale(1.06)
+            }
+
+            100% {
+                transform: scale(1)
+            }
+        }
+
+        .ss-basket-pulse {
+            animation: ss-basket-pulse 240ms ease;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .ss-basket-toast {
+                transition: none;
+            }
+
+            .ss-basket-pulse {
+                animation: none;
+            }
         }
 
 
