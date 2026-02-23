@@ -93,11 +93,7 @@ function __ssGetBasketButtonEl() {
 
 let __ssActiveBasketToast = null;
 let __ssActiveBasketToastTimers = [];
-function __ssRound2(n) {
-  const x = Number(n);
-  if (!Number.isFinite(x)) return 0;
-  return Math.round((x + Number.EPSILON) * 100) / 100;
-}
+
 /* Persistent basket indicator (badge) */
 function __ssGetBasketCounts() {
     const b = (typeof basket === "object" && basket) ? basket : {};
@@ -1654,86 +1650,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     await preloadSettingsData();
 });
 
-const ANALYTICS_SESSION_KEY = 'snaglet_analytics_session';
-function findCatalogProductByLink(productLink) {
-    const link = String(productLink || "").trim();
-    if (!link) return null;
+const ANALYTICS_VISITOR_KEY = 'snaglet_visitor_id';
+const ANALYTICS_SESSION_KEY = 'snaglet_session_id';
 
-    if (Array.isArray(products)) {
-        const hit = products.find(p => String(p?.productLink || "").trim() === link);
-        if (hit) return hit;
-    }
-
-    if (productsDatabase && typeof productsDatabase === "object") {
-        for (const arr of Object.values(productsDatabase)) {
-            if (!Array.isArray(arr)) continue;
-            const hit = arr.find(p => String(p?.productLink || "").trim() === link);
-            if (hit) return hit;
-        }
-    }
-
-    return null;
+/** Persistent pseudonymous visitor id (per browser) */
+let analyticsVisitorId = localStorage.getItem(ANALYTICS_VISITOR_KEY);
+if (!analyticsVisitorId) {
+    analyticsVisitorId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(ANALYTICS_VISITOR_KEY, analyticsVisitorId);
 }
 
-function findCatalogProductByName(name) {
-    const n = String(name || "").trim();
-    if (!n) return null;
-
-    if (Array.isArray(products)) {
-        const hit = products.find(p => String(p?.name || "").trim() === n);
-        if (hit) return hit;
-    }
-
-    if (productsDatabase && typeof productsDatabase === "object") {
-        for (const arr of Object.values(productsDatabase)) {
-            if (!Array.isArray(arr)) continue;
-            const hit = arr.find(p => String(p?.name || "").trim() === n);
-            if (hit) return hit;
-        }
-    }
-
-    return null;
-}
-
-function buildFullCartFromBasket() {
-    const basket = readBasket();
-    const fullCart = [];
-
-    for (const item of basket) {
-        const quantity = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
-
-        // Prefer server-provided catalog truth
-        const cat =
-            findCatalogProductByLink(item?.productLink) ||
-            findCatalogProductByName(item?.name);
-
-        const unitEUR = Number(cat?.price ?? item?.price ?? 0) || 0;
-        const expectedPurchase = Number(cat?.expectedPurchasePrice ?? item?.expectedPurchasePrice ?? 0) || 0;
-
-        fullCart.push({
-            name: String(cat?.name ?? item?.name ?? "").trim(),
-            selectedOption: String(item?.selectedOption ?? "").trim(),
-            quantity,
-            // keep both fields (your server accepts either)
-            price: unitEUR,
-            unitPriceEUR: unitEUR,
-            expectedPurchasePrice: expectedPurchase,
-            expectedPurchase: expectedPurchase,
-            productLink: String(cat?.productLink ?? item?.productLink ?? "").trim(),
-            image: String(cat?.image ?? item?.image ?? "").trim(),
-            description: String(cat?.description ?? item?.description ?? "")
-        });
-    }
-
-    return fullCart;
-}
-
-// Simple anonymous session id stored in localStorage
-let analyticsSessionId = localStorage.getItem(ANALYTICS_SESSION_KEY);
+/** Session id (per tab/session) */
+let analyticsSessionId = sessionStorage.getItem(ANALYTICS_SESSION_KEY);
 if (!analyticsSessionId) {
-    analyticsSessionId =
-        Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
-    localStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSessionId);
+    analyticsSessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    sessionStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSessionId);
 }
 
 /**
@@ -1742,6 +1673,13 @@ if (!analyticsSessionId) {
  */
 function sendAnalyticsEvent(type, payload = {}, options = {}) {
     try {
+        const p = (payload && typeof payload === "object") ? payload : {};
+        const mergedExtra = {
+            visitorId: analyticsVisitorId,
+            sessionId: analyticsSessionId,
+            ...(p.extra && typeof p.extra === "object" ? p.extra : {})
+        };
+
         fetch(`${API_BASE}/analytics/event`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1750,7 +1688,8 @@ function sendAnalyticsEvent(type, payload = {}, options = {}) {
                 sessionId: analyticsSessionId,
                 path: window.location.pathname + window.location.search,
                 websiteOrigin: window.location.hostname,
-                ...payload
+                ...p,
+                extra: mergedExtra
             }),
             // For unload events you could set keepalive: true
             keepalive: !!options.keepalive
@@ -1761,6 +1700,78 @@ function sendAnalyticsEvent(type, payload = {}, options = {}) {
         // swallow; analytics must never break the page
     }
 }
+
+
+function __ssToken(prefix = "t") {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+let __ssLastClickToken = null;
+let __ssCurrentViewToken = null;
+let __ssCurrentViewStartedAt = 0;
+
+function __ssRememberClickToken(token) {
+    try {
+        __ssLastClickToken = token;
+        sessionStorage.setItem("__ss_last_click_token", token);
+        sessionStorage.setItem("__ss_last_click_token_ts", String(Date.now()));
+    } catch { }
+}
+
+function __ssConsumeRecentClickToken(maxAgeMs = 15000) {
+    try {
+        const token = sessionStorage.getItem("__ss_last_click_token");
+        const ts = Number(sessionStorage.getItem("__ss_last_click_token_ts") || 0);
+        if (token && Number.isFinite(ts) && (Date.now() - ts) <= maxAgeMs) return token;
+    } catch { }
+    return null;
+}
+
+function __ssStartProductViewSession() {
+    __ssCurrentViewToken = __ssToken("view");
+    __ssCurrentViewStartedAt = Date.now();
+    return __ssCurrentViewToken;
+}
+
+function __ssEndProductViewSessionSend(productName, productLink) {
+    try {
+        if (!__ssCurrentViewToken || !__ssCurrentViewStartedAt) return;
+        const dur = Date.now() - __ssCurrentViewStartedAt;
+        const clickToken = __ssConsumeRecentClickToken();
+
+        sendAnalyticsEvent('product_time', {
+            product: {
+                name: String(productName || ""),
+                productLink: String(productLink || "")
+            },
+            extra: {
+                viewToken: __ssCurrentViewToken,
+                clickToken: clickToken || null,
+                durationMs: dur
+            }
+        }, { keepalive: true });
+    } catch { }
+}
+
+
+// Send product_time when leaving/hiding the page (best effort)
+window.addEventListener('beforeunload', () => {
+    try {
+        const n = window.__ssCurrentViewedProductName || "";
+        const l = window.__ssCurrentViewedProductLink || "";
+        __ssEndProductViewSessionSend(n, l);
+    } catch { }
+});
+
+document.addEventListener('visibilitychange', () => {
+    try {
+        if (document.visibilityState === 'hidden') {
+            const n = window.__ssCurrentViewedProductName || "";
+            const l = window.__ssCurrentViewedProductLink || "";
+            __ssEndProductViewSessionSend(n, l);
+        }
+    } catch { }
+});
 
 function buildAnalyticsProductPayload(productName, override = {}) {
     const p = findProductByNameParam(productName) || {};
@@ -5219,7 +5230,10 @@ function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, p
     try {
         const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink });
         payload.extra = { selectedOption: selectedOption || "" };
-        sendAnalyticsEvent('add_to_cart', payload);
+        sendAnalyticsEvent('add_to_cart', {
+            ...payload,
+            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken() }
+        });
     } catch { }
 
     let quantity = cart[productName] || 1;
@@ -5650,7 +5664,12 @@ function navigateToProduct(productName) {
     const formattedName = productName.toLowerCase().replace(/\s+/g, "-");
 
     // analytics: product clicked
-    sendAnalyticsEvent('product_click', buildAnalyticsProductPayload(productName));
+    const __ssClickToken = __ssToken('click');
+    __ssRememberClickToken(__ssClickToken);
+    sendAnalyticsEvent('product_click', {
+        ...buildAnalyticsProductPayload(productName),
+        extra: { clickToken: __ssClickToken }
+    });
 
     history.pushState({}, "", `/${formattedName}`);
     GoToProductPage(productName, getProductPrice(productName), getProductDescription(productName));
@@ -6424,9 +6443,8 @@ function __ssExtractOptionGroups(product) {
                 const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
                 const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
                 const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
-                const priceByOption = (g && typeof g.priceByOption === "object" && g.priceByOption) ? g.priceByOption : null;
                 const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
-                return { key, label, options, imageByOption, priceByOption };
+                return { key, label, options, imageByOption };
             })
             .filter(g => g.options.length > 0);
     }
@@ -6491,88 +6509,39 @@ function __ssFormatSelectedOptionsKey(selectedOptions) {
 
 function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = "") {
     const base = Number(parseFloat(product?.price ?? 0) || 0);
-
-    // 1) Explicit override via variantPrices (exact match)
     const map = (product && typeof product === "object") ? product.variantPrices : null;
-    if (map && typeof map === "object" && !Array.isArray(map)) {
-        const sel = __ssNormalizeSelectedOptions(selectedOptions);
-        const candidates = [];
+    if (!map || typeof map !== "object" || Array.isArray(map)) return base;
 
-        const fullKey = sel.length ? __ssFormatSelectedOptionsKey(sel) : "";
-        if (fullKey) candidates.push(fullKey);
+    const sel = __ssNormalizeSelectedOptions(selectedOptions || []);
+    const candidates = [];
 
-        if (sel.length) {
-            const vOnly = sel.map(o => String(o.value || "").trim()).filter(Boolean).join(" | ");
-            if (vOnly && vOnly !== fullKey) candidates.push(vOnly);
-        }
+    const fullKey = sel.length ? __ssFormatSelectedOptionsKey(sel) : "";
+    if (fullKey) candidates.push(fullKey);
 
-        if (sel.length === 1) {
-            const l = String(sel[0].label || "").trim();
-            const v = String(sel[0].value || "").trim();
-            if (l && v) candidates.push(`${l}=${v}`);
-            if (v) candidates.push(v);
-        }
-
-        const legacy = String(legacySelectedOption || "").trim();
-        if (legacy) candidates.push(legacy);
-
-        for (const k of candidates) {
-            const key = String(k || "").trim();
-            if (!key) continue;
-            const num = Number(map[key]);
-            if (Number.isFinite(num) && num > 0) return __ssRound2(num);
-        }
+    if (sel.length) {
+        const vOnly = sel.map(o => String(o.value || "").trim()).filter(Boolean).join(" | ");
+        if (vOnly && vOnly !== fullKey) candidates.push(vOnly);
     }
 
-    // 2) Additive option add-ons: base + sum(group.priceByOption[selectedValue])
-    let delta = 0;
-    try {
-        const groups = __ssExtractOptionGroups(product);
-        if (groups.length) {
-            const norm = (x) => String(x || "").trim().replace(/:$/, "").toLowerCase();
-            const groupMap = new Map();
-            for (const g of groups) {
-                const lb = norm(g?.label);
-                const kb = norm(g?.key);
-                if (lb) groupMap.set(lb, g);
-                if (kb) groupMap.set(kb, g);
-            }
+    if (sel.length === 1) {
+        const l = String(sel[0].label || "").trim();
+        const v = String(sel[0].value || "").trim();
+        if (l && v) candidates.push(`${l}=${v}`);
+        if (v) candidates.push(v);
+    }
 
-            const sel = __ssNormalizeSelectedOptions(selectedOptions);
-            const sels = sel.length
-                ? sel
-                : (String(legacySelectedOption || "").trim()
-                    ? [{ label: groups[0]?.label || "", value: String(legacySelectedOption || "").trim() }]
-                    : []);
+    const legacy = String(legacySelectedOption || "").trim();
+    if (legacy) candidates.push(legacy);
 
-            for (const s of sels) {
-                const groupName = norm(s?.label) || norm(groups[0]?.label);
-                const value = String(s?.value || "").trim();
-                if (!value) continue;
-                const g = groupMap.get(groupName);
-                const rec = (g && g.priceByOption && typeof g.priceByOption === "object") ? g.priceByOption : null;
-                if (!rec) continue;
+    for (const k of candidates) {
+        const key = String(k || "").trim();
+        if (!key) continue;
+        const num = Number(parseFloat(map[key]) || 0);
+        if (Number.isFinite(num) && num > 0) return Math.round(num * 100) / 100;
+    }
 
-                let raw = rec[value];
-                if (raw === undefined) {
-                    const vNorm = value.toLowerCase();
-                    for (const [k, v] of Object.entries(rec)) {
-                        if (String(k).trim().toLowerCase() === vNorm) { raw = v; break; }
-                    }
-                }
-
-                const add = Number(raw);
-                if (Number.isFinite(add)) delta += add;
-            }
-        }
-    } catch { }
-
-    const out = __ssRound2(base + delta);
-    if (Number.isFinite(out) && out > 0) return out;
-
-    return __ssRound2(base);
+    return base;
 }
-
 
 
 function __ssCleanOptionLabel(label) {
@@ -6765,7 +6734,14 @@ function updateImage(direction = "none") {
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
     // analytics: product opened (viewer)
-    sendAnalyticsEvent('product_open', buildAnalyticsProductPayload(productName, { priceEUR: productPrice }));
+    const __ssViewToken = __ssStartProductViewSession();
+    window.__ssCurrentViewedProductName = productName;
+    window.__ssCurrentViewedProductLink = (typeof productLink !== 'undefined' ? productLink : (product && product.productLink) || '');
+    const __ssClickToken2 = __ssConsumeRecentClickToken();
+    sendAnalyticsEvent('product_open', {
+        ...buildAnalyticsProductPayload(productName, { priceEUR: productPrice }),
+        extra: { viewToken: __ssViewToken, clickToken: __ssClickToken2 }
+    });
     try { clearCategoryHighlight(); } catch { }
 
     const viewer = document.getElementById("Viewer");
@@ -7177,7 +7153,10 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
         try {
             const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink, productId: productIdForCart });
             payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
-            sendAnalyticsEvent('add_to_cart', payload);
+            sendAnalyticsEvent('add_to_cart', {
+            ...payload,
+            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken() }
+        });
         } catch { }
         const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
         __ssNotifyAddToCart({ qty, productName, optMsg, imageUrl, itemKey: key });
@@ -7378,7 +7357,6 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
-
 
 
 
