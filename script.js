@@ -6420,8 +6420,9 @@ function __ssExtractOptionGroups(product) {
                 const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
                 const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
                 const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
+                const priceByOption = (g && typeof g.priceByOption === "object" && g.priceByOption) ? g.priceByOption : null;
                 const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
-                return { key, label, options, imageByOption };
+                return { key, label, options, imageByOption, priceByOption };
             })
             .filter(g => g.options.length > 0);
     }
@@ -6486,39 +6487,88 @@ function __ssFormatSelectedOptionsKey(selectedOptions) {
 
 function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = "") {
     const base = Number(parseFloat(product?.price ?? 0) || 0);
+
+    // 1) Explicit override via variantPrices (exact match)
     const map = (product && typeof product === "object") ? product.variantPrices : null;
-    if (!map || typeof map !== "object" || Array.isArray(map)) return base;
+    if (map && typeof map === "object" && !Array.isArray(map)) {
+        const sel = __ssNormalizeSelectedOptions(selectedOptions);
+        const candidates = [];
 
-    const sel = __ssNormalizeSelectedOptions(selectedOptions || []);
-    const candidates = [];
+        const fullKey = sel.length ? __ssFormatSelectedOptionsKey(sel) : "";
+        if (fullKey) candidates.push(fullKey);
 
-    const fullKey = sel.length ? __ssFormatSelectedOptionsKey(sel) : "";
-    if (fullKey) candidates.push(fullKey);
+        if (sel.length) {
+            const vOnly = sel.map(o => String(o.value || "").trim()).filter(Boolean).join(" | ");
+            if (vOnly && vOnly !== fullKey) candidates.push(vOnly);
+        }
 
-    if (sel.length) {
-        const vOnly = sel.map(o => String(o.value || "").trim()).filter(Boolean).join(" | ");
-        if (vOnly && vOnly !== fullKey) candidates.push(vOnly);
+        if (sel.length === 1) {
+            const l = String(sel[0].label || "").trim();
+            const v = String(sel[0].value || "").trim();
+            if (l && v) candidates.push(`${l}=${v}`);
+            if (v) candidates.push(v);
+        }
+
+        const legacy = String(legacySelectedOption || "").trim();
+        if (legacy) candidates.push(legacy);
+
+        for (const k of candidates) {
+            const key = String(k || "").trim();
+            if (!key) continue;
+            const num = Number(map[key]);
+            if (Number.isFinite(num) && num > 0) return __ssRound2(num);
+        }
     }
 
-    if (sel.length === 1) {
-        const l = String(sel[0].label || "").trim();
-        const v = String(sel[0].value || "").trim();
-        if (l && v) candidates.push(`${l}=${v}`);
-        if (v) candidates.push(v);
-    }
+    // 2) Additive option add-ons: base + sum(group.priceByOption[selectedValue])
+    let delta = 0;
+    try {
+        const groups = __ssExtractOptionGroups(product);
+        if (groups.length) {
+            const norm = (x) => String(x || "").trim().replace(/:$/, "").toLowerCase();
+            const groupMap = new Map();
+            for (const g of groups) {
+                const lb = norm(g?.label);
+                const kb = norm(g?.key);
+                if (lb) groupMap.set(lb, g);
+                if (kb) groupMap.set(kb, g);
+            }
 
-    const legacy = String(legacySelectedOption || "").trim();
-    if (legacy) candidates.push(legacy);
+            const sel = __ssNormalizeSelectedOptions(selectedOptions);
+            const sels = sel.length
+                ? sel
+                : (String(legacySelectedOption || "").trim()
+                    ? [{ label: groups[0]?.label || "", value: String(legacySelectedOption || "").trim() }]
+                    : []);
 
-    for (const k of candidates) {
-        const key = String(k || "").trim();
-        if (!key) continue;
-        const num = Number(parseFloat(map[key]) || 0);
-        if (Number.isFinite(num) && num > 0) return Math.round(num * 100) / 100;
-    }
+            for (const s of sels) {
+                const groupName = norm(s?.label) || norm(groups[0]?.label);
+                const value = String(s?.value || "").trim();
+                if (!value) continue;
+                const g = groupMap.get(groupName);
+                const rec = (g && g.priceByOption && typeof g.priceByOption === "object") ? g.priceByOption : null;
+                if (!rec) continue;
 
-    return base;
+                let raw = rec[value];
+                if (raw === undefined) {
+                    const vNorm = value.toLowerCase();
+                    for (const [k, v] of Object.entries(rec)) {
+                        if (String(k).trim().toLowerCase() === vNorm) { raw = v; break; }
+                    }
+                }
+
+                const add = Number(raw);
+                if (Number.isFinite(add)) delta += add;
+            }
+        }
+    } catch { }
+
+    const out = __ssRound2(base + delta);
+    if (Number.isFinite(out) && out > 0) return out;
+
+    return __ssRound2(base);
 }
+
 
 
 function __ssCleanOptionLabel(label) {
