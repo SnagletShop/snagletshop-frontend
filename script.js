@@ -6865,7 +6865,9 @@ function GoToProductPage(productName, productPrice, productDescription) {
     // analytics: product opened (viewer)
     const __ssViewToken = __ssStartProductViewSession();
     window.__ssCurrentViewedProductName = productName;
-    window.__ssCurrentViewedProductLink = (typeof productLink !== 'undefined' ? productLink : (product && product.productLink) || '');
+    // Initialize safely; the concrete product object is resolved further below.
+    // NOTE: do not reference `product` here (TDZ) because it's declared later.
+    window.__ssCurrentViewedProductLink = (typeof productLink !== 'undefined' ? productLink : '');
     const __ssClickToken2 = __ssConsumeRecentClickToken();
     sendAnalyticsEvent('product_open', {
         ...buildAnalyticsProductPayload(productName, { priceEUR: productPrice }),
@@ -6883,6 +6885,8 @@ function GoToProductPage(productName, productPrice, productDescription) {
     try { removeSortContainer(); } catch { }
 
     const product = __ssGetCatalogFlat().find(p => p?.name === productName);
+    // Store link for analytics / deep-linking if available.
+    window.__ssCurrentViewedProductLink = (product?.productLink || product?.link || '');
     if (!product || !Array.isArray(product.images) || product.images.length === 0) {
         console.error("❌ Product not found or no images:", productName);
         return;
