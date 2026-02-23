@@ -93,7 +93,11 @@ function __ssGetBasketButtonEl() {
 
 let __ssActiveBasketToast = null;
 let __ssActiveBasketToastTimers = [];
-
+function __ssRound2(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return 0;
+  return Math.round((x + Number.EPSILON) * 100) / 100;
+}
 /* Persistent basket indicator (badge) */
 function __ssGetBasketCounts() {
     const b = (typeof basket === "object" && basket) ? basket : {};
@@ -7374,6 +7378,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
