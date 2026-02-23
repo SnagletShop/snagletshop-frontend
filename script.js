@@ -70,6 +70,114 @@ const API_BASE = (() => {
 const USE_ADD_TO_CART_POPUP_LEGACY_ALERT = false;
 const USE_ADD_TO_CART_POPUP_BASKET_TOAST = false;
 
+/* ---------------- A/B testing (client-side, deterministic) ----------------
+   Experiments (keys):
+     pn - product name
+     pd - product description
+     pr - price variant
+     dl - delivery copy
+   Assignment is deterministic per browser (localStorage) so users stay in the same bucket.
+*/
+function __ssRound2(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return 0;
+  return Math.round(x * 100) / 100;
+}
+
+function __ssAbFNV1a32(str) {
+  const s = String(str || "");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    // h *= 16777619 (with overflow)
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function __ssAbGetUid() {
+  const k = "ss_ab_uid_v1";
+  try {
+    let v = localStorage.getItem(k);
+    if (v && String(v).trim()) return String(v).trim();
+    // Generate a random stable uid for this browser.
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      const a = new Uint32Array(4);
+      crypto.getRandomValues(a);
+      v = Array.from(a).map(x => x.toString(16)).join("");
+    } else {
+      v = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2));
+    }
+    localStorage.setItem(k, v);
+    return v;
+  } catch {
+    return "no_storage";
+  }
+}
+
+function __ssAbChooseBucket(expKey) {
+  const uid = __ssAbGetUid();
+  const h = __ssAbFNV1a32(`${uid}|${String(expKey || "")}`);
+  // 0..1
+  const p = h / 0xFFFFFFFF;
+  return (p < 0.5) ? "A" : "B";
+}
+
+let __ss_ab_cache = null;
+function __ssGetExperiments() {
+  if (__ss_ab_cache) return __ss_ab_cache;
+  const keys = ["pn", "pd", "pr", "dl"];
+  const out = {};
+  for (const k of keys) out[k] = __ssAbChooseBucket(k);
+  __ss_ab_cache = out;
+  return out;
+}
+
+function __ssABIsB(key) {
+  try { return String(__ssGetExperiments()?.[key] || "A").toUpperCase() === "B"; } catch { return false; }
+}
+
+function __ssABGetProductName(product) {
+  const a = String(product?.name || "").trim();
+  if (!a) return "";
+  if (__ssABIsB("pn")) {
+    const b = product?.nameB ?? product?.abNameB ?? product?.ab_name_b ?? product?.abName ?? "";
+    return String(b || a).trim();
+  }
+  return a;
+}
+
+function __ssABGetProductDescription(product) {
+  const a = String(product?.description || "").trim();
+  if (__ssABIsB("pd")) {
+    const b = product?.descriptionB ?? product?.abDescriptionB ?? product?.abDescB ?? product?.ab_description_b ?? "";
+    return String(b || a).trim();
+  }
+  return a;
+}
+
+function __ssABGetDeliveryText(product) {
+  const a = String(product?.deliveryText || product?.delivery || "Shipping free").trim();
+  const b = String(product?.deliveryTextB || product?.deliveryB || "Free shipping").trim();
+  return __ssABIsB("dl") ? (b || a) : (a || b);
+}
+
+// In the basket UI we always want this exact text:
+function __ssShipFreeText() { return "Shipping free"; }
+
+function __ssEnsureABUiStyles() {
+  if (document.getElementById("__ss-ab-ui-styles")) return;
+  const style = document.createElement("style");
+  style.id = "__ss-ab-ui-styles";
+  style.textContent = `
+.ReceiptItemName{display:block;}
+.ReceiptItemShipFree{font-size:12px;opacity:.85;margin-top:2px;line-height:1.2;}
+.BasketItemShipFree{font-size:12px;opacity:.85;margin-top:6px;line-height:1.2;}
+.Product_Delivery_Info{margin-top:10px;font-size:13px;opacity:.9;line-height:1.2;}
+`;
+  document.head.appendChild(style);
+}
+
 function __ssEnsureBasketToastStyles() {
     // Styles are defined in index.html (using CSS variables for light/dark mode).
     // Keep this function as a no-op for backward compatibility.
@@ -2818,15 +2926,15 @@ function searchProducts() {
             const nameLink = document.createElement("a");
             nameLink.className = "product-name";
 
-            nameLink.textContent = product.name;
+            nameLink.textContent = (__ssABGetProductName(product) || product.name);
             nameLink.style.textDecoration = "none";
             nameLink.addEventListener("click", (e) => {
                 e.preventDefault();
                 navigate("GoToProductPage", [
-                    product.name,
-                    product.price,
-                    product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
-                ]);
+                product.name,
+                (__ssResolveVariantPriceEUR(product, [], "") || product.price),
+                ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
+            ]);
             });
 
 
@@ -2846,15 +2954,15 @@ function searchProducts() {
             img.target = "_blank"; // Open in new tab
             img.addEventListener("click", () => {
                 navigate("GoToProductPage", [
-                    product.name,
-                    product.price,
-                    product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
-                ]);
+                product.name,
+                (__ssResolveVariantPriceEUR(product, [], "") || product.price),
+                ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
+            ]);
             });
 
             const priceP = document.createElement("p");
             priceP.className = "product-price";
-            priceP.textContent = `${product.price}€`;
+            priceP.textContent = `${(__ssResolveVariantPriceEUR(product, [], "") || product.price)}€`;
 
             const quantityContainer = document.createElement("div");
             quantityContainer.className = "quantity-container";
@@ -4814,13 +4922,13 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         nameLink.style.textDecoration = "none"; // Removes underline
 
 
-        nameLink.textContent = product.name;
+        nameLink.textContent = (__ssABGetProductName(product) || product.name);
         nameLink.addEventListener("click", (e) => {
             e.preventDefault();
             navigate("GoToProductPage", [
                 product.name,
-                product.price,
-                product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+                (__ssResolveVariantPriceEUR(product, [], "") || product.price),
+                ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
             ]);
         });
         nameLink.href = `https://www.snagletshop.com/?product=${encodeURIComponent(product.name)}`;
@@ -4838,14 +4946,14 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         img.addEventListener("click", () => {
             navigate("GoToProductPage", [
                 product.name,
-                product.price,
-                product.description || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER
+                (__ssResolveVariantPriceEUR(product, [], "") || product.price),
+                ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
             ]);
         });
 
         const priceP = document.createElement("p");
         priceP.className = "product-price";
-        priceP.textContent = `${product.price}${TEXTS.CURRENCIES.EUR}`;
+        priceP.textContent = `${(__ssResolveVariantPriceEUR(product, [], "") || product.price)}${TEXTS.CURRENCIES.EUR}`;
 
         const quantityContainer = document.createElement("div");
         quantityContainer.className = "quantity-container";
@@ -4890,7 +4998,7 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
                 product.image,
                 product.expectedPurchasePrice,
                 product.productLink,
-                product.description,
+                (__ssABGetProductDescription(product) || product.description),
                 "",
                 __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
             );
@@ -5125,7 +5233,8 @@ function selectProductOption(button, optionValue) {
 
     window.selectedProductOption = optionValue;
 
-    const productName = document.querySelector(".Product_Name_Heading")?.textContent?.trim();
+    const headingEl = document.querySelector(".Product_Name_Heading");
+    const productName = headingEl?.dataset?.canonicalName || headingEl?.textContent?.trim();
     if (productName && basket[productName]) {
         basket[productName].selectedOption = optionValue;
         persistBasket("option_change");
@@ -5232,7 +5341,7 @@ function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, p
         payload.extra = { selectedOption: selectedOption || "" };
         sendAnalyticsEvent('add_to_cart', {
             ...payload,
-            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken() }
+            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken(), experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null) }
         });
     } catch { }
 
@@ -5247,6 +5356,8 @@ function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, p
         } else {
             basket[key] = {
                 name: productName,
+                displayName,
+                displayDescription,
                 price,
                 image: imageUrl,
                 quantity,
@@ -5317,6 +5428,7 @@ function updateBasket() {
     
     // Ensure option chips + layout overrides are available
     __ssEnsureOptionChipStyles();
+    __ssEnsureABUiStyles();
 if (Object.keys(basket).length === 0) {
         basketContainer.innerHTML = `<p class='EmptyBasketMessage'>The basket is empty!</p>`;
         return;
@@ -5344,6 +5456,9 @@ if (Object.keys(basket).length === 0) {
 const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
 const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
 
+const __dispNameText = String(item?.displayName || item?.name || "");
+const __dispDescText = String(item?.displayDescription || item?.description || "");
+
 const encodedName = encodeURIComponent(item.name);
         productDiv.innerHTML = `
         <div class="Basket-Item">
@@ -5358,10 +5473,11 @@ const encodedName = encodeURIComponent(item.name);
             </a>
             <div class="Item-Details">
                 <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
-                    <strong class="BasketText">${item.name.length > 15 ? item.name.slice(0, 15) + "…" : item.name}</strong>
+                    <strong class="BasketText">${__dispNameText.length > 15 ? __dispNameText.slice(0, 15) + "…" : __dispNameText}</strong>
 
                 </a>
-                <p class="BasketTextDescription">${item.description}</p>
+                <p class="BasketTextDescription">${__dispDescText}</p>
+                <div class="BasketItemShipFree">${__ssShipFreeText()}</div>
                                        ${optionChipsHTML}
             </div>
 <div class="Quantity-Controls-Basket">
@@ -5405,7 +5521,8 @@ receiptContent += `
     <tr>
         <td>${item.quantity} ×</td>
         <td>
-            <div class="ReceiptItemName">${__ssEscHtml(item.name)}</div>
+            <div class="ReceiptItemName">${__ssEscHtml(String(item?.displayName || item.name || ""))}</div>
+            <div class="ReceiptItemShipFree">${__ssEscHtml(__ssShipFreeText())}</div>
             ${receiptChipsHTML}
         </td>
         <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
@@ -5525,6 +5642,8 @@ function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, p
         } else {
             basket[key] = {
                 name: productName,
+                displayName,
+                displayDescription,
                 price,
                 image: imageUrl,
                 quantity,
@@ -5935,7 +6054,8 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
                 applyTariff: getApplyTariffFlag(),
                 metadata: { order_summary },
                 fxFetchedAt,
-                turnstileToken
+                turnstileToken,
+                experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null)
             })
         });
 
@@ -6508,9 +6628,18 @@ function __ssFormatSelectedOptionsKey(selectedOptions) {
 
 
 function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = "") {
-    const base = Number(parseFloat(product?.price ?? 0) || 0);
-    const map = (product && typeof product === "object") ? product.variantPrices : null;
-    if (!map || typeof map !== "object" || Array.isArray(map)) return base;
+    const ex = (typeof __ssGetExperiments === "function") ? __ssGetExperiments() : null;
+    const useB = ex && String(ex.pr || "").toUpperCase() === "B";
+
+    const baseA = Number(parseFloat(product?.price ?? 0) || 0);
+    const baseBraw = Number(parseFloat(product?.priceB ?? NaN));
+    const base = (useB && Number.isFinite(baseBraw) && baseBraw > 0) ? baseBraw : baseA;
+
+    const mapA = (product && typeof product === "object") ? product.variantPrices : null;
+    const mapB = (product && typeof product === "object") ? product.variantPricesB : null;
+    const map = (useB && mapB && typeof mapB === "object" && !Array.isArray(mapB)) ? mapB : mapA;
+
+    if (!map || typeof map !== "object" || Array.isArray(map)) return __ssRound2(base);
 
     const sel = __ssNormalizeSelectedOptions(selectedOptions || []);
     const candidates = [];
@@ -6537,10 +6666,10 @@ function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOpti
         const key = String(k || "").trim();
         if (!key) continue;
         const num = Number(parseFloat(map[key]) || 0);
-        if (Number.isFinite(num) && num > 0) return Math.round(num * 100) / 100;
+        if (Number.isFinite(num) && num > 0) return __ssRound2(num);
     }
 
-    return base;
+    return __ssRound2(base);
 }
 
 
@@ -6860,17 +6989,28 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const infoCol = document.createElement("div");
     infoCol.className = "Product_Info";
 
+    __ssEnsureABUiStyles();
+
     const heading = document.createElement("div");
     heading.className = "Product_Name_Heading";
-    heading.textContent = productName || "";
+    heading.dataset.canonicalName = String(productName || "");
+    heading.textContent = (__ssABGetProductName(product) || productName || "");
 
     const desc = document.createElement("div");
     desc.className = "Product_Description";
-    desc.textContent = (productDescription && String(productDescription).trim())
-        ? String(productDescription)
-        : (TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || "");
+    const __abDesc = String(__ssABGetProductDescription(product) || "").trim();
+    const __displayDesc = (__abDesc)
+        ? __abDesc
+        : ((productDescription && String(productDescription).trim())
+            ? String(productDescription)
+            : (TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || ""));
+    desc.textContent = __displayDesc;
 
-    infoCol.append(heading, desc);
+    const delivery = document.createElement("div");
+    delivery.className = "Product_Delivery_Info";
+    delivery.textContent = String(__ssABGetDeliveryText(product) || "Shipping free");
+
+    infoCol.append(heading, desc, delivery);
 
     // Options (multi)
     const groups = __ssExtractOptionGroups(product);
@@ -7014,7 +7154,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
             mainSrc,
             product.expectedPurchasePrice,
             product.productLink,
-            productDescription,
+            __displayDesc,
             legacy,
             sel
         );
@@ -7038,7 +7178,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
             mainSrc,
             product.expectedPurchasePrice,
             product.productLink,
-            productDescription,
+            __displayDesc,
             legacy,
             sel
         );
@@ -7096,6 +7236,13 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
 
     if (!productIdForCart) productIdForCart = null;
 
+    __ssEnsureABUiStyles();
+    const __pForAB = (pRef && typeof pRef === "object") ? pRef : { name: productName, description: productDescription, price };
+    const displayName = (__ssABGetProductName(__pForAB) || String(productName || "")).trim();
+    const displayDescription = (String(productDescription || "").trim())
+        ? String(productDescription)
+        : (String(__ssABGetProductDescription(__pForAB) || "")).trim();
+
 
     const qty = (typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1;
     if (typeof cart === "object" && cart) cart[productName] = 1;
@@ -7123,6 +7270,8 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
         if (basket && basket[key]) {
             basket[key].quantity += qty;
             basket[key].price = price;
+            basket[key].displayName = displayName;
+            basket[key].displayDescription = displayDescription;
             if (!basket[key].productId && productIdForCart) basket[key].productId = productIdForCart;
             // keep latest selections
             if (selOpts.length) basket[key].selectedOptions = selOpts;
@@ -7130,6 +7279,8 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
         } else {
             basket[key] = {
                 name: productName,
+                displayName,
+                displayDescription,
                 price,
                 image: imageUrl,
                 quantity: qty,
@@ -7155,7 +7306,7 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
             payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
             sendAnalyticsEvent('add_to_cart', {
             ...payload,
-            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken() }
+            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken(), experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null) }
         });
         } catch { }
         const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
