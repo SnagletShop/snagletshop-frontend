@@ -6799,7 +6799,7 @@ function __ssEnsureOptionChipStyles() {
 
 @media (max-width: 700px){
 
-.Quantity-Controls-Basket{gap:10px !important;min-width:56px !important;}
+
 .Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
 .Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
   .Basket-Item{padding:12px 12px !important;gap:12px !important;}
@@ -7588,6 +7588,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
