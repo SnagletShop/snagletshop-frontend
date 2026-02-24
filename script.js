@@ -7378,9 +7378,23 @@ function __ssRecoEnsureStyles() {
       align-content:start;
       padding-right:6px;
     }
+    /* Mobile: show ~2 cards at a time (force horizontal scroll) */
+    @media (max-width: 680px){
+      .RecoSection{
+        max-width: 100%;
+        padding-left: 12px;
+        padding-right: 12px;
+        box-sizing: border-box;
+      }
+      .RecoViewport{overflow-x:auto;}
+      .RecoStrip{
+        /* two cards visible with a gap; the rest scroll */
+        grid-auto-columns: calc((100vw - 24px - 12px) / 2);
+      }
+    }
     @media (max-width: 460px){
-      .RecoStrip{grid-auto-columns:150px;}
       .RecoNav{width:34px;height:34px;border-radius:11px;}
+      .RecoStrip{grid-auto-columns: calc((100vw - 24px - 12px) / 2);}
     }
 
     .RecoCard{
