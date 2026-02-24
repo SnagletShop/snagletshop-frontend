@@ -5978,7 +5978,8 @@ function buildStripeSafeCart(fullCart) {
             // price is not trusted by the server (server recomputes), but keep it for display/debug
             price: Number(i.unitPriceEUR || i.price || 0),
             selectedOption: i.selectedOption || "",
-            selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
+            selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || []),
+        recoDiscountToken: i.recoDiscountToken || ""
         };
         if (i.productId) out.productId = String(i.productId).trim();
         if (i.productLink) out.productLink = String(i.productLink).trim();
@@ -6022,6 +6023,7 @@ function buildFullCartFromBasket() {
                 productId: String(item?.productId || "").slice(0, 80),
                 quantity: qty,
                 unitPriceEUR: unitEUR,
+                recoDiscountToken: String(item?.recoDiscountToken || "").slice(0, 500),
                 price: unitEUR,
                 expectedPurchasePrice: expected,
                 productLink: String(item?.productLink || prod?.productLink || "N/A").slice(0, 800),
@@ -7272,6 +7274,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     Product_Viewer.appendChild(productDiv);
     viewer.appendChild(Product_Viewer);
 
+    try { __ssRecoRenderForProduct(product); } catch { }
+
     // Swipe support (non-breaking)
     try {
         let touchStartX = 0;
@@ -7290,6 +7294,304 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     try { updateImage(); } catch { }
 }
 
+
+// ===== Recommendations widget (product page) =====
+function __ssRecoGetSessionId() {
+  const k = "ss_reco_sid_v1";
+  try {
+    let v = localStorage.getItem(k);
+    if (v && String(v).trim()) return String(v).trim();
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      const a = new Uint32Array(4);
+      crypto.getRandomValues(a);
+      v = Array.from(a).map(x => x.toString(16)).join("");
+    } else {
+      v = String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+    }
+    localStorage.setItem(k, v);
+    return v;
+  } catch {
+    return String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+  }
+}
+
+function __ssRecoSaveRecentClick(data) {
+  const k = "ss_reco_last_click_v1";
+  try {
+    localStorage.setItem(k, JSON.stringify({ ...data, ts: Date.now() }));
+  } catch { }
+}
+
+function __ssRecoConsumeRecentClick() {
+  const k = "ss_reco_last_click_v1";
+  try {
+    const raw = localStorage.getItem(k);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    const age = Date.now() - Number(d?.ts || 0);
+    if (!(age >= 0 && age <= 30 * 60 * 1000)) return null; // 30 minutes
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function __ssRecoClearRecentClick() {
+  try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
+}
+
+function __ssRecoEnsureStyles() {
+  if (document.getElementById("__ssRecoStyles")) return;
+  const s = document.createElement("style");
+  s.id = "__ssRecoStyles";
+    s.textContent = `
+    .RecoSection{margin-top:24px;border-top:1px solid rgba(255,255,255,.12);padding-top:18px;}
+    .RecoHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+    .RecoHead h3{margin:0;font-size:18px;}
+    .RecoNavs{display:flex;gap:8px;align-items:center;}
+    .RecoNav{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;display:grid;place-items:center;user-select:none}
+    .RecoNav:disabled{opacity:.35;cursor:default}
+    .RecoViewport{overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;}
+    .RecoViewport::-webkit-scrollbar{height:10px}
+    .RecoViewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
+    .RecoStrip{display:grid;grid-auto-flow:column;grid-auto-columns:160px;grid-template-rows:repeat(var(--reco-rows,1),1fr);gap:12px;align-content:start}
+    @media (min-width: 760px){
+      .RecoStrip{--reco-rows:2;grid-auto-columns:170px;}
+    }
+    .RecoCard{scroll-snap-align:start;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px;background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:220px;}
+    .RecoCard:hover{background:rgba(255,255,255,.07)}
+    .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
+    .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
+    .RecoMeta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;opacity:.9}
+    .RecoBadge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);opacity:.9}
+
+    .RecoOld{text-decoration:line-through;opacity:.65;margin-right:4px}
+    .RecoNew{font-weight:700}
+    .RecoDisc{border-color:rgba(255,255,255,.22)}
+  `;
+  document.head.appendChild(s);
+}
+
+async function __ssRecoSendEvent(type, payload) {
+  try {
+    const body = { type, ...payload };
+    // sendBeacon if available
+    if (navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(body)], { type: "application/json" });
+      navigator.sendBeacon(`${API_BASE}/recs/event`, blob);
+      return;
+    }
+    await fetch(`${API_BASE}/recs/event`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      keepalive: true
+    });
+  } catch { }
+}
+
+async function __ssRecoRenderForProduct(product) {
+  try {
+    if (!product || !product.productId) return;
+    const viewer = document.getElementById("Viewer");
+    const pv = document.getElementById("Product_Viewer");
+    if (!viewer || !pv) return;
+
+    __ssRecoEnsureStyles();
+
+    // Remove old
+    const old = document.getElementById("RecoSection");
+    if (old) old.remove();
+
+    const sid = __ssRecoGetSessionId();
+
+    const r = await fetch(`${API_BASE}/recs?sourceProductId=${encodeURIComponent(String(product.productId))}`, { method: "GET" });
+    const d = await r.json().catch(() => null);
+    if (!d || !d.ok || !Array.isArray(d.items) || d.items.length === 0) return;
+
+    const section = document.createElement("div");
+    section.id = "RecoSection";
+    section.className = "RecoSection";
+
+    const head = document.createElement("div");
+    head.className = "RecoHead";
+
+    const h = document.createElement("h3");
+    h.textContent = "Other products";
+
+    const navs = document.createElement("div");
+    navs.className = "RecoNavs";
+
+    const btnL = document.createElement("button");
+    btnL.type = "button";
+    btnL.className = "RecoNav";
+    btnL.setAttribute("aria-label", "Scroll left");
+    btnL.textContent = "‹";
+
+    const btnR = document.createElement("button");
+    btnR.type = "button";
+    btnR.className = "RecoNav";
+    btnR.setAttribute("aria-label", "Scroll right");
+    btnR.textContent = "›";
+
+    navs.appendChild(btnL);
+    navs.appendChild(btnR);
+
+    head.appendChild(h);
+    head.appendChild(navs);
+
+    const viewport = document.createElement("div");
+    viewport.className = "RecoViewport";
+
+    const strip = document.createElement("div");
+    strip.className = "RecoStrip";
+
+    viewport.appendChild(strip);
+
+    // impression (fire once per render)
+    __ssRecoSendEvent("impression", {
+      widgetId: d.widgetId,
+      token: d.token,
+      sourceProductId: String(product.productId),
+      sessionId: sid,
+      extra: { shown: d.items.map(x => ({ productId: x.productId, position: x.position })) }
+    });
+
+    const flat = __ssGetCatalogFlat();
+
+    (d.items || []).forEach((it, idx) => {
+      const card = document.createElement("div");
+      card.className = "RecoCard";
+      card.dataset.productId = String(it.productId);
+      card.dataset.position = String(it.position || (idx + 1));
+
+      const img = document.createElement("img");
+      img.className = "RecoImg";
+      img.loading = "lazy";
+      img.alt = String(it.name || "");
+      img.src = String(it.image || "");
+
+      const nm = document.createElement("div");
+      nm.className = "RecoName";
+      nm.textContent = String(it.name || "");
+
+      const meta = document.createElement("div");
+      meta.className = "RecoMeta";
+
+      const price = document.createElement("span");
+      const eur = Number(it.price || 0);
+      const discPct = Number(it.discountPct || 0);
+      const discPrice = Number(it.discountedPrice || 0);
+      const cur = (TEXTS?.CURRENCIES?.EUR || "€");
+      if (discPct > 0 && discPrice > 0 && eur > 0) {
+        price.innerHTML = `<span class="RecoOld">${eur}${cur}</span> <span class="RecoNew">${discPrice}${cur}</span>`;
+      } else {
+        price.textContent = eur ? `${eur}${cur}` : "";
+      }
+
+      const badge = document.createElement("span");
+      badge.className = "RecoBadge";
+      const pos = Number(it.position || (idx + 1));
+      if (pos <= 2) badge.textContent = "Bestseller";
+      else badge.textContent = "Suggested";
+
+      if (Number(it.discountPct || 0) > 0) {
+        const dsc = document.createElement("span");
+        dsc.className = "RecoBadge RecoDisc";
+        dsc.textContent = `-${Number(it.discountPct)}%`;
+        meta.append(price, badge, dsc);
+      } else {
+        meta.append(price, badge);
+      }
+      card.append(img, nm, meta);
+
+      card.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        __ssRecoSendEvent("click", {
+          widgetId: d.widgetId,
+          token: d.token,
+          sourceProductId: String(product.productId),
+          targetProductId: String(it.productId),
+          position: pos,
+          sessionId: sid,
+          discountToken: String(it.discountToken || ""),
+          discountPct: Number(it.discountPct || 0),
+          discountedPrice: Number(it.discountedPrice || 0)
+        });
+
+        __ssRecoSaveRecentClick({
+          widgetId: d.widgetId,
+          token: d.token,
+          sourceProductId: String(product.productId),
+          targetProductId: String(it.productId),
+          position: pos,
+          sessionId: sid
+        });
+
+        // Navigate using existing flow
+        const target = flat.find(p => String(p?.productId || "").trim() === String(it.productId));
+        if (target) {
+          navigate("GoToProductPage", [
+            target.name,
+            (__ssResolveVariantPriceEUR(target, [], "") || target.price),
+            ((__ssABGetProductDescription(target) || target.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
+          ]);
+        } else {
+          // fallback by name
+          navigate("GoToProductPage", [
+            it.name,
+            it.price,
+            it.description || (TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
+          ]);
+        }
+      });
+
+      strip.appendChild(card);
+    });
+
+    section.append(head, viewport);
+    pv.appendChild(section);
+
+    function __ssRecoUpdateNav(){
+      try{
+        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+        btnL.disabled = viewport.scrollLeft <= 2;
+        btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
+      }catch{}
+    }
+    btnL.addEventListener('click', ()=>{ viewport.scrollBy({ left: -Math.max(240, viewport.clientWidth*0.9), behavior: 'smooth' }); });
+    btnR.addEventListener('click', ()=>{ viewport.scrollBy({ left: Math.max(240, viewport.clientWidth*0.9), behavior: 'smooth' }); });
+    viewport.addEventListener('scroll', __ssRecoUpdateNav, { passive:true });
+    window.addEventListener('resize', __ssRecoUpdateNav);
+    __ssRecoUpdateNav();
+  } catch { }
+}
+
+function __ssRecoMaybeAttributeAddToCart(targetProductId) {
+  try {
+    const pid = String(targetProductId || "").trim();
+    if (!pid) return null;
+    const click = __ssRecoConsumeRecentClick();
+    if (!click) return null;
+    if (String(click.targetProductId || "") !== pid) return null;
+
+    __ssRecoSendEvent("add_to_cart", {
+      widgetId: click.widgetId,
+      token: click.token,
+      sourceProductId: click.sourceProductId,
+      targetProductId: pid,
+      position: click.position,
+      sessionId: click.sessionId
+    });
+
+    const out = { discountToken: String(click.discountToken || ""), discountPct: Number(click.discountPct || 0), discountedPrice: Number(click.discountedPrice || 0) };
+
+    // one attribution per click
+    __ssRecoClearRecentClick();
+    return out;
+  } catch { return null; }
+}
 /* Override: buyNow forwards selectedOptions */
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
     const qtyEl = document.getElementById(`quantity-${productName}`);
@@ -7315,6 +7617,10 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     }
 
     if (!productIdForCart) productIdForCart = null;
+
+    let __recoDisc = null;
+    try { __recoDisc = __ssRecoMaybeAttributeAddToCart(productIdForCart); } catch { }
+
 
     __ssEnsureABUiStyles();
     const __pForAB = (pRef && typeof pRef === "object") ? pRef : { name: productName, description: productDescription, price };
@@ -7344,6 +7650,15 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     const priceEUR = __ssResolveVariantPriceEUR(pRef, selOpts, selectedOption) || (parseFloat(price) || Number(price) || 0);
     price = priceEUR;
 
+    const __origPriceBeforeReco = price;
+    if (__recoDisc && Number(__recoDisc.discountPct || 0) > 0 && String(__recoDisc.discountToken || "")) {
+        const pct = Math.max(0, Math.min(80, Number(__recoDisc.discountPct || 0)));
+        const discounted = Math.round((price * (1 - pct / 100)) * 100) / 100;
+        if (Number.isFinite(discounted) && discounted > 0) {
+            price = discounted;
+        }
+    }
+
     const key = selOpts.length ? `${productName} - ${__ssFormatSelectedOptionsKey(selOpts)}` : (selectedOption ? `${productName} - ${selectedOption}` : productName);
 
     if (qty > 0) {
@@ -7356,6 +7671,11 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
             // keep latest selections
             if (selOpts.length) basket[key].selectedOptions = selOpts;
             if (selectedOption) basket[key].selectedOption = selectedOption;
+            if (__recoDisc && String(__recoDisc.discountToken || "")) {
+                basket[key].recoDiscountToken = String(__recoDisc.discountToken || "");
+                basket[key].recoDiscountPct = Number(__recoDisc.discountPct || 0);
+                basket[key].unitPriceOriginalEUR = Number(__origPriceBeforeReco);
+            }
         } else {
             basket[key] = {
                 name: productName,
@@ -7369,7 +7689,8 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
                 productLink,
                 description: productDescription,
                 ...(selectedOption ? { selectedOption } : {}),
-                ...(selOpts.length ? { selectedOptions: selOpts } : {})
+                ...(selOpts.length ? { selectedOptions: selOpts } : {}),
+                ...((__recoDisc && String(__recoDisc.discountToken || "")) ? { recoDiscountToken: String(__recoDisc.discountToken || ""), recoDiscountPct: Number(__recoDisc.discountPct || 0), unitPriceOriginalEUR: Number(__origPriceBeforeReco) } : {})
             };
         }
 
