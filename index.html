@@ -4403,6 +4403,28 @@ font-family: "Italianno", cursive;
         text-overflow: ellipsis !important;
         margin-bottom: -10px;
     }
+            /* ---- Fix: "Suggested" / recommendations rendering behind menus (PC + mobile) ---- */
+
+/* Your recommendations section is created by script.js as:
+   section.id = "RecoSection"; section.className = "RecoSection";
+*/
+#RecoSection,
+.RecoSection{
+  position: relative;   /* required for z-index to take effect */
+  z-index: 2500;        /* above mobileTopBar (995) + typical menus (1000/2000/9999) */
+  isolation: isolate;   /* prevents weird stacking-context interactions */
+}
+
+/* Ensure inner scroller/cards don't get trapped under overlays */
+#RecoSection .RecoViewport,
+.RecoSection .RecoViewport,
+#RecoSection .RecoStrip,
+.RecoSection .RecoStrip,
+#RecoSection .RecoCard,
+.RecoSection .RecoCard{
+  position: relative;
+  z-index: 1;
+}
 }
     </style>
 </head>
@@ -5050,6 +5072,7 @@ font-family: "Italianno", cursive;
             observer.observe(document.body, { childList: true, subtree: true });
         });
     </script>
+
 
 
 
