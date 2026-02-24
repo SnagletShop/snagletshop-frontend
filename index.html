@@ -4404,25 +4404,6 @@ font-family: "Italianno", cursive;
         margin-bottom: -10px;
     }
 }
-
-/* === FIX: Mobile product page content disappearing + ensure full-width PDP === */
-@media (max-width: 680px) {
-  /* When the PDP is shown inside the grid Viewer, force a single column so content can't get clipped */
-  .Viewer{ grid-template-columns: 1fr !important; }
-  #Product_Viewer, .Product_Viewer{ grid-column: 1 / -1 !important; width: 100% !important; }
-
-  /* Ensure the product section can grow and the lower controls remain visible */
-  .Product_Viewer{ height: auto !important; overflow: visible !important; }
-  .Product_Detail_Page{ height: auto !important; overflow: visible !important; }
-  .Product_Info{ height: auto !important; overflow: visible !important; }
-
-  /* Hard-force the key UI blocks to render (guards against accidental display:none) */
-  .Product_Description{ display: -webkit-box !important; visibility: visible !important; opacity: 1 !important; }
-  .ProductPageQuantityContainer{ display: flex !important; visibility: visible !important; opacity: 1 !important; }
-  .Quantity_Controls_ProductPage{ display: flex !important; visibility: visible !important; opacity: 1 !important; }
-  .add-to-cart-product{ display: inline-flex !important; visibility: visible !important; opacity: 1 !important; }
-  .ProductPageBuyButton{ display: block !important; visibility: visible !important; opacity: 1 !important; }
-}
     </style>
 </head>
 
