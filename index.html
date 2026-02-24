@@ -4403,23 +4403,26 @@ font-family: "Italianno", cursive;
         text-overflow: ellipsis !important;
         margin-bottom: -10px;
     }
-            /* =========================
-   MOBILE PDP FIT + RECO 2-UP (scoped; does NOT touch main catalog grid)
-   ========================= */
-/* =========================
-   MOBILE PDP: center content + prevent horizontal squish
-   (scoped; does not affect main catalog grid)
-   ========================= */
+/* =========================================================
+   MOBILE PDP: keep layout inside viewport WITHOUT resizing/warping text
+   - remove forced max-width "card" behavior
+   - kill horizontal offsets/transforms
+   - ensure controls + text align left naturally
+   ========================================================= */
+
 @media (max-width: 900px){
   html, body { overflow-x: hidden !important; }
 
-  /* Make the PDP container a real mobile "card" centered in viewport */
+  /* Let PDP use the full viewport width (no artificial max-width) */
   #Viewer, .Viewer,
   #Product_Viewer, .Product_Viewer,
-  .Product_Detail_Page, .Product_Details{
+  .Product_Detail_Page, .Product_Details,
+  .Product_Info{
     width: 100% !important;
-    max-width: 520px !important;         /* keeps it centered and not edge-to-edge wide */
-    margin: 0 auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     padding-left: 12px !important;
     padding-right: 12px !important;
     box-sizing: border-box !important;
@@ -4428,65 +4431,83 @@ font-family: "Italianno", cursive;
     right: auto !important;
   }
 
-  /* Stack image + info */
+  /* Stack columns on mobile */
   .Product_Info{
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
+    display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
-    box-sizing: border-box !important;
+    gap: 12px !important;
   }
 
-  /* Center the image area / thumbnails so it doesn't look left-shifted */
-  .Product_Images,
-  .Product_Image_Container,
-  .Product_Thumbnails,
-  .thumbnail-row,
-  .ProductGallery{
-    width: 100% !important;
+  /* Keep text blocks aligned and readable */
+  .Product_Detail_Page h1,
+  .Product_Detail_Page h2,
+  .Product_Detail_Page h3,
+  .Product_Detail_Page p,
+  .Product_Detail_Page li,
+  .Product_Detail_Page .Product_Description{
     max-width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    justify-content: center !important;
-  }
-
-  /* Make sure description/feature bullets don't force weird layout */
-  .Product_Description{
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    overflow: visible !important;
+    text-align: left !important;
     word-break: break-word !important;
+    overflow-wrap: anywhere !important;
   }
 
-  /* Controls full-width and centered */
-  .ProductPageQuantityContainer,
+  /* Your description uses -webkit-box + overflow hidden; allow normal wrapping on mobile */
+  .Product_Description{
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure the gallery centers but doesn't affect text sizing */
+  .Product_Images, .Product_Image_Container{
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+  .Product_Thumbnails, .thumbnail-row{
+    justify-content: flex-start !important; /* avoid centered thumbs pushing layout */
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Controls: full width, consistent heights */
+  .ProductPageQuantityContainer{
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+  }
   button.add-to-cart-product,
   button.ProductPageBuyButton{
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+  }
+  button.add-to-cart-product{
+    min-height: 52px !important;
+    font-size: 16px !important;
+  }
+  button.ProductPageBuyButton{
+    min-height: 44px !important;
+    font-size: 15px !important;
   }
 }
 
-
-/* =========================
-   RECOMMENDATIONS: 2 visible cards, centered, no squish
-   ========================= */
+/* =========================================================
+   MOBILE RECOMMENDATIONS: stable card widths, no squish, good text wrap
+   ========================================================= */
 @media (max-width: 700px){
-
   #RecoSection, .RecoSection{
     width: 100% !important;
-    max-width: 520px !important;   /* match PDP max-width so it centers */
-    margin: 14px auto 0 !important;
+    max-width: none !important;
+    margin: 12px 0 0 !important;
     padding: 0 12px !important;
     box-sizing: border-box !important;
   }
 
-  /* Use flex scroller (more robust than grid on small screens) */
+  /* Use flex scroller; each card is a stable width */
   #RecoSection .RecoStrip, .RecoSection .RecoStrip{
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -4495,38 +4516,34 @@ font-family: "Italianno", cursive;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     scroll-snap-type: x mandatory !important;
-    padding: 8px 2px 12px !important;
+    padding: 6px 2px 12px !important;
     box-sizing: border-box !important;
   }
 
-  /* Each card takes half the widget width (2-up) and never shrinks */
+  /* 2 cards visible on typical phones, but never needle-thin */
   #RecoSection .RecoCard, .RecoSection .RecoCard{
-    flex: 0 0 calc((100% - 12px) / 2) !important; /* two cards */
-    max-width: calc((100% - 12px) / 2) !important;
-    min-width: 160px !important;                  /* prevents “needle” cards on tiny devices */
+    flex: 0 0 clamp(160px, 46vw, 220px) !important;
+    max-width: clamp(160px, 46vw, 220px) !important;
     scroll-snap-align: start !important;
     box-sizing: border-box !important;
   }
 
-  /* Ensure inner layout doesn’t force weird narrow columns */
-  #RecoSection .RecoCard * , .RecoSection .RecoCard *{
+  /* Titles/prices: wrap, don't compress into 1-char columns */
+  #RecoSection .RecoTitle, .RecoSection .RecoTitle,
+  #RecoSection .RecoPriceRow, .RecoSection .RecoPriceRow,
+  #RecoSection .RecoCard p, .RecoSection .RecoCard p{
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
     min-width: 0 !important;
   }
 
-  /* Keep thumbnails/title readable (wrap instead of squeezing) */
-  #RecoSection .RecoTitle, .RecoSection .RecoTitle,
-  #RecoSection .RecoPriceRow, .RecoSection .RecoPriceRow{
-    white-space: normal !important;
-    word-break: break-word !important;
-  }
-
-  /* Make card images consistent */
+  /* Make images consistent and prevent weird stretching */
   #RecoSection .RecoCard img, .RecoSection .RecoCard img{
     width: 100% !important;
     height: auto !important;
     display: block !important;
     object-fit: cover !important;
-    border-radius: 10px !important;
   }
 }
 
@@ -5177,6 +5194,7 @@ font-family: "Italianno", cursive;
             observer.observe(document.body, { childList: true, subtree: true });
         });
     </script>
+
 
 
 
