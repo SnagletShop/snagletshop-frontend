@@ -95,6 +95,8 @@ function __ssAbFNV1a32(str) {
   return h >>> 0;
 }
 
+let __ss_ab_mem_uid = null;
+
 function __ssAbGetUid() {
   const k = "ss_ab_uid_v1";
   try {
@@ -111,7 +113,21 @@ function __ssAbGetUid() {
     localStorage.setItem(k, v);
     return v;
   } catch {
-    return "no_storage";
+    // localStorage unavailable (privacy mode / blocked). Use an in-memory uid for this session.
+    if (!__ss_ab_mem_uid) {
+      try {
+        if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+          const a = new Uint32Array(4);
+          crypto.getRandomValues(a);
+          __ss_ab_mem_uid = Array.from(a).map(x => x.toString(16)).join("");
+        } else {
+          __ss_ab_mem_uid = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2));
+        }
+      } catch {
+        __ss_ab_mem_uid = String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+      }
+    }
+    return __ss_ab_mem_uid;
   }
 }
 
@@ -124,14 +140,48 @@ function __ssAbChooseBucket(expKey) {
 }
 
 let __ss_ab_cache = null;
+let __ss_server_ab = null;
+let __ss_server_ab_promise = null;
+
+async function __ssFetchServerExperiments() {
+  try {
+    if (__ss_server_ab) return __ss_server_ab;
+    if (__ss_server_ab_promise) return __ss_server_ab_promise;
+
+    __ss_server_ab_promise = (async () => {
+      try {
+        const r = await fetch(`${API_BASE}/ab/assignments`, { method: "GET", credentials: "include" });
+        const d = await r.json().catch(() => null);
+        if (d && d.ok && d.experiments && typeof d.experiments === "object") {
+          __ss_server_ab = d.experiments;
+          __ss_ab_cache = d.experiments; // keep UI consistent with server (esp. pricing)
+          return __ss_server_ab;
+        }
+      } catch { }
+      return null;
+    })();
+
+    return __ss_server_ab_promise;
+  } catch {
+    return null;
+  }
+}
+
 function __ssGetExperiments() {
   if (__ss_ab_cache) return __ss_ab_cache;
-  const keys = ["pn", "pd", "pr", "dl"];
+  if (__ss_server_ab) {
+    __ss_ab_cache = __ss_server_ab;
+    return __ss_ab_cache;
+  }
+  const keys = ["pn", "pd", "pr", "dl", "pi"];
   const out = {};
   for (const k of keys) out[k] = __ssAbChooseBucket(k);
   __ss_ab_cache = out;
   return out;
 }
+
+// Fire-and-forget bootstrap (best effort)
+try { __ssFetchServerExperiments(); } catch { }
 
 function __ssABIsB(key) {
   try { return String(__ssGetExperiments()?.[key] || "A").toUpperCase() === "B"; } catch { return false; }
@@ -176,6 +226,36 @@ function __ssEnsureABUiStyles() {
 .Product_Delivery_Info{margin-top:10px;font-size:13px;opacity:.9;line-height:1.2;}
 `;
   document.head.appendChild(style);
+}
+
+
+function __ssABGetPrimaryImageUrl(product) {
+    try {
+        const p = product;
+        let url = "";
+
+        if (__ssABIsB("pi")) {
+            if (p && typeof p.imageB === "string" && p.imageB.trim()) {
+                url = p.imageB.trim();
+            } else if (p && Array.isArray(p.imagesB)) {
+                const firstB = p.imagesB.find(u => typeof u === "string" && u.trim());
+                if (firstB) url = firstB.trim();
+            }
+        }
+
+        if (!url) {
+            if (p && typeof p.image === "string" && p.image.trim()) {
+                url = p.image.trim();
+            } else if (p && Array.isArray(p.images)) {
+                const first = p.images.find(u => typeof u === "string" && u.trim());
+                if (first) url = first.trim();
+            }
+        }
+
+        return url || "";
+    } catch {
+        return "";
+    }
 }
 
 function __ssEnsureBasketToastStyles() {
@@ -1790,6 +1870,7 @@ function sendAnalyticsEvent(type, payload = {}, options = {}) {
 
         fetch(`${API_BASE}/analytics/event`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 type,
@@ -5077,14 +5158,7 @@ function preloadProductImages(category) {
     const urls = [];
     for (let i = 0; i < Math.min(MAX_PRODUCTS, list.length); i++) {
         const p = list[i];
-        let url = "";
-
-        if (p && typeof p.image === "string" && p.image.trim()) {
-            url = p.image.trim();
-        } else if (p && Array.isArray(p.images)) {
-            const first = p.images.find(u => typeof u === "string" && u.trim());
-            if (first) url = first.trim();
-        }
+        let url = __ssABGetPrimaryImageUrl(p);
 
         if (!url) continue;
 
@@ -6041,6 +6115,7 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
 
         const res = await fetch(`${API_BASE}/create-payment-intent`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 checkoutId: window.latestCheckoutId || null,
@@ -6887,12 +6962,13 @@ function GoToProductPage(productName, productPrice, productDescription) {
     const product = __ssGetCatalogFlat().find(p => p?.name === productName);
     // Store link for analytics / deep-linking if available.
     window.__ssCurrentViewedProductLink = (product?.productLink || product?.link || '');
-    if (!product || !Array.isArray(product.images) || product.images.length === 0) {
+    const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : (product?.images || []);
+    if (!product || !Array.isArray(__ssImagesForViewer) || __ssImagesForViewer.length === 0) {
         console.error("❌ Product not found or no images:", productName);
         return;
     }
 
-    const imagePromises = product.images.map(src => new Promise(resolve => {
+    const imagePromises = __ssImagesForViewer.map(src => new Promise(resolve => {
         const img = new Image();
         img.src = src;
         img.onload = () => resolve(src);
