@@ -4403,6 +4403,87 @@ font-family: "Italianno", cursive;
         text-overflow: ellipsis !important;
         margin-bottom: -10px;
     }
+            /* =========================
+   MOBILE PDP FIT + RECO 2-UP (scoped; does NOT touch main catalog grid)
+   ========================= */
+
+@media (max-width: 900px){
+  html, body { overflow-x: hidden !important; }
+
+  /* PDP containers only */
+  #Viewer, .Viewer,
+  #Product_Viewer, .Product_Viewer,
+  .Product_Detail_Page, .Product_Info,
+  .Product_Details{
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    left: auto !important;
+    right: auto !important;
+  }
+
+  /* Ensure PDP right side stacks under images on mobile */
+  .Product_Info{
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+/* =========================
+   RECOMMENDATIONS: 2 visible cards on phone, swipe for the rest
+   ========================= */
+
+@media (max-width: 700px){
+  /* Keep the widget constrained to the PDP width */
+  #RecoSection, .RecoSection{
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Horizontal scroller: 2-up layout */
+  #RecoSection .RecoStrip, .RecoSection .RecoStrip{
+    display: grid !important;
+    grid-auto-flow: column !important;
+
+    /* Two cards visible inside the widget width */
+    grid-auto-columns: calc((100% - 12px) / 2) !important;
+
+    gap: 12px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+
+    /* Avoid huge side padding that makes cards look squished */
+    padding: 8px 12px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Each card should snap and never shrink below its column */
+  #RecoSection .RecoCard, .RecoSection .RecoCard{
+    width: auto !important;
+    min-width: 0 !important;
+    scroll-snap-align: start !important;
+  }
+
+  /* Prevent inner content (titles/prices/badges) from forcing overflow/squish */
+  #RecoSection .RecoCard *, .RecoSection .RecoCard *{
+    min-width: 0 !important;
+  }
+
+  /* If images are getting distorted, force consistent cover behavior */
+  #RecoSection .RecoCard img, .RecoSection .RecoCard img{
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+}
 }
     </style>
 </head>
@@ -5050,6 +5131,7 @@ font-family: "Italianno", cursive;
             observer.observe(document.body, { childList: true, subtree: true });
         });
     </script>
+
 
 
 
