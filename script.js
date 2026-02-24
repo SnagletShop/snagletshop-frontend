@@ -7589,18 +7589,21 @@ async function __ssRecoRenderForProduct(product) {
 
     section.append(head, viewport);
 
-    // Mount recs *outside* Product_Viewer so mobile reordering logic can't accidentally hide core UI
-    pv.insertAdjacentElement('afterend', section);
+    // Mount recs directly under the PDP container if present (preferred), otherwise fall back to Product_Viewer.
+    // This keeps the widget visually tied to the product page layout on both desktop and mobile.
+    const pdp = document.querySelector('.Product_Detail_Page');
+    const anchor = pdp || pv;
+    anchor.insertAdjacentElement('afterend', section);
 
-    // Make width match the product menu/viewer width for a cleaner aligned look
+    // Make width match the PDP/viewer width for a cleaner aligned look
     try {
-      const w = pv.getBoundingClientRect().width;
+      const w = anchor.getBoundingClientRect().width;
       if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px';
     } catch {}
 
     function __ssRecoUpdateNav(){
       try{
-        try{ const w = pv.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w)+'px'; }catch{}
+        try{ const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w)+'px'; }catch{}
         const maxScroll = viewport.scrollWidth - viewport.clientWidth;
         btnL.disabled = viewport.scrollLeft <= 2;
         btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
