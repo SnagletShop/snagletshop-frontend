@@ -2283,7 +2283,9 @@ font-family: "Italianno", cursive;
             .mobileLogo h1 {
                 color: var(--Default_Text_Colour);
                 margin: 0;
-                font-size: 1.9rem;
+                font-size: 3.5vh;
+                font-family: "Italianno", cursive;
+                font-weight: 800;
             }
 
             .mobileSearch_Bar {
@@ -2813,7 +2815,7 @@ font-family: "Italianno", cursive;
 
 
             .SortContainer {
-                background-color: var(--TopBar_Background_Colour);
+                /* background-color: var(--TopBar_Background_Colour); */
                 grid-row: 1 / 1;
                 grid-column: 2 / 3;
                 display: flex;
@@ -2821,36 +2823,30 @@ font-family: "Italianno", cursive;
                 align-items: center;
                 justify-content: left;
                 padding: 0 3vh;
-                /* Fixed padding syntax */
                 width: 100%;
-                /* Ensures it spans the entire column */
                 height: 5vh;
                 max-width: 100%;
-                /* Fixed max-width */
                 max-height: 5vh;
                 color: var(--Default_Text_Colour);
-                font-size: 3vh;
+                font-size: 2.75vh;
+                font-weight: 600;
             }
 
             
             /* Ensure the dropdown doesn't resize (Safari-safe + modern) */
             #sortSelect {
-                min-width: 170px;
-                max-width: 100%;
-                width: auto;
+       
+                padding:1vw;
 
-                height: 36px;
-                padding: 8px 40px 8px 12px;
-
-                font-size: 13px;
-                font-weight: 700;
+                font-size: 3vw;
+                font-weight: 600;
                 line-height: 1.1;
                 font-family: 'Rubik', sans-serif;
 
                 color: var(--Default_Text_Colour);
                 background-color: var(--SearchBar_Background_Colour);
 
-                border: 1px solid rgba(0, 0, 0, 0.12);
+                border:none;
                 border-radius: 12px;
 
                 appearance: none;
@@ -2860,7 +2856,7 @@ font-family: "Italianno", cursive;
                 background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M5%207.5l5%205%205-5%22%20stroke%3D%22rgba%280%2C0%2C0%2C0.65%29%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E");
                 background-repeat: no-repeat;
                 background-position: right 12px center;
-                background-size: 12px 12px;
+             
 
                 box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06),
                     inset 0 1px 0 rgba(255, 255, 255, 0.65);
