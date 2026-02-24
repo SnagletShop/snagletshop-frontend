@@ -3990,7 +3990,7 @@ async function createPaymentModal() {
             <input type="text" id="Postal_Code" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.POSTAL_CODE || "Postal code"}" required>
             <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
             <input type="text" id="State" placeholder="State / Province / Region">
-            <input type="tel"  id="Phone" placeholder="Phone (for delivery updates)">
+            <input type="tel"  id="Phone" placeholder="Phone (not mandatory)">
   
             <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
             <select id="Country" class="tom-hidden" required style="width: 100%"></select>
@@ -7588,6 +7588,7 @@ productDiv.innerHTML = `
 
     try { updateAllPrices(); } catch { }
 }
+
 
 
 
