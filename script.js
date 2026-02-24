@@ -7345,20 +7345,56 @@ function __ssRecoEnsureStyles() {
   const s = document.createElement("style");
   s.id = "__ssRecoStyles";
     s.textContent = `
-    .RecoSection{margin-top:24px;border-top:1px solid rgba(255,255,255,.12);padding-top:18px;}
+    .RecoSection{
+      margin-top:24px;
+      border-top:1px solid rgba(255,255,255,.12);
+      padding-top:18px;
+      max-width:min(560px, 100%);
+      margin-left:auto;
+      margin-right:auto;
+    }
     .RecoHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
     .RecoHead h3{margin:0;font-size:18px;}
     .RecoNavs{display:flex;gap:8px;align-items:center;}
     .RecoNav{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;display:grid;place-items:center;user-select:none}
     .RecoNav:disabled{opacity:.35;cursor:default}
-    .RecoViewport{overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;}
+
+    /* single-row AliExpress-like strip */
+    .RecoViewport{
+      overflow-x:auto;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:10px;
+    }
     .RecoViewport::-webkit-scrollbar{height:10px}
     .RecoViewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
-    .RecoStrip{display:grid;grid-auto-flow:column;grid-auto-columns:160px;grid-template-rows:repeat(var(--reco-rows,1),1fr);gap:12px;align-content:start}
-    @media (min-width: 760px){
-      .RecoStrip{--reco-rows:2;grid-auto-columns:170px;}
+
+    .RecoStrip{
+      display:grid;
+      grid-auto-flow:column;
+      grid-auto-columns:160px;
+      grid-template-rows:1fr;
+      gap:12px;
+      align-content:start;
+      padding-right:6px;
     }
-    .RecoCard{scroll-snap-align:start;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px;background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:220px;}
+    @media (max-width: 460px){
+      .RecoStrip{grid-auto-columns:150px;}
+      .RecoNav{width:34px;height:34px;border-radius:11px;}
+    }
+
+    .RecoCard{
+      scroll-snap-align:start;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:10px;
+      background:rgba(255,255,255,.04);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:220px;
+    }
     .RecoCard:hover{background:rgba(255,255,255,.07)}
     .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
     .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
@@ -7368,6 +7404,7 @@ function __ssRecoEnsureStyles() {
     .RecoOld{text-decoration:line-through;opacity:.65;margin-right:4px}
     .RecoNew{font-weight:700}
     .RecoDisc{border-color:rgba(255,255,255,.22)}
+
   `;
   document.head.appendChild(s);
 }
@@ -7551,10 +7588,19 @@ async function __ssRecoRenderForProduct(product) {
     });
 
     section.append(head, viewport);
-    pv.appendChild(section);
+
+    // Mount recs *outside* Product_Viewer so mobile reordering logic can't accidentally hide core UI
+    pv.insertAdjacentElement('afterend', section);
+
+    // Make width match the product menu/viewer width for a cleaner aligned look
+    try {
+      const w = pv.getBoundingClientRect().width;
+      if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px';
+    } catch {}
 
     function __ssRecoUpdateNav(){
       try{
+        try{ const w = pv.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w)+'px'; }catch{}
         const maxScroll = viewport.scrollWidth - viewport.clientWidth;
         btnL.disabled = viewport.scrollLeft <= 2;
         btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
