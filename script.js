@@ -1501,6 +1501,7 @@ async function preloadSettingsData() {
                 exchangeRates: null,
                 countries: null,
                 tariffs: null,
+                storefrontConfig: null,
                 ratesFetchedAt: 0
             };
 
@@ -1516,6 +1517,7 @@ async function preloadSettingsData() {
                 window.preloadedData.exchangeRates = exchangeRates;
                 window.preloadedData.countries =
                     cached.countries || tariffsObjectToCountriesArray(tariffMultipliers);
+                window.preloadedData.storefrontConfig = cached.storefrontConfig || cached.storefront || null;
 
                 handlesTariffsDropdown(window.preloadedData.countries || []);
                 console.log("⚡ Using cached settings data.");
@@ -1523,10 +1525,11 @@ async function preloadSettingsData() {
             }
 
             // Fetch fresh settings (NO fetchTariffs() here -> breaks recursion)
-            const [tariffsObj, ratesData, countriesArr] = await Promise.all([
+            const [tariffsObj, ratesData, countriesArr, storefrontCfg] = await Promise.all([
                 fetchTariffsFromServer(),
                 fetchExchangeRatesFromServer(),
-                fetchCountriesFromServer().catch(() => null)
+                fetchCountriesFromServer().catch(() => null),
+                fetchStorefrontConfigFromServer().catch(() => null)
             ]);
 
             const safeTariffs =
@@ -1554,12 +1557,14 @@ async function preloadSettingsData() {
             window.preloadedData.tariffs = tariffMultipliers;
             window.preloadedData.exchangeRates = exchangeRates;
             window.preloadedData.countries = countriesList;
+            window.preloadedData.storefrontConfig = storefrontCfg || null;
 
             lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
                 tariffs: tariffMultipliers,
                 rates: exchangeRates,
                 ratesFetchedAt: Number(window.exchangeRatesFetchedAt || 0) || 0,
                 countries: countriesList,
+                storefrontConfig: storefrontCfg || null,
                 timestamp: Date.now()
             }));
 
@@ -1854,6 +1859,8 @@ if (!analyticsSessionId) {
     analyticsSessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
     sessionStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSessionId);
 }
+try { window.__ssSessionId = analyticsSessionId; } catch { }
+
 
 /**
  * Fire a lightweight analytics event to the server.
@@ -2316,6 +2323,15 @@ async function fetchCountriesFromServer() {
             code: String(x.code).toUpperCase(),
             tariff: Number(x.tariff || 0) || 0
         }));
+}
+
+
+async function fetchStorefrontConfigFromServer() {
+    const res = await fetch(`${API_BASE}/storefront-config`, { cache: "no-store", credentials: "include" });
+    if (!res.ok) throw new Error(`Failed to fetch storefront config (${res.status})`);
+    const data = await res.json().catch(() => null);
+    if (!data || typeof data !== "object") throw new Error("Invalid storefront config payload.");
+    return data;
 }
 
 async function fetchTariffs() {
@@ -3721,6 +3737,7 @@ function handlesTariffsDropdown(countriesList = []) {
         window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
         if (!Array.isArray(countriesList)) countriesList = [];
         window.preloadedData.countries = countriesList;
+            window.preloadedData.storefrontConfig = storefrontCfg || null;
 
         // If the Settings page isn't rendered, stop here (preload must not crash)
         const select = document.getElementById("countrySelect");
@@ -3983,6 +4000,11 @@ async function createPaymentModal() {
           </div>
   
           <div><input type="email" id="email" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.EMAIL || "Email"}" required></div>
+
+          <label class="ss-marketing-optin">
+            <input type="checkbox" id="MarketingOptIn" />
+            <span>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.FIELDS?.MARKETING_OPTIN) ? TEXTS.PAYMENT_MODAL.FIELDS.MARKETING_OPTIN : "Send me occasional product offers by email (optional)"}</span>
+          </label>
   
           <div id="Address_Holder">
             <input type="text" id="Street" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.STREET_HOUSE_NUMBER || "Street + number"}" required>
@@ -3998,6 +4020,7 @@ async function createPaymentModal() {
   
           <div id="payment-request-button" style="margin: 16px 0;"></div>
           <div id="payment-element" style="margin-top: 16px;"></div>
+          <div id="ss-last-chance" style="margin-top:12px;"></div>
   
           <button class="Submit_Button" id="confirm-payment-button" type="button">
             ${TEXTS?.PAYMENT_MODAL?.BUTTONS?.SUBMIT || "Pay"}
@@ -4025,6 +4048,8 @@ async function createPaymentModal() {
         border: 1px solid rgba(0,0,0,.08);
       }
       #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
+      #paymentModal .ss-marketing-optin{ display:flex; gap:10px; align-items:flex-start; margin:10px 0 2px; font-size:12px; line-height:1.35; opacity:.9; user-select:none; }
+      #paymentModal .ss-marketing-optin input{ margin-top:2px; width:16px; height:16px; accent-color: var(--Accent, #111); }
       #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
       #paymentModal .payment-modal-close{
         position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
@@ -4092,6 +4117,27 @@ async function createPaymentModal() {
         color: inherit;
       }
       html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
+
+      /* Last-chance upsell */
+      #paymentModal #ss-last-chance{
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(0,0,0,.10);
+        background: rgba(0,0,0,.02);
+      }
+      html.dark-mode #paymentModal #ss-last-chance{
+        border-color: rgba(255,255,255,.14);
+        background: rgba(255,255,255,.06);
+      }
+      #paymentModal .ss-lc-row{ display:flex; gap:10px; align-items:center; }
+      #paymentModal .ss-lc-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
+      #paymentModal .ss-lc-name{ font-weight:700; font-size:.92rem; line-height:1.15; }
+      #paymentModal .ss-lc-sub{ font-size:.86rem; opacity:.85; }
+      #paymentModal .ss-lc-btn{
+        margin-left:auto; padding: 9px 12px; border-radius: 12px; cursor:pointer;
+        border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); font-weight:700;
+      }
+      html.dark-mode #paymentModal .ss-lc-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
     `;
     document.head.appendChild(style);
 
@@ -4125,6 +4171,81 @@ async function createPaymentModal() {
         window.__snagletPaymentModalEscHandler = escHandler;
         document.addEventListener("keydown", escHandler);
     } catch { }
+}
+
+
+function __ssUpdateLastChanceOfferUI() {
+    const el = document.getElementById("ss-last-chance");
+    if (!el) return;
+
+    try {
+        const fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
+        const base = (fullCart || []).reduce((s, i) => s + (Number(i?.unitPriceEUR ?? i?.price ?? 0) || 0) * (Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1)), 0);
+        const inc = __ssComputeCartIncentivesClient(base, fullCart);
+
+        const cfg = __ssGetCartIncentivesConfig();
+        const tiers = (cfg?.tierDiscount?.enabled && Array.isArray(cfg?.tierDiscount?.tiers)) ? cfg.tierDiscount.tiers : [];
+        let nextTier = null;
+        for (const t of tiers) {
+            const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+            const pct = Math.max(0, Number(t?.pct || 0) || 0);
+            if (min > base && pct > 0) { nextTier = { min, pct }; break; }
+        }
+
+        const desired = nextTier ? Math.max(3, nextTier.min - base) : 0;
+        const pick = __ssCartPickAddonProducts({ desiredEUR: desired, limit: 1 })[0];
+
+        if (!pick) {
+            el.innerHTML = "";
+            return;
+        }
+
+        const price = Number(pick?.price || 0) || 0;
+        const headline = nextTier
+            ? `Last chance: add ${(nextTier.min - base).toFixed(2)}€ to unlock ${nextTier.pct}% OFF`
+            : "Last chance: frequently added";
+
+        el.innerHTML = `
+          <div class="ss-lc-sub" style="margin-bottom:8px; font-weight:700;">${__ssEscHtml(headline)}</div>
+          <div class="ss-lc-row">
+            <img class="ss-lc-img" src="${__ssEscHtml(pick?.image || "")}" alt="${__ssEscHtml(pick?.name || "")}">
+            <div style="min-width:0;">
+              <div class="ss-lc-name">${__ssEscHtml(pick?.name || "")}</div>
+              <div class="ss-lc-sub">${price.toFixed(2)}€</div>
+            </div>
+            <button class="ss-lc-btn" type="button" data-ss-lc-add="${__ssEscHtml(pick?.name || "")}">Add</button>
+          </div>
+        `;
+
+        if (!el.dataset.bound) {
+            el.dataset.bound = "1";
+            el.addEventListener("click", async (e) => {
+                const btn = e.target?.closest?.("[data-ss-lc-add]");
+                if (!btn) return;
+                e.preventDefault();
+                const name = String(btn.getAttribute("data-ss-lc-add") || "").trim();
+                const p = __ssGetCatalogFlat().find(pp => String(pp?.name || "").trim() === name);
+                if (!p) return;
+
+                const groups = __ssExtractOptionGroups(p);
+                const sel = __ssDefaultSelectedOptions(groups);
+                addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel);
+
+                try { updateBasket(); } catch { }
+
+                // Important: refresh PaymentIntent because totals changed
+                try {
+                    if (typeof setupCheckoutFlow === "function" && typeof selectedCurrency !== "undefined") {
+                        await setupCheckoutFlow(selectedCurrency);
+                    }
+                } catch { }
+
+                try { __ssUpdateLastChanceOfferUI(); } catch { }
+            }, { passive: false });
+        }
+    } catch {
+        el.innerHTML = "";
+    }
 }
 
 function getStripeAppearanceForModal() {
@@ -5605,6 +5726,8 @@ receiptContent += `
 });
 
     receiptContent += `</table></div>`;
+    // Incentive block (discount tiers / add-ons)
+    receiptContent += __ssRenderCartIncentivesHTML(totalSum);
     receiptContent += `
         <div class="ReceiptFooter">
             <button class="PayButton">${TEXTS.PRODUCT_SECTION.BUY_NOW}</button>
@@ -5614,6 +5737,8 @@ receiptContent += `
 
     receiptDiv.innerHTML = receiptContent;
     basketContainer.appendChild(receiptDiv);
+
+    try { __ssBindCartIncentives(basketContainer); } catch { }
     // Bind once per Basket_Viewer (works across re-renders)
     if (!basketContainer.dataset.qtyBound) {
         basketContainer.dataset.qtyBound = "1";
@@ -5934,6 +6059,7 @@ function readCheckoutForm() {
         name: (d?.name || get("Name")) || "",
         surname: (d?.surname || get("Surname")) || "",
         email: (d?.email || get("email")) || "",
+        marketingOptIn: !!document.getElementById("MarketingOptIn")?.checked,
         phone: (d?.phone || get("Phone")) || "",
         street: (d?.street || get("Street")) || "",
         address2: (d?.address2 || get("Address_Line2", "AddressLine2")) || "",
@@ -5993,7 +6119,8 @@ function buildFullCartFromBasket() {
     })();
 
     const items = Object.values(basketObj || {});
-    const flat = __ssGetCatalogFlat();
+    __ssEnsureContributionProducts();
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x=>({ name:x.name, price:x.price, images:x.images||[], productLink:x.productLink||"" })) : __ssGetCatalogFlat();
 
     return items
         .map((item) => {
@@ -6064,6 +6191,105 @@ function round2(n) {
     return Math.round(x * 100) / 100;
 }
 
+
+function __ssGetCartIncentivesConfig() {
+    // Prefer server-provided config (keeps mismatch checks happy)
+    const cfg = window?.preloadedData?.storefrontConfig?.cartIncentives;
+    if (cfg && typeof cfg === "object") return cfg;
+
+    // Safe fallback (must match backend defaults)
+    return {
+        enabled: true,
+        freeShipping: { enabled: false, thresholdEUR: 0, shippingFeeEUR: 0 },
+        tierDiscount: { enabled: true, tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }] },
+        bundles: { enabled: false, bundles: [] }
+    };
+}
+
+function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
+    const cfg = __ssGetCartIncentivesConfig();
+    const enabled = !!cfg?.enabled;
+    const out = {
+        enabled,
+        baseTotalEUR: round2(baseTotalEUR),
+        tierPct: 0,
+        tierDiscountEUR: 0,
+        bundlePct: 0,
+        bundleDiscountEUR: 0,
+        shippingFeeEUR: 0,
+        freeShippingEligible: false,
+        subtotalAfterDiscountsEUR: round2(baseTotalEUR),
+        totalWithShippingEUR: round2(baseTotalEUR)
+    };
+    if (!enabled) return out;
+
+    let subtotal = Number(baseTotalEUR) || 0;
+
+    // Optional bundle discount (max one)
+    try {
+        const bcfg = cfg?.bundles;
+        if (bcfg?.enabled && Array.isArray(bcfg?.bundles) && bcfg.bundles.length) {
+            const ids = new Set((fullCart || []).map(i => String(i?.productId || "").trim()).filter(Boolean));
+            let best = null;
+            for (const b of bcfg.bundles) {
+                const pids = Array.isArray(b?.productIds) ? b.productIds.map(x => String(x || "").trim()).filter(Boolean) : [];
+                if (pids.length < 2) continue;
+                const ok = pids.every(pid => ids.has(pid));
+                if (!ok) continue;
+                const pct = Math.max(0, Math.min(80, Number(b?.pct || 0) || 0));
+                if (!best || pct > best.pct) best = { pct };
+            }
+            if (best && best.pct > 0) {
+                out.bundlePct = best.pct;
+                out.bundleDiscountEUR = round2(subtotal * (best.pct / 100));
+                subtotal = subtotal - out.bundleDiscountEUR;
+            }
+        }
+    } catch { }
+
+    // Tier discount
+    try {
+        const tcfg = cfg?.tierDiscount;
+        if (tcfg?.enabled && Array.isArray(tcfg?.tiers) && tcfg.tiers.length) {
+            let pct = 0;
+            for (const t of tcfg.tiers) {
+                const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+                const p = Math.max(0, Math.min(80, Number(t?.pct || 0) || 0));
+                if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p);
+            }
+            out.tierPct = pct;
+            out.tierDiscountEUR = pct > 0 ? round2(subtotal * (pct / 100)) : 0;
+            subtotal = subtotal - out.tierDiscountEUR;
+        }
+    } catch { }
+
+    subtotal = Math.max(0, round2(subtotal));
+    out.subtotalAfterDiscountsEUR = subtotal;
+
+    // Optional shipping fee
+    try {
+        const ship = cfg?.freeShipping;
+        const enabledShip = !!ship?.enabled;
+        const fee = Math.max(0, Number(ship?.shippingFeeEUR || 0) || 0);
+        const thr = Math.max(0, Number(ship?.thresholdEUR || 0) || 0);
+        if (enabledShip && fee > 0 && thr > 0) {
+            out.freeShippingEligible = subtotal >= thr;
+            out.shippingFeeEUR = out.freeShippingEligible ? 0 : round2(fee);
+            out.totalWithShippingEUR = round2(subtotal + out.shippingFeeEUR);
+        } else {
+            out.freeShippingEligible = true;
+            out.shippingFeeEUR = 0;
+            out.totalWithShippingEUR = subtotal;
+        }
+    } catch {
+        out.freeShippingEligible = true;
+        out.shippingFeeEUR = 0;
+        out.totalWithShippingEUR = subtotal;
+    }
+
+    return out;
+}
+
 function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
     const cur = String(currency || "EUR").toUpperCase();
     const cc = String(countryCode || "").toUpperCase();
@@ -6074,7 +6300,9 @@ function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
         return sum + unit * qty;
     }, 0);
 
-    let totalEUR = baseEUR;
+    // Cart incentives (tier discounts / optional shipping fee) MUST match backend
+    const inc = __ssComputeCartIncentivesClient(baseEUR, fullCart);
+    let totalEUR = Number(inc?.totalWithShippingEUR ?? inc?.subtotalAfterDiscountsEUR ?? baseEUR) || baseEUR;
 
     // NOTE: your tariffs.json values are decimals like 0.2 (= +20%), so use (1 + tariff).
     if (getApplyTariffFlag()) {
@@ -6558,12 +6786,14 @@ async function initPaymentModalLogic() {
 
             // Recreate PI + remount Stripe Elements (server-truth)
             await setupCheckoutFlow(selectedCurrency);
+            try { __ssUpdateLastChanceOfferUI(); } catch { }
         });
     }
 
     // Initialize Stripe UI once on open (server-truth)
     selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
     await setupCheckoutFlow(selectedCurrency);
+    try { __ssUpdateLastChanceOfferUI(); } catch { }
 }
 
 
@@ -7494,7 +7724,8 @@ async function __ssRecoRenderForProduct(product) {
       extra: { shown: d.items.map(x => ({ productId: x.productId, position: x.position })) }
     });
 
-    const flat = __ssGetCatalogFlat();
+    __ssEnsureContributionProducts();
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x=>({ name:x.name, price:x.price, images:x.images||[], productLink:x.productLink||"" })) : __ssGetCatalogFlat();
 
     (d.items || []).forEach((it, idx) => {
       const card = document.createElement("div");
@@ -7823,6 +8054,294 @@ function buildStripeOrderSummary(stripeCart) {
         })
         .join(", ")
         .slice(0, 499);
+}
+
+
+/* ===== Cart incentives UI (AOV boosters for one-time buyers) ===== */
+function __ssEnsureCartIncentiveStyles() {
+    if (document.getElementById("__ssCartIncentiveStyles")) return;
+    const s = document.createElement("style");
+    s.id = "__ssCartIncentiveStyles";
+    s.textContent = `
+      .ss-cart-inc{ margin: 12px 0 8px; padding: 12px; border-radius: 16px; border: 1px solid rgba(0,0,0,.10); background: rgba(0,0,0,.02); }
+      html.dark-mode .ss-cart-inc{ border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); }
+      .ss-ci-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+      .ss-ci-title{ font-weight:700; font-size: .95rem; }
+      .ss-ci-sub{ font-size: .86rem; opacity:.85; }
+      .ss-ci-bar{ position:relative; width:100%; height:10px; border-radius: 999px; background: rgba(0,0,0,.08); overflow:hidden; margin-top:8px; }
+      html.dark-mode .ss-ci-bar{ background: rgba(255,255,255,.12); }
+      .ss-ci-fill{ position:absolute; inset:0; width:0%; background: var(--Accent, #2563eb); border-radius: 999px; }
+      .ss-ci-badges{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+      .ss-ci-badge{ padding:6px 10px; border-radius: 999px; font-size:.82rem; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.75); }
+      html.dark-mode .ss-ci-badge{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
+      .ss-ci-addons{ margin-top: 10px; display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+      @media (max-width: 520px){ .ss-ci-addons{ grid-template-columns: 1fr; } }
+      .ss-ci-card{ display:flex; gap:10px; align-items:center; padding:10px; border-radius: 14px; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.85); }
+      html.dark-mode .ss-ci-card{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
+      .ss-ci-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
+      .ss-ci-name{ font-weight:650; font-size:.9rem; line-height:1.15; }
+      .ss-ci-price{ font-size:.86rem; opacity:.85; }
+      .ss-ci-btn{ margin-left:auto; padding:8px 10px; border-radius: 12px; border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); cursor:pointer; font-weight:650; }
+      html.dark-mode .ss-ci-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
+      .ss-ci-btn:hover{ filter: brightness(1.02); }
+    `;
+    document.head.appendChild(s);
+}
+
+
+
+// --- Smart recommendations (cart/checkout) ---
+let __ssSmartCartRecoCache = { sig: "", desired: 0, token: "", items: [] };
+
+function __ssCartSigForSmartReco() {
+  try {
+    const names = Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean).sort();
+    return btoa(unescape(encodeURIComponent(names.join("|")))).slice(0, 64);
+  } catch { return ""; }
+}
+
+async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
+  try {
+    const sig = __ssCartSigForSmartReco();
+    const desired = Math.max(0, Number(desiredEUR || 0) || 0);
+    const desiredKey = Math.round(desired * 100) / 100;
+
+    if (__ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) {
+      return __ssSmartCartRecoCache;
+    }
+
+    const cartItems = Object.values(basket || {}).map(i => ({ name: String(i?.name || "").trim() })).filter(x => x.name);
+
+    const body = {
+      placement: "cart_topup_v1",
+      sessionId: String(window.__ssSessionId || ""),
+      cartItems,
+      desiredEUR: desired,
+      limit: Math.max(1, Math.min(12, Number(limit || 4) || 4)),
+      context: {
+        lang: String(window.currentLanguage || ""),
+        device: (window.innerWidth <= 700 ? "mobile" : "desktop"),
+        page: "cart"
+      }
+    };
+
+    const resp = await fetch(`${API_BASE}/smart-reco/get`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      credentials: "include"
+    });
+
+    const data = await resp.json().catch(() => null);
+    if (!data || !data.ok || !Array.isArray(data.items)) return null;
+
+    __ssSmartCartRecoCache = { sig, desired: desiredKey, token: String(data.token || ""), items: data.items || [] };
+    return __ssSmartCartRecoCache;
+  } catch {
+    return null;
+  }
+}
+
+function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
+  // fire-and-forget; re-render when results arrive
+  const sigBefore = __ssCartSigForSmartReco();
+  __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
+    if (!cache) return;
+    const sigAfter = __ssCartSigForSmartReco();
+    if (sigBefore !== sigAfter) return;
+    try { updateBasket(); } catch { }
+  }).catch(() => {});
+}
+
+async function __ssSmartRecoEvent(type, itemKey) {
+  try {
+    const token = String(__ssSmartCartRecoCache?.token || "").trim();
+    if (!token) return;
+    await fetch(`${API_BASE}/smart-reco/event`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, token, itemKey, sessionId: String(window.__ssSessionId || "") }),
+      credentials: "include"
+    });
+  } catch { }
+}
+// Profit-optimized contribution-ranked products (best sellers, but by contribution)
+// Used as a fallback candidate pool for add-ons when enabled by feature flags.
+let __ssContributionCache = { at: 0, items: null };
+function __ssEnsureContributionProducts() {
+  try {
+    const flags = (typeof __ssGetFeatureFlags === "function") ? __ssGetFeatureFlags() : null;
+    const enabled = !flags || __ssFlagEnabled("contributionRanking.enabled", true);
+    if (!enabled) return;
+
+    const now = Date.now();
+    if (__ssContributionCache.items && (now - (__ssContributionCache.at || 0)) < 10 * 60 * 1000) return;
+
+    __ssContributionCache.at = now;
+    fetch(`${API_BASE}/products/contribution?limit=40`, { credentials: "include" })
+      .then(r => r.json().catch(()=>null))
+      .then(d => {
+        if (d && d.ok && Array.isArray(d.items)) __ssContributionCache.items = d.items;
+      })
+      .catch(()=>{});
+  } catch { }
+}
+
+
+function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
+    const desired = Math.max(0, Number(desiredEUR || 0) || 0);
+    // Prefer server-learned smart recommendations when available
+    try {
+        const sig = __ssCartSigForSmartReco();
+        const desiredKey = Math.round(desired * 100) / 100;
+        if (__ssSmartCartRecoCache && __ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) {
+            return __ssSmartCartRecoCache.items.slice(0, Math.max(0, limit)).map(it => ({
+                name: it.name,
+                price: Number(it.price || 0) || 0,
+                image: it.image || "",
+                productLink: it.productLink || "",
+                description: it.description || ""
+            }));
+        }
+    } catch { /* ignore */ }
+
+    __ssEnsureContributionProducts();
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x=>({ name:x.name, price:x.price, images:x.images||[], productLink:x.productLink||"" })) : __ssGetCatalogFlat();
+    const basketNames = new Set(Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean));
+
+    const candidates = flat
+        .filter(p => p && typeof p === "object")
+        .filter(p => !basketNames.has(String(p.name || "").trim()))
+        .map(p => {
+            const price = Number(p?.price || 0) || 0;
+            return { p, price, score: desired > 0 ? Math.abs(price - desired) : price };
+        })
+        .filter(x => {
+            if (!(x.price > 0)) return false;
+            if (desired <= 0) return true;
+            const cfg = __ssGetCartIncentivesConfig();
+            const top = cfg?.topup || {};
+            const pct = Math.max(0, Math.min(200, Number(top?.maxPriceDeltaPct || 25) || 25));
+            const maxPrice = desired * (1 + (pct / 100));
+            // also cap absolute to avoid showing very expensive add-ons in top-up context
+            return x.price <= Math.max(30, maxPrice);
+        })
+        .sort((a, b) => (a.score - b.score));
+
+    return candidates.slice(0, Math.max(0, limit)).map(x => x.p);
+}
+
+function __ssRenderCartIncentivesHTML(totalSumEUR) {
+    try {
+        const cfg0 = __ssGetCartIncentivesConfig();
+        if (!cfg0?.enabled) return "";
+        __ssEnsureCartIncentiveStyles();
+
+        const fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
+        const inc = __ssComputeCartIncentivesClient(totalSumEUR, fullCart);
+
+        const cfg = __ssGetCartIncentivesConfig();
+        const tiers = (cfg?.tierDiscount?.enabled && Array.isArray(cfg?.tierDiscount?.tiers)) ? cfg.tierDiscount.tiers : [];
+        const base = Number(inc.baseTotalEUR || totalSumEUR) || 0;
+
+        let nextTier = null;
+        let currentTierPct = Number(inc.tierPct || 0) || 0;
+        for (const t of tiers) {
+            const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+            const pct = Math.max(0, Number(t?.pct || 0) || 0);
+            if (min > base && pct > 0) { nextTier = { min, pct }; break; }
+        }
+
+        const tierText = nextTier
+            ? `Add ${(nextTier.min - base).toFixed(2)}€ to unlock ${nextTier.pct}% OFF`
+            : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
+
+        const tierProgress = nextTier ? Math.max(0, Math.min(100, (base / nextTier.min) * 100)) : 100;
+
+        // Optional free shipping progress
+        const shipCfg = cfg?.freeShipping || {};
+        const shipEnabled = !!shipCfg?.enabled && Number(shipCfg?.shippingFeeEUR || 0) > 0 && Number(shipCfg?.thresholdEUR || 0) > 0;
+        const shipThr = Math.max(0, Number(shipCfg?.thresholdEUR || 0) || 0);
+        const shipProg = shipEnabled ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
+        const shipText = shipEnabled
+            ? (base >= shipThr ? "Free shipping unlocked" : `Add ${(shipThr - base).toFixed(2)}€ for free shipping`)
+            : "";
+
+        // Add-ons: aim at next tier, otherwise small add-ons
+        const desired = nextTier ? Math.max(3, nextTier.min - base) : 0;
+        const topCfg = (cfg?.topup && typeof cfg.topup === "object") ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 };
+        const maxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4));
+        __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems });
+        const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
+
+        const badges = [];
+        if (Number(inc.tierDiscountEUR || 0) > 0) badges.push(`Saved ${Number(inc.tierDiscountEUR).toFixed(2)}€`);
+        if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push(`Bundle -${Number(inc.bundleDiscountEUR).toFixed(2)}€`);
+        if (shipEnabled && base >= shipThr) badges.push("Free shipping");
+
+        const addonHTML = addons.length ? `
+          <div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div>
+          <div class="ss-ci-addons">
+            ${addons.map(p => {
+                const price = Number(p?.price || 0) || 0;
+                return `
+                  <div class="ss-ci-card">
+                    <img class="ss-ci-img" src="${__ssEscHtml(p?.image || "")}" alt="${__ssEscHtml(p?.name || "")}">
+                    <div style="min-width:0;">
+                      <div class="ss-ci-name">${__ssEscHtml(p?.name || "")}</div>
+                      <div class="ss-ci-price">${price.toFixed(2)}€</div>
+                    </div>
+                    <button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || "")}">Add</button>
+                  </div>
+                `;
+            }).join("")}
+          </div>
+        ` : "";
+
+        return `
+          <div class="ss-cart-inc" id="ss-cart-inc">
+            <div class="ss-ci-row">
+              <div>
+                <div class="ss-ci-title">${tierText}</div>
+                ${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}
+              </div>
+              <div class="ss-ci-sub" style="text-align:right;">
+                ${currentTierPct ? `Discount: ${currentTierPct}%` : ``}
+              </div>
+            </div>
+            <div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgress.toFixed(0)}%"></div></div>
+            ${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}
+            ${badges.length ? `<div class="ss-ci-badges">${badges.map(b => `<span class="ss-ci-badge">${__ssEscHtml(b)}</span>`).join("")}</div>` : ``}
+            ${addonHTML}
+          </div>
+        `;
+    } catch {
+        return "";
+    }
+}
+
+function __ssBindCartIncentives(rootEl) {
+    const root = rootEl || document;
+    if (!root || root.__ssCartIncBound) return;
+    root.__ssCartIncBound = true;
+
+    root.addEventListener("click", (e) => {
+        const btn = e.target?.closest?.("[data-ss-quickadd]");
+        if (!btn) return;
+        e.preventDefault();
+        const name = String(btn.getAttribute("data-ss-quickadd") || "").trim();
+        if (!name) return;
+
+        const p = __ssGetCatalogFlat().find(pp => String(pp?.name || "").trim() === name);
+        if (!p) return;
+
+        const groups = __ssExtractOptionGroups(p);
+        const sel = __ssDefaultSelectedOptions(groups);
+        __ssSmartRecoEvent("add_to_cart", String(p.productId || p.name || name));
+        addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel);
+
+        try { updateBasket(); } catch { }
+    }, { passive: false });
 }
 
 /* Override: basket rendering escapes user/product strings and shows multi-options */
