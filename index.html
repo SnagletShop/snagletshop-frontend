@@ -315,11 +315,56 @@
             position: relative;
         }
 
+        .ss-ci-badge {
+            color: var(--Default_Text_Colour) !important;
+            background-color: var(--BasketReceipt_Background_Colour) !important;
+        }
+
+        .ss-ci-addons {
+
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1%;
+        }
+
+        .ss-ci-sub {
+            margin-top: 4%;
+            margin-bottom: 2%;
+            color: var(--Default_Text_Colour);
+            font-family: 'Afacad', sans-serif;
+        }
+
+        .ss-ci-title {
+            color: var(--Default_Text_Colour) !important;
+            font-weight: 700;
+            font-size: .95rem;
+            margin-left: auto;
+            font-family: 'Afacad', sans-serif;
+            height: fit-content;
+        }
+
+
+
+        .ss-ci-card {
+            background-color: var(--BasketReceipt_Background_Colour) !important;
+        }
+
+        .Badges_Div {
+            display: flex;
+            align-items: baseline;
+        }
+
+        .ss-ci-bar {
+            color: var(--Default_Text_Colour) !important;
+            font-family: 'Afacad', sans-serif;
+        }
+
         .ss-cart-badge {
+
             position: absolute;
             top: -6px;
             right: -6px;
-
+            font-family: 'Afacad', sans-serif;
             min-width: 18px;
             height: 18px;
             padding: 0 5px;
@@ -343,6 +388,11 @@
             pointer-events: none;
         }
 
+        .ReceiptTable td {
+            vertical-align: top;
+            padding: 6px 8px;
+            width: fit-content !important;
+        }
 
         .ss-has-items {
             color: var(--Primary_Button_Colour);
@@ -411,6 +461,17 @@
             border: 1px solid rgba(255, 255, 255, .10);
         }
 
+        .payment_element {
+            min-height: 100% !important;
+            display: block !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+            min-height: 0;
+            overflow: auto !important;
+            /* NOT hidden */
+            -webkit-overflow-scrolling: touch;
+        }
+
         .dark-mode #paymentModal .payment-modal-close {
             color: rgba(229, 231, 235, .90);
         }
@@ -449,6 +510,17 @@
 
         .dark-mode #paymentModal .ts-dropdown .option.active {
             background: rgba(59, 130, 246, .22);
+        }
+
+        .ss-cart-inc {
+            background-color: var(--Modal_Background_Colour);
+            margin: 12px 0 8px;
+            padding: 2%;
+
+            border-radius: 16px;
+            font-family: 'Afacad', sans-serif;
+            border: 1px solid rgba(0, 0, 0, .10);
+            background: rgba(0, 0, 0, .02);
         }
 
         @media (min-width: 680px) {
@@ -2313,6 +2385,16 @@
 
             }
 
+            .ss-cart-inc {
+                background-color: var(--Modal_Background_Colour);
+                margin: 12px 0 8px;
+                padding: 4%;
+                padding-top: 5% !important;
+                border-radius: 16px;
+                font-family: 'Afacad', sans-serif;
+                border: 1px solid rgba(0, 0, 0, .10);
+                background: rgba(0, 0, 0, .02);
+            }
 
             .Logo {
                 grid-row: 1 / 1;
@@ -3971,6 +4053,7 @@
             margin-top: 14px;
             padding: 14px 14px 12px;
             border-radius: 18px;
+
             background: #ffffff;
             /* border: 1px solid rgba(148, 163, 184, 0.45); */
         }
@@ -4317,14 +4400,6 @@
         }
 
         /* If your video/second column exists, make it full width too */
-        video,
-        iframe,
-        .ProductVideo,
-        .videoWrap {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-        }
     </style>
 </head>
 
