@@ -28,6 +28,10 @@ function showStripeConfigError(msg) {
 window.functionBlacklist = new Set([
 
 ]);
+
+// Routing mode: path routes (/p/<id>) require server rewrite. Query routes (/?p=<id>) are reload-safe on any static host.
+// Set to true only if your web server rewrites /p/* to /index.html.
+const __SS_USE_PATH_ROUTES__ = false;
 const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = true;
 // applyTariff is controlled by the backend (see /products payload: applyTariff).
 // We keep a local fallback for offline/backwards compatibility.
@@ -40,25 +44,25 @@ if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTari
 const DEFAULT_BACKEND_PORT = 5500; // server.js default
 
 const API_BASE = (() => {
-  const injected = (typeof window !== "undefined" && window.__API_BASE__) ? String(window.__API_BASE__) : "";
-  const meta = String(document.querySelector('meta[name="api-base"]')?.getAttribute("content") || "");
+    const injected = (typeof window !== "undefined" && window.__API_BASE__) ? String(window.__API_BASE__) : "";
+    const meta = String(document.querySelector('meta[name="api-base"]')?.getAttribute("content") || "");
 
-  const chosen = (injected || meta).trim();
-  if (chosen) return chosen.replace(/\/+$/, "");
+    const chosen = (injected || meta).trim();
+    if (chosen) return chosen.replace(/\/+$/, "");
 
-  // Production default (no explicit port -> https/443)
-  const host = window.location.hostname || "";
-  const isProd =
-    host === "snagletshop.com" ||
-    host === "www.snagletshop.com" ||
-    host === "api.snagletshop.com" ||
-    host.endsWith(".snagletshop.com");
+    // Production default (no explicit port -> https/443)
+    const host = window.location.hostname || "";
+    const isProd =
+        host === "snagletshop.com" ||
+        host === "www.snagletshop.com" ||
+        host === "api.snagletshop.com" ||
+        host.endsWith(".snagletshop.com");
 
-  if (isProd) return "https://api.snagletshop.com";
+    if (isProd) return "https://api.snagletshop.com";
 
-  // Dev / direct-IP default -> same host on :8080
-  const proto = window.location.protocol || "http:";
-  return `${proto}//${host}:${DEFAULT_BACKEND_PORT}`;
+    // Dev / direct-IP default -> same host on :8080
+    const proto = window.location.protocol || "http:";
+    return `${proto}//${host}:${DEFAULT_BACKEND_PORT}`;
 })().replace(/\/+$/, "");
 
 /* ---------------- Add-to-basket popup toggles ----------------
@@ -79,64 +83,64 @@ const USE_ADD_TO_CART_POPUP_BASKET_TOAST = false;
    Assignment is deterministic per browser (localStorage) so users stay in the same bucket.
 */
 function __ssRound2(n) {
-  const x = Number(n);
-  if (!Number.isFinite(x)) return 0;
-  return Math.round(x * 100) / 100;
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 0;
+    return Math.round(x * 100) / 100;
 }
 
 function __ssAbFNV1a32(str) {
-  const s = String(str || "");
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    // h *= 16777619 (with overflow)
-    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
-  }
-  return h >>> 0;
+    const s = String(str || "");
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        // h *= 16777619 (with overflow)
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return h >>> 0;
 }
 
 let __ss_ab_mem_uid = null;
 
 function __ssAbGetUid() {
-  const k = "ss_ab_uid_v1";
-  try {
-    let v = localStorage.getItem(k);
-    if (v && String(v).trim()) return String(v).trim();
-    // Generate a random stable uid for this browser.
-    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-      const a = new Uint32Array(4);
-      crypto.getRandomValues(a);
-      v = Array.from(a).map(x => x.toString(16)).join("");
-    } else {
-      v = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2));
-    }
-    localStorage.setItem(k, v);
-    return v;
-  } catch {
-    // localStorage unavailable (privacy mode / blocked). Use an in-memory uid for this session.
-    if (!__ss_ab_mem_uid) {
-      try {
+    const k = "ss_ab_uid_v1";
+    try {
+        let v = localStorage.getItem(k);
+        if (v && String(v).trim()) return String(v).trim();
+        // Generate a random stable uid for this browser.
         if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-          const a = new Uint32Array(4);
-          crypto.getRandomValues(a);
-          __ss_ab_mem_uid = Array.from(a).map(x => x.toString(16)).join("");
+            const a = new Uint32Array(4);
+            crypto.getRandomValues(a);
+            v = Array.from(a).map(x => x.toString(16)).join("");
         } else {
-          __ss_ab_mem_uid = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2));
+            v = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2));
         }
-      } catch {
-        __ss_ab_mem_uid = String(Date.now()) + "_" + Math.random().toString(16).slice(2);
-      }
+        localStorage.setItem(k, v);
+        return v;
+    } catch {
+        // localStorage unavailable (privacy mode / blocked). Use an in-memory uid for this session.
+        if (!__ss_ab_mem_uid) {
+            try {
+                if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+                    const a = new Uint32Array(4);
+                    crypto.getRandomValues(a);
+                    __ss_ab_mem_uid = Array.from(a).map(x => x.toString(16)).join("");
+                } else {
+                    __ss_ab_mem_uid = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2));
+                }
+            } catch {
+                __ss_ab_mem_uid = String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+            }
+        }
+        return __ss_ab_mem_uid;
     }
-    return __ss_ab_mem_uid;
-  }
 }
 
 function __ssAbChooseBucket(expKey) {
-  const uid = __ssAbGetUid();
-  const h = __ssAbFNV1a32(`${uid}|${String(expKey || "")}`);
-  // 0..1
-  const p = h / 0xFFFFFFFF;
-  return (p < 0.5) ? "A" : "B";
+    const uid = __ssAbGetUid();
+    const h = __ssAbFNV1a32(`${uid}|${String(expKey || "")}`);
+    // 0..1
+    const p = h / 0xFFFFFFFF;
+    return (p < 0.5) ? "A" : "B";
 }
 
 let __ss_ab_cache = null;
@@ -144,88 +148,89 @@ let __ss_server_ab = null;
 let __ss_server_ab_promise = null;
 
 async function __ssFetchServerExperiments() {
-  try {
-    if (__ss_server_ab) return __ss_server_ab;
-    if (__ss_server_ab_promise) return __ss_server_ab_promise;
+    try {
+        if (__ss_server_ab) return __ss_server_ab;
+        if (__ss_server_ab_promise) return __ss_server_ab_promise;
 
-    __ss_server_ab_promise = (async () => {
-      try {
-        const r = await fetch(`${API_BASE}/ab/assignments`, { method: "GET", credentials: "include" });
-        const d = await r.json().catch(() => null);
-        if (d && d.ok && d.experiments && typeof d.experiments === "object") {
-          __ss_server_ab = d.experiments;
-          __ss_ab_cache = d.experiments; // keep UI consistent with server (esp. pricing)
-          return __ss_server_ab;
-        }
-      } catch { }
-      return null;
-    })();
+        __ss_server_ab_promise = (async () => {
+            try {
+                const r = await fetch(`${API_BASE}/ab/assignments`, { method: "GET", credentials: "include" });
+                const d = await r.json().catch(() => null);
+                try { console.log("[recs] IN", { ok: !!(d && d.ok), widgetId: d && d.widgetId, sourceProductId: d && d.sourceProductId, items: Array.isArray(d && d.items) ? d.items.length : 0, hasMore: d && d.hasMore, listToken: (d && d.listToken) || null, token: (d && d.token) || null }); } catch { }
+                if (d && d.ok && d.experiments && typeof d.experiments === "object") {
+                    __ss_server_ab = d.experiments;
+                    __ss_ab_cache = d.experiments; // keep UI consistent with server (esp. pricing)
+                    return __ss_server_ab;
+                }
+            } catch { }
+            return null;
+        })();
 
-    return __ss_server_ab_promise;
-  } catch {
-    return null;
-  }
+        return __ss_server_ab_promise;
+    } catch {
+        return null;
+    }
 }
 
 function __ssGetExperiments() {
-  if (__ss_ab_cache) return __ss_ab_cache;
-  if (__ss_server_ab) {
-    __ss_ab_cache = __ss_server_ab;
-    return __ss_ab_cache;
-  }
-  const keys = ["pn", "pd", "pr", "dl", "pi"];
-  const out = {};
-  for (const k of keys) out[k] = __ssAbChooseBucket(k);
-  __ss_ab_cache = out;
-  return out;
+    if (__ss_ab_cache) return __ss_ab_cache;
+    if (__ss_server_ab) {
+        __ss_ab_cache = __ss_server_ab;
+        return __ss_ab_cache;
+    }
+    const keys = ["pn", "pd", "pr", "dl", "pi"];
+    const out = {};
+    for (const k of keys) out[k] = __ssAbChooseBucket(k);
+    __ss_ab_cache = out;
+    return out;
 }
 
 // Fire-and-forget bootstrap (best effort)
 try { __ssFetchServerExperiments(); } catch { }
 
 function __ssABIsB(key) {
-  try { return String(__ssGetExperiments()?.[key] || "A").toUpperCase() === "B"; } catch { return false; }
+    try { return String(__ssGetExperiments()?.[key] || "A").toUpperCase() === "B"; } catch { return false; }
 }
 
 function __ssABGetProductName(product) {
-  const a = String(product?.name || "").trim();
-  if (!a) return "";
-  if (__ssABIsB("pn")) {
-    const b = product?.nameB ?? product?.abNameB ?? product?.ab_name_b ?? product?.abName ?? "";
-    return String(b || a).trim();
-  }
-  return a;
+    const a = String(product?.name || "").trim();
+    if (!a) return "";
+    if (__ssABIsB("pn")) {
+        const b = product?.nameB ?? product?.abNameB ?? product?.ab_name_b ?? product?.abName ?? "";
+        return String(b || a).trim();
+    }
+    return a;
 }
 
 function __ssABGetProductDescription(product) {
-  const a = String(product?.description || "").trim();
-  if (__ssABIsB("pd")) {
-    const b = product?.descriptionB ?? product?.abDescriptionB ?? product?.abDescB ?? product?.ab_description_b ?? "";
-    return String(b || a).trim();
-  }
-  return a;
+    const a = String(product?.description || "").trim();
+    if (__ssABIsB("pd")) {
+        const b = product?.descriptionB ?? product?.abDescriptionB ?? product?.abDescB ?? product?.ab_description_b ?? "";
+        return String(b || a).trim();
+    }
+    return a;
 }
 
 function __ssABGetDeliveryText(product) {
-  const a = String(product?.deliveryText || product?.delivery || "Shipping free").trim();
-  const b = String(product?.deliveryTextB || product?.deliveryB || "Free shipping").trim();
-  return __ssABIsB("dl") ? (b || a) : (a || b);
+    const a = String(product?.deliveryText || product?.delivery || "Shipping free").trim();
+    const b = String(product?.deliveryTextB || product?.deliveryB || "Free shipping").trim();
+    return __ssABIsB("dl") ? (b || a) : (a || b);
 }
 
 // In the basket UI we always want this exact text:
 function __ssShipFreeText() { return "Shipping free"; }
 
 function __ssEnsureABUiStyles() {
-  if (document.getElementById("__ss-ab-ui-styles")) return;
-  const style = document.createElement("style");
-  style.id = "__ss-ab-ui-styles";
-  style.textContent = `
+    if (document.getElementById("__ss-ab-ui-styles")) return;
+    const style = document.createElement("style");
+    style.id = "__ss-ab-ui-styles";
+    style.textContent = `
 .ReceiptItemName{display:block;}
 .ReceiptItemShipFree{font-size:12px;opacity:.85;margin-top:2px;line-height:1.2;}
 .BasketItemShipFree{font-size:12px;opacity:.85;margin-top:6px;line-height:1.2;}
 .Product_Delivery_Info{margin-top:10px;font-size:13px;opacity:.9;line-height:1.2;}
 `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
 }
 
 
@@ -1333,8 +1338,21 @@ function buildUrlForState(state) {
     try {
         if (state?.action === "GoToProductPage") {
             const name = state?.data?.[0];
-            const pid = state?.data?.[4];
-            if (pid) return `/p/${encodeURIComponent(pid)}`;
+            const pidRaw = state?.data?.[4];
+            const pid = __ssIdNorm(pidRaw);
+            const disc = state?.data?.[5] && typeof state.data[5] === "object" ? state.data[5] : null;
+            const tok = __ssIdNorm(disc?.discountToken || disc?.recoToken || "");
+
+            const pidOk = pid && !__ssIsBadId(pid);
+            if (pidOk) {
+                if (__SS_USE_PATH_ROUTES__) {
+                    if (tok) return `/p/${encodeURIComponent(pid)}?reco=${encodeURIComponent(tok)}`;
+                    return `/p/${encodeURIComponent(pid)}`;
+                }
+                // reload-safe routing
+                if (tok) return `/?p=${encodeURIComponent(pid)}&reco=${encodeURIComponent(tok)}`;
+                return `/?p=${encodeURIComponent(pid)}`;
+            }
             if (name) return `/?product=${encodeURIComponent(name)}`;
         }
     } catch { }
@@ -1376,6 +1394,163 @@ function lsGet(key, fallback = null) {
 function lsSet(key, value) {
     try { localStorage.setItem(key, value); return true; } catch { return false; }
 }
+
+function __ssIdNorm(v) {
+    if (v == null) return "";
+    // Defensive: some upstream code accidentally passes Set/Array instead of a string id.
+    if (typeof Set !== "undefined" && v instanceof Set) {
+        for (const x of v) {
+            const s = String(x ?? "").trim();
+            if (s) return s;
+        }
+        return "";
+    }
+    if (Array.isArray(v)) {
+        for (const x of v) {
+            const s = String(x ?? "").trim();
+            if (s) return s;
+        }
+        return "";
+    }
+    return String(v).trim();
+}
+function __ssIdEq(a, b) {
+    const aa = __ssIdNorm(a);
+    const bb = __ssIdNorm(b);
+    return !!aa && !!bb && aa === bb;
+}
+
+function __ssIsBadId(v) {
+    const s = String(v ?? '').trim();
+    if (!s) return true;
+    if (/^\[object\s+/.test(s)) return true;
+    return false;
+}
+
+function __ssResolvePidFromCatalogByName(name) {
+    const nRaw = String(name ?? '').trim();
+    if (!nRaw) return '';
+    const n = nRaw;
+    const nLower = nRaw.toLowerCase();
+    try {
+        const flat = __ssGetCatalogFlat();
+        // 1) exact trimmed match
+        let hit = (flat || []).find(p => String(p?.name ?? '').trim() === n);
+        // 2) case-insensitive trimmed match
+        if (!hit) hit = (flat || []).find(p => String(p?.name ?? '').trim().toLowerCase() === nLower);
+        const pid = __ssIdNorm(hit?.productId || '');
+        return __ssIsBadId(pid) ? '' : pid;
+    } catch { return ''; }
+}
+
+function __ssResolvePidForRecs(product) {
+    // 1) direct productId
+    try {
+        const pid = __ssIdNorm(product?.productId || '');
+        if (pid && !__ssIsBadId(pid) && !/\s/.test(pid)) return pid;
+        if (pid && !__ssIsBadId(pid) && /\s/.test(pid)) {
+            // looks like a name, try resolve
+            const rp = __ssResolvePidFromCatalogByName(pid);
+            if (rp) return rp;
+        }
+    } catch { }
+
+    // 2) URL /p/<pid>
+    try {
+        const path = String(location.pathname || '');
+        const mm = path.match(/^\/p\/([^\/]+)\/?$/);
+        if (mm && mm[1]) {
+            const pid = __ssIdNorm(decodeURIComponent(mm[1]));
+            if (pid && !__ssIsBadId(pid) && !/\s/.test(pid)) return pid;
+            if (pid && !__ssIsBadId(pid) && /\s/.test(pid)) {
+                const rp = __ssResolvePidFromCatalogByName(pid);
+                if (rp) return rp;
+            }
+        }
+    } catch { }
+
+    // 3) global
+    try {
+        const pid = __ssIdNorm(window.__ssCurrentProductId || '');
+        if (pid && !__ssIsBadId(pid) && !/\s/.test(pid)) return pid;
+        if (pid && !__ssIsBadId(pid) && /\s/.test(pid)) {
+            const rp = __ssResolvePidFromCatalogByName(pid);
+            if (rp) return rp;
+        }
+    } catch { }
+
+    // 4) discount payload
+    try {
+        const d = JSON.parse(sessionStorage.getItem('ss_reco_pdp_discount_v1') || 'null');
+        const pid = __ssIdNorm(d?.productId || d?.targetProductId || '');
+        if (pid && !__ssIsBadId(pid) && !/\s/.test(pid)) return pid;
+        if (pid && !__ssIsBadId(pid) && /\s/.test(pid)) {
+            const rp = __ssResolvePidFromCatalogByName(pid);
+            if (rp) return rp;
+        }
+    } catch { }
+
+    // 5) name -> pid
+    try {
+        const name = String(product?.name ?? product?.title ?? '').trim();
+        const rp = __ssResolvePidFromCatalogByName(name);
+        if (rp) return rp;
+    } catch { }
+
+    return '';
+}
+
+function __ssGetCurrentPidFallback() {
+    try {
+        // 1) URL /p/<pid>
+        const path = String(location.pathname || '');
+        const mm = path.match(/^\/p\/([^\/]+)\/?$/);
+        if (mm && mm[1]) {
+            const pid = __ssIdNorm(decodeURIComponent(mm[1]));
+            if (!__ssIsBadId(pid)) {
+                if (/\s/.test(pid)) {
+                    const rp = __ssResolvePidFromCatalogByName(pid);
+                    if (rp) return rp;
+                }
+                return pid;
+            }
+        }
+    } catch { }
+    try {
+        // 1b) URL query ?p=<pid> (reload-safe routing)
+        const params = new URLSearchParams(String(location.search || ''));
+        const qp = params.get('p') || params.get('pid') || params.get('productId');
+        if (qp) {
+            const pid = __ssIdNorm(qp);
+            if (!__ssIsBadId(pid)) return pid;
+        }
+    } catch { }
+    try {
+        // 2) stored global
+        const pid = __ssIdNorm(window.__ssCurrentProductId || '');
+        if (!__ssIsBadId(pid)) {
+            if (/\s/.test(pid)) {
+                const rp = __ssResolvePidFromCatalogByName(pid);
+                if (rp) return rp;
+            }
+            return pid;
+        }
+    } catch { }
+    try {
+        // 3) discount payload
+        const d = JSON.parse(sessionStorage.getItem('ss_reco_pdp_discount_v1') || 'null');
+        const pid = __ssIdNorm(d?.productId || d?.targetProductId || '');
+        if (!__ssIsBadId(pid)) {
+            if (/\s/.test(pid)) {
+                const rp = __ssResolvePidFromCatalogByName(pid);
+                if (rp) return rp;
+            }
+            return pid;
+        }
+    } catch { }
+    return '';
+}
+
 
 function tariffsObjectToCountriesArray(tariffsObj) {
     if (!tariffsObj || typeof tariffsObj !== "object" || Array.isArray(tariffsObj)) return [];
@@ -1557,7 +1732,7 @@ async function preloadSettingsData() {
             window.preloadedData.tariffs = tariffMultipliers;
             window.preloadedData.exchangeRates = exchangeRates;
             window.preloadedData.countries = countriesList;
-            window.preloadedData.storefrontConfig = storefrontCfg || null;
+            window.preloadedData.storefrontConfig = (typeof storefrontCfg !== "undefined" ? storefrontCfg : (window.storefrontCfg || null));
 
             lsSet(SETTINGS_CACHE_KEY, JSON.stringify({
                 tariffs: tariffMultipliers,
@@ -2050,8 +2225,74 @@ window.addEventListener('popstate', (event) => {
     }
 });
 function initializeHistory() {
-    // Deep link: /?product=...
     const params = new URLSearchParams(window.location.search);
+
+    // Deep link: /p/<productId>?reco=<token>
+    try {
+        const path = String(window.location.pathname || "/");
+        const mm = path.match(/^\/p\/([^\/]+)\/?$/);
+        if (mm && mm[1]) {
+            const pid = __ssIdNorm(decodeURIComponent(mm[1]));
+            const recoTok = __ssIdNorm(params.get("reco") || "");
+            const prod = getAllProductsFlatSafe().find(p => __ssIdEq(p?.productId, pid)) || null;
+            if (prod) {
+                const desc =
+                    prod.description ||
+                    TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER ||
+                    "No description available.";
+
+                // If reco token exists, hydrate PDP discount payload from durable store.
+                if (recoTok) {
+                    try {
+                        const ent = __ssRecoDiscountStoreGet(recoTok);
+                        if (ent && __ssIdEq(ent.productId, pid) && Number(ent.discountPct || 0) > 0) {
+                            sessionStorage.setItem("ss_reco_pdp_discount_v1", JSON.stringify({
+                                productId: pid,
+                                discountToken: recoTok,
+                                discountPct: Number(ent.discountPct || 0),
+                                discountedPrice: Number(ent.discountedPrice || 0),
+                                ts: Date.now()
+                            }));
+                        }
+                    } catch { }
+                }
+
+                const state = {
+                    action: "GoToProductPage",
+                    data: [prod.name, prod.price, desc, null, pid, (recoTok ? { discountToken: recoTok } : null)]
+                };
+
+                userHistoryStack = [state];
+                currentIndex = 0;
+
+                history.replaceState({ index: 0 }, "", buildUrlForState(state));
+                handleStateChange(state);
+                return;
+            }
+
+            history.replaceState({ index: 0 }, "", "/");
+        }
+    } catch { }
+
+    // Deep link: /?product=...
+    // Deep link: /?p=<productId>
+    const pidParam = params.get("p") || params.get("pid") || params.get("productId");
+    if (pidParam) {
+        const pid = __ssIdNorm(pidParam);
+        if (pid && !__ssIsBadId(pid)) {
+            const prod = __ssGetCatalogFlat().find(p => String(p?.productId || "").trim() === String(pid).trim());
+            if (prod) {
+                const desc = ((__ssABGetProductDescription(prod) || prod.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER);
+                const state = { action: "GoToProductPage", data: [prod.name, (__ssResolveVariantPriceEUR(prod, [], "") || prod.price), desc, null, pid, null] };
+                userHistoryStack = [state];
+                currentIndex = 0;
+                history.replaceState({ index: 0 }, "", buildUrlForState(state));
+                handleStateChange(state);
+                return;
+            }
+        }
+    }
+
     const productParam = params.get("product");
 
     if (productParam) {
@@ -2071,13 +2312,11 @@ function initializeHistory() {
             userHistoryStack = [state];
             currentIndex = 0;
 
-            // Keep the URL as product link and render the product page
             history.replaceState({ index: 0 }, "", buildUrlForState(state));
             handleStateChange(state);
             return;
         }
 
-        // Invalid product link: clean it so refresh doesn't keep retrying
         history.replaceState({ index: 0 }, "", "/");
     }
 
@@ -3028,10 +3267,10 @@ function searchProducts() {
             nameLink.addEventListener("click", (e) => {
                 e.preventDefault();
                 navigate("GoToProductPage", [
-                product.name,
-                (__ssResolveVariantPriceEUR(product, [], "") || product.price),
-                ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
-            ]);
+                    product.name,
+                    (__ssResolveVariantPriceEUR(product, [], "") || product.price),
+                    ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
+                ]);
             });
 
 
@@ -3051,10 +3290,10 @@ function searchProducts() {
             img.target = "_blank"; // Open in new tab
             img.addEventListener("click", () => {
                 navigate("GoToProductPage", [
-                product.name,
-                (__ssResolveVariantPriceEUR(product, [], "") || product.price),
-                ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
-            ]);
+                    product.name,
+                    (__ssResolveVariantPriceEUR(product, [], "") || product.price),
+                    ((__ssABGetProductDescription(product) || product.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
+                ]);
             });
 
             const priceP = document.createElement("p");
@@ -3229,11 +3468,22 @@ function convertPrice(priceInEur) {
 // Function to update all prices
 function updateAllPrices() {
     document.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
-        let basePrice = parseFloat(element.dataset.eur);
-        if (!isNaN(basePrice)) {
-            let convertedValue = convertPrice(basePrice);
+        const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
 
-            let currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
+        // If element represents a recommendation discount (PDP or reco card), preserve the markup.
+        const eur = parseFloat(element.dataset.eur);
+        const eurOrig = parseFloat(element.dataset.eurOriginal);
+        const pct = Number(element.dataset.recoDiscountPct || element.dataset.discountPct || 0);
+
+        if (!isNaN(eurOrig) && eurOrig > 0 && !isNaN(eur) && eur > 0 && pct > 0) {
+            const convOrig = convertPrice(eurOrig);
+            const convDisc = convertPrice(eur);
+            element.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+            return;
+        }
+
+        if (!isNaN(eur)) {
+            const convertedValue = convertPrice(eur);
             element.textContent = `${currencySymbol}${convertedValue}`;
         }
     });
@@ -3450,10 +3700,10 @@ async function GoToSettings() {
 
     // Contact Form
 
-// Contact Form
-const contactSection = document.createElement("div");
-contactSection.classList.add("settings-section");
-contactSection.innerHTML = `
+    // Contact Form
+    const contactSection = document.createElement("div");
+    contactSection.classList.add("settings-section");
+    contactSection.innerHTML = `
   <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
   <form id="contact-form" autocomplete="off">
     <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
@@ -3667,61 +3917,61 @@ contactSection.innerHTML = `
     // Contact form submission logic (matches backend rules: valid email + message length >= 5)
     const isValidEmailClient = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || "").trim());
 
-   const cf = document.getElementById("contact-form");
-if (cf) {
-  cf.addEventListener("submit", async (event) => {
-    event.preventDefault();
+    const cf = document.getElementById("contact-form");
+    if (cf) {
+        cf.addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-    const email = document.getElementById("contact-email")?.value?.trim() || "";
-    const message = document.getElementById("contact-message")?.value?.trim() || "";
+            const email = document.getElementById("contact-email")?.value?.trim() || "";
+            const message = document.getElementById("contact-message")?.value?.trim() || "";
 
-    const website = ""; // prevent autofill false-positives (do NOT read #contact-website)
+            const website = ""; // prevent autofill false-positives (do NOT read #contact-website)
 
-    if (!isValidEmailClient(email)) {
-      alert("Please enter a valid email address (e.g., name@example.com).");
-      return;
+            if (!isValidEmailClient(email)) {
+                alert("Please enter a valid email address (e.g., name@example.com).");
+                return;
+            }
+            if (message.length < 5) {
+                alert("Please enter a message (at least 5 characters).");
+                return;
+            }
+
+            // IMPORTANT: declare BEFORE using it anywhere
+            let turnstileToken = "";
+            try {
+                turnstileToken =
+                    (await snagletGetTurnstileToken({ forceFresh: true })) ||
+                    document.querySelector('input[name="cf-turnstile-response"]')?.value ||
+                    "";
+            } catch {
+                turnstileToken =
+                    document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/send-message`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, message, turnstileToken, website }),
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    const msg = result?.message || result?.error || `Failed (${response.status}).`;
+                    alert(msg);
+                    return;
+                }
+
+                alert(result.message || "Message sent.");
+                const msgEl = document.getElementById("contact-message");
+                if (msgEl) msgEl.value = "";
+            } catch (error) {
+                console.error("Failed to send message:", error);
+                alert("An error occurred. Try emailing us directly.");
+            }
+        });
     }
-    if (message.length < 5) {
-      alert("Please enter a message (at least 5 characters).");
-      return;
-    }
-
-    // IMPORTANT: declare BEFORE using it anywhere
-    let turnstileToken = "";
-    try {
-      turnstileToken =
-        (await snagletGetTurnstileToken({ forceFresh: true })) ||
-        document.querySelector('input[name="cf-turnstile-response"]')?.value ||
-        "";
-    } catch {
-      turnstileToken =
-        document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
-    }
-
-    try {
-      const response = await fetch(`${API_BASE}/send-message`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, message, turnstileToken, website }),
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const msg = result?.message || result?.error || `Failed (${response.status}).`;
-        alert(msg);
-        return;
-      }
-
-      alert(result.message || "Message sent.");
-      const msgEl = document.getElementById("contact-message");
-      if (msgEl) msgEl.value = "";
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      alert("An error occurred. Try emailing us directly.");
-    }
-  });
-}
 
 
     // Keep selects in sync + update prices
@@ -3737,7 +3987,7 @@ function handlesTariffsDropdown(countriesList = []) {
         window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
         if (!Array.isArray(countriesList)) countriesList = [];
         window.preloadedData.countries = countriesList;
-            window.preloadedData.storefrontConfig = storefrontCfg || null;
+        window.preloadedData.storefrontConfig = (typeof storefrontCfg !== "undefined" ? storefrontCfg : (window.storefrontCfg || null));
 
         // If the Settings page isn't rendered, stop here (preload must not crash)
         const select = document.getElementById("countrySelect");
@@ -4045,6 +4295,9 @@ async function createPaymentModal() {
         box-shadow: 0 12px 40px rgba(0,0,0,.35);
         color: var(--Default_Text_Colour, #111);
         position: relative;
+            max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
         border: 1px solid rgba(0,0,0,.08);
       }
       #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
@@ -4624,9 +4877,9 @@ async function setupWalletPaymentRequestButton({
 
                 if (resolvedOrderId && checkoutToken) {
                     const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
-            window.latestOrderId = resolvedOrderId;
-            window.latestOrderPublicToken = checkoutToken;
-            window.latestOrderStatusUrl = statusUrl;
+                    window.latestOrderId = resolvedOrderId;
+                    window.latestOrderPublicToken = checkoutToken;
+                    window.latestOrderStatusUrl = statusUrl;
                     addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
                 }
 
@@ -4650,9 +4903,9 @@ async function setupWalletPaymentRequestButton({
 
                     if (resolvedOrderId && checkoutToken) {
                         const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
-            window.latestOrderId = resolvedOrderId;
-            window.latestOrderPublicToken = checkoutToken;
-            window.latestOrderStatusUrl = statusUrl;
+                        window.latestOrderId = resolvedOrderId;
+                        window.latestOrderPublicToken = checkoutToken;
+                        window.latestOrderStatusUrl = statusUrl;
                         addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
                     }
 
@@ -5353,7 +5606,7 @@ function attachSwipeListeners() {
 
     image.addEventListener("touchstart", (e) => {
         touchStartX = e.changedTouches[0].screenX;
-    });
+    }, { passive: true });
 
     image.addEventListener("touchend", (e) => {
         touchEndX = e.changedTouches[0].screenX;
@@ -5564,7 +5817,7 @@ function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, p
         }
 
         localStorage.setItem("basket", JSON.stringify(basket));
-        __ssNotifyAddToCart({ qty: quantity, productName, optMsg: selectedOption ? ' (' + selectedOption + ')' : '' , imageUrl, itemKey: key });
+        __ssNotifyAddToCart({ qty: quantity, productName, optMsg: selectedOption ? ' (' + selectedOption + ')' : '', imageUrl, itemKey: key });
     } else {
         alert("Please select at least one item.");
     }
@@ -5620,11 +5873,11 @@ function updateBasket() {
 
     basketContainer.innerHTML = "";
 
-    
+
     // Ensure option chips + layout overrides are available
     __ssEnsureOptionChipStyles();
     __ssEnsureABUiStyles();
-if (Object.keys(basket).length === 0) {
+    if (Object.keys(basket).length === 0) {
         basketContainer.innerHTML = `<p class='EmptyBasketMessage'>The basket is empty!</p>`;
         return;
     }
@@ -5645,16 +5898,22 @@ if (Object.keys(basket).length === 0) {
         console.log(`   🔹 Product description: ${item.description}`);
 
         const product = (() => {
-    try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
-})();
+            try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
+        })();
 
-const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
-const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+        const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+        const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
 
-const __dispNameText = String(item?.displayName || item?.name || "");
-const __dispDescText = String(item?.displayDescription || item?.description || "");
+        const __dispNameText = String(item?.displayName || item?.name || "");
+        const __dispDescText = String(item?.displayDescription || item?.description || "");
 
-const encodedName = encodeURIComponent(item.name);
+        const encodedName = encodeURIComponent(item.name);
+        const __hasRecoDisc = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(item?.price || 0));
+        const __totalDisc = (Number(item.price) * item.quantity).toFixed(2);
+        const __totalOrig = (Number(item.unitPriceOriginalEUR || 0) * item.quantity).toFixed(2);
+        const __cartPriceHTML = __hasRecoDisc
+            ? `<p class="basket-item-price basket-item-price-right" data-eur="${__totalDisc}" data-eur-original="${__totalOrig}" data-discount-pct="${Number(item.recoDiscountPct || 0)}"><span style="text-decoration:line-through;opacity:.65;margin-right:4px">${__totalOrig}€</span> <span style="font-weight:700">${__totalDisc}€</span></p>`
+            : `<p class="basket-item-price basket-item-price-right" data-eur="${__totalDisc}">${__totalDisc}€</p>`;
         productDiv.innerHTML = `
         <div class="Basket-Item">
             <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank">
@@ -5683,7 +5942,7 @@ const encodedName = encodeURIComponent(item.name);
     <button class="BasketChangeQuantityButton" type="button"
             data-key="${encodeURIComponent(key)}" data-delta="1">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
   </div>
-  <p class="basket-item-price basket-item-price-right" data-eur="${totalPrice}">${totalPrice}€</p>
+  ${__cartPriceHTML}
 </div>
 
         </div>
@@ -5707,12 +5966,19 @@ const encodedName = encodeURIComponent(item.name);
         totalSum += itemTotal;
 
         const productForReceipt = (() => {
-    try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
-})();
-const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
-const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
+            try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
+        })();
+        const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+        const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
 
-receiptContent += `
+        const __hasRecoDiscR = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(unit || 0));
+        const __itemTotalDisc = itemTotal.toFixed(2);
+        const __itemTotalOrig = (Number(item.unitPriceOriginalEUR || 0) * item.quantity).toFixed(2);
+        const __receiptPriceHTML = __hasRecoDiscR
+            ? `<td class="basket-item-price" data-eur="${__itemTotalDisc}" data-eur-original="${__itemTotalOrig}" data-discount-pct="${Number(item.recoDiscountPct || 0)}"><span style="text-decoration:line-through;opacity:.65;margin-right:4px">${__itemTotalOrig}€</span> <span style="font-weight:700">${__itemTotalDisc}€</span></td>`
+            : `<td class="basket-item-price" data-eur="${__itemTotalDisc}">${__itemTotalDisc}€</td>`;
+
+        receiptContent += `
     <tr>
         <td>${item.quantity} ×</td>
         <td>
@@ -5720,10 +5986,10 @@ receiptContent += `
             <div class="ReceiptItemShipFree">${__ssEscHtml(__ssShipFreeText())}</div>
             ${receiptChipsHTML}
         </td>
-        <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+        ${__receiptPriceHTML}
     </tr>
 `;
-});
+    });
 
     receiptContent += `</table></div>`;
     // Incentive block (discount tiers / add-ons)
@@ -5737,6 +6003,9 @@ receiptContent += `
 
     receiptDiv.innerHTML = receiptContent;
     basketContainer.appendChild(receiptDiv);
+
+    try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
+
 
     try { __ssBindCartIncentives(basketContainer); } catch { }
     // Bind once per Basket_Viewer (works across re-renders)
@@ -5854,7 +6123,7 @@ function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, p
         }
 
         persistBasket("add_to_cart");
-        __ssNotifyAddToCart({ qty: quantity, productName, optMsg: selectedOption ? ' (' + selectedOption + ')' : '' , imageUrl, itemKey: key });
+        __ssNotifyAddToCart({ qty: quantity, productName, optMsg: selectedOption ? ' (' + selectedOption + ')' : '', imageUrl, itemKey: key });
     } else {
         alert("Please select at least one item.");
     }
@@ -6105,7 +6374,7 @@ function buildStripeSafeCart(fullCart) {
             price: Number(i.unitPriceEUR || i.price || 0),
             selectedOption: i.selectedOption || "",
             selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || []),
-        recoDiscountToken: i.recoDiscountToken || ""
+            recoDiscountToken: i.recoDiscountToken || ""
         };
         if (i.productId) out.productId = String(i.productId).trim();
         if (i.productLink) out.productLink = String(i.productLink).trim();
@@ -6120,7 +6389,24 @@ function buildFullCartFromBasket() {
 
     const items = Object.values(basketObj || {});
     __ssEnsureContributionProducts();
-    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x=>({ name:x.name, price:x.price, images:x.images||[], productLink:x.productLink||"" })) : __ssGetCatalogFlat();
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "" })) : __ssGetCatalogFlat();
+
+
+    function __ssRecoGetExcludeIds() {
+        try {
+            const b = (typeof readBasket === "function") ? readBasket() : (() => { try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; } })();
+            const ids = new Set();
+            Object.values(b || {}).forEach((it) => {
+                const pid = String(it?.productId || "").trim();
+                if (pid) ids.add(pid);
+            });
+            // Also exclude the product currently being viewed
+            if (recState.sourceProductId) ids.add(String(recState.sourceProductId));
+            return Array.from(ids);
+        } catch {
+            return recState.sourceProductId ? [String(recState.sourceProductId)] : [];
+        }
+    }
 
     return items
         .map((item) => {
@@ -6168,6 +6454,33 @@ function buildFullCartFromBasket() {
         })
         .filter((x) => x && x.name && x.quantity > 0);
 }
+
+// ---- Safety helpers (prevents hard crashes if a merge ever drops a helper) ----
+// Keep these as idempotent window assignments so they work even if a function
+// declaration is missing in some deployed variant.
+(function __ssEnsureCheckoutHelpers() {
+    const w = (typeof window !== "undefined") ? window : {};
+    if (typeof w.getSelectedCountryCode !== "function") {
+        w.getSelectedCountryCode = function getSelectedCountryCode() {
+            try {
+                const v =
+                    document.getElementById("countrySelect")?.value ||
+                    localStorage.getItem("detectedCountry") ||
+                    "US";
+                return String(v).trim().toUpperCase();
+            } catch {
+                return "US";
+            }
+        };
+    }
+    if (typeof w.round2 !== "function") {
+        w.round2 = function round2(n) {
+            const x = Number(n);
+            if (!Number.isFinite(x)) return 0;
+            return Math.round(x * 100) / 100;
+        };
+    }
+})();
 
 
 function getSelectedCountryCode() {
@@ -6343,28 +6656,53 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
 
         const turnstileToken = await snagletGetTurnstileToken({ forceFresh: true });
 
+
+        const __pi_payload = {
+            checkoutId: window.latestCheckoutId || null,
+            checkoutToken: window.latestCheckoutPublicToken || null,
+            websiteOrigin,
+            currency,
+            country,
+            products: stripeCart,
+            productsFull: fullCart,
+            expectedClientTotal,
+            applyTariff: getApplyTariffFlag(),
+            metadata: { order_summary },
+            fxFetchedAt,
+            turnstileToken,
+            experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null)
+        };
+
+        try {
+            window.__LAST_PI_REQUEST__ = __pi_payload;
+            localStorage.setItem("__LAST_PI_REQUEST__", JSON.stringify(__pi_payload));
+        } catch { }
+
+        try {
+            console.log("[PI][CLIENT][REQ]", {
+                currency,
+                country,
+                expectedClientTotal,
+                fxFetchedAt,
+                items: Array.isArray(fullCart) ? fullCart.length : null,
+                hasRecoToken: Array.isArray(fullCart) && fullCart.some(p => !!String(p?.recoDiscountToken || "").trim())
+            });
+        } catch { }
+
         const res = await fetch(`${API_BASE}/create-payment-intent`, {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                checkoutId: window.latestCheckoutId || null,
-                checkoutToken: window.latestCheckoutPublicToken || null,
-                websiteOrigin,
-                currency,
-                country,
-                products: stripeCart,
-                productsFull: fullCart,
-                expectedClientTotal,
-                applyTariff: getApplyTariffFlag(),
-                metadata: { order_summary },
-                fxFetchedAt,
-                turnstileToken,
-                experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null)
-            })
+            body: JSON.stringify(__pi_payload)
         });
 
         const data = await res.json().catch(() => ({}));
+
+        try {
+            window.__LAST_PI_RESPONSE__ = { status: res.status, ok: res.ok, data };
+            localStorage.setItem("__LAST_PI_RESPONSE__", JSON.stringify(window.__LAST_PI_RESPONSE__));
+            console.log("[PI][CLIENT][RESP]", { status: res.status, ok: res.ok, data });
+        } catch { }
         if (res.ok) return data;
 
         const code = data?.error || data?.code;
@@ -6430,7 +6768,20 @@ async function initStripePaymentUI(selectedCurrency) {
 
     if (!stripeCart.length) throw new Error("Basket is empty.");
 
-    // analytics: begin checkout
+    
+
+    // [stripe][debug] init start
+    try {
+        console.log("[stripe][init] start", {
+            apiBase: (typeof API_BASE !== "undefined" ? API_BASE : null),
+            origin: window.location.origin,
+            currency: selectedCurrency,
+            country: getSelectedCountryCode(),
+            stripeCartItems: Array.isArray(stripeCart) ? stripeCart.length : null,
+            fullCartItems: Array.isArray(fullCart) ? fullCart.length : null
+        });
+    } catch { }
+// analytics: begin checkout
     try {
         const items = buildAnalyticsCartItems(stripeCart);
         sendAnalyticsEvent('begin_checkout', {
@@ -6466,7 +6817,22 @@ async function initStripePaymentUI(selectedCurrency) {
 
     const { clientSecret, paymentIntentId, amountCents, currency, checkoutId, checkoutPublicToken } = data;
 
-    // analytics: payment intent created (checkout progressing)
+    
+
+    // [stripe][debug] payment intent response
+    try {
+        const pk = String(publishableKey || "");
+        console.log("[stripe][pi] in", {
+            publishableKeyPrefix: pk ? (pk.slice(0, 12) + "…") : "",
+            currency: currency || selectedCurrency,
+            amountCents: amountCents ?? null,
+            paymentIntentId: paymentIntentId || null,
+            clientSecretPrefix: (clientSecret ? String(clientSecret).slice(0, 16) + "…" : ""),
+            checkoutId: checkoutId || null,
+            hasCheckoutPublicToken: !!(checkoutPublicToken && String(checkoutPublicToken).trim())
+        });
+    } catch { }
+// analytics: payment intent created (checkout progressing)
     try {
         sendAnalyticsEvent('checkout_intent_created', {
             extra: {
@@ -6496,10 +6862,88 @@ async function initStripePaymentUI(selectedCurrency) {
         appearance: _getStripeAppearance()
     });
 
-    window.paymentElementInstance = window.elementsInstance.create("payment");
+    
+
+    // [stripe][debug] elements created
+    try {
+        console.log("[stripe][elements] created", {
+            hasElements: !!window.elementsInstance,
+            hasStripe: !!window.stripeInstance
+        });
+    } catch { }
+window.paymentElementInstance = window.elementsInstance.create("payment");
     window.paymentElementInstance.mount("#payment-element");
 
-    await setupWalletPaymentRequestButton({
+    
+
+// [stripe][debug] Payment Element lifecycle logs
+try {
+    const __mountId = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    window.__ssStripeMountId = __mountId;
+
+    console.log("[stripe][payment] mount", {
+        mountId: __mountId,
+        paymentIntentId: paymentIntentId || null,
+        clientSecretPrefix: (clientSecret ? String(clientSecret).slice(0, 16) + "…" : ""),
+        container: "#payment-element"
+    });
+
+    // Events
+    try {
+        window.paymentElementInstance.on("ready", () => {
+            if (window.__ssStripeMountId !== __mountId) return;
+            console.log("[stripe][payment] ready", { mountId: __mountId });
+        });
+    } catch (e) {
+        console.warn("[stripe][payment] on(ready) failed:", e?.message || e);
+    }
+
+    try {
+        window.paymentElementInstance.on("change", (e) => {
+            if (window.__ssStripeMountId !== __mountId) return;
+            // Avoid logging full billing details; Stripe's event is safe but keep it compact.
+            console.log("[stripe][payment] change", {
+                mountId: __mountId,
+                complete: !!e?.complete,
+                empty: !!e?.empty,
+                collapsed: !!e?.collapsed,
+                valueType: e?.value ? Object.keys(e.value) : null,
+                brand: e?.value?.payment_method?.card?.brand || null,
+                type: e?.value?.type || null
+            });
+            if (e?.error) console.warn("[stripe][payment] change.error", { mountId: __mountId, message: e.error.message, code: e.error.code, type: e.error.type });
+        });
+    } catch (e) {
+        console.warn("[stripe][payment] on(change) failed:", e?.message || e);
+    }
+
+    // Post-mount DOM health checks (iframe existence, sizing)
+    setTimeout(() => {
+        if (window.__ssStripeMountId !== __mountId) return;
+        const host = document.getElementById("payment-element");
+        const frame = host ? host.querySelector("iframe") : null;
+        const hostRect = host ? host.getBoundingClientRect() : null;
+        const frameRect = frame ? frame.getBoundingClientRect() : null;
+        console.log("[stripe][payment] domcheck", {
+            mountId: __mountId,
+            hostExists: !!host,
+            iframeExists: !!frame,
+            hostRect: hostRect ? { w: Math.round(hostRect.width), h: Math.round(hostRect.height) } : null,
+            iframeRect: frameRect ? { w: Math.round(frameRect.width), h: Math.round(frameRect.height) } : null,
+            hostOverflowY: host ? getComputedStyle(host).overflowY : null
+        });
+    }, 1200);
+
+    // If still not ready after a while, surface a warning (usually indicates a config/API issue)
+    setTimeout(() => {
+        if (window.__ssStripeMountId !== __mountId) return;
+        console.warn("[stripe][payment] not-ready-timeout", {
+            mountId: __mountId,
+            hint: "If iframe exists but no fields render, check /create-payment-intent response and browser console/network for Stripe errors."
+        });
+    }, 4500);
+} catch { }
+await setupWalletPaymentRequestButton({
         stripe: window.stripeInstance,
         clientSecret,
         amountCents,
@@ -6581,10 +7025,10 @@ function attachConfirmHandlerOnce() {
 
                 if (resolvedOrderId && checkoutToken) {
                     const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
-            window.latestOrderId = resolvedOrderId;
-            window.latestOrderPublicToken = checkoutToken;
-            window.latestOrderStatusUrl = statusUrl;
-            addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
+                    window.latestOrderId = resolvedOrderId;
+                    window.latestOrderPublicToken = checkoutToken;
+                    window.latestOrderStatusUrl = statusUrl;
+                    addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
                 }
 
                 clearPaymentPendingFlag();
@@ -6616,10 +7060,10 @@ function attachConfirmHandlerOnce() {
 
                     if (resolvedOrderId && checkoutToken) {
                         const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
-            window.latestOrderId = resolvedOrderId;
-            window.latestOrderPublicToken = checkoutToken;
-            window.latestOrderStatusUrl = statusUrl;
-            addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
+                        window.latestOrderId = resolvedOrderId;
+                        window.latestOrderPublicToken = checkoutToken;
+                        window.latestOrderStatusUrl = statusUrl;
+                        addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
                     }
 
                     clearPaymentPendingFlag();
@@ -7192,6 +7636,34 @@ function GoToProductPage(productName, productPrice, productDescription) {
     try { removeSortContainer(); } catch { }
 
     const product = __ssGetCatalogFlat().find(p => p?.name === productName);
+    // Robust current productId tracking (avoid accidental [object Set] etc.)
+    try {
+        let __pid = __ssIdNorm(arguments[4] || product?.productId || '');
+        if (__ssIsBadId(__pid)) {
+            // fallback: find by name and take its productId
+            const __p2 = __ssGetCatalogFlat().find(p => String(p?.name || '').trim() === String(productName || '').trim());
+            __pid = __ssIdNorm(__p2?.productId || '');
+        }
+        if (!__ssIsBadId(__pid)) { window.__ssCurrentProductId = __pid; try { if (product && typeof product === 'object') product.productId = __pid; } catch { } }
+    } catch { }
+    // If navigation provided a reco discount payload, persist it for PDP rendering and cart attribution.
+    try {
+        const __pidNav = String(arguments[4] || product?.productId || "").trim();
+        const __discNav = arguments[5] && typeof arguments[5] === "object" ? arguments[5] : null;
+        const __pctNav = Number(__discNav?.discountPct || 0);
+        const __discPriceNav = Number(__discNav?.discountedPrice || 0);
+        const __tokNav = String(__discNav?.discountToken || "");
+        if (__pidNav && __pctNav > 0 && __discPriceNav > 0) {
+            sessionStorage.setItem("ss_reco_pdp_discount_v1", JSON.stringify({
+                productId: __ssIdNorm(__pidNav),
+                discountToken: __tokNav,
+                discountPct: __pctNav,
+                discountedPrice: __discPriceNav,
+                ts: Date.now()
+            }));
+        }
+    } catch { }
+
     // Store link for analytics / deep-linking if available.
     window.__ssCurrentViewedProductLink = (product?.productLink || product?.link || '');
     const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : (product?.images || []);
@@ -7413,6 +7885,57 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     pSpan.dataset.eur = String(_eurInit ?? "");
     pSpan.textContent = `${_eurInit} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
 
+    // If user arrived from a discounted recommendation, show discount on PDP and avoid double-discounting.
+    try {
+        const pid = __ssGetCurrentPidFallback() || String(product?.productId || "").trim();
+        let d = null;
+        try { d = JSON.parse(sessionStorage.getItem("ss_reco_pdp_discount_v1") || "null"); } catch { d = null; }
+        // If the stored payload is for a different product, ignore it (otherwise it blocks fallback sources).
+        try {
+            if (d && pid && !__ssIdEq((d?.productId || d?.targetProductId || ""), pid)) d = null;
+        } catch { }
+        if (!d) {
+            try { d = __ssRecoConsumeRecentClick(); } catch { d = null; }
+            // Also ignore recent-click payloads that don't match this product.
+            try {
+                if (d && pid && !__ssIdEq((d?.productId || d?.targetProductId || ""), pid)) d = null;
+            } catch { }
+        }
+        // If URL contains ?reco=<token>, hydrate discount payload from durable store (works across refresh/new tab).
+        try {
+            const __tokQ = __ssIdNorm(new URLSearchParams(window.location.search).get("reco") || "");
+            if (__tokQ && (!d || !Number(d?.discountPct || 0))) {
+                const ent = __ssRecoDiscountStoreGet(__tokQ);
+                if (ent && __ssIdEq(ent.productId, pid)) {
+                    d = { productId: pid, discountToken: __tokQ, discountPct: Number(ent.discountPct || 0), discountedPrice: Number(ent.discountedPrice || 0) };
+                }
+            }
+        } catch { }
+        const pct = Number(d?.discountPct || 0);
+        let discPrice = Number(d?.discountedPrice || 0);
+        const tok = String(d?.discountToken || "");
+        const orig = Number(_eurInit || 0);
+        if (pid && __ssIdEq((d?.productId || d?.targetProductId || ""), pid) && pct > 0) {
+            // If backend didn't provide discountedPrice, compute from original.
+            if ((!Number.isFinite(discPrice) || discPrice <= 0) && Number.isFinite(orig) && orig > 0) {
+                discPrice = Math.round((orig * (1 - pct / 100)) * 100) / 100;
+            }
+        }
+        if (pid && __ssIdEq((d?.productId || d?.targetProductId || ""), pid) && pct > 0 && discPrice > 0) {
+            pSpan.dataset.eurOriginal = String(orig || "");
+            pSpan.dataset.eur = String(discPrice);
+            pSpan.dataset.recoDiscountToken = tok;
+            pSpan.dataset.recoDiscountPct = String(pct);
+            window.__ssRecoPdpDiscountAppliedFor = pid;
+
+            const cur = (TEXTS?.CURRENCIES?.EUR || "€");
+            pSpan.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${orig}${cur}</span> <span style="font-weight:700">${discPrice}${cur}</span> `;
+            if (typeof updateAllPrices === "function") updateAllPrices();
+        } else {
+            window.__ssRecoPdpDiscountAppliedFor = null;
+        }
+    } catch { }
+
     priceLabel.append(pStrong, pSpan);
     infoCol.appendChild(priceLabel);
 
@@ -7504,13 +8027,22 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     Product_Viewer.appendChild(productDiv);
     viewer.appendChild(Product_Viewer);
 
+    // Ensure product.productId is sane for recommendations + discount matching
+    try {
+        const __pid = __ssGetCurrentPidFallback() || __ssIdNorm(product?.productId || '');
+        if (__pid && !__ssIsBadId(__pid)) {
+            if (__ssIsBadId(product?.productId)) product.productId = __pid;
+            window.__ssCurrentProductId = __pid;
+        }
+    } catch { }
+
     try { __ssRecoRenderForProduct(product); } catch { }
 
     // Swipe support (non-breaking)
     try {
         let touchStartX = 0;
         let touchEndX = 0;
-        mainImg.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].screenX; });
+        mainImg.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
         mainImg.addEventListener("touchend", (e) => {
             touchEndX = e.changedTouches[0].screenX;
             const threshold = 50;
@@ -7527,61 +8059,113 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
 // ===== Recommendations widget (product page) =====
 function __ssRecoGetSessionId() {
-  const k = "ss_reco_sid_v1";
-  try {
-    let v = localStorage.getItem(k);
-    if (v && String(v).trim()) return String(v).trim();
-    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-      const a = new Uint32Array(4);
-      crypto.getRandomValues(a);
-      v = Array.from(a).map(x => x.toString(16)).join("");
-    } else {
-      v = String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+    const k = "ss_reco_sid_v1";
+    try {
+        let v = localStorage.getItem(k);
+        if (v && String(v).trim()) return String(v).trim();
+        if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+            const a = new Uint32Array(4);
+            crypto.getRandomValues(a);
+            v = Array.from(a).map(x => x.toString(16)).join("");
+        } else {
+            v = String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+        }
+        localStorage.setItem(k, v);
+        return v;
+    } catch {
+        return String(Date.now()) + "_" + Math.random().toString(16).slice(2);
     }
-    localStorage.setItem(k, v);
-    return v;
-  } catch {
-    return String(Date.now()) + "_" + Math.random().toString(16).slice(2);
-  }
+}
+
+
+function __ssRecoDiscountStorePut(token, payload) {
+    const k = "ss_reco_discount_store_v2";
+    try {
+        const tok = __ssIdNorm(token);
+        if (!tok) return;
+        const raw = localStorage.getItem(k) || "{}";
+        const db = JSON.parse(raw);
+        const now = Date.now();
+        for (const [t, v] of Object.entries(db)) {
+            const age = now - Number(v?.ts || 0);
+            if (!(age >= 0 && age <= 2 * 60 * 60 * 1000)) delete db[t];
+        }
+        db[tok] = { ...payload, ts: now };
+        localStorage.setItem(k, JSON.stringify(db));
+    } catch { }
+}
+function __ssRecoDiscountStoreGet(token) {
+    const k = "ss_reco_discount_store_v2";
+    try {
+        const tok = __ssIdNorm(token);
+        if (!tok) return null;
+        const raw = localStorage.getItem(k) || "{}";
+        const db = JSON.parse(raw);
+        const v = db && db[tok] ? db[tok] : null;
+        if (!v) return null;
+        const age = Date.now() - Number(v.ts || 0);
+        if (!(age >= 0 && age <= 2 * 60 * 60 * 1000)) return null;
+        return v;
+    } catch { return null; }
 }
 
 function __ssRecoSaveRecentClick(data) {
-  const k = "ss_reco_last_click_v1";
-  try {
-    localStorage.setItem(k, JSON.stringify({ ...data, ts: Date.now() }));
-  } catch { }
+    const k = "ss_reco_last_click_v1";
+    try {
+        if (data && typeof data === "object") {
+            if ("targetProductId" in data) data.targetProductId = __ssIdNorm(data.targetProductId);
+            if ("sourceProductId" in data) data.sourceProductId = __ssIdNorm(data.sourceProductId);
+            if ("productId" in data) data.productId = __ssIdNorm(data.productId);
+        }
+        // Normalize discount payload: backend may omit discountedPrice.
+        // If we have a pct and original price, compute discountedPrice so PDP/cart can render.
+        const pct = Number(data?.discountPct || 0);
+        const orig = Number(data?.originalPrice || data?.price || 0);
+        let discountedPrice = Number(data?.discountedPrice || 0);
+        if (pct > 0 && (!Number.isFinite(discountedPrice) || discountedPrice <= 0) && Number.isFinite(orig) && orig > 0) {
+            discountedPrice = Math.round((orig * (1 - pct / 100)) * 100) / 100;
+        }
+        const rec = { ...data, discountedPrice, ts: Date.now() };
+        localStorage.setItem(k, JSON.stringify(rec));
+        if (rec && rec.discountToken && Number(rec.discountPct || 0) > 0 && Number(rec.discountedPrice || 0) > 0) {
+            __ssRecoDiscountStorePut(rec.discountToken, { productId: __ssIdNorm(rec.productId || rec.targetProductId), discountPct: Number(rec.discountPct || 0), discountedPrice: Number(rec.discountedPrice || 0) });
+        }
+    } catch { }
 }
 
 function __ssRecoConsumeRecentClick() {
-  const k = "ss_reco_last_click_v1";
-  try {
-    const raw = localStorage.getItem(k);
-    if (!raw) return null;
-    const d = JSON.parse(raw);
-    const age = Date.now() - Number(d?.ts || 0);
-    if (!(age >= 0 && age <= 30 * 60 * 1000)) return null; // 30 minutes
-    return d;
-  } catch {
-    return null;
-  }
+    const k = "ss_reco_last_click_v1";
+    try {
+        const raw = localStorage.getItem(k);
+        if (!raw) return null;
+        const d = JSON.parse(raw);
+        const age = Date.now() - Number(d?.ts || 0);
+        if (!(age >= 0 && age <= 30 * 60 * 1000)) return null; // 30 minutes
+        return d;
+    } catch {
+        return null;
+    }
 }
 
 function __ssRecoClearRecentClick() {
-  try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
+    try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
 }
 
 function __ssRecoEnsureStyles() {
-  if (document.getElementById("__ssRecoStyles")) return;
-  const s = document.createElement("style");
-  s.id = "__ssRecoStyles";
+    if (document.getElementById("__ssRecoStyles")) return;
+    const s = document.createElement("style");
+    s.id = "__ssRecoStyles";
     s.textContent = `
     .RecoSection{
       margin-top:24px;
       border-top:1px solid rgba(255,255,255,.12);
       padding-top:18px;
-      max-width:min(560px, 100%);
+      /* lock to viewport width on first paint (prevents initial oversized cards) */
+      width:100%;
+      max-width:100%;
       margin-left:auto;
       margin-right:auto;
+      box-sizing:border-box;
     }
     .RecoHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
     .RecoHead h3{margin:0;font-size:18px;}
@@ -7595,36 +8179,37 @@ function __ssRecoEnsureStyles() {
       scroll-snap-type:x mandatory;
       -webkit-overflow-scrolling:touch;
       padding-bottom:10px;
+
+      width:100%;
+      box-sizing:border-box;
     }
     .RecoViewport::-webkit-scrollbar{height:10px}
     .RecoViewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
 
     .RecoStrip{
+      --reco-cols: 3;
+      --reco-gap: 12px;
+      width:100%;
+      min-width:100%;
+      box-sizing:border-box;
       display:grid;
       grid-auto-flow:column;
-      grid-auto-columns:160px;
       grid-template-rows:1fr;
-      gap:12px;
+      gap:var(--reco-gap);
       align-content:start;
       padding-right:6px;
+      /* auto-fit N cards in the viewport; JS sets --reco-cols */
+      grid-auto-columns:minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
     }
     @media (max-width: 460px){
-      .RecoStrip{grid-auto-columns:150px;}
+      .RecoStrip{
+        --reco-gap: 10px;
+        grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+      }
       .RecoNav{width:34px;height:34px;border-radius:11px;}
     }
 
-    .RecoCard{
-      scroll-snap-align:start;
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:14px;
-      padding:10px;
-      background:rgba(255,255,255,.04);
-      cursor:pointer;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      min-height:220px;
-    }
+ 
     .RecoCard:hover{background:rgba(255,255,255,.07)}
     .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
     .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
@@ -7636,241 +8221,657 @@ function __ssRecoEnsureStyles() {
     .RecoDisc{border-color:rgba(255,255,255,.22)}
 
   `;
-  document.head.appendChild(s);
+    document.head.appendChild(s);
 }
 
 async function __ssRecoSendEvent(type, payload) {
-  try {
-    const body = { type, ...payload };
-    // sendBeacon if available
-    if (navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(body)], { type: "application/json" });
-      navigator.sendBeacon(`${API_BASE}/recs/event`, blob);
-      return;
-    }
-    await fetch(`${API_BASE}/recs/event`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      keepalive: true
-    });
-  } catch { }
+    try {
+        const body = { type, ...payload };
+        // sendBeacon if available
+        if (navigator.sendBeacon) {
+            const blob = new Blob([JSON.stringify(body)], { type: "application/json" });
+            navigator.sendBeacon(`${API_BASE}/recs/event`, blob);
+            return;
+        }
+        await fetch(`${API_BASE}/recs/event`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            keepalive: true
+        });
+    } catch { }
 }
 
 async function __ssRecoRenderForProduct(product) {
-  try {
-    if (!product || !product.productId) return;
-    const viewer = document.getElementById("Viewer");
-    const pv = document.getElementById("Product_Viewer");
-    if (!viewer || !pv) return;
-
-    __ssRecoEnsureStyles();
-
-    // Remove old
-    const old = document.getElementById("RecoSection");
-    if (old) old.remove();
-
-    const sid = __ssRecoGetSessionId();
-
-    const r = await fetch(`${API_BASE}/recs?sourceProductId=${encodeURIComponent(String(product.productId))}`, { method: "GET" });
-    const d = await r.json().catch(() => null);
-    if (!d || !d.ok || !Array.isArray(d.items) || d.items.length === 0) return;
-
-    const section = document.createElement("div");
-    section.id = "RecoSection";
-    section.className = "RecoSection";
-
-    const head = document.createElement("div");
-    head.className = "RecoHead";
-
-    const h = document.createElement("h3");
-    h.textContent = "Other products";
-
-    const navs = document.createElement("div");
-    navs.className = "RecoNavs";
-
-    const btnL = document.createElement("button");
-    btnL.type = "button";
-    btnL.className = "RecoNav";
-    btnL.setAttribute("aria-label", "Scroll left");
-    btnL.textContent = "‹";
-
-    const btnR = document.createElement("button");
-    btnR.type = "button";
-    btnR.className = "RecoNav";
-    btnR.setAttribute("aria-label", "Scroll right");
-    btnR.textContent = "›";
-
-    navs.appendChild(btnL);
-    navs.appendChild(btnR);
-
-    head.appendChild(h);
-    head.appendChild(navs);
-
-    const viewport = document.createElement("div");
-    viewport.className = "RecoViewport";
-
-    const strip = document.createElement("div");
-    strip.className = "RecoStrip";
-
-    viewport.appendChild(strip);
-
-    // impression (fire once per render)
-    __ssRecoSendEvent("impression", {
-      widgetId: d.widgetId,
-      token: d.token,
-      sourceProductId: String(product.productId),
-      sessionId: sid,
-      extra: { shown: d.items.map(x => ({ productId: x.productId, position: x.position })) }
-    });
-
-    __ssEnsureContributionProducts();
-    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x=>({ name:x.name, price:x.price, images:x.images||[], productLink:x.productLink||"" })) : __ssGetCatalogFlat();
-
-    (d.items || []).forEach((it, idx) => {
-      const card = document.createElement("div");
-      card.className = "RecoCard";
-      card.dataset.productId = String(it.productId);
-      card.dataset.position = String(it.position || (idx + 1));
-
-      const img = document.createElement("img");
-      img.className = "RecoImg";
-      img.loading = "lazy";
-      img.alt = String(it.name || "");
-      img.src = String(it.image || "");
-
-      const nm = document.createElement("div");
-      nm.className = "RecoName";
-      nm.textContent = String(it.name || "");
-
-      const meta = document.createElement("div");
-      meta.className = "RecoMeta";
-
-      const price = document.createElement("span");
-      const eur = Number(it.price || 0);
-      const discPct = Number(it.discountPct || 0);
-      const discPrice = Number(it.discountedPrice || 0);
-      const cur = (TEXTS?.CURRENCIES?.EUR || "€");
-      if (discPct > 0 && discPrice > 0 && eur > 0) {
-        price.innerHTML = `<span class="RecoOld">${eur}${cur}</span> <span class="RecoNew">${discPrice}${cur}</span>`;
-      } else {
-        price.textContent = eur ? `${eur}${cur}` : "";
-      }
-
-      const badge = document.createElement("span");
-      badge.className = "RecoBadge";
-      const pos = Number(it.position || (idx + 1));
-      if (pos <= 2) badge.textContent = "Bestseller";
-      else badge.textContent = "Suggested";
-
-      if (Number(it.discountPct || 0) > 0) {
-        const dsc = document.createElement("span");
-        dsc.className = "RecoBadge RecoDisc";
-        dsc.textContent = `-${Number(it.discountPct)}%`;
-        meta.append(price, badge, dsc);
-      } else {
-        meta.append(price, badge);
-      }
-      card.append(img, nm, meta);
-
-      card.addEventListener("click", (e) => {
-        e.preventDefault();
-
-        __ssRecoSendEvent("click", {
-          widgetId: d.widgetId,
-          token: d.token,
-          sourceProductId: String(product.productId),
-          targetProductId: String(it.productId),
-          position: pos,
-          sessionId: sid,
-          discountToken: String(it.discountToken || ""),
-          discountPct: Number(it.discountPct || 0),
-          discountedPrice: Number(it.discountedPrice || 0)
-        });
-
-        __ssRecoSaveRecentClick({
-          widgetId: d.widgetId,
-          token: d.token,
-          sourceProductId: String(product.productId),
-          targetProductId: String(it.productId),
-          position: pos,
-          sessionId: sid
-        });
-
-        // Navigate using existing flow
-        const target = flat.find(p => String(p?.productId || "").trim() === String(it.productId));
-        if (target) {
-          navigate("GoToProductPage", [
-            target.name,
-            (__ssResolveVariantPriceEUR(target, [], "") || target.price),
-            ((__ssABGetProductDescription(target) || target.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
-          ]);
-        } else {
-          // fallback by name
-          navigate("GoToProductPage", [
-            it.name,
-            it.price,
-            it.description || (TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER)
-          ]);
-        }
-      });
-
-      strip.appendChild(card);
-    });
-
-    section.append(head, viewport);
-
-    // Mount recs directly under the PDP container if present (preferred), otherwise fall back to Product_Viewer.
-    // This keeps the widget visually tied to the product page layout on both desktop and mobile.
-    const pdp = document.querySelector('.Product_Detail_Page');
-    const anchor = pdp || pv;
-    anchor.insertAdjacentElement('afterend', section);
-
-    // Make width match the PDP/viewer width for a cleaner aligned look
     try {
-      const w = anchor.getBoundingClientRect().width;
-      if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px';
-    } catch {}
+        if (!product) return;
+        const viewer = document.getElementById("Viewer");
+        const pv = document.getElementById("Product_Viewer");
+        if (!viewer || !pv) return;
 
-    function __ssRecoUpdateNav(){
-      try{
-        try{ const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w)+'px'; }catch{}
-        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
-        btnL.disabled = viewport.scrollLeft <= 2;
-        btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
-      }catch{}
-    }
-    btnL.addEventListener('click', ()=>{ viewport.scrollBy({ left: -Math.max(240, viewport.clientWidth*0.9), behavior: 'smooth' }); });
-    btnR.addEventListener('click', ()=>{ viewport.scrollBy({ left: Math.max(240, viewport.clientWidth*0.9), behavior: 'smooth' }); });
-    viewport.addEventListener('scroll', __ssRecoUpdateNav, { passive:true });
-    window.addEventListener('resize', __ssRecoUpdateNav);
-    __ssRecoUpdateNav();
-  } catch { }
+        __ssRecoEnsureStyles();
+
+        // Remove old
+        const old = document.getElementById("RecoSection");
+        if (old) old.remove();
+
+        const sid = __ssRecoGetSessionId();
+        const device = (window.innerWidth <= 700) ? "mobile" : "desktop";
+
+        const recState = {
+            widgetId: null,
+            token: null,
+            listToken: null,
+            // IMPORTANT: /recs expects a stable productId, not a name
+            sourceProductId: (__ssResolvePidForRecs(product) || __ssGetCurrentPidFallback() || __ssIdNorm(product.productId)),
+            currentProductId: __ssIdNorm(product.productId || (__ssResolvePidForRecs(product) || __ssGetCurrentPidFallback() || '')),
+            device,
+            visibleCount: 3,
+            batchSize: 3,
+            maxBatches: 6,
+            maxItems: 0,
+            swipeSmallPx: 35,
+            swipeBigPx: 120,
+            offset: 0,
+            batchesLoaded: 0,
+            loading: false,
+            hasMore: true
+        };
+
+        // Stable exclusion set for paging (prevents repeats + self-recommendation)
+        recState.excludeSet = new Set();
+        try {
+            const cur0 = __ssIdNorm(recState.currentProductId || '');
+            const src0 = __ssIdNorm(recState.sourceProductId || '');
+            if (cur0 && !__ssIsBadId(cur0)) recState.excludeSet.add(cur0);
+            if (src0 && !__ssIsBadId(src0)) recState.excludeSet.add(src0);
+        } catch { }
+
+
+        async function fetchBatch() {
+            if (recState.loading) return null;
+            if (!recState.hasMore) return null;
+            if (recState.batchesLoaded >= recState.maxBatches) return null;
+            if (recState.maxItems > 0 && recState.offset >= recState.maxItems) return null;
+
+            recState.loading = true;
+            try {
+                // sanitize sourceProductId before calling backend
+                try {
+                    let spid = __ssIdNorm(recState.sourceProductId);
+
+                    // If it's garbage (e.g. "[object Set]"), attempt recovery from URL or product name
+                    if (__ssIsBadId(spid)) {
+                        // 1) URL /p/<pid> or stored current pid
+                        const fromUrl = __ssGetCurrentPidFallback();
+                        if (fromUrl) spid = __ssIdNorm(fromUrl);
+
+                        // 2) product name -> pid
+                        if (!spid || __ssIsBadId(spid)) {
+                            const nm = String(product?.name ?? product?.title ?? '').trim();
+                            const rp = __ssResolvePidFromCatalogByName(nm);
+                            if (rp) spid = __ssIdNorm(rp);
+                        }
+                        // 3) last viewed product name -> pid
+                        if (!spid || __ssIsBadId(spid)) {
+                            const nm2 = String(window.__ssCurrentViewedProductName || "").trim();
+                            const rp2 = __ssResolvePidFromCatalogByName(nm2);
+                            if (rp2) spid = __ssIdNorm(rp2);
+                        }
+
+                    }
+
+                    // If spid looks like a name, resolve via catalog
+                    if (spid && /\s/.test(spid)) {
+                        const rp = __ssResolvePidFromCatalogByName(spid);
+                        if (rp) spid = __ssIdNorm(rp);
+                    }
+
+                    // Final validation
+                    if (!spid || __ssIsBadId(spid) || /\s/.test(spid)) {
+                        console.warn('Reco: invalid sourceProductId, skipping /recs fetch:', recState.sourceProductId);
+                        return null;
+                    }
+
+                    recState.sourceProductId = spid;
+                } catch (e) {
+                    console.warn('Reco: sanitize failed', e);
+                }
+
+                const u = new URL(`${API_BASE}/recs`);
+                u.searchParams.set("sourceProductId", recState.sourceProductId);
+                if (recState.currentProductId) u.searchParams.set("currentProductId", String(recState.currentProductId));
+                u.searchParams.set("device", recState.device);
+                u.searchParams.set("offset", String(recState.offset));
+                u.searchParams.set("limit", String(recState.batchSize));
+                if (recState.listToken) u.searchParams.set("listToken", recState.listToken);
+                try {
+                    // Build exclude list from stable state + already-rendered items.
+                    const exSet = (recState.excludeSet instanceof Set) ? recState.excludeSet : new Set();
+
+                    // Always exclude current PDP + source
+                    const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
+                    const src = __ssIdNorm(recState.sourceProductId || '');
+                    if (cur && !__ssIsBadId(cur)) exSet.add(cur);
+                    if (src && !__ssIsBadId(src)) exSet.add(src);
+
+                    // Also exclude whatever has already been rendered in this section
+                    if (Array.isArray(recState.items)) {
+                        for (const it of recState.items) {
+                            const pid = __ssIdNorm(it && it.productId);
+                            if (pid && !__ssIsBadId(pid)) exSet.add(pid);
+                        }
+                    }
+
+                    const exCsv = Array.from(exSet).filter(Boolean).join(",");
+                    // Always include exclude param (helps backend logs + deterministic behavior)
+                    u.searchParams.set("exclude", exCsv);
+
+                    // Keep for client-side filtering too
+                    recState.__excludeSet = exSet;
+                } catch { }
+
+                console.log("[recs] OUT", { url: String(u), sourceProductId: recState.sourceProductId, currentProductId: recState.currentProductId, device: recState.device, offset: recState.offset, limit: recState.batchSize, excludeCount: (recState.__excludeSet instanceof Set) ? recState.__excludeSet.size : 0, listToken: recState.listToken || null });
+
+                const r = await fetch(String(u), { method: "GET" });
+                const d = await r.json().catch(() => null);
+                try { console.log("[recs] IN", { ok: !!(d && d.ok), widgetId: d && d.widgetId, sourceProductId: d && d.sourceProductId, items: Array.isArray(d && d.items) ? d.items.length : 0, hasMore: d && d.hasMore, listToken: (d && d.listToken) || null, token: (d && d.token) || null }); } catch { }
+                if (!d || !d.ok || !Array.isArray(d.items)) return null;
+
+                recState.widgetId = recState.widgetId || d.widgetId;
+                if (!recState.token && typeof d.token === 'string' && d.token) recState.token = d.token;
+                if (!recState.listToken && typeof d.listToken === 'string' && d.listToken) recState.listToken = d.listToken;
+
+                const ui = (d.ui && typeof d.ui === "object") ? d.ui : {};
+                recState.visibleCount = Math.max(1, Number(ui.visibleCount || recState.visibleCount) || recState.visibleCount);
+                recState.batchSize = Math.max(1, Number(ui.batchSize || recState.batchSize) || recState.batchSize);
+                recState.maxBatches = Math.max(1, Number(ui.maxBatches || recState.maxBatches) || recState.maxBatches);
+                recState.maxItems = Math.max(0, Number(ui.maxItems || recState.maxItems) || recState.maxItems);
+                recState.swipeSmallPx = Math.max(5, Number(ui.swipeSmallPx || recState.swipeSmallPx) || recState.swipeSmallPx);
+                recState.swipeBigPx = Math.max(20, Number(ui.swipeBigPx || recState.swipeBigPx) || recState.swipeBigPx);
+
+                // cap limit client-side if server doesn't
+                const maxAdd = (recState.maxItems > 0) ? Math.max(0, recState.maxItems - recState.offset) : 9999;
+                const items = (d.items || []).slice(0, maxAdd);
+
+                // Defense-in-depth: never show the product currently being viewed (or anything in exclude set)
+                try {
+                    const exSet = (recState.__excludeSet instanceof Set) ? recState.__excludeSet : new Set();
+                    const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
+                    if (cur && !__ssIsBadId(cur)) exSet.add(cur);
+                    const filtered = [];
+                    for (const it of items) {
+                        const pid = __ssIdNorm(it && it.productId);
+                        if (pid && exSet.has(pid)) continue;
+                        filtered.push(it);
+                    }
+                    // replace in-place so offset math uses filtered length
+                    items.length = 0;
+                    items.push(...filtered);
+                } catch { }
+
+                const serverReturned = Array.isArray(d.items) ? d.items.length : 0;
+                // Capture best performers list for sparse repeat allowance (server-provided).
+                try {
+                    if (Array.isArray(d.bestPerformerIds)) {
+                        recState.bestPerformerIds = d.bestPerformerIds.slice();
+                        const bs = new Set();
+                        d.bestPerformerIds.forEach(pid => { const n = __ssIdNorm(pid); if (n) bs.add(n); });
+                        recState.bestSet = bs;
+                    }
+                } catch { }
+
+                recState.offset += serverReturned;
+                recState.batchesLoaded += 1;
+                recState.hasMore = !!d.hasMore && serverReturned > 0;
+                try {
+                    // add returned ids to stable exclude set to prevent repeats across pages
+                    const exSet = (recState.excludeSet instanceof Set) ? recState.excludeSet : new Set();
+                    for (const it of (d.items || [])) {
+                        const pid = __ssIdNorm(it && it.productId);
+                        if (pid && !__ssIsBadId(pid)) exSet.add(pid);
+                    }
+                    recState.excludeSet = exSet;
+                } catch { }
+
+                return { d, items };
+            } finally {
+                recState.loading = false;
+            }
+        }
+
+        const first = await fetchBatch();
+        if (!first || !first.items || first.items.length === 0) return;
+        recState.items = first.items.slice();
+
+        const section = document.createElement("div");
+        section.id = "RecoSection";
+        section.className = "RecoSection";
+
+        const head = document.createElement("div");
+        head.className = "RecoHead";
+
+        const h = document.createElement("h3");
+        h.textContent = "Other products";
+
+        const navs = document.createElement("div");
+        navs.className = "RecoNavs";
+
+        const btnL = document.createElement("button");
+        btnL.type = "button";
+        btnL.className = "RecoNav";
+        btnL.setAttribute("aria-label", "Scroll left");
+        btnL.textContent = "‹";
+
+        const btnR = document.createElement("button");
+        btnR.type = "button";
+        btnR.className = "RecoNav";
+        btnR.setAttribute("aria-label", "Scroll right");
+        btnR.textContent = "›";
+
+        navs.appendChild(btnL);
+        navs.appendChild(btnR);
+
+        head.appendChild(h);
+        head.appendChild(navs);
+
+        const viewport = document.createElement("div");
+        viewport.className = "RecoViewport";
+
+        const strip = document.createElement("div");
+        strip.className = "RecoStrip";
+        strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+
+        viewport.appendChild(strip);
+
+        __ssEnsureContributionProducts();
+        const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
+            ? __ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "", productId: x.productId }))
+            : __ssGetCatalogFlat();
+
+        function makeCard(it, idx) {
+            const card = document.createElement("div");
+            card.className = "RecoCard";
+            card.dataset.productId = __ssIdNorm(it.productId);
+            card.dataset.position = String(it.position || (idx + 1));
+
+            const img = document.createElement("img");
+            img.className = "RecoImg";
+            img.loading = "lazy";
+            img.alt = String(it.name || "");
+            img.src = String(it.image || "");
+
+            const nm = document.createElement("div");
+            nm.className = "RecoName";
+            nm.textContent = String(it.name || "");
+
+            const meta = document.createElement("div");
+            meta.className = "RecoMeta";
+
+            const price = document.createElement("span");
+            // Make it compatible with updateAllPrices() (currency + tariffs)
+            price.className = "product-price";
+            const eur = Number(it.price || 0);
+            const discPct = Number(it.discountPct || 0);
+            let discPrice = Number(it.discountedPrice || 0);
+
+            // A discount is "real" only if we can compute a valid discounted price from a valid original price.
+            if (discPct > 0 && eur > 0 && (!Number.isFinite(discPrice) || discPrice <= 0)) {
+                discPrice = Math.round((eur * (1 - discPct / 100)) * 100) / 100;
+            }
+            const hasRealDiscount = (discPct > 0 && eur > 0 && Number.isFinite(discPrice) && discPrice > 0 && discPrice < eur);
+
+            if (hasRealDiscount) {
+                price.dataset.eurOriginal = String(eur);
+                price.dataset.eur = String(discPrice);
+                price.dataset.discountPct = String(discPct);
+                // initial paint (will be rewritten by updateAllPrices)
+                price.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${eur}</span> <span style="font-weight:700">${discPrice}</span>`;
+            } else {
+                price.dataset.eur = String(eur || "");
+                price.textContent = eur ? `${eur}` : "";
+            }
+
+            const badge = document.createElement("span");
+            badge.className = "RecoBadge";
+            const pos = Number(it.position || (idx + 1));
+            if (pos <= 2) badge.textContent = "Bestseller";
+            else badge.textContent = "Suggested";
+
+            if (hasRealDiscount) {
+                const dsc = document.createElement("span");
+
+                meta.append(price, badge, dsc);
+            } else {
+                meta.append(price, badge);
+            }
+
+            card.append(img, nm, meta);
+
+            card.addEventListener("click", (e) => {
+                e.preventDefault();
+
+                __ssRecoSendEvent("click", {
+                    widgetId: recState.widgetId,
+                    token: recState.token,
+                    sourceProductId: recState.sourceProductId,
+                    targetProductId: __ssIdNorm(it.productId),
+                    position: pos,
+                    sessionId: sid,
+                    discountToken: String(it.discountToken || ""),
+                    discountPct: Number(it.discountPct || 0),
+                    discountedPrice: Number(it.discountedPrice || 0)
+                });
+
+                __ssRecoSaveRecentClick({
+                    widgetId: recState.widgetId,
+                    token: recState.token,
+                    sourceProductId: recState.sourceProductId,
+                    targetProductId: __ssIdNorm(it.productId),
+                    productId: __ssIdNorm(it.productId),
+                    position: pos,
+                    sessionId: sid,
+                    discountToken: String(it.discountToken || ""),
+                    discountPct: Number(it.discountPct || 0),
+                    discountedPrice: Number(it.discountedPrice || 0),
+                    originalPrice: Number(it.price || 0)
+                });
+
+                const pid0 = __ssIdNorm(it.productId || "");
+                const pid = (!__ssIsBadId(pid0) ? pid0 : (__ssResolvePidFromCatalogByName(it.name) || ""));
+
+                const target = flat.find(p => String(p?.productId || "").trim() === String(it.productId).trim());
+
+                try {
+                    // allow product page to render the discount immediately
+                    const __pct = Number(it.discountPct || 0);
+                    const __orig = Number(it.price || 0);
+                    let __disc = Number(it.discountedPrice || 0);
+                    if (__pct > 0 && (!Number.isFinite(__disc) || __disc <= 0) && Number.isFinite(__orig) && __orig > 0) {
+                        __disc = Math.round((__orig * (1 - __pct / 100)) * 100) / 100;
+                    }
+                    const payload = {
+                        productId: pid,
+                        discountToken: String(it.discountToken || ""),
+                        discountPct: __pct,
+                        discountedPrice: __disc,
+                        ts: Date.now()
+                    };
+                    sessionStorage.setItem("ss_reco_pdp_discount_v1", JSON.stringify({ ...payload, productId: __ssIdNorm(payload.productId) }));
+                    if (payload.discountToken && payload.discountPct > 0 && payload.discountedPrice > 0) {
+                        __ssRecoDiscountStorePut(payload.discountToken, { productId: __ssIdNorm(payload.productId), discountPct: payload.discountPct, discountedPrice: payload.discountedPrice });
+                    }
+                } catch { }
+
+                (p => String(p?.productId || "").trim() === String(it.productId).trim());
+                if (target) {
+                    navigate("GoToProductPage", [
+                        target.name,
+                        (__ssResolveVariantPriceEUR(target, [], "") || target.price),
+                        ((__ssABGetProductDescription(target) || target.description) || TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER),
+                        null,
+                        pid,
+                        (() => {
+                            const pct = Number(it.discountPct || 0);
+                            const orig = Number(it.price || 0);
+                            let disc = Number(it.discountedPrice || 0);
+                            if (pct > 0 && (!Number.isFinite(disc) || disc <= 0) && Number.isFinite(orig) && orig > 0) {
+                                disc = Math.round((orig * (1 - pct / 100)) * 100) / 100;
+                            }
+                            return { discountToken: String(it.discountToken || ""), discountPct: pct, discountedPrice: disc };
+                        })()
+                    ]);
+                } else {
+                    navigate("GoToProductPage", [
+                        it.name,
+                        it.price,
+                        it.description || (TEXTS.PRODUCT_SECTION.DESCRIPTION_PLACEHOLDER),
+                        null,
+                        pid,
+                        (() => {
+                            const pct = Number(it.discountPct || 0);
+                            const orig = Number(it.price || 0);
+                            let disc = Number(it.discountedPrice || 0);
+                            if (pct > 0 && (!Number.isFinite(disc) || disc <= 0) && Number.isFinite(orig) && orig > 0) {
+                                disc = Math.round((orig * (1 - pct / 100)) * 100) / 100;
+                            }
+                            return { discountToken: String(it.discountToken || ""), discountPct: pct, discountedPrice: disc };
+                        })()
+                    ]);
+                }
+            });
+
+            return card;
+        }
+
+        function appendItems(items) {
+            if (!Array.isArray(items) || items.length === 0) return;
+            if (!Array.isArray(recState.items)) recState.items = [];
+
+            // Track what has been shown to avoid repeats. Allow sparse repeats only for best performers.
+            if (!(recState.seenSet instanceof Set)) {
+                const ss = new Set();
+                try { (recState.items || []).forEach(it => { const pid = __ssIdNorm(it && it.productId); if (pid) ss.add(pid); }); } catch { }
+                recState.seenSet = ss;
+            }
+            if (!recState.lastShownPos || typeof recState.lastShownPos !== "object") recState.lastShownPos = Object.create(null);
+            if (typeof recState.shownCounter !== "number") recState.shownCounter = recState.items.length;
+
+            const bestSet = (recState.bestSet instanceof Set) ? recState.bestSet : new Set();
+            const currentPid = __ssIdNorm(recState.currentProductId || recState.sourceProductId || "");
+            const minGap = Math.max(8, Number(recState.visibleCount || 3) * 4);
+
+            const toAppend = [];
+            for (const it of items) {
+                const pid = __ssIdNorm(it && it.productId);
+                if (!pid || __ssIsBadId(pid)) continue;
+                if (currentPid && pid === currentPid) continue;
+
+                if (recState.seenSet.has(pid)) {
+                    // Only best performers can repeat, and only sparsely.
+                    if (!bestSet.has(pid)) continue;
+                    const last = recState.lastShownPos[pid];
+                    if (typeof last === "number" && (recState.shownCounter - last) < minGap) continue;
+                }
+
+                toAppend.push(it);
+                recState.seenSet.add(pid);
+                recState.lastShownPos[pid] = recState.shownCounter;
+                recState.shownCounter += 1;
+            }
+
+            if (toAppend.length === 0) return;
+
+            toAppend.forEach((it) => {
+                recState.items.push(it);
+                strip.appendChild(makeCard(it, recState.items.length - 1));
+            });
+
+            // Apply currency conversion + tariffs to newly injected price elements
+            try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
+
+            // analytics hook
+            try {
+                const sid = (typeof getOrCreateRecoSessionId === "function") ? getOrCreateRecoSessionId() : null;
+                if (sid && typeof trackRecoImpressions === "function") {
+                    trackRecoImpressions({
+                        widgetId: recState.widgetId,
+                        sourceProductId: recState.sourceProductId,
+                        sessionId: sid,
+                        extra: { shown: toAppend.map(x => ({ productId: x.productId, position: x.position })) }
+                    });
+                }
+            } catch { }
+        }
+
+        appendItems(first.items);
+
+        section.append(head, viewport);
+
+        const pdp = document.querySelector('.Product_Detail_Page');
+        const anchor = pdp || pv;
+        anchor.insertAdjacentElement('afterend', section);
+
+        async function ensureScrollableAfterPaint() {
+            try {
+                // wait for layout to settle (CSS injection + fonts)
+                await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+                // if the strip isn't scrollable yet, preload more until it is (bounded)
+                let safety = 0;
+                while (safety++ < 6) {
+                    const canScroll = viewport.scrollWidth > (viewport.clientWidth + 8);
+                    if (canScroll) break;
+                    const batch = await fetchBatch();
+                    if (!batch || !batch.items || !batch.items.length) break;
+                    appendItems(batch.items);
+                    strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+                }
+                __ssRecoUpdateNav();
+            } catch { }
+        }
+
+        ensureScrollableAfterPaint();
+
+        function getStride() {
+            const firstCard = strip.querySelector(".RecoCard");
+            if (!firstCard) return Math.max(150, viewport.clientWidth / Math.max(1, recState.visibleCount));
+            const rect = firstCard.getBoundingClientRect();
+            const gap = parseFloat(getComputedStyle(strip).columnGap || getComputedStyle(strip).gap || "12") || 12;
+            return rect.width + gap;
+        }
+
+        function scrollToIndex(i, behavior = "smooth") {
+            const stride = getStride();
+            const target = Math.max(0, Math.round(i) * stride);
+            viewport.scrollTo({ left: target, behavior });
+        }
+
+        function currentIndex() {
+            const stride = getStride();
+            return stride > 0 ? Math.round(viewport.scrollLeft / stride) : 0;
+        }
+
+        async function maybeLoadMore() {
+            try {
+                const idx = currentIndex();
+                const total = strip.querySelectorAll(".RecoCard").length;
+                const remaining = total - (idx + recState.visibleCount);
+                const nearEnd = remaining <= Math.max(2, recState.visibleCount);
+                if (!nearEnd) return;
+                const batch = await fetchBatch();
+                if (batch && batch.items && batch.items.length) {
+                    appendItems(batch.items);
+                    // refresh cols in case config changed
+                    strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+                    __ssRecoUpdateNav();
+                }
+            } catch { }
+        }
+
+        function __ssRecoUpdateNav() {
+            try {
+                // align width
+                try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
+                const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+                btnL.disabled = viewport.scrollLeft <= 2;
+                btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
+            } catch { }
+        }
+
+        btnL.addEventListener('click', () => {
+            const idx = currentIndex();
+            const next = Math.max(0, idx - recState.visibleCount);
+            scrollToIndex(next);
+        });
+        btnR.addEventListener('click', async () => {
+            const idx = currentIndex();
+            const next = idx + recState.visibleCount;
+            scrollToIndex(next);
+            await maybeLoadMore();
+        });
+
+        // Swipe gestures
+        let tStartX = 0, tStartY = 0, tDidMove = false;
+        viewport.addEventListener("touchstart", (e) => {
+            const t = e.touches && e.touches[0];
+            if (!t) return;
+            tStartX = t.clientX;
+            tStartY = t.clientY;
+            tDidMove = false;
+        }, { passive: true });
+
+        viewport.addEventListener("touchmove", (e) => {
+            tDidMove = true;
+        }, { passive: true });
+
+        viewport.addEventListener("touchend", async (e) => {
+            try {
+                if (!tDidMove) return;
+                const t = e.changedTouches && e.changedTouches[0];
+                if (!t) return;
+                const dx = t.clientX - tStartX;
+                const dy = t.clientY - tStartY;
+                if (Math.abs(dy) > Math.abs(dx)) return;
+
+                const adx = Math.abs(dx);
+                if (adx < recState.swipeSmallPx) return;
+
+                const dir = dx < 0 ? 1 : -1;
+                const idx = currentIndex();
+
+                if (adx >= recState.swipeBigPx) {
+                    scrollToIndex(idx + dir * recState.visibleCount);
+                } else {
+                    scrollToIndex(idx + dir * 1);
+                }
+                await maybeLoadMore();
+            } catch { }
+        }, { passive: true });
+
+        viewport.addEventListener('scroll', () => { __ssRecoUpdateNav(); maybeLoadMore(); }, { passive: true });
+        window.addEventListener('resize', () => {
+            recState.device = (window.innerWidth <= 700) ? "mobile" : "desktop";
+            strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+            __ssRecoUpdateNav();
+        });
+
+        __ssRecoUpdateNav();
+    } catch { }
 }
 
 function __ssRecoMaybeAttributeAddToCart(targetProductId) {
-  try {
-    const pid = String(targetProductId || "").trim();
-    if (!pid) return null;
-    const click = __ssRecoConsumeRecentClick();
-    if (!click) return null;
-    if (String(click.targetProductId || "") !== pid) return null;
+    try {
+        const pid = String(targetProductId || "").trim();
+        if (!pid) return null;
+        const click = __ssRecoConsumeRecentClick();
+        if (!click) {
+            try {
+                const tokQ = __ssIdNorm(new URLSearchParams(window.location.search).get("reco") || "");
+                const ent = tokQ ? __ssRecoDiscountStoreGet(tokQ) : null;
+                if (ent && __ssIdEq(ent.productId, pid) && Number(ent.discountPct || 0) > 0) {
+                    return { discountToken: tokQ, discountPct: Number(ent.discountPct || 0), discountedPrice: Number(ent.discountedPrice || 0) };
+                }
+            } catch { }
+            return null;
+        }
+        if (!__ssIdEq(click.targetProductId || "", pid)) return null;
 
-    __ssRecoSendEvent("add_to_cart", {
-      widgetId: click.widgetId,
-      token: click.token,
-      sourceProductId: click.sourceProductId,
-      targetProductId: pid,
-      position: click.position,
-      sessionId: click.sessionId
-    });
+        __ssRecoSendEvent("add_to_cart", {
+            widgetId: click.widgetId,
+            token: click.token,
+            sourceProductId: click.sourceProductId,
+            targetProductId: pid,
+            position: click.position,
+            sessionId: click.sessionId
+        });
 
-    const out = { discountToken: String(click.discountToken || ""), discountPct: Number(click.discountPct || 0), discountedPrice: Number(click.discountedPrice || 0) };
+        const out = { discountToken: String(click.discountToken || ""), discountPct: Number(click.discountPct || 0), discountedPrice: Number(click.discountedPrice || 0) };
 
-    // one attribution per click
-    __ssRecoClearRecentClick();
-    return out;
-  } catch { return null; }
+        // one attribution per click
+        __ssRecoClearRecentClick();
+        return out;
+    } catch { return null; }
 }
 /* Override: buyNow forwards selectedOptions */
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
@@ -7930,12 +8931,47 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     const priceEUR = __ssResolveVariantPriceEUR(pRef, selOpts, selectedOption) || (parseFloat(price) || Number(price) || 0);
     price = priceEUR;
 
-    const __origPriceBeforeReco = price;
+    let __origPriceBeforeReco = price;
+    const __pdpRecoApplied = (productIdForCart && window.__ssRecoPdpDiscountAppliedFor && String(window.__ssRecoPdpDiscountAppliedFor) === String(productIdForCart));
+    // If discount was applied on PDP (from reco click), ensure we keep the token/pct for cart + checkout
+    // even if the recent-click attribution is missing/cleared.
+    if (__pdpRecoApplied) {
+        try {
+            const el = document.getElementById("product-page-price");
+            const tok = String(el?.dataset?.recoDiscountToken || "");
+            const pct = Number(el?.dataset?.recoDiscountPct || 0);
+            const orig = Number(el?.dataset?.eurOriginal || 0);
+            if (Number.isFinite(orig) && orig > 0) __origPriceBeforeReco = orig;
+            if ((!__recoDisc || !String(__recoDisc.discountToken || "")) && tok && pct > 0) {
+                __recoDisc = { discountToken: tok, discountPct: pct, discountedPrice: Number(el?.dataset?.eur || 0) };
+            }
+        } catch { }
+    }
+
+
+    // If discount was already applied on PDP, the displayed price is the discounted one.
+
+
+    // Persist that discounted unit price into the basket; keep original for strike-through.
+
+
+    if (__pdpRecoApplied && __recoDisc && Number(__recoDisc.discountedPrice || 0) > 0) {
+
+
+        price = Number(__recoDisc.discountedPrice || 0);
+
+
+    }
+
+
+
     if (__recoDisc && Number(__recoDisc.discountPct || 0) > 0 && String(__recoDisc.discountToken || "")) {
         const pct = Math.max(0, Math.min(80, Number(__recoDisc.discountPct || 0)));
-        const discounted = Math.round((price * (1 - pct / 100)) * 100) / 100;
-        if (Number.isFinite(discounted) && discounted > 0) {
-            price = discounted;
+        if (!__pdpRecoApplied) {
+            const discounted = Math.round((price * (1 - pct / 100)) * 100) / 100;
+            if (Number.isFinite(discounted) && discounted > 0) {
+                price = discounted;
+            }
         }
     }
 
@@ -7986,9 +9022,9 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
             const payload = buildAnalyticsProductPayload(productName, { priceEUR: price, productLink, productId: productIdForCart });
             payload.extra = { selectedOption: selectedOption || "", selectedOptions: selOpts || null, qty: qty };
             sendAnalyticsEvent('add_to_cart', {
-            ...payload,
-            extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken(), experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null) }
-        });
+                ...payload,
+                extra: { ...(payload.extra || {}), viewToken: (typeof __ssCurrentViewToken !== 'undefined' ? __ssCurrentViewToken : null), clickToken: __ssConsumeRecentClickToken(), experiments: (typeof __ssGetExperiments === "function" ? __ssGetExperiments() : null) }
+            });
         } catch { }
         const optMsg = selOpts.length ? ` (${__ssFormatSelectedOptionsDisplay(selOpts)})` : (selectedOption ? ` (${selectedOption})` : "");
         __ssNotifyAddToCart({ qty, productName, optMsg, imageUrl, itemKey: key });
@@ -8094,97 +9130,97 @@ function __ssEnsureCartIncentiveStyles() {
 let __ssSmartCartRecoCache = { sig: "", desired: 0, token: "", items: [] };
 
 function __ssCartSigForSmartReco() {
-  try {
-    const names = Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean).sort();
-    return btoa(unescape(encodeURIComponent(names.join("|")))).slice(0, 64);
-  } catch { return ""; }
+    try {
+        const names = Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean).sort();
+        return btoa(unescape(encodeURIComponent(names.join("|")))).slice(0, 64);
+    } catch { return ""; }
 }
 
 async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
-  try {
-    const sig = __ssCartSigForSmartReco();
-    const desired = Math.max(0, Number(desiredEUR || 0) || 0);
-    const desiredKey = Math.round(desired * 100) / 100;
+    try {
+        const sig = __ssCartSigForSmartReco();
+        const desired = Math.max(0, Number(desiredEUR || 0) || 0);
+        const desiredKey = Math.round(desired * 100) / 100;
 
-    if (__ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) {
-      return __ssSmartCartRecoCache;
+        if (__ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) {
+            return __ssSmartCartRecoCache;
+        }
+
+        const cartItems = Object.values(basket || {}).map(i => ({ name: String(i?.name || "").trim() })).filter(x => x.name);
+
+        const body = {
+            placement: "cart_topup_v1",
+            sessionId: String(window.__ssSessionId || ""),
+            cartItems,
+            desiredEUR: desired,
+            limit: Math.max(1, Math.min(12, Number(limit || 4) || 4)),
+            context: {
+                lang: String(window.currentLanguage || ""),
+                device: (window.innerWidth <= 700 ? "mobile" : "desktop"),
+                page: "cart"
+            }
+        };
+
+        const resp = await fetch(`${API_BASE}/smart-reco/get`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            credentials: "include"
+        });
+
+        const data = await resp.json().catch(() => null);
+        if (!data || !data.ok || !Array.isArray(data.items)) return null;
+
+        __ssSmartCartRecoCache = { sig, desired: desiredKey, token: String(data.token || ""), items: data.items || [] };
+        return __ssSmartCartRecoCache;
+    } catch {
+        return null;
     }
-
-    const cartItems = Object.values(basket || {}).map(i => ({ name: String(i?.name || "").trim() })).filter(x => x.name);
-
-    const body = {
-      placement: "cart_topup_v1",
-      sessionId: String(window.__ssSessionId || ""),
-      cartItems,
-      desiredEUR: desired,
-      limit: Math.max(1, Math.min(12, Number(limit || 4) || 4)),
-      context: {
-        lang: String(window.currentLanguage || ""),
-        device: (window.innerWidth <= 700 ? "mobile" : "desktop"),
-        page: "cart"
-      }
-    };
-
-    const resp = await fetch(`${API_BASE}/smart-reco/get`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      credentials: "include"
-    });
-
-    const data = await resp.json().catch(() => null);
-    if (!data || !data.ok || !Array.isArray(data.items)) return null;
-
-    __ssSmartCartRecoCache = { sig, desired: desiredKey, token: String(data.token || ""), items: data.items || [] };
-    return __ssSmartCartRecoCache;
-  } catch {
-    return null;
-  }
 }
 
 function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
-  // fire-and-forget; re-render when results arrive
-  const sigBefore = __ssCartSigForSmartReco();
-  __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
-    if (!cache) return;
-    const sigAfter = __ssCartSigForSmartReco();
-    if (sigBefore !== sigAfter) return;
-    try { updateBasket(); } catch { }
-  }).catch(() => {});
+    // fire-and-forget; re-render when results arrive
+    const sigBefore = __ssCartSigForSmartReco();
+    __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
+        if (!cache) return;
+        const sigAfter = __ssCartSigForSmartReco();
+        if (sigBefore !== sigAfter) return;
+        try { updateBasket(); } catch { }
+    }).catch(() => { });
 }
 
 async function __ssSmartRecoEvent(type, itemKey) {
-  try {
-    const token = String(__ssSmartCartRecoCache?.token || "").trim();
-    if (!token) return;
-    await fetch(`${API_BASE}/smart-reco/event`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, token, itemKey, sessionId: String(window.__ssSessionId || "") }),
-      credentials: "include"
-    });
-  } catch { }
+    try {
+        const token = String(__ssSmartCartRecoCache?.token || "").trim();
+        if (!token) return;
+        await fetch(`${API_BASE}/smart-reco/event`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, token, itemKey, sessionId: String(window.__ssSessionId || "") }),
+            credentials: "include"
+        });
+    } catch { }
 }
 // Profit-optimized contribution-ranked products (best sellers, but by contribution)
 // Used as a fallback candidate pool for add-ons when enabled by feature flags.
 let __ssContributionCache = { at: 0, items: null };
 function __ssEnsureContributionProducts() {
-  try {
-    const flags = (typeof __ssGetFeatureFlags === "function") ? __ssGetFeatureFlags() : null;
-    const enabled = !flags || __ssFlagEnabled("contributionRanking.enabled", true);
-    if (!enabled) return;
+    try {
+        const flags = (typeof __ssGetFeatureFlags === "function") ? __ssGetFeatureFlags() : null;
+        const enabled = !flags || __ssFlagEnabled("contributionRanking.enabled", true);
+        if (!enabled) return;
 
-    const now = Date.now();
-    if (__ssContributionCache.items && (now - (__ssContributionCache.at || 0)) < 10 * 60 * 1000) return;
+        const now = Date.now();
+        if (__ssContributionCache.items && (now - (__ssContributionCache.at || 0)) < 10 * 60 * 1000) return;
 
-    __ssContributionCache.at = now;
-    fetch(`${API_BASE}/products/contribution?limit=40`, { credentials: "include" })
-      .then(r => r.json().catch(()=>null))
-      .then(d => {
-        if (d && d.ok && Array.isArray(d.items)) __ssContributionCache.items = d.items;
-      })
-      .catch(()=>{});
-  } catch { }
+        __ssContributionCache.at = now;
+        fetch(`${API_BASE}/products/contribution?limit=40`, { credentials: "include" })
+            .then(r => r.json().catch(() => null))
+            .then(d => {
+                if (d && d.ok && Array.isArray(d.items)) __ssContributionCache.items = d.items;
+            })
+            .catch(() => { });
+    } catch { }
 }
 
 
@@ -8206,7 +9242,7 @@ function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
     } catch { /* ignore */ }
 
     __ssEnsureContributionProducts();
-    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x=>({ name:x.name, price:x.price, images:x.images||[], productLink:x.productLink||"" })) : __ssGetCatalogFlat();
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "" })) : __ssGetCatalogFlat();
     const basketNames = new Set(Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean));
 
     const candidates = flat
@@ -8283,8 +9319,8 @@ function __ssRenderCartIncentivesHTML(totalSumEUR) {
           <div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div>
           <div class="ss-ci-addons">
             ${addons.map(p => {
-                const price = Number(p?.price || 0) || 0;
-                return `
+            const price = Number(p?.price || 0) || 0;
+            return `
                   <div class="ss-ci-card">
                     <img class="ss-ci-img" src="${__ssEscHtml(p?.image || "")}" alt="${__ssEscHtml(p?.name || "")}">
                     <div style="min-width:0;">
@@ -8294,7 +9330,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR) {
                     <button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || "")}">Add</button>
                   </div>
                 `;
-            }).join("")}
+        }).join("")}
           </div>
         ` : "";
 
@@ -8384,13 +9420,13 @@ function updateBasket() {
         const safeImg = __ssEscHtml(item?.image || "");
 
         const product = (() => {
-    try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
-})();
+            try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
+        })();
 
-const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
-const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+        const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+        const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
 
-productDiv.innerHTML = `
+        productDiv.innerHTML = `
       <div class="Basket-Item">
         <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer">
           <img class="Basket_Image"
@@ -8431,24 +9467,31 @@ productDiv.innerHTML = `
         const unit = Number(parseFloat(item?.price) || 0);
         const itemTotal = unit * qty;
 
-            const name = __ssEscHtml(item?.name || "");
-    const productForReceipt = (() => {
-        try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
-    })();
-    const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
-    const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
+        const name = __ssEscHtml(item?.name || "");
+        const productForReceipt = (() => {
+            try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
+        })();
+        const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+        const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
 
-    receiptContent += `
+        const __hasRecoDiscR2 = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(unit || 0));
+        const __itemTotalDisc2 = itemTotal.toFixed(2);
+        const __itemTotalOrig2 = (Number(item.unitPriceOriginalEUR || 0) * qty).toFixed(2);
+        const __receiptPriceHTML2 = __hasRecoDiscR2
+            ? `<td class="basket-item-price" data-eur="${__itemTotalDisc2}" data-eur-original="${__itemTotalOrig2}" data-discount-pct="${Number(item.recoDiscountPct || 0)}"><span style="text-decoration:line-through;opacity:.65;margin-right:4px">${__itemTotalOrig2}€</span> <span style="font-weight:700">${__itemTotalDisc2}€</span></td>`
+            : `<td class="basket-item-price" data-eur="${__itemTotalDisc2}">${__itemTotalDisc2}€</td>`;
+
+        receiptContent += `
   <tr>
     <td>${qty} ×</td>
     <td>
       <div class="ReceiptItemName">${name}</div>
       ${receiptChipsHTML}
     </td>
-    <td class="basket-item-price" data-eur="${itemTotal.toFixed(2)}">${itemTotal.toFixed(2)}€</td>
+    ${__receiptPriceHTML2}
   </tr>
 `;
-});
+    });
 
     receiptContent += `</table></div>`;
     receiptContent += `
