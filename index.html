@@ -254,99 +254,99 @@
             word-break: break-word;
         }
 
-/* Toast layout enhancements (thumbnail + actions) */
-.ss-basket-toast-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+        /* Toast layout enhancements (thumbnail + actions) */
+        .ss-basket-toast-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-.ss-basket-toast-thumb {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    object-fit: cover;
-    flex: 0 0 auto;
-    border: 1px solid var(--AddToBasketToast_Border);
-    background: rgba(127, 127, 127, 0.10);
-}
+        .ss-basket-toast-thumb {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex: 0 0 auto;
+            border: 1px solid var(--AddToBasketToast_Border);
+            background: rgba(127, 127, 127, 0.10);
+        }
 
-.ss-basket-toast-body {
-    min-width: 0;
-    flex: 1 1 auto;
-}
+        .ss-basket-toast-body {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
 
-.ss-basket-toast-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
+        .ss-basket-toast-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
 
-.ss-basket-toast-btn {
-    flex: 1 1 0;
-    border-radius: 12px;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    cursor: pointer;
-    border: 1px solid var(--AddToBasketToast_Border);
-    background: transparent;
-    color: var(--AddToBasketToast_Text);
-}
+        .ss-basket-toast-btn {
+            flex: 1 1 0;
+            border-radius: 12px;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            border: 1px solid var(--AddToBasketToast_Border);
+            background: transparent;
+            color: var(--AddToBasketToast_Text);
+        }
 
-.ss-basket-toast-btn.primary {
-    border-color: rgba(0, 0, 0, 0.06);
-    background: var(--Primary_Button_Colour);
-    color: #ffffff;
-}
+        .ss-basket-toast-btn.primary {
+            border-color: rgba(0, 0, 0, 0.06);
+            background: var(--Primary_Button_Colour);
+            color: #ffffff;
+        }
 
-.ss-basket-toast-btn:active {
-    transform: translateY(0.5px);
-}
+        .ss-basket-toast-btn:active {
+            transform: translateY(0.5px);
+        }
 
-.ss-basket-toast-btn:hover {
-    filter: brightness(1.03);
-}
+        .ss-basket-toast-btn:hover {
+            filter: brightness(1.03);
+        }
 
-/* ---------------- Basket header indicator (badge) ---------------- */
-.BasketButton,
-.mobileBasketButton {
-    position: relative;
-}
+        /* ---------------- Basket header indicator (badge) ---------------- */
+        .BasketButton,
+        .mobileBasketButton {
+            position: relative;
+        }
 
-.ss-cart-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
+        .ss-cart-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
 
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 999px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
 
-    font-size: 15px;
+            font-size: 15px;
 
-    line-height: 1;
-    letter-spacing: 0.2px;
+            line-height: 1;
+            letter-spacing: 0.2px;
 
-    background: var(--Primary_Button_Colour);
-    color: #ffffff;
+            background: var(--Primary_Button_Colour);
+            color: #ffffff;
 
-    border: 2px solid var(--TopBar_Background_Colour);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+            border: 2px solid var(--TopBar_Background_Colour);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
 
-    pointer-events: none;
-}
+            pointer-events: none;
+        }
 
 
-.ss-has-items {
-    color: var(--Primary_Button_Colour);
-}
+        .ss-has-items {
+            color: var(--Primary_Button_Colour);
+        }
 
 
         @keyframes ss-basket-pulse {
@@ -405,6 +405,9 @@
         .dark-mode #paymentModal .payment-modal-card {
             background: var(--Modal_Background_Colour);
             color: #e5e7eb;
+            max-height: calc(100dvh - 48px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
             border: 1px solid rgba(255, 255, 255, .10);
         }
 
@@ -582,7 +585,7 @@
                 font-size: 4vh;
                 /* Scale with height */
                 font-size: 4vh;
-font-family: "Italianno", cursive;
+                font-family: "Italianno", cursive;
                 font-weight: 800;
                 letter-spacing: -0.02em;
             }
@@ -691,7 +694,7 @@ font-family: "Italianno", cursive;
 
             .ReceiptTable td {
                 color: var(--Default_Text_Colour);
-                          font-family: 'Afacad', sans-serif;
+                font-family: 'Afacad', sans-serif;
             }
 
 
@@ -715,7 +718,7 @@ font-family: "Italianno", cursive;
                 /* Ensures text scales with button */
                 white-space: nowrap;
                 border-radius: 5px;
-            
+
             }
 
             .Category_Button_Heading {
@@ -873,7 +876,7 @@ font-family: "Italianno", cursive;
                 display: grid;
 
                 gap: 0px;
-                
+
                 width: 50%;
                 height: 140%
             }
@@ -923,33 +926,34 @@ font-family: "Italianno", cursive;
                 -webkit-line-clamp: 6;
                 text-overflow: ellipsis;
             }
-/* Restore “old” basket +/- look: slightly angular + horizontal row */
-.Quantity-Controls-Basket{
-  display:flex !important;
-  flex-direction:row !important;
-  align-items:center !important;
-  justify-content:flex-end !important;
-  gap:14px !important;
-  align-self:center !important;
-}
 
-/* Buttons: slightly angular rectangles (not circles) */
+            /* Restore “old” basket +/- look: slightly angular + horizontal row */
+            .Quantity-Controls-Basket {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: flex-end !important;
+                gap: 14px !important;
+                align-self: center !important;
+            }
+
+            /* Buttons: slightly angular rectangles (not circles) */
 
 
-/* Quantity number */
-.Quantity-Controls-Basket .qty,
-.Quantity-Controls-Basket span{
-  min-width:28px !important;
-  text-align:center !important;
-  font-size:24px !important;
-  line-height:1 !important;
-}
+            /* Quantity number */
+            .Quantity-Controls-Basket .qty,
+            .Quantity-Controls-Basket span {
+                min-width: 28px !important;
+                text-align: center !important;
+                font-size: 24px !important;
+                line-height: 1 !important;
+            }
 
-/* Optional: subtle hover like before */
-.Quantity-Controls-Basket button:hover,
-.Quantity-Controls-Basket .qty-btn:hover{
-  background:rgba(0,0,0,.04) !important;
-}
+            /* Optional: subtle hover like before */
+            .Quantity-Controls-Basket button:hover,
+            .Quantity-Controls-Basket .qty-btn:hover {
+                background: rgba(0, 0, 0, .04) !important;
+            }
 
 
 
@@ -1002,7 +1006,7 @@ font-family: "Italianno", cursive;
                 gap: 5px;
             }
 
-            
+
             /* Ensure the dropdown doesn't resize (Safari-safe + modern) */
             #sortSelect {
                 min-width: 220px;
@@ -1064,7 +1068,8 @@ font-family: "Italianno", cursive;
             .dark-mode #sortSelect:hover {
                 border-color: rgba(255, 255, 255, 0.22);
             }
-.BasketTotalPrice {
+
+            .BasketTotalPrice {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -1418,12 +1423,12 @@ font-family: "Italianno", cursive;
                 border-bottom: 1px solid var(--Borders_Colour);
                 /* Keep individual row borders */
                 font-size: 30px;
-                    vertical-align: top;
-    padding: 6px 8px;
-    width: 0px;
-    margin-left: 10px;
-    /* white-space: nowrap; */
-    padding-left: 15px;
+                vertical-align: top;
+                padding: 6px 8px;
+                width: 0px;
+                margin-left: 10px;
+                /* white-space: nowrap; */
+                padding-left: 15px;
             }
 
             .ReceiptTable td:nth-child(3) {
@@ -2623,7 +2628,10 @@ font-family: "Italianno", cursive;
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: left;
-                width: 100%;
+
+                justify-content: left;
+                margin-left: auto;
+                margin-right: auto;
                 height: auto;
             }
 
@@ -2712,12 +2720,11 @@ font-family: "Italianno", cursive;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                gap: 1vw;
-                width: 20%;
+
                 height: 50%;
                 margin-right: auto;
                 margin-left: auto;
-                   margin-top: auto;
+                margin-top: auto;
                 margin-bottom: auto;
             }
 
@@ -2738,9 +2745,9 @@ font-family: "Italianno", cursive;
                 border-radius: 5px;
                 background-color: var(--body_Background_Colour);
                 border: 1px solid var(--Borders_Colour);
-                        margin-top: auto;
-        margin-bottom: auto;
-    
+                margin-top: auto;
+                margin-bottom: auto;
+
             }
 
             .BasketText {
@@ -2750,7 +2757,7 @@ font-family: "Italianno", cursive;
                 text-decoration: none;
                 padding-bottom: 1vw;
                 text-decoration: none;
-         
+
                 overflow: hidden;
                 /* Prevents text from wrapping */
                 color: var(--Default_Text_Colour);
@@ -2832,11 +2839,11 @@ font-family: "Italianno", cursive;
                 font-weight: 600;
             }
 
-            
+
             /* Ensure the dropdown doesn't resize (Safari-safe + modern) */
             #sortSelect {
-       
-                padding:1vw;
+
+                padding: 1vw;
 
                 font-size: 3vw;
                 font-weight: 600;
@@ -2846,7 +2853,7 @@ font-family: "Italianno", cursive;
                 color: var(--Default_Text_Colour);
                 background-color: var(--SearchBar_Background_Colour);
 
-                border:none;
+                border: none;
                 border-radius: 12px;
 
                 appearance: none;
@@ -2856,7 +2863,7 @@ font-family: "Italianno", cursive;
                 background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M5%207.5l5%205%205-5%22%20stroke%3D%22rgba%280%2C0%2C0%2C0.65%29%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E");
                 background-repeat: no-repeat;
                 background-position: right 12px center;
-             
+
 
                 box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06),
                     inset 0 1px 0 rgba(255, 255, 255, 0.65);
@@ -2876,7 +2883,8 @@ font-family: "Italianno", cursive;
                 box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35),
                     inset 0 1px 0 rgba(255, 255, 255, 0.06);
             }
-.SortSelectLabel {
+
+            .SortSelectLabel {
                 font-size: 60%;
                 color: var(--Default_Text_Colour);
                 font-family: 'Rubik', sans-serif;
@@ -3244,7 +3252,7 @@ font-family: "Italianno", cursive;
 
             .ReceiptTable td:nth-child(2) {
                 text-align: left;
-                    font-family: 'Afacad', sans-serif;
+                font-family: 'Afacad', sans-serif;
                 color: var(--Default_Text_Colour);
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -3502,6 +3510,7 @@ font-family: "Italianno", cursive;
             .dark-mode {
                 background: #222;
                 color: var(--Default_Text_Colour);
+
             }
 
             /* Settings Container */
@@ -3650,6 +3659,7 @@ font-family: "Italianno", cursive;
                 color: var(--Default_Text_Colour);
                 margin-bottom: 10px;
                 width: 80vw;
+                text-align: center;
             }
 
             .add-to-cart-product {
@@ -3697,6 +3707,9 @@ font-family: "Italianno", cursive;
                 /* Aligns text to the left */
                 align-self: flex-start;
                 font-family: 'Afacad', sans-serif;
+                margin-left: auto;
+                margin-right: auto;
+                width: 87.5%;
                 /* Ensures the container itself aligns left in flex layout */
             }
 
@@ -4217,337 +4230,101 @@ font-family: "Italianno", cursive;
             }
         }
 
+        /* chips sizing */
         @media (max-width: 680px) {
-            .Product_Viewer {
-                margin-top: 20px;
-                width: 100%;
-                max-width: 100%;
-                padding: 6vw;
-                box-shadow: none;
+
+            .ss-chip,
+            .BasketOptionChip,
+            .basket-option-chip {
+                font-size: 10px !important;
+                padding: 4px 8px !important;
+                border-radius: 999px !important;
+                line-height: 1.15 !important;
+                max-width: 70vw !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
             }
 
-            .Product_Details {
+            .Product_Viewer {
+                min-width: 95vw;
+            }
+
+            .RecoCard {
+                scroll-snap-align: start;
+                border: 1px solid rgba(255, 255, 255, .12);
+                border-radius: 14px;
+                padding: 10px;
+                background: rgba(255, 255, 255, .04);
+                cursor: pointer;
                 display: flex;
                 flex-direction: column;
-                gap: 16px;
-                width: 100%;
-                height: auto;
-            }
-
-            .Product_Images {
-                width: 100%;
-                align-items: center;
-                margin-left: -5vw;
-            }
-
-            .Product_Info {
-                width: 100%;
-                max-width: 100%;
-                margin: 0;
-                align-items: flex-start;
-            }
-
-            .ThumbnailsHolder {
-                display: grid;
-                grid-template-columns: repeat(5, 10vw);
-                gap: 1vw;
-                width: fit-content;
-                margin-top: 2vw;
-                justify-content: center;
-                margin-left: auto;
-                margin-right: auto;
+                gap: 8px;
+                min-height: 220px;
             }
         }
 
-        @media (max-width: 680px) {
-            .mobileSideBar .Category_Button {
-                background-color: var(--SideBar_Background_Colour);
-                border-radius: 10px;
-                border: 0px solid var(--Sidebar_Button_Border) !important;
-                margin: 4px 0;
-                padding: 10px 12px;
-                box-shadow: 0 0px 0px;
-
-            }
-        }
-
-        #paymentModal {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 12px;
-            background: rgba(0, 0, 0, .55);
-
-            /* key: allow scrolling when content is taller than screen */
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        #paymentModal .payment-modal-card {
-            width: min(520px, 100%);
-            border-radius: 20px;
-            padding: 18px 16px;
-            background: var(--Card_Background, #fff);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
-            color: var(--Default_Text_Colour, #111);
-            position: relative;
-
-            /* key: cap height + scroll inside the card */
-            max-height: calc(100vh - 48px);
-            max-height: calc(100dvh - 48px);
-            /* better on mobile browser UI */
-            overflow-y: auto;
-            overscroll-behavior: contain;
-        }
-/* Mobile basket: make option chips compact + prevent layout blow-ups */
-@media (max-width: 520px){
-
-  /* Ensure the item grid can shrink instead of overflowing */
-  .basket-item{
-    display:grid !important;
-    grid-template-columns: 72px 1fr 64px !important; /* img | content | qty */
-    column-gap: 10px !important;
-    row-gap: 8px !important;
-    align-items:start !important;
-  }
-  .basket-item > *{ min-width:0 !important; }  /* critical for wrapping */
-
-  /* Chips container: tighter spacing, allow wrapping */
-  .ss-optchips,
-  .BasketOptionChips,
-  .basket-option-chips{
-    display:flex !important;
-    flex-wrap:wrap !important;
-    gap:6px !important;
-  margin-bottom: 6px;
-    max-width:100% !important;
-  }
-
-  /* Chips: smaller text/padding, clamp max width, ellipsis */
-  .ss-chip,
-  .BasketOptionChip,
-  .basket-option-chip{
-    font-size:6px !important;
-    padding:4px 4px !important;
-    border-radius:999px !important;
-    line-height:1.15 !important;
-    max-width: 46vw !important;          /* prevents giant pills */
-    white-space:nowrap !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-  }
-
-  /* If you have many chips: keep them from pushing everything down */
-  .basket-item .ss-optchips{ max-height: 3.2em !important; overflow:hidden !important; }
-
-  /* Qty controls: keep compact */
-  .Quantity-Controls-Basket{
-    justify-content:center !important;
-
-  }
-  .Quantity-Controls-Basket button{
-    width:36px !important;
-    height:32px !important;
-    border-radius:10px !important;
-    font-size:18px !important;
-  }
-  .Quantity-Controls-Basket .qty,
-  .Quantity-Controls-Basket span{
-    font-size:18px !important;
-    min-width:18px !important;
-  }
-}
-
-        @media (min-width: 681px) {
-            .ImageControl {
-                width: 100%;
-                /* match the 650px parent */
-                max-width: 650px;
-                padding-right: 170px;
-                /* remove vh-based shifting */
-                box-sizing: border-box;
-                justify-content: center;
-                gap: 16px;
-                /* or whatever you want */
-            }
-
-            .ImageControl {
-                width: 650px;
-                padding: 0 16px;
-                /* symmetric padding */
-                box-sizing: border-box;
-                justify-content: space-between;
-            }
-
-            .ImageControl {
-                display: grid;
-                grid-template-columns: 60px 500px 60px;
-                align-items: center;
-                justify-content: center;
-                padding-right: 175px;
-                width: 650px;
-            }
-        }
-        @media (max-width: 680px) {
-    .ss-chip, .BasketOptionChip, .basket-option-chip {
-        font-size: 6px !important;
-        padding: 4px 4px !important;
-        border-radius: 999px !important;
-        line-height: 1.15 !important;
-        max-width: 46vw !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        margin-bottom: -10px;
-    }
-/* =========================================================
-   MOBILE PDP: keep layout inside viewport WITHOUT resizing/warping text
-   - remove forced max-width "card" behavior
-   - kill horizontal offsets/transforms
-   - ensure controls + text align left naturally
+        /* =========================================================
+   MOBILE PDP: keep layout inside viewport
    ========================================================= */
+        @media (max-width: 900px) {
 
-@media (max-width: 900px){
-  html, body { overflow-x: hidden !important; }
+            html,
+            body {
+                overflow-x: hidden !important;
+            }
 
-  /* Let PDP use the full viewport width (no artificial max-width) */
-  #Viewer, .Viewer,
-  #Product_Viewer, .Product_Viewer,
-  .Product_Detail_Page, .Product_Details,
-  .Product_Info{
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    box-sizing: border-box !important;
-    transform: none !important;
-    left: auto !important;
-    right: auto !important;
-  }
 
-  /* Stack columns on mobile */
-  .Product_Info{
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 12px !important;
-  }
 
-  /* Keep text blocks aligned and readable */
-  .Product_Detail_Page h1,
-  .Product_Detail_Page h2,
-  .Product_Detail_Page h3,
-  .Product_Detail_Page p,
-  .Product_Detail_Page li,
-  .Product_Detail_Page .Product_Description{
-    max-width: 100% !important;
-    text-align: left !important;
-    word-break: break-word !important;
-    overflow-wrap: anywhere !important;
-  }
+            /* force stack */
+            .Product_Details {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 16px !important;
+                margin-top: 4vh;
+            }
+        }
 
-  /* Your description uses -webkit-box + overflow hidden; allow normal wrapping on mobile */
-  .Product_Description{
-    display: block !important;
-    -webkit-line-clamp: unset !important;
-    -webkit-box-orient: unset !important;
-    overflow: visible !important;
-  }
+        /* IMPORTANT: you currently have margin-left:-5vw which shifts everything and causes “off-center” */
+        .Product_Images {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            align-items: center !important;
+        }
 
-  /* Ensure the gallery centers but doesn't affect text sizing */
-  .Product_Images, .Product_Image_Container{
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-  }
-  .Product_Thumbnails, .thumbnail-row{
-    justify-content: flex-start !important; /* avoid centered thumbs pushing layout */
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
+        /* stop the “thin text column” effect */
+        .Product_Info {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
 
-  /* Controls: full width, consistent heights */
-  .ProductPageQuantityContainer{
-    width: 100% !important;
-    max-width: 100% !important;
-    justify-content: flex-start !important;
-    gap: 10px !important;
-  }
-  button.add-to-cart-product,
-  button.ProductPageBuyButton{
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-  button.add-to-cart-product{
-    min-height: 52px !important;
-    font-size: 16px !important;
-  }
-  button.ProductPageBuyButton{
-    min-height: 44px !important;
-    font-size: 15px !important;
-  }
-}
+        .Product_Description {
+            display: block !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+            word-break: normal !important;
+            overflow-wrap: anywhere !important;
+        }
 
-/* =========================================================
-   MOBILE RECOMMENDATIONS: stable card widths, no squish, good text wrap
-   ========================================================= */
-@media (max-width: 700px){
-  #RecoSection, .RecoSection{
-    width: 100% !important;
-    max-width: none !important;
-    margin: 12px 0 0 !important;
-    padding: 0 12px !important;
-    box-sizing: border-box !important;
-  }
+        /* thumbnails: wrap, don’t force weird widths */
+        .ThumbnailsHolder {
 
-  /* Use flex scroller; each card is a stable width */
-  #RecoSection .RecoStrip, .RecoSection .RecoStrip{
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 12px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: x mandatory !important;
-    padding: 6px 2px 12px !important;
-    box-sizing: border-box !important;
-  }
+            display: grid !important;
+            min-width: 80%;
+            gap: 8px !important;
+            justify-content: center !important;
+        }
 
-  /* 2 cards visible on typical phones, but never needle-thin */
-  #RecoSection .RecoCard, .RecoSection .RecoCard{
-    flex: 0 0 clamp(160px, 46vw, 220px) !important;
-    max-width: clamp(160px, 46vw, 220px) !important;
-    scroll-snap-align: start !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Titles/prices: wrap, don't compress into 1-char columns */
-  #RecoSection .RecoTitle, .RecoSection .RecoTitle,
-  #RecoSection .RecoPriceRow, .RecoSection .RecoPriceRow,
-  #RecoSection .RecoCard p, .RecoSection .RecoCard p{
-    white-space: normal !important;
-    word-break: break-word !important;
-    overflow-wrap: anywhere !important;
-    min-width: 0 !important;
-  }
-
-  /* Make images consistent and prevent weird stretching */
-  #RecoSection .RecoCard img, .RecoSection .RecoCard img{
-    width: 100% !important;
-    height: auto !important;
-    display: block !important;
-    object-fit: cover !important;
-  }
-}
-
-}
+        /* If your video/second column exists, make it full width too */
+        video,
+        iframe,
+        .ProductVideo,
+        .videoWrap {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+        }
     </style>
 </head>
 
@@ -5194,31 +4971,3 @@ font-family: "Italianno", cursive;
             observer.observe(document.body, { childList: true, subtree: true });
         });
     </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
