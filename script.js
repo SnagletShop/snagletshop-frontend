@@ -3466,8 +3466,11 @@ function convertPrice(priceInEur) {
 
 
 // Function to update all prices
-function updateAllPrices() {
-    document.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
+function updateAllPrices(rootEl) {
+    const root = (rootEl || document);
+
+    // Standard price nodes
+    root.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
         const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
 
         // If element represents a recommendation discount (PDP or reco card), preserve the markup.
@@ -3475,16 +3478,47 @@ function updateAllPrices() {
         const eurOrig = parseFloat(element.dataset.eurOriginal);
         const pct = Number(element.dataset.recoDiscountPct || element.dataset.discountPct || 0);
 
-        if (!isNaN(eurOrig) && eurOrig > 0 && !isNaN(eur) && eur > 0 && pct > 0) {
+        if (!isNaN(eurOrig) && eurOrig > 0 && !isNaN(eur) && eur > 0 && eurOrig > eur) {
             const convOrig = convertPrice(eurOrig);
             const convDisc = convertPrice(eur);
-            element.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+            if (pct > 0) {
+                element.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+            } else {
+                // Cart-level / generic discount strike-through (no pct)
+                element.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+            }
             return;
         }
 
         if (!isNaN(eur)) {
             const convertedValue = convertPrice(eur);
             element.textContent = `${currencySymbol}${convertedValue}`;
+        }
+    });
+
+    // Cart incentive amount fragments (e.g., "Add X to unlock")
+    root.querySelectorAll(".ss-ci-amt[data-eur]").forEach(el => {
+        const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
+        const eur = parseFloat(el.dataset.eur);
+        if (isNaN(eur)) return;
+        el.textContent = `${currencySymbol}${convertPrice(eur)}`;
+    });
+
+    // Cart incentive badges that represent EUR amounts (Saved / Bundle)
+    root.querySelectorAll(".ss-ci-badge[data-eur]").forEach(el => {
+        const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
+        const eur = parseFloat(el.dataset.eur);
+        if (isNaN(eur)) return;
+        const kind = String(el.dataset.badgeKind || "").toLowerCase();
+        const val = `${currencySymbol}${convertPrice(Math.abs(eur))}`;
+
+        if (kind === "saved") {
+            el.textContent = `Saved ${val}`;
+        } else if (kind === "bundle") {
+            el.textContent = `Bundle -${val}`;
+        } else {
+            // Generic amount badge
+            el.textContent = val;
         }
     });
 
@@ -3517,21 +3551,72 @@ function initializePrices() {
 }
 
 function observeNewProducts() {
-    let observer = new MutationObserver(() => {
-        observer.disconnect(); // Stop observing temporarily
+    // Debounced, scoped price updater to avoid main-thread freezes.
+    // Observes only the main Viewer area (where products are dynamically appended),
+    // ignores Basket_Viewer / payment modal mutations, and batches updates.
+    let target = document.getElementById("Viewer") || document.body;
 
-        document.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
-            if (!element.dataset.eur) {
-                element.dataset.eur = element.textContent.replace(/[^0-9.]/g, "").trim();
+    let pending = false;
+    let timer = null;
+
+    const schedule = () => {
+        if (pending) return;
+        pending = true;
+        // Debounce: multiple mutations collapse into one update
+        timer = setTimeout(() => {
+            pending = false;
+            try {
+                // Only update within Viewer (product grid / PDP), not whole document
+                const root = document.getElementById("Viewer") || document.body;
+                updateAllPrices(root);
+            } catch { }
+        }, 80);
+    };
+
+    const shouldIgnoreNode = (node) => {
+        try {
+            if (!node) return false;
+            if (node.nodeType === 3) node = node.parentElement; // text node
+            if (!node || !node.closest) return false;
+            // Ignore basket + payment modal + stripe iframes + recs carousels
+            return !!node.closest("#Basket_Viewer, .payment-modal, .payment-modal-overlay, .payment-modal-card, .__PrivateStripeElement, iframe");
+        } catch { return false; }
+    };
+
+    const observer = new MutationObserver((mutations) => {
+        // If everything mutated is inside ignored containers, skip
+        let allIgnored = true;
+        for (const m of mutations) {
+            if (m.type === "childList") {
+                if ((m.addedNodes && m.addedNodes.length) || (m.removedNodes && m.removedNodes.length)) {
+                    if (!shouldIgnoreNode(m.target)) { allIgnored = false; break; }
+                }
+            } else {
+                if (!shouldIgnoreNode(m.target)) { allIgnored = false; break; }
             }
-        });
+        }
+        if (allIgnored) return;
 
-        updateAllPrices();
+        // During explicit suppression (e.g., basket rendering), skip
+        if (window.__ssSuppressPriceObserver) return;
 
-        observer.observe(document.body, { childList: true, subtree: true }); // Resume observing
+        // Ensure newly added price nodes have dataset.eur recorded once
+        try {
+            const root = document.getElementById("Viewer") || document.body;
+            root.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price, .productPrice").forEach(el => {
+                if (!el.dataset.eur) {
+                    const base = parseFloat(String(el.textContent || "").replace(/[^0-9.]/g, ""));
+                    if (!isNaN(base)) el.dataset.eur = String(base);
+                }
+            });
+        } catch { }
+
+        schedule();
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(target, { childList: true, subtree: true });
+    // Expose for debugging / manual disconnect
+    window.__ssPriceObserver = observer;
 }
 
 
@@ -4251,10 +4336,7 @@ async function createPaymentModal() {
   
           <div><input type="email" id="email" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.EMAIL || "Email"}" required></div>
 
-          <label class="ss-marketing-optin">
-            <input type="checkbox" id="MarketingOptIn" />
-            <span>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.FIELDS?.MARKETING_OPTIN) ? TEXTS.PAYMENT_MODAL.FIELDS.MARKETING_OPTIN : "Send me occasional product offers by email (optional)"}</span>
-          </label>
+
   
           <div id="Address_Holder">
             <input type="text" id="Street" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.STREET_HOUSE_NUMBER || "Street + number"}" required>
@@ -4262,16 +4344,19 @@ async function createPaymentModal() {
             <input type="text" id="Postal_Code" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.POSTAL_CODE || "Postal code"}" required>
             <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
             <input type="text" id="State" placeholder="State / Province / Region">
-            <input type="tel"  id="Phone" placeholder="Phone (not mandatory)">
+            <input type="tel"  id="Phone" placeholder="Phone (optional)">
   
             <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
             <select id="Country" class="tom-hidden" required style="width: 100%"></select>
           </div>
   
           <div id="payment-request-button" style="margin: 16px 0;"></div>
-          <div id="payment-element" style="margin-top: 16px;"></div>
+          <div id="payment-element" class = "payment_element"style="margin-top: 16px;"></div>
           <div id="ss-last-chance" style="margin-top:12px;"></div>
-  
+            <label class="ss-marketing-optin">
+            <input type="checkbox" id="MarketingOptIn" checked/>
+            <span>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.FIELDS?.MARKETING_OPTIN) ? TEXTS.PAYMENT_MODAL.FIELDS.MARKETING_OPTIN : "Send me occasional product offers by email"}</span>
+          </label>
           <button class="Submit_Button" id="confirm-payment-button" type="button">
             ${TEXTS?.PAYMENT_MODAL?.BUTTONS?.SUBMIT || "Pay"}
           </button>
@@ -5853,222 +5938,8 @@ function GoToCart() {
 
 
 
-function updateBasket() {
-    let basketContainer = document.getElementById("Basket_Viewer");
+/* Removed obsolete duplicate updateBasket() implementation (legacy). */
 
-    if (!basketContainer) {
-        console.error("❌ Basket_Viewer not found. Creating it...");
-
-        let viewer = document.getElementById("Viewer");
-        if (!viewer) {
-            console.error("❌ Viewer element not found.");
-            return;
-        }
-
-        basketContainer = document.createElement("div");
-        basketContainer.id = "Basket_Viewer";
-        basketContainer.classList.add("Basket_Viewer");
-        viewer.appendChild(basketContainer);
-    }
-
-    basketContainer.innerHTML = "";
-
-
-    // Ensure option chips + layout overrides are available
-    __ssEnsureOptionChipStyles();
-    __ssEnsureABUiStyles();
-    if (Object.keys(basket).length === 0) {
-        basketContainer.innerHTML = `<p class='EmptyBasketMessage'>The basket is empty!</p>`;
-        return;
-    }
-
-    let BasketTotalPrice = 0;
-
-    Object.entries(basket).forEach(([key, item]) => {
-        let productDiv = document.createElement("div");
-        productDiv.classList.add("Basket_Item_Container");
-
-        let value = parseFloat(item.price);
-        let totalPrice = (value * item.quantity).toFixed(2);
-
-        console.log(`🔹 Product: ${item.name}`);
-        console.log(`   🔹 Expected Purchase Price: ${item.expectedPurchasePrice}`);
-        console.log(`   🔹 Product Link: ${item.productLink}`);
-        console.log(`   🔹 Product IMAGELINK: ${item.image}`);
-        console.log(`   🔹 Product description: ${item.description}`);
-
-        const product = (() => {
-            try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
-        })();
-
-        const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
-        const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
-
-        const __dispNameText = String(item?.displayName || item?.name || "");
-        const __dispDescText = String(item?.displayDescription || item?.description || "");
-
-        const encodedName = encodeURIComponent(item.name);
-        const __hasRecoDisc = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(item?.price || 0));
-        const __totalDisc = (Number(item.price) * item.quantity).toFixed(2);
-        const __totalOrig = (Number(item.unitPriceOriginalEUR || 0) * item.quantity).toFixed(2);
-        const __cartPriceHTML = __hasRecoDisc
-            ? `<p class="basket-item-price basket-item-price-right" data-eur="${__totalDisc}" data-eur-original="${__totalOrig}" data-discount-pct="${Number(item.recoDiscountPct || 0)}"><span style="text-decoration:line-through;opacity:.65;margin-right:4px">${__totalOrig}€</span> <span style="font-weight:700">${__totalDisc}€</span></p>`
-            : `<p class="basket-item-price basket-item-price-right" data-eur="${__totalDisc}">${__totalDisc}€</p>`;
-        productDiv.innerHTML = `
-        <div class="Basket-Item">
-            <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank">
-                <img class="Basket_Image" 
-                     src="${item.image}" 
-                     alt="${item.name}" 
-                     data-name="${item.name}" 
-                     data-price="${item.price}" 
-                     data-description="${item.description}" 
-                     data-imageurl="${item.image}">
-            </a>
-            <div class="Item-Details">
-                <a href="https://www.snagletshop.com/?product=${encodedName}" target="_blank" class="BasketText">
-                    <strong class="BasketText">${__dispNameText.length > 15 ? __dispNameText.slice(0, 15) + "…" : __dispNameText}</strong>
-
-                </a>
-                <p class="BasketTextDescription">${__dispDescText}</p>
-                <div class="BasketItemShipFree">${__ssShipFreeText()}</div>
-                                       ${optionChipsHTML}
-            </div>
-<div class="Quantity-Controls-Basket">
-  <div class="BasketQtyRow">
-    <button class="BasketChangeQuantityButton" type="button"
-            data-key="${encodeURIComponent(key)}" data-delta="-1">${TEXTS.BASKET.BUTTONS.DECREASE}</button>
-    <span class="BasketChangeQuantityText">${item.quantity}</span>
-    <button class="BasketChangeQuantityButton" type="button"
-            data-key="${encodeURIComponent(key)}" data-delta="1">${TEXTS.BASKET.BUTTONS.INCREASE}</button>
-  </div>
-  ${__cartPriceHTML}
-</div>
-
-        </div>
-    `;
-
-
-        basketContainer.appendChild(productDiv);
-        BasketTotalPrice += value * item.quantity;
-    });
-
-
-    let totalSum = 0;
-    let receiptDiv = document.createElement("div");
-    receiptDiv.classList.add("BasketReceipt");
-
-    let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
-
-    Object.entries(basket).forEach(([key, item]) => {
-        let itemPrice = parseFloat(item.price);
-        let itemTotal = itemPrice * item.quantity;
-        totalSum += itemTotal;
-
-        const productForReceipt = (() => {
-            try { return Object.values(products).flat().find(p => p.name === item.name); } catch { return null; }
-        })();
-        const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
-        const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
-
-        const __hasRecoDiscR = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(unit || 0));
-        const __itemTotalDisc = itemTotal.toFixed(2);
-        const __itemTotalOrig = (Number(item.unitPriceOriginalEUR || 0) * item.quantity).toFixed(2);
-        const __receiptPriceHTML = __hasRecoDiscR
-            ? `<td class="basket-item-price" data-eur="${__itemTotalDisc}" data-eur-original="${__itemTotalOrig}" data-discount-pct="${Number(item.recoDiscountPct || 0)}"><span style="text-decoration:line-through;opacity:.65;margin-right:4px">${__itemTotalOrig}€</span> <span style="font-weight:700">${__itemTotalDisc}€</span></td>`
-            : `<td class="basket-item-price" data-eur="${__itemTotalDisc}">${__itemTotalDisc}€</td>`;
-
-        receiptContent += `
-    <tr>
-        <td>${item.quantity} ×</td>
-        <td>
-            <div class="ReceiptItemName">${__ssEscHtml(String(item?.displayName || item.name || ""))}</div>
-            <div class="ReceiptItemShipFree">${__ssEscHtml(__ssShipFreeText())}</div>
-            ${receiptChipsHTML}
-        </td>
-        ${__receiptPriceHTML}
-    </tr>
-`;
-    });
-
-    receiptContent += `</table></div>`;
-    // Incentive block (discount tiers / add-ons)
-    receiptContent += __ssRenderCartIncentivesHTML(totalSum);
-    receiptContent += `
-        <div class="ReceiptFooter">
-            <button class="PayButton">${TEXTS.PRODUCT_SECTION.BUY_NOW}</button>
-            <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
-        </div>
-    `;
-
-    receiptDiv.innerHTML = receiptContent;
-    basketContainer.appendChild(receiptDiv);
-
-    try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
-
-
-    try { __ssBindCartIncentives(basketContainer); } catch { }
-    // Bind once per Basket_Viewer (works across re-renders)
-    if (!basketContainer.dataset.qtyBound) {
-        basketContainer.dataset.qtyBound = "1";
-        basketContainer.addEventListener("click", (e) => {
-            const btn = e.target.closest(".BasketChangeQuantityButton");
-            if (!btn) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            const k = decodeURIComponent(btn.dataset.key || "");
-            const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
-            changeQuantity(k, delta);
-        });
-    }
-
-    // ✅ Ensure the basket "Pay" button always works (even if delegated handlers weren't attached yet)
-    const payBtn = receiptDiv.querySelector(".PayButton");
-    if (payBtn) {
-        payBtn.type = "button"; // prevent accidental form submit
-        if (!payBtn.dataset.bound) {
-            payBtn.dataset.bound = "1";
-            payBtn.addEventListener("click", async (event) => {
-                event.preventDefault();
-                event.stopPropagation(); // prevent the delegated handler from firing too
-
-                const wasDisabled = payBtn.disabled;
-                payBtn.disabled = true;
-
-                try {
-                    await openModal(); // creates & opens the payment modal
-                } catch (e) {
-                    console.error("openModal() failed:", e);
-                    alert("Could not initialize checkout. Please try again.");
-                } finally {
-                    payBtn.disabled = wasDisabled;
-                }
-            });
-        }
-    }
-
-    document.querySelectorAll(".Basket_Image").forEach((img) => {
-        img.addEventListener("click", function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const productName = this.dataset.name;
-            const productPrice = this.dataset.price;
-            let productDescription = this.dataset.description;
-
-            if (!productDescription || productDescription === "undefined") {
-                const product = Object.values(products).flat().find(p => p.name === productName);
-                if (product) productDescription = product.description;
-            }
-
-            navigate("GoToProductPage", [productName, productPrice, productDescription]);
-        });
-
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-}
 
 
 
@@ -6756,6 +6627,135 @@ async function createPaymentIntentOnServer({ websiteOrigin, currency, country, f
     }
 }
 
+// ===== Stripe PI recycle cache (client-side) =====
+// Goal: avoid creating new PaymentIntents if cart+currency+country didn't change.
+// This reduces Stripe PI velocity + prevents FRAUD_VELOCITY_PI on rapid retries.
+// Storage: sessionStorage (tab-scoped); safe fallback to in-memory when unavailable.
+
+function _fnv1a32(str) {
+    // non-crypto hash, deterministic, good enough for cache keying
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        // h *= 16777619
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return ("00000000" + h.toString(16)).slice(-8);
+}
+
+function _stableCartForSig(stripeCart) {
+    const items = Array.isArray(stripeCart) ? stripeCart : [];
+    const norm = items.map(it => {
+        const pid = String(it?.productId ?? it?.id ?? "").trim();
+        const qty = Math.max(1, parseInt(it?.quantity ?? 1, 10) || 1);
+        // include option/variant identifiers if present to distinguish same product different variant
+        const opt = String(it?.selectedOptionId ?? it?.optionId ?? it?.variantId ?? it?.variant ?? it?.option ?? "").trim();
+        const sku = String(it?.sku ?? "").trim();
+        return { pid, qty, opt, sku };
+    }).filter(x => x.pid);
+    norm.sort((a, b) => {
+        const ak = `${a.pid}|${a.opt}|${a.sku}`;
+        const bk = `${b.pid}|${b.opt}|${b.sku}`;
+        return ak < bk ? -1 : ak > bk ? 1 : (a.qty - b.qty);
+    });
+    return norm;
+}
+
+function _buildPiSig({ currency, country, stripeCart }) {
+    const cur = String(currency || "").toUpperCase();
+    const cty = String(country || "").toUpperCase();
+    const payload = { cur, cty, items: _stableCartForSig(stripeCart) };
+    const raw = JSON.stringify(payload);
+    return `pi_${_fnv1a32(raw)}`;
+}
+
+function _getPiCacheStore() {
+    try {
+        const raw = sessionStorage.getItem("ss_pi_cache_v1");
+        const obj = raw ? JSON.parse(raw) : {};
+        return (obj && typeof obj === "object") ? obj : {};
+    } catch {
+        return (window.__ssPiCacheMem && typeof window.__ssPiCacheMem === "object") ? window.__ssPiCacheMem : {};
+    }
+}
+
+function _setPiCacheStore(obj) {
+    try {
+        sessionStorage.setItem("ss_pi_cache_v1", JSON.stringify(obj || {}));
+    } catch {
+        window.__ssPiCacheMem = obj || {};
+    }
+}
+
+function _getCachedPI(sig) {
+    const store = _getPiCacheStore();
+    const row = store?.[sig];
+    if (!row || typeof row !== "object") return null;
+
+    const createdAt = Number(row.createdAt || 0) || 0;
+    // Default TTL 30 minutes; keep short to avoid stale FX snapshots or Stripe state.
+    const ttlMs = Math.max(60_000, Number(window.STRIPE_PI_CACHE_TTL_MS || 30 * 60 * 1000) || (30 * 60 * 1000));
+    if (!createdAt || (Date.now() - createdAt) > ttlMs) return null;
+
+    if (!row.clientSecret || !row.paymentIntentId) return null;
+    return row;
+}
+
+function _putCachedPI(sig, row) {
+    const store = _getPiCacheStore();
+    store[sig] = { ...(row || {}), createdAt: Date.now() };
+    // keep cache bounded
+    const keys = Object.keys(store);
+    if (keys.length > 12) {
+        keys.sort((a, b) => Number(store[a]?.createdAt || 0) - Number(store[b]?.createdAt || 0));
+        for (let i = 0; i < keys.length - 12; i++) delete store[keys[i]];
+    }
+    _setPiCacheStore(store);
+}
+
+function _invalidatePiCache(sig) {
+    const store = _getPiCacheStore();
+    if (sig && store[sig]) {
+        delete store[sig];
+        _setPiCacheStore(store);
+    }
+}
+
+// If the basket hasn't changed, reuse cached PI response (client secret + ids).
+async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, country, fullCart, stripeCart }) {
+    const sig = _buildPiSig({ currency, country, stripeCart });
+
+    const cached = _getCachedPI(sig);
+    if (cached) {
+        try {
+            console.log("[stripe][pi] reuse", { sig, paymentIntentId: cached.paymentIntentId, amountCents: cached.amountCents ?? null, currency: cached.currency ?? currency });
+        } catch { }
+        // mirror the server response shape expected by callers
+        return {
+            ...cached,
+            _reused: true,
+            _sig: sig
+        };
+    }
+
+    const data = await createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart });
+
+    try {
+        _putCachedPI(sig, {
+            clientSecret: data?.clientSecret || null,
+            paymentIntentId: data?.paymentIntentId || null,
+            amountCents: data?.amountCents ?? null,
+            currency: data?.currency ?? currency,
+            checkoutId: data?.checkoutId ?? null,
+            checkoutPublicToken: data?.checkoutPublicToken ?? null
+        });
+        console.log("[stripe][pi] cache-store", { sig, paymentIntentId: data?.paymentIntentId || null, amountCents: data?.amountCents ?? null });
+    } catch { }
+
+    return { ...data, _reused: false, _sig: sig };
+}
+
+
 
 async function initStripePaymentUI(selectedCurrency) {
     // Ensure catalog data is loaded before rehydrating basket prices
@@ -6768,7 +6768,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
     if (!stripeCart.length) throw new Error("Basket is empty.");
 
-    
+
 
     // [stripe][debug] init start
     try {
@@ -6781,7 +6781,7 @@ async function initStripePaymentUI(selectedCurrency) {
             fullCartItems: Array.isArray(fullCart) ? fullCart.length : null
         });
     } catch { }
-// analytics: begin checkout
+    // analytics: begin checkout
     try {
         const items = buildAnalyticsCartItems(stripeCart);
         sendAnalyticsEvent('begin_checkout', {
@@ -6807,7 +6807,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
     const websiteOrigin = window.location.origin;
 
-    const data = await createPaymentIntentOnServer({
+    const data = await getOrCreatePaymentIntentRecycled({
         websiteOrigin,
         currency: selectedCurrency,
         country,
@@ -6817,7 +6817,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
     const { clientSecret, paymentIntentId, amountCents, currency, checkoutId, checkoutPublicToken } = data;
 
-    
+
 
     // [stripe][debug] payment intent response
     try {
@@ -6832,7 +6832,7 @@ async function initStripePaymentUI(selectedCurrency) {
             hasCheckoutPublicToken: !!(checkoutPublicToken && String(checkoutPublicToken).trim())
         });
     } catch { }
-// analytics: payment intent created (checkout progressing)
+    // analytics: payment intent created (checkout progressing)
     try {
         sendAnalyticsEvent('checkout_intent_created', {
             extra: {
@@ -6862,7 +6862,7 @@ async function initStripePaymentUI(selectedCurrency) {
         appearance: _getStripeAppearance()
     });
 
-    
+
 
     // [stripe][debug] elements created
     try {
@@ -6871,79 +6871,79 @@ async function initStripePaymentUI(selectedCurrency) {
             hasStripe: !!window.stripeInstance
         });
     } catch { }
-window.paymentElementInstance = window.elementsInstance.create("payment");
+    window.paymentElementInstance = window.elementsInstance.create("payment");
     window.paymentElementInstance.mount("#payment-element");
 
-    
 
-// [stripe][debug] Payment Element lifecycle logs
-try {
-    const __mountId = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    window.__ssStripeMountId = __mountId;
 
-    console.log("[stripe][payment] mount", {
-        mountId: __mountId,
-        paymentIntentId: paymentIntentId || null,
-        clientSecretPrefix: (clientSecret ? String(clientSecret).slice(0, 16) + "…" : ""),
-        container: "#payment-element"
-    });
-
-    // Events
+    // [stripe][debug] Payment Element lifecycle logs
     try {
-        window.paymentElementInstance.on("ready", () => {
-            if (window.__ssStripeMountId !== __mountId) return;
-            console.log("[stripe][payment] ready", { mountId: __mountId });
+        const __mountId = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        window.__ssStripeMountId = __mountId;
+
+        console.log("[stripe][payment] mount", {
+            mountId: __mountId,
+            paymentIntentId: paymentIntentId || null,
+            clientSecretPrefix: (clientSecret ? String(clientSecret).slice(0, 16) + "…" : ""),
+            container: "#payment-element"
         });
-    } catch (e) {
-        console.warn("[stripe][payment] on(ready) failed:", e?.message || e);
-    }
 
-    try {
-        window.paymentElementInstance.on("change", (e) => {
-            if (window.__ssStripeMountId !== __mountId) return;
-            // Avoid logging full billing details; Stripe's event is safe but keep it compact.
-            console.log("[stripe][payment] change", {
-                mountId: __mountId,
-                complete: !!e?.complete,
-                empty: !!e?.empty,
-                collapsed: !!e?.collapsed,
-                valueType: e?.value ? Object.keys(e.value) : null,
-                brand: e?.value?.payment_method?.card?.brand || null,
-                type: e?.value?.type || null
+        // Events
+        try {
+            window.paymentElementInstance.on("ready", () => {
+                if (window.__ssStripeMountId !== __mountId) return;
+                console.log("[stripe][payment] ready", { mountId: __mountId });
             });
-            if (e?.error) console.warn("[stripe][payment] change.error", { mountId: __mountId, message: e.error.message, code: e.error.code, type: e.error.type });
-        });
-    } catch (e) {
-        console.warn("[stripe][payment] on(change) failed:", e?.message || e);
-    }
+        } catch (e) {
+            console.warn("[stripe][payment] on(ready) failed:", e?.message || e);
+        }
 
-    // Post-mount DOM health checks (iframe existence, sizing)
-    setTimeout(() => {
-        if (window.__ssStripeMountId !== __mountId) return;
-        const host = document.getElementById("payment-element");
-        const frame = host ? host.querySelector("iframe") : null;
-        const hostRect = host ? host.getBoundingClientRect() : null;
-        const frameRect = frame ? frame.getBoundingClientRect() : null;
-        console.log("[stripe][payment] domcheck", {
-            mountId: __mountId,
-            hostExists: !!host,
-            iframeExists: !!frame,
-            hostRect: hostRect ? { w: Math.round(hostRect.width), h: Math.round(hostRect.height) } : null,
-            iframeRect: frameRect ? { w: Math.round(frameRect.width), h: Math.round(frameRect.height) } : null,
-            hostOverflowY: host ? getComputedStyle(host).overflowY : null
-        });
-    }, 1200);
+        try {
+            window.paymentElementInstance.on("change", (e) => {
+                if (window.__ssStripeMountId !== __mountId) return;
+                // Avoid logging full billing details; Stripe's event is safe but keep it compact.
+                console.log("[stripe][payment] change", {
+                    mountId: __mountId,
+                    complete: !!e?.complete,
+                    empty: !!e?.empty,
+                    collapsed: !!e?.collapsed,
+                    valueType: e?.value ? Object.keys(e.value) : null,
+                    brand: e?.value?.payment_method?.card?.brand || null,
+                    type: e?.value?.type || null
+                });
+                if (e?.error) console.warn("[stripe][payment] change.error", { mountId: __mountId, message: e.error.message, code: e.error.code, type: e.error.type });
+            });
+        } catch (e) {
+            console.warn("[stripe][payment] on(change) failed:", e?.message || e);
+        }
 
-    // If still not ready after a while, surface a warning (usually indicates a config/API issue)
-    setTimeout(() => {
-        if (window.__ssStripeMountId !== __mountId) return;
-        console.warn("[stripe][payment] not-ready-timeout", {
-            mountId: __mountId,
-            hint: "If iframe exists but no fields render, check /create-payment-intent response and browser console/network for Stripe errors."
-        });
-    }, 4500);
-} catch { }
-await setupWalletPaymentRequestButton({
+        // Post-mount DOM health checks (iframe existence, sizing)
+        setTimeout(() => {
+            if (window.__ssStripeMountId !== __mountId) return;
+            const host = document.getElementById("payment-element");
+            const frame = host ? host.querySelector("iframe") : null;
+            const hostRect = host ? host.getBoundingClientRect() : null;
+            const frameRect = frame ? frame.getBoundingClientRect() : null;
+            console.log("[stripe][payment] domcheck", {
+                mountId: __mountId,
+                hostExists: !!host,
+                iframeExists: !!frame,
+                hostRect: hostRect ? { w: Math.round(hostRect.width), h: Math.round(hostRect.height) } : null,
+                iframeRect: frameRect ? { w: Math.round(frameRect.width), h: Math.round(frameRect.height) } : null,
+                hostOverflowY: host ? getComputedStyle(host).overflowY : null
+            });
+        }, 1200);
+
+        // If still not ready after a while, surface a warning (usually indicates a config/API issue)
+        setTimeout(() => {
+            if (window.__ssStripeMountId !== __mountId) return;
+            console.warn("[stripe][payment] not-ready-timeout", {
+                mountId: __mountId,
+                hint: "If iframe exists but no fields render, check /create-payment-intent response and browser console/network for Stripe errors."
+            });
+        }, 4500);
+    } catch { }
+    await setupWalletPaymentRequestButton({
         stripe: window.stripeInstance,
         clientSecret,
         amountCents,
@@ -8688,7 +8688,13 @@ async function __ssRecoRenderForProduct(product) {
             });
 
             // Apply currency conversion + tariffs to newly injected price elements
-            try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
+            try {
+                window.__ssSuppressPriceObserver = true;
+                if (typeof updateAllPrices === "function") updateAllPrices(basketContainer);
+            } catch { }
+            finally {
+                setTimeout(() => { try { window.__ssSuppressPriceObserver = false; } catch { } }, 250);
+            }
 
             // analytics hook
             try {
@@ -9099,20 +9105,27 @@ function __ssEnsureCartIncentiveStyles() {
     const s = document.createElement("style");
     s.id = "__ssCartIncentiveStyles";
     s.textContent = `
-      .ss-cart-inc{ margin: 12px 0 8px; padding: 12px; border-radius: 16px; border: 1px solid rgba(0,0,0,.10); background: rgba(0,0,0,.02); }
-      html.dark-mode .ss-cart-inc{ border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); }
-      .ss-ci-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+     
+   
       .ss-ci-title{ font-weight:700; font-size: .95rem; }
       .ss-ci-sub{ font-size: .86rem; opacity:.85; }
-      .ss-ci-bar{ position:relative; width:100%; height:10px; border-radius: 999px; background: rgba(0,0,0,.08); overflow:hidden; margin-top:8px; }
+.ss-ci-ticks-title{ margin-top:6px; font-size:.78rem; opacity:.75; text-align:center; }
+      .ss-ci-bar{ position:relative; width:100%; height:10px; border-radius: 999px; background: rgba(0,0,0,.08); overflow:visible; margin-top:8px; }
       html.dark-mode .ss-ci-bar{ background: rgba(255,255,255,.12); }
       .ss-ci-fill{ position:absolute; inset:0; width:0%; background: var(--Accent, #2563eb); border-radius: 999px; }
-      .ss-ci-badges{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+      
+      .ss-ci-ticks{ position:absolute; inset:0; pointer-events:none; }
+      .ss-ci-tick{ position:absolute; top:50%; width:8px; height:8px; border-radius:999px; transform:translate(-50%,-50%); background: rgba(255,255,255,.9); border:1px solid rgba(0,0,0,.18); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+      html.dark-mode .ss-ci-tick{ background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.35); box-shadow: none; }
+      .ss-ci-ticklbl{ position:absolute; top: -18px; font-size:.72rem; font-weight:600; opacity:.8; transform:translateX(-50%); white-space:nowrap; }
+.ss-ci-badges{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
       .ss-ci-badge{ padding:6px 10px; border-radius: 999px; font-size:.82rem; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.75); }
       html.dark-mode .ss-ci-badge{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
-      .ss-ci-addons{ margin-top: 10px; display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+      
       @media (max-width: 520px){ .ss-ci-addons{ grid-template-columns: 1fr; } }
       .ss-ci-card{ display:flex; gap:10px; align-items:center; padding:10px; border-radius: 14px; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.85); }
+      .ss-ci-card, .ss-ci-card *{ color: rgba(0,0,0,.92); }
+      html.dark-mode .ss-ci-card, html.dark-mode .ss-ci-card *{ color: rgba(255,255,255,.92); }
       html.dark-mode .ss-ci-card{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
       .ss-ci-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
       .ss-ci-name{ font-weight:650; font-size:.9rem; line-height:1.15; }
@@ -9128,6 +9141,23 @@ function __ssEnsureCartIncentiveStyles() {
 
 // --- Smart recommendations (cart/checkout) ---
 let __ssSmartCartRecoCache = { sig: "", desired: 0, token: "", items: [] };
+
+// Prevent cart UI freeze from re-entrant updateBasket() loops and async smart-reco refreshes.
+let __ssBasketRenderInProgress = false;
+let __ssBasketNeedsRerender = false;
+let __ssBasketRerenderQueued = false;
+function __ssRequestBasketRerender(reason) {
+    try {
+        if (__ssBasketRenderInProgress) { __ssBasketNeedsRerender = true; return; }
+        if (__ssBasketRerenderQueued) return;
+        __ssBasketRerenderQueued = true;
+        setTimeout(() => {
+            __ssBasketRerenderQueued = false;
+            try { if (typeof updateBasket === 'function') updateBasket(); } catch (e) { }
+        }, 0);
+    } catch (e) { }
+}
+
 
 function __ssCartSigForSmartReco() {
     try {
@@ -9157,7 +9187,11 @@ async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
             context: {
                 lang: String(window.currentLanguage || ""),
                 device: (window.innerWidth <= 700 ? "mobile" : "desktop"),
-                page: "cart"
+                page: "cart",
+                strictMaxPrice: true,
+                optimization: "profit_popular",
+                profitTieEUR: 0.05,
+                enableRecoDiscounts: true
             }
         };
 
@@ -9179,14 +9213,30 @@ async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
 }
 
 function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
-    // fire-and-forget; re-render when results arrive
-    const sigBefore = __ssCartSigForSmartReco();
-    __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
-        if (!cache) return;
-        const sigAfter = __ssCartSigForSmartReco();
-        if (sigBefore !== sigAfter) return;
-        try { updateBasket(); } catch { }
-    }).catch(() => { });
+    // Avoid infinite updateBasket() loops:
+    // updateBasket() -> incentives render -> __ssEnsureSmartCartRecs() -> (cache-hit) updateBasket() ...
+    try {
+        const sig = __ssCartSigForSmartReco();
+        const desired = Math.max(0, Number(desiredEUR || 0) || 0);
+        const desiredKey = Math.round(desired * 100) / 100;
+
+        const cacheValid =
+            __ssSmartCartRecoCache &&
+            __ssSmartCartRecoCache.sig === sig &&
+            Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 &&
+            Array.isArray(__ssSmartCartRecoCache.items) &&
+            __ssSmartCartRecoCache.items.length;
+
+        if (cacheValid) return;
+
+        const sigBefore = sig;
+        __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
+            if (!cache) return;
+            const sigAfter = __ssCartSigForSmartReco();
+            if (sigBefore !== sigAfter) return;
+            __ssRequestBasketRerender("smart-reco");
+        }).catch(() => { });
+    } catch { }
 }
 
 async function __ssSmartRecoEvent(type, itemKey) {
@@ -9226,46 +9276,107 @@ function __ssEnsureContributionProducts() {
 
 function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
     const desired = Math.max(0, Number(desiredEUR || 0) || 0);
-    // Prefer server-learned smart recommendations when available
+    const maxN = Math.max(0, Number(limit || 4) || 4);
+
+    const basketNames = new Set(Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean));
+
+    // 1) Start with smart server-learned recommendations (if present), but DO NOT allow them to reduce slots.
+    let smart = [];
     try {
         const sig = __ssCartSigForSmartReco();
         const desiredKey = Math.round(desired * 100) / 100;
-        if (__ssSmartCartRecoCache && __ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) {
-            return __ssSmartCartRecoCache.items.slice(0, Math.max(0, limit)).map(it => ({
-                name: it.name,
-                price: Number(it.price || 0) || 0,
-                image: it.image || "",
-                productLink: it.productLink || "",
-                description: it.description || ""
-            }));
+
+        if (__ssSmartCartRecoCache &&
+            __ssSmartCartRecoCache.sig === sig &&
+            Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 &&
+            Array.isArray(__ssSmartCartRecoCache.items) &&
+            __ssSmartCartRecoCache.items.length) {
+
+            const seenSmart = new Set();
+            smart = __ssSmartCartRecoCache.items
+                .map(it => __ssNormalizeRecoItem(it) || it)
+                .map(x => ({
+                    key: String(x?.key || x?.itemKey || x?.productId || x?.id || x?.productLink || x?.name || "").trim(),
+                    name: String(x?.name || x?.title || x?.productName || "").trim(),
+                    price: Number(x?.price || x?.priceEUR || x?.eurPrice || 0) || 0,
+                    image: String(x?.image || x?.imageUrl || (Array.isArray(x?.images) ? x.images[0] : "") || "").trim(),
+                    productLink: String(x?.productLink || x?.url || x?.link || "").trim(),
+                    description: String(x?.description || x?.desc || "").trim()
+                }))
+                // must be renderable; otherwise smart can overwrite good fallback with blanks
+                .filter(x => x && x.key && x.name && (Number(x.price) > 0) && x.image && !basketNames.has(x.name))
+                .filter(x => {
+                    if (seenSmart.has(x.key)) return false;
+                    seenSmart.add(x.key);
+                    return true;
+                })
+                .slice(0, maxN);
         }
     } catch { /* ignore */ }
 
+    // 2) Build fallback pool (contribution-ranked if available, else local catalog)
     __ssEnsureContributionProducts();
-    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "" })) : __ssGetCatalogFlat();
-    const basketNames = new Set(Object.values(basket || {}).map(i => String(i?.name || "").trim()).filter(Boolean));
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
+        ? __ssContributionCache.items.map(x => ({
+            key: String(x.itemKey || x.productId || x.id || x.productLink || x.name || "").trim(),
+            name: String(x.name || "").trim(),
+            price: Number(x.price || 0) || 0,
+            image: String(x.image || x.imageUrl || (Array.isArray(x.images) ? x.images[0] : "") || "").trim(),
+            productLink: String(x.productLink || x.url || x.link || "").trim(),
+            description: String(x.description || x.desc || "").trim()
+        }))
+        : __ssGetCatalogFlat();
+
+    const cfg = __ssGetCartIncentivesConfig();
+    const top = cfg?.topup || {};
+    const pct = Math.max(0, Math.min(200, Number(top?.maxPriceDeltaPct || 25) || 25));
+    const maxPrice = desired > 0 ? desired * (1 + (pct / 100)) : Infinity;
+
+    // 3) Merge: keep smart items, then fill remaining slots with fallback items (deduped).
+    const out = [];
+    const seen = new Set();
+
+    for (const s of smart) {
+        const k = String(s.key || "").trim();
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(s);
+        if (out.length >= maxN) return out;
+    }
 
     const candidates = flat
         .filter(p => p && typeof p === "object")
-        .filter(p => !basketNames.has(String(p.name || "").trim()))
-        .map(p => {
-            const price = Number(p?.price || 0) || 0;
-            return { p, price, score: desired > 0 ? Math.abs(price - desired) : price };
-        })
+        .map(p => ({
+            key: String(p.key || p.productId || p.id || p.productLink || p.name || "").trim(),
+            name: String(p.name || "").trim(),
+            price: Number(p.price || 0) || 0,
+            image: String(p.image || "").trim(),
+            productLink: String(p.productLink || "").trim(),
+            description: String(p.description || "").trim()
+        }))
+        .filter(p => p.key && p.name && (p.price > 0) && p.image)
+        .filter(p => !basketNames.has(p.name))
+        .filter(p => !seen.has(p.key))
+        .map(p => ({ p, score: desired > 0 ? Math.abs(p.price - desired) : p.price }))
         .filter(x => {
-            if (!(x.price > 0)) return false;
             if (desired <= 0) return true;
-            const cfg = __ssGetCartIncentivesConfig();
-            const top = cfg?.topup || {};
-            const pct = Math.max(0, Math.min(200, Number(top?.maxPriceDeltaPct || 25) || 25));
-            const maxPrice = desired * (1 + (pct / 100));
-            // also cap absolute to avoid showing very expensive add-ons in top-up context
-            return x.price <= Math.max(30, maxPrice);
+            // cap to avoid showing very expensive add-ons in top-up context
+            return x.p.price <= Math.max(30, maxPrice);
         })
         .sort((a, b) => (a.score - b.score));
 
-    return candidates.slice(0, Math.max(0, limit)).map(x => x.p);
+    for (const x of candidates) {
+        const p = x.p;
+        const k = p.key;
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(p);
+        if (out.length >= maxN) break;
+    }
+
+    return out;
 }
+
 
 function __ssRenderCartIncentivesHTML(totalSumEUR) {
     try {
@@ -9289,10 +9400,36 @@ function __ssRenderCartIncentivesHTML(totalSumEUR) {
         }
 
         const tierText = nextTier
-            ? `Add ${(nextTier.min - base).toFixed(2)}€ to unlock ${nextTier.pct}% OFF`
+            ? (() => {
+                const needEUR = Math.max(0, (nextTier.min - base));
+                // Amount is rendered as a data-eur fragment so currency+tariff conversion stays correct.
+                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}">${needEUR.toFixed(2)}€</span> to unlock ${nextTier.pct}% OFF`;
+            })()
             : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
 
         const tierProgress = nextTier ? Math.max(0, Math.min(100, (base / nextTier.min) * 100)) : 100;
+
+        const tierScaleMax = (() => {
+            const mins = tiers.map(t => Math.max(0, Number(t?.minEUR || 0) || 0)).filter(v => v > 0);
+            const max = mins.length ? Math.max(...mins) : (nextTier ? nextTier.min : 0);
+            return max > 0 ? max : (base > 0 ? base : 1);
+        })();
+
+        const tierProgressGlobal = Math.max(0, Math.min(100, (base / tierScaleMax) * 100));
+
+        const tierTicksHTML = (() => {
+            if (!tiers.length) return "";
+            const parts = [];
+            for (const t of tiers) {
+                const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+                const pct = Math.max(0, Number(t?.pct || 0) || 0);
+                if (!min || !pct) continue;
+                const left = Math.max(0, Math.min(100, (min / tierScaleMax) * 100));
+                parts.push(`<span class="ss-ci-tick" style="left:${left.toFixed(2)}%"></span>`);
+                parts.push(`<span class="ss-ci-ticklbl" style="left:${left.toFixed(2)}%">${pct}%</span>`);
+            }
+            return parts.length ? `<div class="ss-ci-ticks">${parts.join("")}</div>` : "";
+        })();
 
         // Optional free shipping progress
         const shipCfg = cfg?.freeShipping || {};
@@ -9300,7 +9437,10 @@ function __ssRenderCartIncentivesHTML(totalSumEUR) {
         const shipThr = Math.max(0, Number(shipCfg?.thresholdEUR || 0) || 0);
         const shipProg = shipEnabled ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
         const shipText = shipEnabled
-            ? (base >= shipThr ? "Free shipping unlocked" : `Add ${(shipThr - base).toFixed(2)}€ for free shipping`)
+            ? (base >= shipThr ? "Free shipping unlocked" : (() => {
+                const needEUR = Math.max(0, (shipThr - base));
+                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`;
+            })())
             : "";
 
         // Add-ons: aim at next tier, otherwise small add-ons
@@ -9311,23 +9451,55 @@ function __ssRenderCartIncentivesHTML(totalSumEUR) {
         const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
 
         const badges = [];
-        if (Number(inc.tierDiscountEUR || 0) > 0) badges.push(`Saved ${Number(inc.tierDiscountEUR).toFixed(2)}€`);
-        if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push(`Bundle -${Number(inc.bundleDiscountEUR).toFixed(2)}€`);
-        if (shipEnabled && base >= shipThr) badges.push("Free shipping");
+        if (Number(inc.tierDiscountEUR || 0) > 0) {
+            const eur = Number(inc.tierDiscountEUR) || 0;
+            badges.push({ kind: "saved", eur });
+        }
+        if (Number(inc.bundleDiscountEUR || 0) > 0) {
+            const eur = Number(inc.bundleDiscountEUR) || 0;
+            badges.push({ kind: "bundle", eur });
+        }
+        if (shipEnabled && base >= shipThr) badges.push({ kind: "text", text: "Free shipping" });
 
         const addonHTML = addons.length ? `
           <div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div>
           <div class="ss-ci-addons">
             ${addons.map(p => {
             const price = Number(p?.price || 0) || 0;
+            const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price);
+            const eur = hasDisc ? Number(p.discountedPrice || 0) : price;
+            const eurOrig = hasDisc ? price : null;
+            const pct = hasDisc ? Number(p.discountPct || 0) : 0;
+            const nameEnc = encodeURIComponent(String(p?.name || ""));
+            const recoQ = hasDisc && String(p?.discountToken || "") ? `&reco=${encodeURIComponent(String(p.discountToken))}` : "";
+            const href = `https://www.snagletshop.com/?product=${nameEnc}${recoQ}`;
+
+            // Store discount token in durable store so PDP can apply on refresh/new tab
+            if (hasDisc && String(p?.discountToken || "")) {
+                try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ""), discountPct: pct, discountedPrice: eur }); } catch { }
+            }
+
             return `
-                  <div class="ss-ci-card">
-                    <img class="ss-ci-img" src="${__ssEscHtml(p?.image || "")}" alt="${__ssEscHtml(p?.name || "")}">
+                  <div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ""))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ""))}">
+                    <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:block;">
+                      <img class="ss-ci-img" src="${__ssEscHtml(p?.image || "")}" alt="${__ssEscHtml(p?.name || "")}">
+                    </a>
                     <div style="min-width:0;">
-                      <div class="ss-ci-name">${__ssEscHtml(p?.name || "")}</div>
-                      <div class="ss-ci-price">${price.toFixed(2)}€</div>
+                      <a href="${href}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">
+                        <div class="ss-ci-name">${__ssEscHtml(p?.name || "")}</div>
+                      </a>
+                      ${hasDisc
+                    ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>`
+                    : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}
                     </div>
-                    <button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || "")}">Add</button>
+                    <button class="ss-ci-btn" type="button"
+                            data-ss-quickadd="${__ssEscHtml(p?.name || "")}"
+                            data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ""))}"
+                            data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ""))}"
+                            data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ""))}"
+                            data-ss-quickadd-orig="${__ssEscHtml(String(price))}"
+                            data-ss-quickadd-disc="${__ssEscHtml(String(p?.discountedPrice || ""))}"
+                      >Add</button>
                   </div>
                 `;
         }).join("")}
@@ -9336,18 +9508,27 @@ function __ssRenderCartIncentivesHTML(totalSumEUR) {
 
         return `
           <div class="ss-cart-inc" id="ss-cart-inc">
-            <div class="ss-ci-row">
-              <div>
+     
+         
+            <div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>
+            ${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}
+             <div class= "Badges_Div">
+              ${badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
+            if (b && b.kind === "saved") {
+                const eur = Number(b.eur || 0) || 0;
+                return `<span class="ss-ci-badge" data-badge-kind="saved" data-eur="${eur.toFixed(2)}">Saved ${eur.toFixed(2)}€</span>`;
+            }
+            if (b && b.kind === "bundle") {
+                const eur = Number(b.eur || 0) || 0;
+                return `<span class="ss-ci-badge" data-badge-kind="bundle" data-eur="${eur.toFixed(2)}">Bundle -${eur.toFixed(2)}€</span>`;
+            }
+            const txt = String(b?.text || "");
+            return `<span class="ss-ci-badge">${__ssEscHtml(txt)}</span>`;
+        }).join("")}</div>` : ``}
                 <div class="ss-ci-title">${tierText}</div>
                 ${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}
               </div>
-              <div class="ss-ci-sub" style="text-align:right;">
-                ${currentTierPct ? `Discount: ${currentTierPct}%` : ``}
-              </div>
-            </div>
-            <div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgress.toFixed(0)}%"></div></div>
-            ${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}
-            ${badges.length ? `<div class="ss-ci-badges">${badges.map(b => `<span class="ss-ci-badge">${__ssEscHtml(b)}</span>`).join("")}</div>` : ``}
+           
             ${addonHTML}
           </div>
         `;
@@ -9374,61 +9555,194 @@ function __ssBindCartIncentives(rootEl) {
         const groups = __ssExtractOptionGroups(p);
         const sel = __ssDefaultSelectedOptions(groups);
         __ssSmartRecoEvent("add_to_cart", String(p.productId || p.name || name));
+
+        // If this add-on card has a reco discount token, attribute it so addToCart stores it in the basket
+        try {
+            const tok = String(btn.getAttribute("data-ss-quickadd-token") || "").trim();
+            const pct = Number(btn.getAttribute("data-ss-quickadd-pct") || 0) || 0;
+            const orig = Number(btn.getAttribute("data-ss-quickadd-orig") || 0) || 0;
+            const disc = Number(btn.getAttribute("data-ss-quickadd-disc") || 0) || 0;
+            if (tok && pct > 0 && disc > 0) {
+                __ssRecoSaveRecentClick({
+                    widgetId: "smart_cart_addons_v1",
+                    token: String(__ssSmartCartRecoCache?.token || ""),
+                    sessionId: String(window.__ssSessionId || ""),
+                    sourceProductId: String(recState?.sourceProductId || ""),
+                    targetProductId: String(p.productId || ""),
+                    position: 0,
+                    discountToken: tok,
+                    discountPct: pct,
+                    originalPrice: (orig > 0 ? orig : Number(p.price || 0) || 0),
+                    discountedPrice: disc,
+                    productId: String(p.productId || "")
+                });
+            }
+        } catch { }
+
         addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel);
 
         try { updateBasket(); } catch { }
     }, { passive: false });
 }
 
+
+async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
+    try {
+        const toks = [];
+        const byTok = new Map();
+        for (const [k, it] of (entries || [])) {
+            const tok = String(it?.recoDiscountToken || "").trim();
+            if (!tok) continue;
+            const pid = String(it?.productId || "").trim();
+            toks.push({ token: tok, productId: pid });
+            byTok.set(tok, { key: k, item: it });
+        }
+        if (!toks.length) return;
+
+        const resp = await fetch(`${API_BASE}/recs/quote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: toks }),
+            credentials: "include"
+        });
+        const data = await resp.json().catch(() => null);
+        if (!data || !data.ok || !Array.isArray(data.quotes)) return;
+
+        let changed = false;
+        for (const q of data.quotes) {
+            const tok = String(q?.token || "").trim();
+            if (!tok) continue;
+            const ref = byTok.get(tok);
+            if (!ref) continue;
+
+            if (!q.valid) {
+                // Expired/invalid => revert the unit price if we stored original
+                const it = ref.item;
+                const orig = Number(it?.unitPriceOriginalEUR || 0) || 0;
+                if (orig > 0 && Number(it?.price || 0) > 0 && Number(it?.price || 0) < orig) {
+                    it.price = orig;
+                    delete it.recoDiscountToken;
+                    delete it.recoDiscountPct;
+                    delete it.unitPriceOriginalEUR;
+                    changed = true;
+                }
+                continue;
+            }
+
+            // Valid => ensure pct is synced (helps UI conversion)
+            try {
+                if (ref.item) ref.item.recoDiscountPct = Number(q.discountPct || ref.item.recoDiscountPct || 0) || 0;
+            } catch { }
+
+            // Store for PDP refresh support
+            try {
+                __ssRecoDiscountStorePut(tok, { productId: __ssIdNorm(q.productId || ref.item?.productId || ""), discountPct: Number(q.discountPct || 0), discountedPrice: Number(q.discountedPrice || 0) });
+            } catch { }
+        }
+
+        if (changed) {
+            try {
+                if (typeof persistBasket === "function") persistBasket("reco_quote");
+                else localStorage.setItem("basket", JSON.stringify(basket));
+            } catch { }
+            try { __ssRequestBasketRerender("reco-quote"); } catch { try { updateBasket(); } catch { } }
+        }
+    } catch { }
+}
+
 /* Override: basket rendering escapes user/product strings and shows multi-options */
 function updateBasket() {
-    let basketContainer = document.getElementById("Basket_Viewer");
 
-    if (!basketContainer) {
-        const viewer = document.getElementById("Viewer");
-        if (!viewer) return;
-        basketContainer = document.createElement("div");
-        basketContainer.id = "Basket_Viewer";
-        basketContainer.classList.add("Basket_Viewer");
-        viewer.appendChild(basketContainer);
-    }
+    // Guard against re-entrant / repeated basket renders that can freeze the UI
+    if (window.__ssUpdatingBasket) return;
+    window.__ssUpdatingBasket = true;
+    __ssBasketRenderInProgress = true;
+    try {
+        let basketContainer = document.getElementById("Basket_Viewer");
 
-    basketContainer.innerHTML = "";
+        if (!basketContainer) {
+            const viewer = document.getElementById("Viewer");
+            if (!viewer) return;
+            basketContainer = document.createElement("div");
+            basketContainer.id = "Basket_Viewer";
+            basketContainer.classList.add("Basket_Viewer");
+            viewer.appendChild(basketContainer);
+        }
 
-    // Ensure option chips + layout overrides are available
-    __ssEnsureOptionChipStyles();
+        basketContainer.innerHTML = "";
 
-    if (!basket || Object.keys(basket).length === 0) {
-        basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
-        return;
-    }
+        // Ensure option chips + layout overrides are available
+        try { __ssEnsureOptionChipStyles(); } catch { }
 
-    let totalSum = 0;
+        if (!basket || Object.keys(basket).length === 0) {
+            basketContainer.innerHTML = `<p class='EmptyBasketMessage'>${__ssEscHtml(TEXTS?.BASKET?.EMPTY || "The basket is empty!")}</p>`;
+            return;
+        }
 
-    Object.entries(basket).forEach(([key, item]) => {
-        const productDiv = document.createElement("div");
-        productDiv.classList.add("Basket_Item_Container");
+        // -------- Base total (uses current basket unit prices, which may already include reco discounts) --------
+        const entries = Object.entries(basket);
+        try { __ssValidateRecoDiscountsInBasketBestEffort(entries); } catch { }
 
-        const value = Number(parseFloat(item?.price) || 0);
-        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
-        const itemTotal = (value * qty);
-        totalSum += itemTotal;
+        let totalSum = 0;
+        for (const [, item] of entries) {
+            const unit = Number(parseFloat(item?.price) || 0);
+            const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+            totalSum += (unit * qty);
+        }
 
-        const encName = encodeURIComponent(String(item?.name || ""));
-        const safeName = __ssEscHtml(item?.name || "");
-        const safeDesc = __ssEscHtml(item?.description || "");
-        const safeImg = __ssEscHtml(item?.image || "");
+        // -------- Cart incentives (tier/bundle/free shipping) --------
+        let __ssInc = null;
+        let __ssTotalAfter = round2(totalSum);
+        let __ssDiscountEUR = 0;
+        try {
+            const __fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
+            __ssInc = __ssComputeCartIncentivesClient(totalSum, __fullCart);
+            __ssTotalAfter = round2(Number(__ssInc?.subtotalAfterDiscountsEUR ?? totalSum) || totalSum);
+            __ssDiscountEUR = round2((Number(__ssInc?.tierDiscountEUR || 0) || 0) + (Number(__ssInc?.bundleDiscountEUR || 0) || 0));
+            window.__ssLastCartIncentives = __ssInc;
+            try { localStorage.setItem("ss_cart_incentives_last_v1", JSON.stringify({ t: Date.now(), inc: __ssInc })); } catch { }
+        } catch { }
 
-        const product = (() => {
-            try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
-        })();
+        // Prorate cart-level discount across line items for display (avoid per-line rounding drift by fixing last line)
+        const __ratio = (totalSum > 0 && __ssTotalAfter >= 0 && __ssTotalAfter <= totalSum) ? (__ssTotalAfter / totalSum) : 1;
 
-        const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
-        const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+        // Precompute product lookup once per render (avoids O(cartItems * catalogSize) scans that can freeze the page)
+        let __ssProductByName = null;
+        try {
+            __ssProductByName = new Map();
+            const groups = (typeof products === "object" && products) ? Object.values(products) : [];
+            for (const g of groups) {
+                if (Array.isArray(g)) {
+                    for (const p of g) {
+                        const n = p && p.name;
+                        if (n && !__ssProductByName.has(n)) __ssProductByName.set(n, p);
+                    }
+                }
+            }
+        } catch { __ssProductByName = null; }
 
-        productDiv.innerHTML = `
+        // -------- Basket items (top section) --------
+        for (const [key, item] of entries) {
+            const productDiv = document.createElement("div");
+            productDiv.classList.add("Basket_Item_Container");
+
+            const encName = encodeURIComponent(String(item?.name || ""));
+            const __recoTok = String(item?.recoDiscountToken || "").trim();
+            const __recoQ = __recoTok ? `&reco=${encodeURIComponent(__recoTok)}` : "";
+
+            const safeName = __ssEscHtml(item?.name || "");
+            const safeDesc = __ssEscHtml(item?.description || "");
+            const safeImg = __ssEscHtml(item?.image || "");
+            const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+
+            const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
+
+            const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
+            const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
+
+            productDiv.innerHTML = `
       <div class="Basket-Item">
-        <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer">
+        <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer">
           <img class="Basket_Image"
                src="${safeImg}"
                alt="${safeName}"
@@ -9438,12 +9752,12 @@ function updateBasket() {
                data-imageurl="${safeImg}">
         </a>
         <div class="Item-Details">
-          <a href="https://www.snagletshop.com/?product=${encName}" target="_blank" rel="noopener noreferrer" class="BasketText">
+          <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer" class="BasketText">
             <strong class="BasketText BasketTitle">${safeName}</strong>
           </a>
           ${optionChipsHTML}
           <p class="BasketTextDescription">${safeDesc}</p>
-</div>
+        </div>
         <div class="Quantity-Controls-Basket">
           <button class="BasketChangeQuantityButton" type="button"
                   data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
@@ -9454,71 +9768,127 @@ function updateBasket() {
       </div>
     `;
 
-        basketContainer.appendChild(productDiv);
-    });
+            basketContainer.appendChild(productDiv);
+        }
 
-    const receiptDiv = document.createElement("div");
-    receiptDiv.classList.add("BasketReceipt");
+        // -------- Receipt (checkout summary) --------
+        const receiptDiv = document.createElement("div");
+        receiptDiv.classList.add("BasketReceipt");
 
-    let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
+        let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
 
-    Object.entries(basket).forEach(([k, item]) => {
-        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
-        const unit = Number(parseFloat(item?.price) || 0);
-        const itemTotal = unit * qty;
+        let __runningDiscSum = 0;
+        for (let i = 0; i < entries.length; i++) {
+            const [k, item] = entries[i];
+            const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+            const unit = Number(parseFloat(item?.price) || 0);
+            const itemTotal = unit * qty;
 
-        const name = __ssEscHtml(item?.name || "");
-        const productForReceipt = (() => {
-            try { return Object.values(products).flat().find(p => p.name === (item?.name || "")); } catch { return null; }
-        })();
-        const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
-        const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
+            // Per-line discounted total AFTER cart-level discounts (prorated)
+            let lineTotalAfter = itemTotal;
+            if (__ratio < 0.999999) {
+                if (i < entries.length - 1) {
+                    lineTotalAfter = round2(itemTotal * __ratio);
+                    __runningDiscSum += lineTotalAfter;
+                } else {
+                    // last line absorbs rounding remainder
+                    lineTotalAfter = round2(__ssTotalAfter - __runningDiscSum);
+                }
+            }
 
-        const __hasRecoDiscR2 = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(unit || 0));
-        const __itemTotalDisc2 = itemTotal.toFixed(2);
-        const __itemTotalOrig2 = (Number(item.unitPriceOriginalEUR || 0) * qty).toFixed(2);
-        const __receiptPriceHTML2 = __hasRecoDiscR2
-            ? `<td class="basket-item-price" data-eur="${__itemTotalDisc2}" data-eur-original="${__itemTotalOrig2}" data-discount-pct="${Number(item.recoDiscountPct || 0)}"><span style="text-decoration:line-through;opacity:.65;margin-right:4px">${__itemTotalOrig2}€</span> <span style="font-weight:700">${__itemTotalDisc2}€</span></td>`
-            : `<td class="basket-item-price" data-eur="${__itemTotalDisc2}">${__itemTotalDisc2}€</td>`;
+            const name = __ssEscHtml(item?.name || "");
+            const productForReceipt = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
+            const __dispOptsReceipt = __ssGetSelectedOptionsForDisplay(item, productForReceipt);
+            const receiptChipsHTML = __ssBuildOptionChipsHTML(__dispOptsReceipt, true);
 
-        receiptContent += `
+            const preCartTotal = round2(itemTotal);
+            const postCartTotal = round2(lineTotalAfter);
+
+            // If there is a reco discount, keep the "original vs discounted" UX, but apply cart-level discount on top.
+            const hasRecoDisc = (String(item?.recoDiscountToken || "") && Number(item?.recoDiscountPct || 0) > 0 && Number(item?.unitPriceOriginalEUR || 0) > Number(unit || 0));
+            const recoOrigTotal = round2((Number(item?.unitPriceOriginalEUR || 0) * qty));
+
+            let priceCellHTML = "";
+            if (__ratio < 0.999999 && postCartTotal < preCartTotal) {
+                // cart-level discount applies => show strike-through of pre-cart total and the post-cart total
+                priceCellHTML =
+                    `<td class="basket-item-price" data-eur="${postCartTotal.toFixed(2)}" data-eur-original="${preCartTotal.toFixed(2)}">
+                    <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${preCartTotal.toFixed(2)}€</span>
+                    <span style="font-weight:700">${postCartTotal.toFixed(2)}€</span>
+                 </td>`;
+            } else if (hasRecoDisc && recoOrigTotal > preCartTotal) {
+                // only reco discount
+                priceCellHTML =
+                    `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}" data-eur-original="${recoOrigTotal.toFixed(2)}" data-discount-pct="${Number(item.recoDiscountPct || 0)}">
+                    <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${recoOrigTotal.toFixed(2)}€</span>
+                    <span style="font-weight:700">${preCartTotal.toFixed(2)}€</span>
+                 </td>`;
+            } else {
+                priceCellHTML = `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}">${preCartTotal.toFixed(2)}€</td>`;
+            }
+
+            receiptContent += `
   <tr>
     <td>${qty} ×</td>
     <td>
       <div class="ReceiptItemName">${name}</div>
-      ${receiptChipsHTML}
+            ${receiptChipsHTML}
     </td>
-    ${__receiptPriceHTML2}
+    ${priceCellHTML}
   </tr>
 `;
-    });
+        }
 
-    receiptContent += `</table></div>`;
-    receiptContent += `
+        receiptContent += `</table></div>`;
+
+        // Incentive block (discount tiers / add-ons)
+        try { receiptContent += __ssRenderCartIncentivesHTML(totalSum); } catch { }
+
+        receiptContent += `
     <div class="ReceiptFooter">
       <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
-      <strong class="PayTotalText" id="basket-total" data-eur="${totalSum.toFixed(2)}">Total: ${totalSum.toFixed(2)}€</strong>
+      <strong class="PayTotalText" id="basket-total" data-eur="${__ssTotalAfter.toFixed(2)}">
+        Total: ${(__ssDiscountEUR > 0 && __ssTotalAfter < totalSum)
+                ? `<span style="text-decoration:line-through; opacity:.75;">${totalSum.toFixed(2)}€</span> <span>${__ssTotalAfter.toFixed(2)}€</span>`
+                : `${__ssTotalAfter.toFixed(2)}€`}
+      </strong>
     </div>
   `;
 
-    receiptDiv.innerHTML = receiptContent;
-    basketContainer.appendChild(receiptDiv);
+        receiptDiv.innerHTML = receiptContent;
+        basketContainer.appendChild(receiptDiv);
 
-    // Keep existing event delegation behavior for qty buttons
-    if (!basketContainer.dataset.qtyBound) {
-        basketContainer.dataset.qtyBound = "1";
-        basketContainer.addEventListener("click", (e) => {
-            const btn = e.target.closest(".BasketChangeQuantityButton");
-            if (!btn) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const k = decodeURIComponent(btn.dataset.key || "");
-            const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
-            try { changeQuantity(k, delta); } catch { }
-        });
+        try {
+            window.__ssSuppressPriceObserver = true;
+            if (typeof updateAllPrices === "function") updateAllPrices(basketContainer);
+        } catch { }
+        finally {
+            setTimeout(() => { try { window.__ssSuppressPriceObserver = false; } catch { } }, 250);
+        }
+        try { __ssBindCartIncentives(basketContainer); } catch { }
+
+        // Keep existing event delegation behavior for qty buttons
+        if (!basketContainer.dataset.qtyBound) {
+            basketContainer.dataset.qtyBound = "1";
+            basketContainer.addEventListener("click", (e) => {
+                const btn = e.target.closest(".BasketChangeQuantityButton");
+                if (!btn) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const kk = decodeURIComponent(btn.dataset.key || "");
+                const delta = parseInt(btn.dataset.delta || "0", 10) || 0;
+                try { changeQuantity(kk, delta); } catch { }
+            });
+        }
+
+    } finally {
+        window.__ssUpdatingBasket = false;
+        __ssBasketRenderInProgress = false;
+        if (__ssBasketNeedsRerender) {
+            __ssBasketNeedsRerender = false;
+            __ssRequestBasketRerender("post-render");
+        }
     }
-
-    try { updateAllPrices(); } catch { }
 }
 
 
