@@ -3880,7 +3880,7 @@ async function GoToSettings() {
   
       <h4>Contact</h4>
       <p>
-        To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email.
+        To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email. You can always use our contact form or the email, listed below it, in case of problems!
       </p>
   
       <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
@@ -9660,13 +9660,12 @@ function updateBasket() {
     try {
         let basketContainer = document.getElementById("Basket_Viewer");
 
+        // IMPORTANT:
+        // updateBasket() can be triggered by storage/broadcast updates even when the user is NOT on the Cart view.
+        // In that case we must NOT auto-create the Basket_Viewer container, otherwise it will be appended into #Viewer
+        // and will overwrite/destroy other pages (e.g., Settings UI).
         if (!basketContainer) {
-            const viewer = document.getElementById("Viewer");
-            if (!viewer) return;
-            basketContainer = document.createElement("div");
-            basketContainer.id = "Basket_Viewer";
-            basketContainer.classList.add("Basket_Viewer");
-            viewer.appendChild(basketContainer);
+            return;
         }
 
         basketContainer.innerHTML = "";
