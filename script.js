@@ -5459,22 +5459,42 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         sortContainer = document.createElement("div");
         sortContainer.id = "SortContainer";
         sortContainer.className = "SortContainer";
+
+        // Custom-styled dropdown (native <select> can't be styled like the target design across browsers)
         sortContainer.innerHTML = `
-            <label for="sortSelect" class="SortSelectLabel">${TEXTS.SORTING.LABEL}</label>
-            <select id="sortSelect" class="sortSelect" onchange="updateSorting()">
-                <option value="NameFirst" selected>${TEXTS.SORTING.OPTIONS.NAME_ASC}</option>
-                <option value="NameLast">${TEXTS.SORTING.OPTIONS.NAME_DESC}</option>
-                <option value="Cheapest">${TEXTS.SORTING.OPTIONS.PRICE_ASC}</option>
-                <option value="Priciest">${TEXTS.SORTING.OPTIONS.PRICE_DESC}</option>
-            </select>
+          <div class="SSSort" id="SSSort">
+            <div class="SSSortLabel">${TEXTS.SORTING.LABEL}</div>
+
+            <button class="SSSortTrigger" id="SSSortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span class="SSSortTriggerText" id="SSSortTriggerText">${TEXTS.SORTING.OPTIONS.NAME_ASC}</span>
+              <span class="SSSortChevron" aria-hidden="true"></span>
+            </button>
+
+            <div class="SSSortMenu" id="SSSortMenu" role="listbox" tabindex="-1" hidden>
+              <button class="SSSortItem" type="button" role="option" data-value="NameFirst" aria-selected="false">
+                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.NAME_ASC}</span>
+                <span class="SSSortCheck" aria-hidden="true"></span>
+              </button>
+              <button class="SSSortItem" type="button" role="option" data-value="NameLast" aria-selected="false">
+                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.NAME_DESC}</span>
+                <span class="SSSortCheck" aria-hidden="true"></span>
+              </button>
+              <button class="SSSortItem" type="button" role="option" data-value="Cheapest" aria-selected="false">
+                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.PRICE_ASC}</span>
+                <span class="SSSortCheck" aria-hidden="true"></span>
+              </button>
+              <button class="SSSortItem" type="button" role="option" data-value="Priciest" aria-selected="false">
+                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.PRICE_DESC}</span>
+                <span class="SSSortCheck" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
         `;
         wrapper.insertBefore(sortContainer, viewer);
     }
 
-    let sortSelectElement = document.getElementById("sortSelect");
-    if (sortSelectElement) {
-        sortSelectElement.value = sortBy;
-    }
+    // Ensure the dropdown reflects current sort and handlers are bound once per insertion.
+    try { __ssSetupSortDropdown(sortBy); } catch (e) { console.warn("Sort dropdown setup failed:", e); }
 
     productList.forEach(product => {
         if (!product.name) return;
@@ -5598,18 +5618,90 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
 
 
 function syncSortSelects(newSort) {
-    document.querySelectorAll('#sortSelect, #defaultSort').forEach(select => {
-        if (select && select.value !== newSort) {
-            select.value = newSort;
-        }
+    // Keep settings select (if present) in sync.
+    document.querySelectorAll('#defaultSort').forEach(select => {
+        if (select && select.value !== newSort) select.value = newSort;
     });
+
+    // Keep custom dropdown in sync.
+    try { __ssSetupSortDropdown(newSort); } catch { }
 }
 
 
 function updateSorting() {
-    const selectedSort = document.getElementById("sortSelect")?.value;
-    if (selectedSort) {
-        handleSortChange(selectedSort);
+    // Legacy entrypoint (was bound to native <select onchange>). Keep for compatibility.
+    const selectedSort =
+        document.getElementById("sortSelect")?.value ||
+        document.getElementById("SSSort")?.dataset?.value ||
+        null;
+    if (selectedSort) handleSortChange(selectedSort);
+}
+
+// Custom "Sort by" dropdown (native <select> can't be styled like the target design across browsers)
+function __ssSetupSortDropdown(currentSort) {
+    const root = document.getElementById("SSSort");
+    const trigger = document.getElementById("SSSortTrigger");
+    const triggerText = document.getElementById("SSSortTriggerText");
+    const menu = document.getElementById("SSSortMenu");
+    if (!root || !trigger || !triggerText || !menu) return;
+
+    const items = Array.from(menu.querySelectorAll(".SSSortItem"));
+
+    function openMenu() {
+        menu.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+    }
+    function closeMenu() {
+        menu.hidden = true;
+        trigger.setAttribute("aria-expanded", "false");
+    }
+    function toggleMenu() {
+        if (menu.hidden) openMenu();
+        else closeMenu();
+    }
+
+    function setSelectedByValue(val) {
+        const btn = items.find(b => b.dataset.value === val) || items[0];
+        items.forEach(b => {
+            const selected = (b === btn);
+            b.classList.toggle("is-selected", selected);
+            b.setAttribute("aria-selected", selected ? "true" : "false");
+        });
+        triggerText.textContent = btn.querySelector(".SSSortItemLabel")?.textContent || "";
+        root.dataset.value = btn.dataset.value;
+    }
+
+    // Update UI to reflect current selection
+    if (currentSort) setSelectedByValue(currentSort);
+
+    // Bind handlers once per insertion
+    if (!root.dataset.bound) {
+        root.dataset.bound = "1";
+
+        trigger.addEventListener("click", (e) => {
+            e.preventDefault();
+            toggleMenu();
+        });
+
+        items.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const val = btn.dataset.value;
+                setSelectedByValue(val);
+                handleSortChange(val);
+                closeMenu();
+            });
+        });
+
+        // close when clicking outside
+        document.addEventListener("click", (e) => {
+            if (menu.hidden) return;
+            if (!e.target.closest("#SortContainer")) closeMenu();
+        });
+
+        // close on Escape
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !menu.hidden) closeMenu();
+        });
     }
 }
 
@@ -7493,7 +7585,7 @@ function __ssEnsureOptionChipStyles() {
 }
 /* Option chips */
 .BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:flex-start;}
-.BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);line-height:1.05;white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
+.BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
 
 /* Receipt */
 .Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
@@ -8299,7 +8391,7 @@ async function __ssRecoRenderForProduct(product) {
             visibleCount: 3,
             batchSize: 3,
             maxBatches: 6,
-            maxItems: 4,
+            maxItems: 0,
             swipeSmallPx: 35,
             swipeBigPx: 120,
             offset: 0,
