@@ -50,7 +50,7 @@
 
         #appBootLoaderOverlay .card {
             width: min(520px, calc(100vw - 32px));
-            border-radius: 16px;
+            border-radius: 14px;
             border: 1px solid rgba(255, 255, 255, 0.12);
             background: rgba(20, 20, 20, 0.9);
             box-shadow: 0 20px 60px rgba(0, 0, 0, .65);
@@ -62,7 +62,7 @@
         #appBootLoaderOverlay .row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         #appBootLoaderOverlay .spinner {
@@ -163,7 +163,8 @@
             --Info_Link_Colour: #5BC0DE;
             --Category_Button_Text_Colour: #2A2A2A;
             /* or white for dark mode */
-
+            --DefaultBoxShadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+                0 1px 0 rgba(255, 255, 255, 0.65) !important;
         }
 
 
@@ -197,6 +198,12 @@
             --AddToBasketToast_Text: #ffffff;
             --AddToBasketToast_Border: rgba(255, 255, 255, 0.14);
             --AddToBasketToast_Shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            /* Dark-mode equivalent (works on dark backgrounds) */
+            /* Dark-mode equivalent (works on dark backgrounds) */
+            /* Dark-mode equivalent (works on dark backgrounds) */
+            --DefaultBoxShadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+                0 1px 0 rgba(0, 0, 0, 0.55) !important;
+            ;
         }
 
         /* ---------------- Add-to-basket toast popup ----------------
@@ -517,7 +524,7 @@
             margin: 12px 0 8px;
             padding: 2%;
 
-            border-radius: 16px;
+            border-radius: 14px;
             font-family: 'Afacad', sans-serif;
             border: 1px solid rgba(0, 0, 0, .10);
             background: rgba(0, 0, 0, .02);
@@ -613,7 +620,7 @@
                 background-color: var(--SideBar_Background_Colour);
                 /* <-- applied always */
                 color: var(--Default_Text_Colour);
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 font-weight: bold;
                 font-family: 'Afacad', sans-serif;
                 box-sizing: border-box;
@@ -685,7 +692,7 @@
                 max-height: 100%;
                 aspect-ratio: 1 / 0.75;
                 height: 100%;
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
                 background-color: var(--SearchBar_Background_Colour);
@@ -743,7 +750,7 @@
                 width: 50%;
                 height: 50%;
                 font-size: 2vh;
-                border-radius: 25px;
+                border-radius: 10px;
                 padding-left: 1%;
                 margin-left: 1%;
                 background-color: var(--SearchBar_Background_Colour);
@@ -774,7 +781,7 @@
                 width: 95%;
                 height: 6vh;
                 background-color: var(--body_Background_Colour);
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 /* Scales with button height */
                 display: flex;
                 align-items: center;
@@ -918,7 +925,7 @@
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
                 border: 1px solid var(--Borders_Colour);
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 font-weight: bold;
                 display: flex;
                 align-items: center;
@@ -1108,8 +1115,7 @@
                 background-position: right 12px center;
                 background-size: 12px 12px;
 
-                box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+                box-shadow: var(--DefaultBoxShadow);
 
                 cursor: pointer;
                 outline: none;
@@ -1119,8 +1125,7 @@
             #sortSelect:hover {
                 border-color: rgba(0, 0, 0, 0.22);
                 transform: translateY(-1px);
-                box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+                box-shadow: var(--DefaultBoxShadow);
             }
 
             #sortSelect:focus {
@@ -2390,7 +2395,7 @@
                 margin: 12px 0 8px;
                 padding: 4%;
                 padding-top: 5% !important;
-                border-radius: 16px;
+                border-radius: 14px;
                 font-family: 'Afacad', sans-serif;
                 border: 1px solid rgba(0, 0, 0, .10);
                 background: rgba(0, 0, 0, .02);
@@ -2409,7 +2414,7 @@
                 background-color: var(--SideBar_Background_Colour);
                 /* <-- applied always */
                 color: var(--Default_Text_Colour);
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 font-weight: bold;
 
                 box-sizing: border-box;
@@ -2455,7 +2460,7 @@
                 max-height: 100%;
                 aspect-ratio: 1 / 0.75;
                 height: 100%;
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 border: 1px solid var(--Borders_Colour);
                 border-radius: 5px;
                 background-color: var(--SearchBar_Background_Colour);
@@ -2629,7 +2634,7 @@
             }
 
             .Category_Button h3 {
-                font-size: 2.75vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 /* Ensures text scales with button */
                 white-space: nowrap;
                 border-radius: 5px;
@@ -2789,7 +2794,7 @@
                 background-color: var(--SearchBar_Background_Colour);
                 color: var(--Default_Text_Colour);
                 border: 1px solid var(--Borders_Colour);
-                font-size: 2.5vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 font-weight: bold;
                 display: flex;
                 align-items: center;
@@ -2918,7 +2923,7 @@
                 max-width: 100%;
                 max-height: 5vh;
                 color: var(--Default_Text_Colour);
-                font-size: 2.75vh;
+                font-size: clamp(14px, 2.2vw, 18px);
                 font-weight: 600;
             }
 
@@ -2948,8 +2953,7 @@
                 background-position: right 12px center;
 
 
-                box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+                box-shadow: var(--DefaultBoxShadow);
 
                 cursor: pointer;
                 outline: none;
@@ -2972,6 +2976,161 @@
                 color: var(--Default_Text_Colour);
                 font-family: 'Rubik', sans-serif;
             }
+
+            /* ===== Custom Sort Dropdown (native <select> can't match this design across browsers) ===== */
+            .SSSort {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .SSSortTriggerText {
+                white-space: nowrap;
+                font-size: 100%;
+            }
+
+            .SSSortLabel {
+                font-weight: 700;
+                font-size: clamp(14px, 2.2vw, 18px);
+                line-height: 1;
+                color: var(--Default_Text_Colour);
+                white-space: nowrap;
+            }
+
+            .SSSortTrigger {
+                appearance: none;
+                -webkit-appearance: none;
+                border: 0;
+                background: var(--SearchBar_Background_Colour);
+                color: var(--Default_Text_Colour);
+                padding: 1.5vw;
+                border-radius: 1vw;
+                display: inline-flex;
+                align-items: center;
+                gap: 2vw;
+                font-family: 'Afacad', sans-serif;
+                font-size: clamp(14px, 2.2vw, 18px);
+                line-height: 1;
+                cursor: pointer;
+                box-shadow: var(--DefaultBoxShadow);
+                white-space: nowrap;
+            }
+
+            .SSSortTrigger:active {
+                transform: translateY(1px);
+            }
+
+            .SSSortTriggerText {
+                white-space: nowrap;
+            }
+
+            .SSSortChevron {
+                width: 10px;
+                height: 10px;
+                display: inline-block;
+                border-right: 2px solid rgba(0, 0, 0, 0.55);
+                border-bottom: 2px solid rgba(0, 0, 0, 0.55);
+                transform: rotate(45deg);
+                margin-top: -2px;
+            }
+
+            .dark-mode .SSSortChevron {
+                border-right-color: rgba(255, 255, 255, 0.70);
+                border-bottom-color: rgba(255, 255, 255, 0.70);
+            }
+
+            .SSSortMenu {
+                position: absolute;
+                left: 0;
+                top: calc(100% + 8px);
+                min-width: 260px;
+                max-width: min(90vw, 360px);
+                background: rgba(255, 255, 255, 0.96);
+                border-radius: 14px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+                overflow: hidden;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                z-index: 9999;
+            }
+
+            .dark-mode .SSSortMenu {
+                background: rgba(20, 20, 20, 0.92);
+            }
+
+            .SSSortMenu::before {
+                content: "Sort by:";
+                display: block;
+                padding: 12px 14px;
+                font-weight: 700;
+                color: #222;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            }
+
+            .dark-mode .SSSortMenu::before {
+                color: rgba(255, 255, 255, 0.90);
+                border-bottom-color: rgba(255, 255, 255, 0.10);
+            }
+
+            .SSSortItem {
+                width: 100%;
+                border: 0;
+                background: transparent;
+                padding: 12px 14px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 16px;
+                color: #222;
+                cursor: pointer;
+            }
+
+            .dark-mode .SSSortItem {
+                color: rgba(255, 255, 255, 0.92);
+            }
+
+            .SSSortItem+.SSSortItem {
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
+            }
+
+            .dark-mode .SSSortItem+.SSSortItem {
+                border-top-color: rgba(255, 255, 255, 0.10);
+            }
+
+            .SSSortItem:hover {
+                background: rgba(0, 0, 0, 0.04);
+            }
+
+            .dark-mode .SSSortItem:hover {
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            .SSSortCheck {
+                width: 10px;
+                height: 18px;
+                border-right: 3px solid #2f80ed;
+                border-bottom: 3px solid #2f80ed;
+                transform: rotate(45deg);
+                opacity: 0;
+            }
+
+            .SSSortItem.is-selected .SSSortCheck {
+                opacity: 1;
+            }
+
+            /* Mobile sizing so it looks like your reference screenshot */
+            @media (max-width: 680px) {
+                .SSSortLabel {
+                    font-size: 100%;
+                    font-family: 'Afacad', sans-serif;
+                }
+
+
+            }
+
+            /* ===== /Custom Sort Dropdown ===== */
 
 
             .BasketTotalPrice {
@@ -3820,7 +3979,7 @@
                 left: 0;
                 right: 0;
                 z-index: 1000;
-                padding-bottom: 2vw;
+
                 background-color: var(--TopBar_Background_Colour);
                 /* or your preferred color */
                 width: 100%;
@@ -3930,7 +4089,7 @@
         #paymentModal #Address_Holder {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         /* === INPUTS & SELECTS ================================================== */
@@ -4305,6 +4464,194 @@
                 justify-content: center;
                 align-self: flex-start;
             }
+
+
+
+            /* ===========================
+   REPLACE your current SSSort CSS with this block
+   (paste as-is into index.html)
+   =========================== */
+
+            /* Base (works for both, mobile stays mobile-like) */
+            .SSSort {
+                position: relative !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+                font-size: 14px;
+                z-index: 9999 !important;
+            }
+
+            .SSSortLabel {
+                font-weight: 700 !important;
+                font-size: 18px !important;
+                line-height: 1 !important;
+                color: var(--Default_Text_Colour);
+                font-family: 'Afacad', sans-serif;
+            }
+
+            /* Trigger pill */
+            .SSSortTrigger {
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                border: 0 !important;
+                background: var(--SearchBar_Background_Colour);
+                font-weight: 600;
+                padding: 8px 14px !important;
+                border-radius: 10px !important;
+
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 50px !important;
+                font-family: 'Rubik', sans-serif;
+                font-size: 14px !important;
+                line-height: 1 !important;
+                white-space: nowrap !important;
+
+                cursor: pointer !important;
+                box-shadow:
+                    var(--DefaultBoxShadow);
+                /* IMPORTANT: remove “button look” / focus outlines that cause the boxed UI in your screenshot */
+                outline: none !important;
+            }
+
+            .SSSortTrigger:focus,
+            .SSSortTrigger:focus-visible {
+                outline: none !important;
+                box-shadow:
+                    var(--DefaultBoxShadow);
+            }
+
+            .SSSortTriggerText {
+                font-size: 18px !important;
+                font-family: 'Rubik', sans-serif;
+                line-height: 1 !important;
+                color: var(--Default_Text_Colour) !important;
+            }
+
+            /* Chevron */
+            .SSSortChevron {
+                width: 10px !important;
+                height: 10px !important;
+                display: inline-block !important;
+                border-right: 2px solid rgba(0, 0, 0, 0.55) !important;
+                border-bottom: 2px solid rgba(0, 0, 0, 0.55) !important;
+                transform: rotate(45deg) !important;
+                margin-top: -2px !important;
+            }
+
+            /* Popover menu */
+            .SSSortMenu {
+                position: absolute !important;
+                left: 0 !important;
+                top: calc(100% + 8px) !important;
+
+                min-width: 260px !important;
+                max-width: min(92vw, 340px) !important;
+
+                background: rgba(255, 255, 255, 0.96) !important;
+                border-radius: 14px !important;
+
+                /* This prevents the “stretched/boxed” look */
+                border: 0 !important;
+                outline: none !important;
+
+                box-shadow:
+                    0 20px 60px rgba(0, 0, 0, 0.18),
+                    0 2px 8px rgba(0, 0, 0, 0.08) !important;
+
+                overflow: hidden !important;
+                backdrop-filter: blur(10px) !important;
+                -webkit-backdrop-filter: blur(10px) !important;
+            }
+
+            /* Header row like iOS */
+            .SSSortMenu::before {
+                content: "Sort by:" !important;
+                display: block !important;
+                padding: 10px 14px !important;
+                font-weight: 700 !important;
+                font-size: 16px !important;
+                color: #222 !important;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+                background: transparent !important;
+            }
+
+            /* Items */
+            .SSSortItem {
+                width: 100% !important;
+                border: 0 !important;
+                background: transparent !important;
+                padding: 12px 14px !important;
+
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+
+                font-size: 16px !important;
+                color: #222 !important;
+                cursor: pointer !important;
+
+                /* Prevent default button focus ring/box */
+                outline: none !important;
+                -webkit-tap-highlight-color: transparent !important;
+                text-align: left !important;
+            }
+
+            .SSSortItem:focus,
+            .SSSortItem:focus-visible {
+                outline: none !important;
+                background: rgba(0, 0, 0, 0.04) !important;
+            }
+
+            .SSSortItem+.SSSortItem {
+                border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+            }
+
+            .SSSortItem:hover {
+                background: rgba(0, 0, 0, 0.04) !important;
+            }
+
+            .SSSortItemLabel {
+                line-height: 1.2 !important;
+            }
+
+            /* Checkmark */
+            .SSSortCheck {
+                width: 10px !important;
+                height: 18px !important;
+                border-right: 3px solid #2f80ed !important;
+                border-bottom: 3px solid #2f80ed !important;
+                transform: rotate(45deg) !important;
+                opacity: 0 !important;
+                flex: 0 0 auto !important;
+            }
+
+            .SSSortItem.is-selected .SSSortCheck {
+                opacity: 1 !important;
+            }
+
+            /* ===========================
+   Desktop (>= 681px):
+   keep the same look, just prevent weird stretching
+   =========================== */
+            @media (min-width: 681px) {
+
+                /* ensure the sort bar doesn't expand into a weird full-width row */
+                .SSSort {
+                    width: auto !important;
+                    max-width: 100% !important;
+                }
+
+                /* menu width similar to your reference */
+                .SSSortMenu {
+                    min-width: 280px !important;
+                    max-width: 360px !important;
+                }
+            }
+
+
+
         }
 
         /* chips sizing */
