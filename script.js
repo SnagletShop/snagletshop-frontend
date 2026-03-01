@@ -757,6 +757,24 @@ function initProducts() {
 
             const productsPayload = await r.json();
 
+            // ---- helpers: dedupe within /catalog payload ----
+            const __ssNorm = (s) => String(s || "").toLowerCase().trim().replace(/\s+/g, " ").replace(/[^\p{L}\p{N} ]+/gu, "");
+            const __ssDedupeByKey = (arr) => {
+                const out = [];
+                const seen = new Set();
+                for (const p of (arr || [])) {
+                    if (!p) continue;
+                    const key =
+                        (p.productId ? `id:${p.productId}` : "") ||
+                        (p.productLink ? `l:${p.productLink}` : "") ||
+                        `n:${__ssNorm(p.name)}|i:${String(p.image || "").trim()}`;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    out.push(p);
+                }
+                return out;
+            };
+
             // ---- canonical shape (/catalog) ----
             if (productsPayload && productsPayload.productsById && productsPayload.categories) {
                 const productsById = productsPayload.productsById || {};
@@ -764,7 +782,12 @@ function initProducts() {
 
                 const resolvedCatalog = {};
                 for (const [cat, ids] of Object.entries(categories)) {
-                    resolvedCatalog[cat] = (ids || []).map(id => productsById[id]).filter(Boolean);
+                    // 1) Dedupe ids in case categories array contains repeats
+                    const uniqIds = Array.from(new Set(ids || []));
+                    // 2) Resolve ids -> products
+                    const list = uniqIds.map(id => productsById[id]).filter(Boolean);
+                    // 3) Final safety: dedupe by stable key (productId/link/name+image)
+                    resolvedCatalog[cat] = __ssDedupeByKey(list);
                 }
 
                 productsDatabase = resolvedCatalog;
@@ -791,7 +814,14 @@ function initProducts() {
                     ? productsPayload.config
                     : {};
 
-            productsDatabase = catalog || {};
+            // Legacy payloads can already be category->array. Dedupe each category defensively.
+            const rawCatalog = catalog || {};
+            const deduped = {};
+            for (const [cat, list] of Object.entries(rawCatalog)) {
+                deduped[cat] = Array.isArray(list) ? __ssDedupeByKey(list) : list;
+            }
+
+            productsDatabase = deduped;
             window.products = productsDatabase;
 
             if (typeof cfg.applyTariff === "boolean") {
