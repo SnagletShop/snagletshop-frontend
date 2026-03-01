@@ -8269,7 +8269,7 @@ async function __ssRecoRenderForProduct(product) {
             visibleCount: 3,
             batchSize: 3,
             maxBatches: 6,
-            maxItems: 0,
+            maxItems: 4,
             swipeSmallPx: 35,
             swipeBigPx: 120,
             offset: 0,
@@ -9141,6 +9141,7 @@ function __ssEnsureCartIncentiveStyles() {
 
 // --- Smart recommendations (cart/checkout) ---
 let __ssSmartCartRecoCache = { sig: "", desired: 0, token: "", items: [] };
+let __ssSmartRecoRerenderTimer = null;
 
 // Prevent cart UI freeze from re-entrant updateBasket() loops and async smart-reco refreshes.
 let __ssBasketRenderInProgress = false;
@@ -9234,10 +9235,20 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
             if (!cache) return;
             const sigAfter = __ssCartSigForSmartReco();
             if (sigBefore !== sigAfter) return;
-            __ssRequestBasketRerender("smart-reco");
+
+            // Debounce re-render to avoid stutter while user is clicking +/- quickly.
+            try { if (__ssSmartRecoRerenderTimer) clearTimeout(__ssSmartRecoRerenderTimer); } catch { }
+            __ssSmartRecoRerenderTimer = setTimeout(() => {
+                try {
+                    const sigNow = __ssCartSigForSmartReco();
+                    if (sigNow !== sigBefore) return;
+                    __ssRequestBasketRerender("smart-reco");
+                } catch { }
+            }, 180);
         }).catch(() => { });
     } catch { }
 }
+
 
 async function __ssSmartRecoEvent(type, itemKey) {
     try {
@@ -9273,6 +9284,81 @@ function __ssEnsureContributionProducts() {
     } catch { }
 }
 
+
+// --- Cart add-on picker performance helpers ---
+// Cache a price-sorted pool so we don't sort the whole catalog on every basket update.
+let __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] };
+
+function __ssLowerBoundByPrice(arr, price) {
+    let lo = 0, hi = arr.length;
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if ((arr[mid]?.price || 0) < price) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;
+}
+
+function __ssGetAddonPoolSorted() {
+    __ssEnsureContributionProducts();
+    const useContrib = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length);
+    const src = useContrib ? "contrib" : "catalog";
+    const ref = useContrib ? __ssContributionCache.items : null;
+    const len = useContrib ? __ssContributionCache.items.length : 0;
+
+    // Contribution feed: cache based on array identity+length.
+    if (src === "contrib" &&
+        __ssAddonPoolSortedCache.src === src &&
+        __ssAddonPoolSortedCache.ref === ref &&
+        __ssAddonPoolSortedCache.len === len &&
+        Array.isArray(__ssAddonPoolSortedCache.sorted) &&
+        __ssAddonPoolSortedCache.sorted.length) {
+        return __ssAddonPoolSortedCache.sorted;
+    }
+
+    // Local catalog: cache once per session (catalog is static during runtime).
+    if (src === "catalog" &&
+        __ssAddonPoolSortedCache.src === src &&
+        Array.isArray(__ssAddonPoolSortedCache.sorted) &&
+        __ssAddonPoolSortedCache.sorted.length) {
+        return __ssAddonPoolSortedCache.sorted;
+    }
+
+    const raw = useContrib
+        ? __ssContributionCache.items.map(x => ({
+            key: String(x.itemKey || x.productId || x.id || x.productLink || x.name || "").trim(),
+            name: String(x.name || "").trim(),
+            price: Number(x.price || 0) || 0,
+            image: String(x.image || x.imageUrl || (Array.isArray(x.images) ? x.images[0] : "") || "").trim(),
+            productLink: String(x.productLink || x.url || x.link || "").trim(),
+            description: String(x.description || x.desc || "").trim()
+        }))
+        : (__ssGetCatalogFlat ? __ssGetCatalogFlat() : []);
+
+    const seen = new Set();
+    const cleaned = [];
+    for (const p of raw) {
+        const k = String(p?.key || p?.productId || p?.id || p?.productLink || p?.name || "").trim();
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+
+        const obj = {
+            key: k,
+            name: String(p?.name || "").trim(),
+            price: Number(p?.price || 0) || 0,
+            image: String(p?.image || "").trim(),
+            productLink: String(p?.productLink || "").trim(),
+            description: String(p?.description || "").trim()
+        };
+        if (!obj.name || !(obj.price > 0) || !obj.image) continue;
+        cleaned.push(obj);
+    }
+
+    cleaned.sort((a, b) => (a.price - b.price));
+
+    __ssAddonPoolSortedCache = { src, ref: src === "contrib" ? ref : null, len: src === "contrib" ? len : 0, sorted: cleaned };
+    return cleaned;
+}
 
 function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
     const desired = Math.max(0, Number(desiredEUR || 0) || 0);
@@ -9314,25 +9400,12 @@ function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
         }
     } catch { /* ignore */ }
 
-    // 2) Build fallback pool (contribution-ranked if available, else local catalog)
-    __ssEnsureContributionProducts();
-    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
-        ? __ssContributionCache.items.map(x => ({
-            key: String(x.itemKey || x.productId || x.id || x.productLink || x.name || "").trim(),
-            name: String(x.name || "").trim(),
-            price: Number(x.price || 0) || 0,
-            image: String(x.image || x.imageUrl || (Array.isArray(x.images) ? x.images[0] : "") || "").trim(),
-            productLink: String(x.productLink || x.url || x.link || "").trim(),
-            description: String(x.description || x.desc || "").trim()
-        }))
-        : __ssGetCatalogFlat();
-
     const cfg = __ssGetCartIncentivesConfig();
     const top = cfg?.topup || {};
     const pct = Math.max(0, Math.min(200, Number(top?.maxPriceDeltaPct || 25) || 25));
     const maxPrice = desired > 0 ? desired * (1 + (pct / 100)) : Infinity;
 
-    // 3) Merge: keep smart items, then fill remaining slots with fallback items (deduped).
+    // 2) Merge: keep smart items, then fill remaining slots with fallback items (deduped).
     const out = [];
     const seen = new Set();
 
@@ -9344,48 +9417,53 @@ function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
         if (out.length >= maxN) return out;
     }
 
-    const candidates = flat
-        .filter(p => p && typeof p === "object")
-        .map(p => ({
-            key: String(p.key || p.productId || p.id || p.productLink || p.name || "").trim(),
-            name: String(p.name || "").trim(),
-            price: Number(p.price || 0) || 0,
-            image: String(p.image || "").trim(),
-            productLink: String(p.productLink || "").trim(),
-            description: String(p.description || "").trim()
-        }))
-        .filter(p => p.key && p.name && (p.price > 0) && p.image)
-        .filter(p => !basketNames.has(p.name))
-        .filter(p => !seen.has(p.key))
-        .map(p => ({ p, score: desired > 0 ? Math.abs(p.price - desired) : p.price }))
-        .filter(x => {
-            if (desired <= 0) return true;
-            // cap to avoid showing very expensive add-ons in top-up context
-            return x.p.price <= Math.max(30, maxPrice);
-        })
-        .sort((a, b) => (a.score - b.score));
+    const pool = __ssGetAddonPoolSorted();
 
-    for (const x of candidates) {
-        const p = x.p;
-        const k = p.key;
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        out.push(p);
-        if (out.length >= maxN) break;
+    // 3) Efficient pick: binary search into price-sorted pool and expand outward.
+    if (!(desired > 0)) {
+        // If no top-up target, show cheapest valid items.
+        for (const p of pool) {
+            if (out.length >= maxN) break;
+            if (!p || !p.key || seen.has(p.key) || basketNames.has(p.name)) continue;
+            seen.add(p.key);
+            out.push(p);
+        }
+        return out;
+    }
+
+    const idx = __ssLowerBoundByPrice(pool, desired);
+    let l = idx - 1;
+    let r = idx;
+
+    while (out.length < maxN && (l >= 0 || r < pool.length)) {
+        const left = (l >= 0) ? pool[l] : null;
+        const right = (r < pool.length) ? pool[r] : null;
+
+        const dl = left ? Math.abs((left.price || 0) - desired) : Infinity;
+        const dr = right ? Math.abs((right.price || 0) - desired) : Infinity;
+
+        const takeLeft = dl <= dr;
+        const cand = takeLeft ? left : right;
+
+        if (takeLeft) l--; else r++;
+
+        if (!cand || !cand.key || seen.has(cand.key) || basketNames.has(cand.name)) continue;
+        if (cand.price > Math.max(30, maxPrice)) continue;
+
+        seen.add(cand.key);
+        out.push(cand);
     }
 
     return out;
 }
-
-
-function __ssRenderCartIncentivesHTML(totalSumEUR) {
+function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     try {
         const cfg0 = __ssGetCartIncentivesConfig();
         if (!cfg0?.enabled) return "";
         __ssEnsureCartIncentiveStyles();
 
-        const fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
-        const inc = __ssComputeCartIncentivesClient(totalSumEUR, fullCart);
+        const fullCart = (opts && Array.isArray(opts.fullCart)) ? opts.fullCart : ((typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : []);
+        const inc = (opts && opts.inc) ? opts.inc : __ssComputeCartIncentivesClient(totalSumEUR, fullCart);
 
         const cfg = __ssGetCartIncentivesConfig();
         const tiers = (cfg?.tierDiscount?.enabled && Array.isArray(cfg?.tierDiscount?.tiers)) ? cfg.tierDiscount.tiers : [];
@@ -9652,6 +9730,9 @@ async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
 
 /* Override: basket rendering escapes user/product strings and shows multi-options */
 function updateBasket() {
+    let __ssInc = null;
+    let __fullCart = [];
+
 
     // Guard against re-entrant / repeated basket renders that can freeze the UI
     if (window.__ssUpdatingBasket) return;
@@ -9694,7 +9775,7 @@ function updateBasket() {
         let __ssTotalAfter = round2(totalSum);
         let __ssDiscountEUR = 0;
         try {
-            const __fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
+            __fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
             __ssInc = __ssComputeCartIncentivesClient(totalSum, __fullCart);
             __ssTotalAfter = round2(Number(__ssInc?.subtotalAfterDiscountsEUR ?? totalSum) || totalSum);
             __ssDiscountEUR = round2((Number(__ssInc?.tierDiscountEUR || 0) || 0) + (Number(__ssInc?.bundleDiscountEUR || 0) || 0));
@@ -9841,7 +9922,7 @@ function updateBasket() {
         receiptContent += `</table></div>`;
 
         // Incentive block (discount tiers / add-ons)
-        try { receiptContent += __ssRenderCartIncentivesHTML(totalSum); } catch { }
+        try { receiptContent += __ssRenderCartIncentivesHTML(totalSum, { inc: __ssInc, fullCart: __fullCart }); } catch { }
 
         receiptContent += `
     <div class="ReceiptFooter">
