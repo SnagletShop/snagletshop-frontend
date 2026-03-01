@@ -9507,7 +9507,25 @@ function __ssEnsureContributionProducts() {
         fetch(`${API_BASE}/products/contribution?limit=40`, { credentials: "include" })
             .then(r => r.json().catch(() => null))
             .then(d => {
-                if (d && d.ok && Array.isArray(d.items)) __ssContributionCache.items = d.items;
+                // Only accept contribution feed if it has enough renderable items.
+                // Otherwise we'd replace the local catalog pool and cart add-ons would vanish.
+                if (!(d && d.ok && Array.isArray(d.items))) return;
+
+                const items = d.items;
+                let okCount = 0;
+                for (const x of items) {
+                    const name = String(x?.name || "").trim();
+                    const price = Number(x?.price || 0) || 0;
+                    const img = String(x?.image || x?.imageUrl || (Array.isArray(x?.images) ? x.images[0] : "") || "").trim();
+                    if (name && price > 0 && img) okCount++;
+                    if (okCount >= 8) break;
+                }
+
+                if (okCount >= 8) {
+                    __ssContributionCache.items = items;
+                    // Invalidate pool cache so it can rebuild from contribution feed.
+                    try { __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
+                }
             })
             .catch(() => { });
     } catch { }
