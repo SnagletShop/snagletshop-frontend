@@ -6507,7 +6507,13 @@ function __ssGetCartIncentivesConfig() {
     return {
         enabled: true,
         freeShipping: { enabled: false, thresholdEUR: 0, shippingFeeEUR: 0 },
-        tierDiscount: { enabled: true, tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }] },
+        tierDiscount: {
+            enabled: true,
+            // If false, tier discount will NOT apply to items that already have an item-level discount (e.g. reco token).
+            // Threshold unlock still uses the full cart subtotal.
+            applyToDiscountedItems: true,
+            tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }]
+        },
         bundles: { enabled: false, bundles: [] }
     };
 }
@@ -6531,6 +6537,26 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
 
     let subtotal = Number(baseTotalEUR) || 0;
 
+    // Eligible subtotal for tier discount when applyToDiscountedItems is false.
+    // Discounted items are detected via recoDiscountPct/recoDiscountToken and/or original vs paid unit price.
+    let tierEligibleSubtotal = 0;
+    try {
+        const items = Array.isArray(fullCart) ? fullCart : [];
+        for (const it of items) {
+            const qty = Math.max(1, parseInt(it?.quantity ?? 1, 10) || 1);
+            const unit = Number(it?.unitPriceEUR ?? it?.price ?? 0) || 0;
+            const line = unit * qty;
+            if (!Number.isFinite(line) || line <= 0) continue;
+            const recoPct = Number(it?.recoDiscountPct || 0) || 0;
+            const hasTok = !!it?.recoDiscountToken;
+            const u0 = Number(it?.unitPriceOriginalEUR ?? it?.unitPriceOriginalEur ?? NaN);
+            const u1 = Number(it?.unitPriceEUR ?? it?.price ?? NaN);
+            const looksDiscounted = (Number.isFinite(u0) && Number.isFinite(u1) && u0 > u1 + 1e-9);
+            const isDiscountedItem = (recoPct > 0) || hasTok || looksDiscounted;
+            if (!isDiscountedItem) tierEligibleSubtotal += line;
+        }
+    } catch { }
+
     // Optional bundle discount (max one)
     try {
         const bcfg = cfg?.bundles;
@@ -6549,6 +6575,11 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
                 out.bundlePct = best.pct;
                 out.bundleDiscountEUR = round2(subtotal * (best.pct / 100));
                 subtotal = subtotal - out.bundleDiscountEUR;
+
+                // Keep tierEligibleSubtotal in the same "post-bundle" space by applying the same bundle %.
+                if (Number.isFinite(tierEligibleSubtotal) && tierEligibleSubtotal > 0) {
+                    tierEligibleSubtotal = tierEligibleSubtotal * (1 - (best.pct / 100));
+                }
             }
         }
     } catch { }
@@ -6564,7 +6595,12 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
                 if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p);
             }
             out.tierPct = pct;
-            out.tierDiscountEUR = pct > 0 ? round2(subtotal * (pct / 100)) : 0;
+
+            // Threshold unlock uses full post-bundle subtotal (subtotal).
+            // Discount amount may optionally exclude already-discounted items.
+            const applyToDiscounted = (tcfg?.applyToDiscountedItems !== false);
+            const tierBase = applyToDiscounted ? subtotal : Math.max(0, Number(tierEligibleSubtotal) || 0);
+            out.tierDiscountEUR = pct > 0 ? round2(tierBase * (pct / 100)) : 0;
             subtotal = subtotal - out.tierDiscountEUR;
         }
     } catch { }
@@ -7116,6 +7152,77 @@ function attachConfirmHandlerOnce() {
             const clientSecret = window.latestClientSecret || null;
             const orderId = window.latestOrderId || null;
             const paymentIntentId = window.latestPaymentIntentId || null;
+
+            // Guard: if the PaymentIntent is already processing/succeeded, do NOT call confirmPayment again.
+            // This prevents Stripe "payment_intent_unexpected_state" when users retry quickly or double-submit.
+            if (clientSecret && window.stripeInstance?.retrievePaymentIntent) {
+                try {
+                    const piRes = await window.stripeInstance.retrievePaymentIntent(clientSecret);
+                    const pi = piRes?.paymentIntent;
+                    if (pi?.status === "succeeded") {
+                        const checkoutToken = window.latestCheckoutPublicToken || null;
+                        const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+
+                        if (resolvedOrderId && checkoutToken) {
+                            const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                            window.latestOrderId = resolvedOrderId;
+                            window.latestOrderPublicToken = checkoutToken;
+                            window.latestOrderStatusUrl = statusUrl;
+                            addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                        }
+
+                        clearPaymentPendingFlag();
+                        clearBasketCompletely();
+                        try { clearCheckoutDraft(); } catch { }
+                        setPaymentSuccessFlag({ reloadOnOk: true });
+                        window.location.replace(window.location.origin);
+                        return;
+                    }
+
+                    if (pi?.status === "processing") {
+                        setPaymentPendingFlag({
+                            paymentIntentId: pi.id,
+                            orderId: orderId || null,
+                            clientSecret,
+                            checkoutId: window.latestCheckoutId || null,
+                            checkoutToken: window.latestCheckoutPublicToken || null
+                        });
+
+                        const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pi.id });
+                        if (status === "succeeded") {
+                            const checkoutToken = window.latestCheckoutPublicToken || null;
+                            const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+                            if (resolvedOrderId && checkoutToken) {
+                                const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                                window.latestOrderId = resolvedOrderId;
+                                window.latestOrderPublicToken = checkoutToken;
+                                window.latestOrderStatusUrl = statusUrl;
+                                addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                            }
+                            clearPaymentPendingFlag();
+                            clearBasketCompletely();
+                            try { clearCheckoutDraft(); } catch { }
+                            setPaymentSuccessFlag({ reloadOnOk: true });
+                            window.location.replace(window.location.origin);
+                            return;
+                        }
+
+                        if (status === "requires_payment_method" || status === "canceled") {
+                            clearPaymentPendingFlag();
+                            alert("Payment did not complete. Your cart is still saved—please try again.");
+                            return;
+                        }
+                        alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+                        return;
+                    }
+
+                    if (pi?.status === "canceled") {
+                        clearPaymentPendingFlag();
+                        alert("This payment attempt was canceled. Please try again.");
+                        return;
+                    }
+                } catch { }
+            }
 
             // CRITICAL FIX: set pending BEFORE confirmPayment so redirects are safe
             setPaymentPendingFlag({ paymentIntentId, orderId, clientSecret, checkoutId: window.latestCheckoutId || null, checkoutToken: window.latestCheckoutPublicToken || null });
@@ -8325,7 +8432,7 @@ function __ssRecoEnsureStyles() {
     }
     @media (max-width: 460px){
       .RecoStrip{
-        --reco-gap: 10px;
+      
         grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
       }
       .RecoNav{width:34px;height:34px;border-radius:11px;}
