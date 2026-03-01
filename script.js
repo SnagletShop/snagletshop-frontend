@@ -2876,7 +2876,7 @@ async function pollPendingPaymentUntilFinal({ paymentIntentId, clientSecret, tim
 }
 
 
-async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, maxWaitMs = 20000, intervalMs = 1200 } = {}) {
+async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, maxWaitMs = 60000, intervalMs = 1200 } = {}) {
     const piid = String(paymentIntentId || "").trim();
     const cs = String(clientSecret || "").trim();
     if (!piid || !piid.startsWith("pi_")) return null;
@@ -2920,6 +2920,38 @@ async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, ma
                 continue;
             }
 
+            // If webhook isn't configured or the /order-by-payment-intent lookup didn't find a draft yet,
+            // attempt server-side finalization once anyway (requires checkoutId+token).
+            if (!res.ok && !attemptedFinalize) {
+                attemptedFinalize = true;
+                try {
+                    const pending = getPaymentPendingFlag() || {};
+                    const checkoutId = pending.checkoutId || window.latestCheckoutId || null;
+                    const checkoutToken = pending.checkoutToken || window.latestCheckoutPublicToken || null;
+
+                    if (checkoutId && checkoutToken) {
+                        const fr = await fetch(`${API_BASE}/finalize-order`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                paymentIntentId: piid,
+                                clientSecret: cs,
+                                checkoutId,
+                                token: checkoutToken
+                            })
+                        });
+                        const fd = await fr.json().catch(() => ({}));
+                        if (fr.ok && fd?.orderId) return String(fd.orderId);
+                    }
+                } catch { }
+            }
+
+            // If still unresolved, retry a bit (covers eventual webhook delivery)
+            if (!res.ok) {
+                await new Promise(r => setTimeout(r, intervalMs));
+                continue;
+            }
+
             return null;
         } catch {
             await new Promise(r => setTimeout(r, intervalMs));
@@ -2955,6 +2987,11 @@ async function checkAndHandlePendingPaymentOnLoad() {
             window.latestOrderPublicToken = checkoutToken;
             window.latestOrderStatusUrl = statusUrl;
             addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pending.paymentIntentId });
+        }
+
+        if (!resolvedOrderId) {
+            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+            return;
         }
 
         clearPaymentPendingFlag();
@@ -3121,6 +3158,11 @@ async function handleStripeRedirectReturnOnLoad() {
             window.latestOrderPublicToken = checkoutToken;
             window.latestOrderStatusUrl = statusUrl;
             addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: finalPiId });
+        }
+
+        if (!resolvedOrderId) {
+            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+            return;
         }
 
         clearPaymentPendingFlag();
@@ -4998,6 +5040,11 @@ async function setupWalletPaymentRequestButton({
                     addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
                 }
 
+                if (!resolvedOrderId) {
+                    alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                    return;
+                }
+
                 clearPaymentPendingFlag();
                 clearBasketCompletely();
                 try { clearCheckoutDraft(); } catch { }
@@ -5022,6 +5069,11 @@ async function setupWalletPaymentRequestButton({
                         window.latestOrderPublicToken = checkoutToken;
                         window.latestOrderStatusUrl = statusUrl;
                         addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                    }
+
+                    if (!resolvedOrderId) {
+                        alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                        return;
                     }
 
                     clearPaymentPendingFlag();
@@ -6856,6 +6908,11 @@ function _getCachedPI(sig) {
     if (!createdAt || (Date.now() - createdAt) > ttlMs) return null;
 
     if (!row.clientSecret || !row.paymentIntentId) return null;
+    // Require checkoutId + public token so we can server-finalize if Stripe webhooks are delayed/misconfigured.
+    const cid = row.checkoutId || null;
+    const tok = row.checkoutPublicToken || row.checkoutToken || null;
+    if (!cid || !tok) return null;
+    if (!row.checkoutPublicToken && row.checkoutToken) row.checkoutPublicToken = row.checkoutToken;
     return row;
 }
 
@@ -7171,6 +7228,11 @@ function attachConfirmHandlerOnce() {
                             addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
                         }
 
+                        if (!resolvedOrderId) {
+                            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                            return;
+                        }
+
                         clearPaymentPendingFlag();
                         clearBasketCompletely();
                         try { clearCheckoutDraft(); } catch { }
@@ -7199,6 +7261,11 @@ function attachConfirmHandlerOnce() {
                                 window.latestOrderStatusUrl = statusUrl;
                                 addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
                             }
+                            if (!resolvedOrderId) {
+                                alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                                return;
+                            }
+
                             clearPaymentPendingFlag();
                             clearBasketCompletely();
                             try { clearCheckoutDraft(); } catch { }
@@ -7260,6 +7327,11 @@ function attachConfirmHandlerOnce() {
                     addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
                 }
 
+                if (!resolvedOrderId) {
+                    alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                    return;
+                }
+
                 clearPaymentPendingFlag();
                 clearBasketCompletely();
                 try { clearCheckoutDraft(); } catch { }
@@ -7293,6 +7365,11 @@ function attachConfirmHandlerOnce() {
                         window.latestOrderPublicToken = checkoutToken;
                         window.latestOrderStatusUrl = statusUrl;
                         addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
+                    }
+
+                    if (!resolvedOrderId) {
+                        alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                        return;
                     }
 
                     clearPaymentPendingFlag();
