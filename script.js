@@ -2876,7 +2876,7 @@ async function pollPendingPaymentUntilFinal({ paymentIntentId, clientSecret, tim
 }
 
 
-async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, maxWaitMs = 20000, intervalMs = 1200 } = {}) {
+async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, maxWaitMs = 60000, intervalMs = 1200 } = {}) {
     const piid = String(paymentIntentId || "").trim();
     const cs = String(clientSecret || "").trim();
     if (!piid || !piid.startsWith("pi_")) return null;
@@ -2920,6 +2920,38 @@ async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, ma
                 continue;
             }
 
+            // If webhook isn't configured or the /order-by-payment-intent lookup didn't find a draft yet,
+            // attempt server-side finalization once anyway (requires checkoutId+token).
+            if (!res.ok && !attemptedFinalize) {
+                attemptedFinalize = true;
+                try {
+                    const pending = getPaymentPendingFlag() || {};
+                    const checkoutId = pending.checkoutId || window.latestCheckoutId || null;
+                    const checkoutToken = pending.checkoutToken || window.latestCheckoutPublicToken || null;
+
+                    if (checkoutId && checkoutToken) {
+                        const fr = await fetch(`${API_BASE}/finalize-order`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                paymentIntentId: piid,
+                                clientSecret: cs,
+                                checkoutId,
+                                token: checkoutToken
+                            })
+                        });
+                        const fd = await fr.json().catch(() => ({}));
+                        if (fr.ok && fd?.orderId) return String(fd.orderId);
+                    }
+                } catch { }
+            }
+
+            // If still unresolved, retry a bit (covers eventual webhook delivery)
+            if (!res.ok) {
+                await new Promise(r => setTimeout(r, intervalMs));
+                continue;
+            }
+
             return null;
         } catch {
             await new Promise(r => setTimeout(r, intervalMs));
@@ -2955,6 +2987,11 @@ async function checkAndHandlePendingPaymentOnLoad() {
             window.latestOrderPublicToken = checkoutToken;
             window.latestOrderStatusUrl = statusUrl;
             addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pending.paymentIntentId });
+        }
+
+        if (!resolvedOrderId) {
+            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+            return;
         }
 
         clearPaymentPendingFlag();
@@ -3121,6 +3158,11 @@ async function handleStripeRedirectReturnOnLoad() {
             window.latestOrderPublicToken = checkoutToken;
             window.latestOrderStatusUrl = statusUrl;
             addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: finalPiId });
+        }
+
+        if (!resolvedOrderId) {
+            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+            return;
         }
 
         clearPaymentPendingFlag();
@@ -3339,17 +3381,17 @@ function searchProducts() {
             const decBtn = document.createElement("button");
             decBtn.className = "Button";
             decBtn.textContent = TEXTS.BASKET.BUTTONS.DECREASE;
-            decBtn.addEventListener("click", () => decreaseQuantity(product.name));
+            decBtn.addEventListener("click", () => decreaseQuantity(product.productId || product.id || product.name));
 
             const quantitySpan = document.createElement("span");
             quantitySpan.className = "WhiteText";
-            quantitySpan.id = `quantity-${product.name}`;
+            quantitySpan.id = `quantity-${__ssGetQtyKey(product.productId || product.id || product.name)}`;
             quantitySpan.textContent = "1";
 
             const incBtn = document.createElement("button");
             incBtn.className = "Button";
             incBtn.textContent = TEXTS.BASKET.BUTTONS.INCREASE;
-            incBtn.addEventListener("click", () => increaseQuantity(product.name));
+            incBtn.addEventListener("click", () => increaseQuantity(product.productId || product.id || product.name));
 
             const addToCartBtn = document.createElement("button");
             addToCartBtn.className = "add-to-cart";
@@ -3373,7 +3415,8 @@ function searchProducts() {
                     product.productLink,
                     product.description,
                     "",
-                    __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
+                    __ssDefaultSelectedOptions(__ssExtractOptionGroups(product)),
+                    (product.productId || null)
                 );
             });
 
@@ -3394,18 +3437,22 @@ function searchProducts() {
 
 
 function handleCurrencyChange(newCurrency) {
+    if (!newCurrency) return;
+    if (newCurrency === selectedCurrency) return;
     selectedCurrency = newCurrency;
     localStorage.setItem("selectedCurrency", selectedCurrency);
     syncCurrencySelects(selectedCurrency);
     updateAllPrices();
 }
 
-
-
-
+// Keep legacy mirror selector behavior (some UIs use #currency-select)
 document.getElementById("currency-select")?.addEventListener("change", (e) => {
     handleCurrencyChange(e.target.value);
 });
+
+
+
+
 
 document.addEventListener("change", (e) => {
     if (e.target && e.target.id === "currencySelect") {
@@ -3454,44 +3501,84 @@ try { __ssUpdateBasketHeaderIndicator(); } catch { }
 
 // Detect user's currency via IP API (if no saved preference)
 function detectUserCurrency() {
+    // Best-effort currency selection.
+    // Priority:
+    //  1) explicit saved currency (manual)
+    //  2) server default (if provided)
+    //  3) cached geo-detected currency (30d)
+    //  4) one-shot geo detection (ipapi), with backoff on failure
+    try {
+        const saved = localStorage.getItem("selectedCurrency");
+        if (saved) {
+            selectedCurrency = saved;
+            return Promise.resolve();
+        }
+    } catch { }
+    try {
+        const disabledUntil = Number(localStorage.getItem("geoCurrencyDisabledUntil") || 0);
+        if (disabledUntil && Date.now() < disabledUntil) return Promise.resolve();
+
+        const detectedAt = Number(localStorage.getItem("geoCurrencyDetectedAt") || 0);
+        const cachedCountry = String(localStorage.getItem("detectedCountry") || "").toUpperCase();
+        const cachedCurrency = String(localStorage.getItem("geoDetectedCurrency") || "");
+        if (detectedAt && (Date.now() - detectedAt) < (30 * 24 * 60 * 60 * 1000) && cachedCurrency) {
+            selectedCurrency = cachedCurrency;
+            if (cachedCountry) localStorage.setItem("detectedCountry", cachedCountry);
+            localStorage.setItem("selectedCurrency", selectedCurrency);
+            updateAllPrices();
+            return Promise.resolve();
+        }
+    } catch { }
+
     // Detect user's currency via IP API (best-effort). Never throw.
-    return fetch("https://ipapi.co/json/")
-        .then(response => response.json())
+    return fetch("https://ipapi.co/json/", { cache: "no-store" })
+        .then(r => r.json())
         .then(data => {
             const userCountry = String(data?.country_code || "").toUpperCase();
             if (!userCountry) return;
 
-            selectedCurrency = countryToCurrency[userCountry] || (localStorage.getItem("selectedCurrency") || "EUR");
-            localStorage.setItem("selectedCurrency", selectedCurrency);
-            localStorage.setItem("detectedCountry", userCountry);
+            selectedCurrency = countryToCurrency[userCountry] || "EUR";
+
+            try {
+                localStorage.setItem("selectedCurrency", selectedCurrency);
+                localStorage.setItem("detectedCountry", userCountry);
+                localStorage.setItem("geoDetectedCurrency", selectedCurrency);
+                localStorage.setItem("geoCurrencyDetectedAt", String(Date.now()));
+            } catch { }
 
             const currencySelect = document.getElementById("currency-select");
             if (currencySelect) currencySelect.value = selectedCurrency;
-
-            console.log("🌍 Country detected:", userCountry);
-            console.log("💱 Currency set to:", selectedCurrency);
-            console.log("📦 Tariff applied:", localStorage.getItem("applyTariff"));
 
             updateAllPrices();
         })
         .catch((err) => {
             console.warn("Currency detect blocked/failed; keeping saved currency.", err);
-            // Keep existing selectedCurrency (saved/manual)
+            try {
+                // backoff for 7 days to avoid repeated failing calls
+                localStorage.setItem("geoCurrencyDisabledUntil", String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+            } catch { }
         });
 }
 
-function convertPrice(priceInEur) {
-    let converted = priceInEur * exchangeRates[selectedCurrency];
+function convertPriceNumber(priceInEur) {
+    const eur = Number(priceInEur);
+    const rate = Number(exchangeRates?.[selectedCurrency] ?? 1);
+    let converted = (Number.isFinite(eur) ? eur : 0) * (Number.isFinite(rate) && rate > 0 ? rate : 1);
 
     const selectedCountry = localStorage.getItem("detectedCountry") || "US";
-    const tariff = tariffMultipliers[selectedCountry] || 0;
+    const tariff = Number(tariffMultipliers?.[selectedCountry] ?? 0) || 0;
 
     const applyTariff = getApplyTariffFlag();
     if (applyTariff) {
         converted *= (1 + tariff);
     }
 
-    return converted.toFixed(2);
+    // Keep everything in 2-decimal display space to avoid drift
+    return Math.round(converted * 100) / 100;
+}
+
+function convertPrice(priceInEur) {
+    return convertPriceNumber(priceInEur).toFixed(2);
 }
 
 
@@ -3512,10 +3599,12 @@ function updateAllPrices(rootEl) {
             const convOrig = convertPrice(eurOrig);
             const convDisc = convertPrice(eur);
             if (pct > 0) {
-                element.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+                const __html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+                if (element.innerHTML !== __html) element.innerHTML = __html;
             } else {
                 // Cart-level / generic discount strike-through (no pct)
-                element.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+                const __html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+                if (element.innerHTML !== __html) element.innerHTML = __html;
             }
             return;
         }
@@ -3529,6 +3618,23 @@ function updateAllPrices(rootEl) {
     // Cart incentive amount fragments (e.g., "Add X to unlock")
     root.querySelectorAll(".ss-ci-amt[data-eur]").forEach(el => {
         const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
+
+        const minEurRaw = el.dataset.ciMinEur;
+        const baseEurRaw = el.dataset.ciBaseEur;
+
+        // If we have both, compute the "need" in display space:
+        // need = convert(min) - convert(base)
+        if (minEurRaw != null && baseEurRaw != null) {
+            const minEUR = parseFloat(minEurRaw);
+            const baseEUR = parseFloat(baseEurRaw);
+            if (!isNaN(minEUR) && !isNaN(baseEUR)) {
+                const need = Math.max(0, Math.round((convertPriceNumber(minEUR) - convertPriceNumber(baseEUR)) * 100) / 100);
+                el.textContent = `${currencySymbol}${need.toFixed(2)}`;
+                return;
+            }
+        }
+
+        // Fallback: direct conversion of a EUR amount
         const eur = parseFloat(el.dataset.eur);
         if (isNaN(eur)) return;
         el.textContent = `${currencySymbol}${convertPrice(eur)}`;
@@ -3557,6 +3663,7 @@ function updateAllPrices(rootEl) {
     if (totalElement) {
         let baseTotal = parseFloat(totalElement.dataset.eur);
         if (!isNaN(baseTotal)) {
+            const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
             totalElement.textContent = `Total: ${convertPrice(baseTotal)} ${selectedCurrency}`;
         }
     }
@@ -3651,19 +3758,17 @@ function observeNewProducts() {
 
 
 document.getElementById("currencySelect")?.addEventListener("change", function (event) {
-    selectedCurrency = event.target.value;
+    const v = event?.target?.value;
+    if (typeof handleCurrencyChange === "function") {
+        handleCurrencyChange(v);
+        return;
+    }
+    selectedCurrency = v;
     localStorage.setItem("selectedCurrency", selectedCurrency);
-
-    syncCurrencySelects(selectedCurrency);  // ✅ this ensures the TopBar updates too
+    try { syncCurrencySelects(selectedCurrency); } catch { }
     updateAllPrices();
 });
 
-document.getElementById("currencySelect")?.addEventListener("change", function (event) {
-    selectedCurrency = event.target.value;
-    localStorage.setItem("selectedCurrency", selectedCurrency);
-    syncCurrencySelects(selectedCurrency);  // 🔁 this updates the other one
-    updateAllPrices();
-});
 
 
 // Page load: Apply saved currency or detect it
@@ -3740,14 +3845,17 @@ async function populateCountries() {
 
     if (select.tomselect) select.tomselect.destroy();
 
-    new TomSelect(select, {
-        maxOptions: 1000,
-        sortField: { field: "text", direction: "asc" },
-        placeholder: "Select a country…",
-        closeAfterSelect: true
-    });
-
-    console.log("✅ TomSelect initialized on countrySelect");
+    if (typeof TomSelect === "function") {
+        new TomSelect(select, {
+            maxOptions: 1000,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Select a country…",
+            closeAfterSelect: true
+        });
+        console.log("✅ TomSelect initialized on countrySelect");
+    } else {
+        console.warn("TomSelect not loaded; using native country <select>.");
+    }
 }
 
 
@@ -3986,47 +4094,56 @@ async function GoToSettings() {
 
     // Attach logic via TomSelect onChange (more reliable than select change)
     if (currencySelect) {
-        new TomSelect("#currencySelect", {
-            maxOptions: 200,
-            sortField: { field: "text", direction: "asc" },
-            placeholder: "Select a currency…",
-            closeAfterSelect: true,
-            onChange: (val) => {
-                if (!val) return;
-                selectedCurrency = val;
-                localStorage.setItem("selectedCurrency", selectedCurrency);
-                localStorage.setItem("manualCurrencyOverride", "true");
-                syncCurrencySelects(selectedCurrency);
-                updateAllPrices();
-            }
-        });
-        currencySelect.classList.remove("tom-hidden");
+        if (typeof TomSelect === "function") {
+            new TomSelect("#currencySelect", {
+                maxOptions: 200,
+                sortField: { field: "text", direction: "asc" },
+                placeholder: "Select a currency…",
+                closeAfterSelect: true,
+                onChange: (val) => {
+                    if (!val) return;
+                    selectedCurrency = val;
+                    localStorage.setItem("selectedCurrency", selectedCurrency);
+                    localStorage.setItem("manualCurrencyOverride", "true");
+                    syncCurrencySelects(selectedCurrency);
+                    updateAllPrices();
+                }
+            });
+            currencySelect.classList.remove("tom-hidden");
+        } else {
+            // Fallback: native select change handler already wired elsewhere
+            currencySelect.classList.remove("tom-hidden");
+        }
     }
 
     if (countrySelect) {
-        new TomSelect("#countrySelect", {
-            maxOptions: 1000,
-            sortField: { field: "text", direction: "asc" },
-            placeholder: "Select a country…",
-            closeAfterSelect: true,
-            onChange: (val) => {
-                if (!val) return;
-                const newCountry = String(val).toUpperCase();
-                localStorage.setItem("detectedCountry", newCountry);
-                if (detectedSpan) detectedSpan.textContent = newCountry;
+        if (typeof TomSelect === "function") {
+            new TomSelect("#countrySelect", {
+                maxOptions: 1000,
+                sortField: { field: "text", direction: "asc" },
+                placeholder: "Select a country…",
+                closeAfterSelect: true,
+                onChange: (val) => {
+                    if (!val) return;
+                    const newCountry = String(val).toUpperCase();
+                    localStorage.setItem("detectedCountry", newCountry);
+                    if (detectedSpan) detectedSpan.textContent = newCountry;
 
-                if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
-                    const newCurrency = countryToCurrency?.[newCountry];
-                    if (newCurrency) {
-                        selectedCurrency = newCurrency;
-                        localStorage.setItem("selectedCurrency", selectedCurrency);
-                        syncCurrencySelects(selectedCurrency);
+                    if (AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem("manualCurrencyOverride")) {
+                        const newCurrency = countryToCurrency?.[newCountry];
+                        if (newCurrency) {
+                            selectedCurrency = newCurrency;
+                            localStorage.setItem("selectedCurrency", selectedCurrency);
+                            syncCurrencySelects(selectedCurrency);
+                        }
                     }
+                    updateAllPrices();
                 }
-                updateAllPrices();
-            }
-        });
-        countrySelect.classList.remove("tom-hidden");
+            });
+            countrySelect.classList.remove("tom-hidden");
+        } else {
+            countrySelect.classList.remove("tom-hidden");
+        }
     }
 
     // Contact form submission logic (matches backend rules: valid email + message length >= 5)
@@ -4168,9 +4285,6 @@ function syncCurrencySelects(newCurrency) {
     });
 }
 
-document.getElementById("currency-select")?.addEventListener("change", (e) => {
-    handleCurrencyChange(e.target.value);
-});
 
 document.addEventListener("DOMContentLoaded", () => {
     const isDarkMode = localStorage.getItem("themeMode") === "dark";
@@ -4597,7 +4711,7 @@ function __ssUpdateLastChanceOfferUI() {
 
                 const groups = __ssExtractOptionGroups(p);
                 const sel = __ssDefaultSelectedOptions(groups);
-                addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel);
+                addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel, (p.productId || null));
 
                 try { updateBasket(); } catch { }
 
@@ -4998,6 +5112,11 @@ async function setupWalletPaymentRequestButton({
                     addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
                 }
 
+                if (!resolvedOrderId) {
+                    alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                    return;
+                }
+
                 clearPaymentPendingFlag();
                 clearBasketCompletely();
                 try { clearCheckoutDraft(); } catch { }
@@ -5022,6 +5141,11 @@ async function setupWalletPaymentRequestButton({
                         window.latestOrderPublicToken = checkoutToken;
                         window.latestOrderStatusUrl = statusUrl;
                         addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                    }
+
+                    if (!resolvedOrderId) {
+                        alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                        return;
                     }
 
                     clearPaymentPendingFlag();
@@ -5241,20 +5365,6 @@ async function openModal() {
     if (modal) modal.style.display = "flex";
 
     history.pushState({ modalOpen: true }, "", window.location.href);
-
-    // Reset checkout session so paying again in the same tab always creates a fresh PaymentIntent + logs
-    try {
-        window.latestPaymentIntentId = null;
-        window.latestClientSecret = null;
-        window.latestOrderId = null;
-
-        // New checkout id per modal open (server treats each as a distinct attempt)
-        window.latestCheckoutId = `CHK_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
-        window.latestCheckoutPublicToken = null;
-
-        // Clear any cached Stripe elements mount state
-        window.__ssStripeMountId = null;
-    } catch { }
 
     // ✅ Re-wire modal logic to the new server-truth flow (tariffs + PI + mismatch handling)
     await initPaymentModalLogic();
@@ -5568,17 +5678,17 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         const decBtn = document.createElement("button");
         decBtn.className = "Button";
         decBtn.textContent = TEXTS.BASKET.BUTTONS.DECREASE;
-        decBtn.addEventListener("click", () => decreaseQuantity(product.name));
+        decBtn.addEventListener("click", () => decreaseQuantity(product.productId || product.id || product.name));
 
         const quantitySpan = document.createElement("span");
         quantitySpan.className = "WhiteText";
-        quantitySpan.id = `quantity-${product.name}`;
+        quantitySpan.id = `quantity-${__ssGetQtyKey(product.productId || product.id || product.name)}`;
         quantitySpan.textContent = "1";
 
         const incBtn = document.createElement("button");
         incBtn.className = "Button";
         incBtn.textContent = TEXTS.BASKET.BUTTONS.INCREASE;
-        incBtn.addEventListener("click", () => increaseQuantity(product.name));
+        incBtn.addEventListener("click", () => increaseQuantity(product.productId || product.id || product.name));
 
         const addToCartBtn = document.createElement("button");
         addToCartBtn.className = "add-to-cart";
@@ -5604,7 +5714,8 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
                 product.productLink,
                 (__ssABGetProductDescription(product) || product.description),
                 "",
-                __ssDefaultSelectedOptions(__ssExtractOptionGroups(product))
+                __ssDefaultSelectedOptions(__ssExtractOptionGroups(product)),
+                (product.productId || null)
             );
         });
 
@@ -5920,7 +6031,7 @@ function selectProductOption(button, optionValue) {
 
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "") {
     console.log(productName, productPrice, imageUrl, selectedOption);
-    let quantity = parseInt(document.getElementById(`quantity-${productName}`).innerText) || 1;
+    let quantity = parseInt(document.getElementById(`quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`).innerText) || 1;
     addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption);
     navigate("GoToCart");
 
@@ -5986,22 +6097,27 @@ function changeImage(imgSrc) {
 }
 
 
-function increaseQuantity(productName) {
-    if (!cart[productName]) {
-        cart[productName] = 1;
-    }
-    cart[productName] += 1;
-    document.getElementById(`quantity-${productName}`).innerText = cart[productName];
+function __ssGetQtyKey(k) {
+    // Safe DOM id fragment + stable quantity key
+    return String(k || "").trim().replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 80);
 }
 
-function decreaseQuantity(productName) {
-    if (!cart[productName]) {
-        cart[productName] = 1;
-    }
-    if (cart[productName] > 1) {
-        cart[productName] -= 1;
-        document.getElementById(`quantity-${productName}`).innerText = cart[productName];
-    }
+function increaseQuantity(productKey) {
+    const key = __ssGetQtyKey(productKey);
+    window.__ssQtyByKey = window.__ssQtyByKey || {};
+    if (!window.__ssQtyByKey[key]) window.__ssQtyByKey[key] = 1;
+    window.__ssQtyByKey[key] += 1;
+    const el = document.getElementById(`quantity-${key}`);
+    if (el) el.innerText = window.__ssQtyByKey[key];
+}
+
+function decreaseQuantity(productKey) {
+    const key = __ssGetQtyKey(productKey);
+    window.__ssQtyByKey = window.__ssQtyByKey || {};
+    if (!window.__ssQtyByKey[key]) window.__ssQtyByKey[key] = 1;
+    if (window.__ssQtyByKey[key] > 1) window.__ssQtyByKey[key] -= 1;
+    const el = document.getElementById(`quantity-${key}`);
+    if (el) el.innerText = window.__ssQtyByKey[key];
 }
 
 function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {// analytics: add to cart
@@ -6360,9 +6476,24 @@ function getApiBase() {
 }
 
 function readBasket() {
+    // IMPORTANT: Prefer the in-memory basket object (used by the UI) to avoid
+    // false "Basket is empty" during fast interactions where localStorage
+    // hasn't been flushed yet or when other helpers keep basket in memory.
+    try {
+        if (typeof basket === "object" && basket && Object.keys(basket).length) {
+            return JSON.parse(JSON.stringify(basket));
+        }
+    } catch { }
     try {
         const raw = localStorage.getItem("basket");
-        return raw ? JSON.parse(raw) : {};
+        const parsed = raw ? JSON.parse(raw) : {};
+        try {
+            if (typeof basket === "object" && basket && !Object.keys(basket).length && parsed && typeof parsed === "object") {
+                // keep memory in sync if it was empty
+                for (const k of Object.keys(parsed)) basket[k] = parsed[k];
+            }
+        } catch { }
+        return parsed || {};
     } catch {
         return {};
     }
@@ -6389,6 +6520,12 @@ function buildStripeSafeCart(fullCart) {
     });
 }
 
+try {
+    if (typeof window !== 'undefined' && typeof window.__ssBuildStripeSafeCartV2 !== 'function') {
+        window.__ssBuildStripeSafeCartV2 = buildStripeSafeCart;
+    }
+} catch { }
+
 function buildFullCartFromBasket() {
     const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
         try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
@@ -6396,7 +6533,19 @@ function buildFullCartFromBasket() {
 
     const items = Object.values(basketObj || {});
     __ssEnsureContributionProducts();
-    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length) ? __ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "" })) : __ssGetCatalogFlat();
+    // IMPORTANT: cart checkout needs productId. Preserve productId/id when building a flat view.
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
+        ? __ssContributionCache.items.map(x => ({
+            name: x.name,
+            price: x.price,
+            images: x.images || [],
+            productLink: x.productLink || "",
+            productId: x.productId || x.id || "",
+            expectedPurchasePrice: x.expectedPurchasePrice || 0,
+            description: x.description || "",
+            image: x.image || (Array.isArray(x.images) ? (x.images[0] || "") : "")
+        }))
+        : __ssGetCatalogFlat();
 
 
     function __ssRecoGetExcludeIds() {
@@ -6462,6 +6611,15 @@ function buildFullCartFromBasket() {
         .filter((x) => x && x.name && x.quantity > 0);
 }
 
+// Preserve the "full" cart builder (includes productId + reco discount metadata).
+// Later in this file, a legacy duplicate definition may overwrite buildFullCartFromBasket;
+// checkout must continue using the full version.
+try {
+    if (typeof window !== "undefined" && typeof window.__ssBuildFullCartFromBasketV2 !== "function") {
+        window.__ssBuildFullCartFromBasketV2 = buildFullCartFromBasket;
+    }
+} catch { }
+
 // ---- Safety helpers (prevents hard crashes if a merge ever drops a helper) ----
 // Keep these as idempotent window assignments so they work even if a function
 // declaration is missing in some deployed variant.
@@ -6521,7 +6679,13 @@ function __ssGetCartIncentivesConfig() {
     return {
         enabled: true,
         freeShipping: { enabled: false, thresholdEUR: 0, shippingFeeEUR: 0 },
-        tierDiscount: { enabled: true, tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }] },
+        tierDiscount: {
+            enabled: true,
+            // If false, tier discount will NOT apply to items that already have an item-level discount (e.g. reco token).
+            // Threshold unlock still uses the full cart subtotal.
+            applyToDiscountedItems: true,
+            tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }]
+        },
         bundles: { enabled: false, bundles: [] }
     };
 }
@@ -6545,6 +6709,26 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
 
     let subtotal = Number(baseTotalEUR) || 0;
 
+    // Eligible subtotal for tier discount when applyToDiscountedItems is false.
+    // Discounted items are detected via recoDiscountPct/recoDiscountToken and/or original vs paid unit price.
+    let tierEligibleSubtotal = 0;
+    try {
+        const items = Array.isArray(fullCart) ? fullCart : [];
+        for (const it of items) {
+            const qty = Math.max(1, parseInt(it?.quantity ?? 1, 10) || 1);
+            const unit = Number(it?.unitPriceEUR ?? it?.price ?? 0) || 0;
+            const line = unit * qty;
+            if (!Number.isFinite(line) || line <= 0) continue;
+            const recoPct = Number(it?.recoDiscountPct || 0) || 0;
+            const hasTok = !!it?.recoDiscountToken;
+            const u0 = Number(it?.unitPriceOriginalEUR ?? it?.unitPriceOriginalEur ?? NaN);
+            const u1 = Number(it?.unitPriceEUR ?? it?.price ?? NaN);
+            const looksDiscounted = (Number.isFinite(u0) && Number.isFinite(u1) && u0 > u1 + 1e-9);
+            const isDiscountedItem = (recoPct > 0) || hasTok || looksDiscounted;
+            if (!isDiscountedItem) tierEligibleSubtotal += line;
+        }
+    } catch { }
+
     // Optional bundle discount (max one)
     try {
         const bcfg = cfg?.bundles;
@@ -6563,6 +6747,11 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
                 out.bundlePct = best.pct;
                 out.bundleDiscountEUR = round2(subtotal * (best.pct / 100));
                 subtotal = subtotal - out.bundleDiscountEUR;
+
+                // Keep tierEligibleSubtotal in the same "post-bundle" space by applying the same bundle %.
+                if (Number.isFinite(tierEligibleSubtotal) && tierEligibleSubtotal > 0) {
+                    tierEligibleSubtotal = tierEligibleSubtotal * (1 - (best.pct / 100));
+                }
             }
         }
     } catch { }
@@ -6578,7 +6767,12 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
                 if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p);
             }
             out.tierPct = pct;
-            out.tierDiscountEUR = pct > 0 ? round2(subtotal * (pct / 100)) : 0;
+
+            // Threshold unlock uses full post-bundle subtotal (subtotal).
+            // Discount amount may optionally exclude already-discounted items.
+            const applyToDiscounted = (tcfg?.applyToDiscountedItems !== false);
+            const tierBase = applyToDiscounted ? subtotal : Math.max(0, Number(tierEligibleSubtotal) || 0);
+            out.tierDiscountEUR = pct > 0 ? round2(tierBase * (pct / 100)) : 0;
             subtotal = subtotal - out.tierDiscountEUR;
         }
     } catch { }
@@ -6797,10 +6991,10 @@ function _stableCartForSig(stripeCart) {
     return norm;
 }
 
-function _buildPiSig({ currency, country, stripeCart }) {
+function _buildPiSig({ currency, country, stripeCart, expectedTotalCents }) {
     const cur = String(currency || "").toUpperCase();
     const cty = String(country || "").toUpperCase();
-    const payload = { cur, cty, items: _stableCartForSig(stripeCart) };
+    const payload = { cur, cty, amt: (Number(expectedTotalCents || 0) || 0), items: _stableCartForSig(stripeCart) };
     const raw = JSON.stringify(payload);
     return `pi_${_fnv1a32(raw)}`;
 }
@@ -6834,6 +7028,11 @@ function _getCachedPI(sig) {
     if (!createdAt || (Date.now() - createdAt) > ttlMs) return null;
 
     if (!row.clientSecret || !row.paymentIntentId) return null;
+    // Require checkoutId + public token so we can server-finalize if Stripe webhooks are delayed/misconfigured.
+    const cid = row.checkoutId || null;
+    const tok = row.checkoutPublicToken || row.checkoutToken || null;
+    if (!cid || !tok) return null;
+    if (!row.checkoutPublicToken && row.checkoutToken) row.checkoutPublicToken = row.checkoutToken;
     return row;
 }
 
@@ -6859,7 +7058,11 @@ function _invalidatePiCache(sig) {
 
 // If the basket hasn't changed, reuse cached PI response (client secret + ids).
 async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, country, fullCart, stripeCart }) {
-    const sig = _buildPiSig({ currency, country, stripeCart });
+    // IMPORTANT: PI reuse must be invalidated when discounts/thresholds change.
+    await preloadSettingsData();
+    const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
+    const expectedTotalCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
+    const sig = _buildPiSig({ currency, country, stripeCart, expectedTotalCents });
 
     const cached = _getCachedPI(sig);
     if (cached) {
@@ -6875,6 +7078,10 @@ async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, count
     }
 
     const data = await createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart });
+
+    if (data && data.free) {
+        return { ...data, _reused: false, _sig: sig };
+    }
 
     try {
         _putCachedPI(sig, {
@@ -6894,15 +7101,62 @@ async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, count
 
 
 async function initStripePaymentUI(selectedCurrency) {
+    // Canonical basket hydration (prevents false 'Basket is empty')
+    const __ssBasketAny = (() => {
+        try {
+            if (typeof readBasket === 'function') {
+                const b = readBasket() || {};
+                if (b && typeof b === 'object') return b;
+            }
+        } catch { }
+        try {
+            const raw = localStorage.getItem('basket');
+            return raw ? (JSON.parse(raw) || {}) : {};
+        } catch {
+            return {};
+        }
+    })();
+    try { window.basket = __ssBasketAny; } catch { }
+    try { basket = __ssBasketAny; } catch { }
+
     // Ensure catalog data is loaded before rehydrating basket prices
     try {
         if (typeof initProducts === "function") await initProducts();
     } catch { }
 
-    const fullCart = buildFullCartFromBasket();
-    const stripeCart = buildStripeSafeCart(fullCart);
+    // Canonical basket hydrate: UI and checkout must agree
+    const __b = (typeof readBasket === "function") ? (readBasket() || {}) : (window.basket || {});
+    try { window.basket = __b; } catch { }
+    try { basket = __b; } catch { }
 
-    if (!stripeCart.length) throw new Error("Basket is empty.");
+    // IMPORTANT: use 'let' so fallbacks can rebuild carts safely
+    let fullCart = buildFullCartFromBasket();
+    let stripeCart = buildStripeSafeCart(fullCart);
+
+    if (!stripeCart.length) {
+        // Fallback: build from canonical basket directly.
+        // Do NOT require productId/token for an item to be considered in-cart.
+        const normSel = (typeof __ssNormalizeSelectedOptions === 'function')
+            ? __ssNormalizeSelectedOptions
+            : (arr) => Array.isArray(arr) ? arr : [];
+
+        const items = Object.values(__ssBasketAny || {});
+        const fc = items.map((it) => ({
+            name: String(it?.name || it?.title || ''),
+            quantity: Number(it?.quantity ?? it?.qty ?? 1) || 1,
+            productId: String(it?.productId || it?.pid || it?.id || ''),
+            unitPriceEUR: Number(it?.unitPriceEUR ?? it?.price ?? 0),
+            price: Number(it?.unitPriceEUR ?? it?.price ?? 0),
+            productLink: String(it?.productLink || ''),
+            selectedOption: String(it?.selectedOption || ''),
+            selectedOptions: normSel(it?.selectedOptions || []),
+            recoDiscountToken: String(it?.recoDiscountToken || it?.discountToken || '')
+        }));
+
+        fullCart = fc;
+        stripeCart = buildStripeSafeCart(fc);
+    }
+    if (!stripeCart.length) throw new Error('Basket is empty.');
 
 
 
@@ -6952,6 +7206,35 @@ async function initStripePaymentUI(selectedCurrency) {
     });
 
     const { clientSecret, paymentIntentId, amountCents, currency, checkoutId, checkoutPublicToken } = data;
+
+    // 0-value carts: finalize immediately without Stripe UI
+    if (data && data.free) {
+        try {
+            const finRes = await fetch(`${API_BASE}/finalize-order`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    free: true,
+                    draftId: data.draftId || data.checkoutId || null,
+                    token: data.checkoutPublicToken || data.token || checkoutPublicToken || null
+                })
+            });
+            const fin = await finRes.json().catch(() => ({}));
+            if (!finRes.ok || !fin?.ok) {
+                throw new Error(fin?.error || fin?.message || "Failed to finalize free order");
+            }
+            try { clearBasketStorage("free_checkout"); } catch { }
+            try { closeModal({ reason: "free_checkout" }); } catch { }
+            try { showPaymentSuccessOverlay(`Order confirmed (${fin.orderId || "FREE"}).`); } catch { }
+            // Stop further Stripe mounting
+            return;
+        } catch (e) {
+            console.error("[free-checkout] finalize failed:", e);
+            throw e;
+        }
+    }
+
 
 
 
@@ -7131,6 +7414,87 @@ function attachConfirmHandlerOnce() {
             const orderId = window.latestOrderId || null;
             const paymentIntentId = window.latestPaymentIntentId || null;
 
+            // Guard: if the PaymentIntent is already processing/succeeded, do NOT call confirmPayment again.
+            // This prevents Stripe "payment_intent_unexpected_state" when users retry quickly or double-submit.
+            if (clientSecret && window.stripeInstance?.retrievePaymentIntent) {
+                try {
+                    const piRes = await window.stripeInstance.retrievePaymentIntent(clientSecret);
+                    const pi = piRes?.paymentIntent;
+                    if (pi?.status === "succeeded") {
+                        const checkoutToken = window.latestCheckoutPublicToken || null;
+                        const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+
+                        if (resolvedOrderId && checkoutToken) {
+                            const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                            window.latestOrderId = resolvedOrderId;
+                            window.latestOrderPublicToken = checkoutToken;
+                            window.latestOrderStatusUrl = statusUrl;
+                            addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                        }
+
+                        if (!resolvedOrderId) {
+                            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                            return;
+                        }
+
+                        clearPaymentPendingFlag();
+                        clearBasketCompletely();
+                        try { clearCheckoutDraft(); } catch { }
+                        setPaymentSuccessFlag({ reloadOnOk: true });
+                        window.location.replace(window.location.origin);
+                        return;
+                    }
+
+                    if (pi?.status === "processing") {
+                        setPaymentPendingFlag({
+                            paymentIntentId: pi.id,
+                            orderId: orderId || null,
+                            clientSecret,
+                            checkoutId: window.latestCheckoutId || null,
+                            checkoutToken: window.latestCheckoutPublicToken || null
+                        });
+
+                        const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pi.id });
+                        if (status === "succeeded") {
+                            const checkoutToken = window.latestCheckoutPublicToken || null;
+                            const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+                            if (resolvedOrderId && checkoutToken) {
+                                const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                                window.latestOrderId = resolvedOrderId;
+                                window.latestOrderPublicToken = checkoutToken;
+                                window.latestOrderStatusUrl = statusUrl;
+                                addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                            }
+                            if (!resolvedOrderId) {
+                                alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                                return;
+                            }
+
+                            clearPaymentPendingFlag();
+                            clearBasketCompletely();
+                            try { clearCheckoutDraft(); } catch { }
+                            setPaymentSuccessFlag({ reloadOnOk: true });
+                            window.location.replace(window.location.origin);
+                            return;
+                        }
+
+                        if (status === "requires_payment_method" || status === "canceled") {
+                            clearPaymentPendingFlag();
+                            alert("Payment did not complete. Your cart is still saved—please try again.");
+                            return;
+                        }
+                        alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+                        return;
+                    }
+
+                    if (pi?.status === "canceled") {
+                        clearPaymentPendingFlag();
+                        alert("This payment attempt was canceled. Please try again.");
+                        return;
+                    }
+                } catch { }
+            }
+
             // CRITICAL FIX: set pending BEFORE confirmPayment so redirects are safe
             setPaymentPendingFlag({ paymentIntentId, orderId, clientSecret, checkoutId: window.latestCheckoutId || null, checkoutToken: window.latestCheckoutPublicToken || null });
 
@@ -7165,6 +7529,11 @@ function attachConfirmHandlerOnce() {
                     window.latestOrderPublicToken = checkoutToken;
                     window.latestOrderStatusUrl = statusUrl;
                     addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
+                }
+
+                if (!resolvedOrderId) {
+                    alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                    return;
                 }
 
                 clearPaymentPendingFlag();
@@ -7202,6 +7571,11 @@ function attachConfirmHandlerOnce() {
                         addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
                     }
 
+                    if (!resolvedOrderId) {
+                        alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                        return;
+                    }
+
                     clearPaymentPendingFlag();
                     clearBasketCompletely();
                     try { clearCheckoutDraft(); } catch { }
@@ -7223,6 +7597,29 @@ function attachConfirmHandlerOnce() {
             // If Stripe redirected, this code path usually won’t run.
             // Pending flag is already set; the return handler will resolve it.
         } catch (e) {
+            // Stripe may occasionally respond with payment_intent_unexpected_state even when the PI ended up succeeded.
+            // In that case, treat it as success and resolve the orderId from the PI.
+            try {
+                const pi = e?.payment_intent || e?.paymentIntent || null;
+                if (pi && pi.id && pi.status === "succeeded" && String(e?.code || "").includes("payment_intent_")) {
+                    const checkoutToken = window.latestCheckoutPublicToken || null;
+                    const resolvedOrderId = await resolveOrderIdByPaymentIntent({
+                        paymentIntentId: pi.id,
+                        clientSecret
+                    });
+                    if (resolvedOrderId && checkoutToken) {
+                        const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                        window.latestOrderId = resolvedOrderId;
+                        window.latestOrderPublicToken = checkoutToken;
+                        window.latestOrderStatusUrl = statusUrl;
+                        addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                        clearCart();
+                        closeModal();
+                        window.location.href = statusUrl;
+                        return;
+                    }
+                }
+            } catch { /* fall through */ }
             console.error("confirmPayment failed:", e);
             alert(e?.message || "Payment could not be completed.");
         } finally {
@@ -7771,7 +8168,8 @@ function GoToProductPage(productName, productPrice, productDescription) {
     viewer.innerHTML = "";
     try { removeSortContainer(); } catch { }
 
-    const product = __ssGetCatalogFlat().find(p => p?.name === productName);
+    const __pidArg = String(arguments[4] || "").trim();
+    const product = (__pidArg ? __ssGetCatalogFlat().find(p => String(p?.productId || p?.id || "").trim() === __pidArg) : null) || __ssGetCatalogFlat().find(p => p?.name === productName);
     // Robust current productId tracking (avoid accidental [object Set] etc.)
     try {
         let __pid = __ssIdNorm(arguments[4] || product?.productId || '');
@@ -7838,6 +8236,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     Product_Viewer.className = "Product_Viewer";
 
     window.currentProductImages = Array.isArray(validImages) ? validImages : [];
+    window.__ssCurrentProductId = String(product.productId || product.id || '').trim() || null;
+
     window.currentIndex = 0;
 
     if (typeof cart === "object" && cart) cart[productName] = 1;
@@ -8090,7 +8490,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     const qtySpan = document.createElement("span");
     qtySpan.className = "WhiteText";
-    qtySpan.id = `quantity-${productName}`;
+    qtySpan.id = `quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`;
     qtySpan.textContent = "1";
 
     const inc = document.createElement("button");
@@ -8127,7 +8527,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
             product.productLink,
             __displayDesc,
             legacy,
-            sel
+            sel,
+            (window.__ssCurrentProductId || product.productId || null)
         );
     });
 
@@ -8151,7 +8552,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
             product.productLink,
             __displayDesc,
             legacy,
-            sel
+            sel,
+            (window.__ssCurrentProductId || product.productId || null)
         );
     });
 
@@ -9016,19 +9418,33 @@ function __ssRecoMaybeAttributeAddToCart(targetProductId) {
     } catch { return null; }
 }
 /* Override: buyNow forwards selectedOptions */
-function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
-    const qtyEl = document.getElementById(`quantity-${productName}`);
+function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
+    const qtyEl = document.getElementById(`quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`);
     const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
     if (typeof cart === "object" && cart) cart[productName] = quantity;
-    addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption, selectedOptions);
+
+    // Ensure we always pass a productId into addToCart so checkout carries productId + reco token.
+    let pidHint = String(productIdHint || "").trim();
+    if (!pidHint) pidHint = String(window.__ssCurrentProductId || "").trim();
+    if (!pidHint) {
+        try {
+            const p = findProductByNameParam(productName) || null;
+            pidHint = String(p?.productId || "").trim();
+        } catch { }
+    }
+
+    addToCart(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption, selectedOptions, pidHint || null);
     try { navigate("GoToCart"); } catch { try { GoToCart(); } catch { } }
 }
 
 /* Override: addToCart stores selectedOptions and uses option-combo key */
 
-function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null) {
+function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
+    // Prefer explicit productId passed by callers (PDP/recs) to avoid name/link matching failures.
+    let productIdForCart = String(productIdHint || "").trim();
+
     let pRef = findProductByNameParam(productName) || {};
-    let productIdForCart = String(pRef.productId || "").trim();
+    if (!productIdForCart) productIdForCart = String(pRef.productId || "").trim();
 
     if (!productIdForCart) {
         const canon = canonicalizeProductLink(productLink || "");
@@ -9175,48 +9591,33 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     }
 }
 
-/* Override: checkout cart builders include selectedOptions */
+/* Override: checkout cart builders include selectedOptions + reco token */
 function buildStripeSafeCart(fullCart) {
+    try {
+        if (typeof window !== 'undefined' && typeof window.__ssBuildStripeSafeCartV2 === 'function') {
+            return window.__ssBuildStripeSafeCartV2(fullCart);
+        }
+    } catch { }
     return (fullCart || []).map((i) => ({
         name: i.name,
         quantity: i.quantity,
-        productId: i.productId || "",
+        productId: i.productId || '',
         price: Number(i.unitPriceEUR || i.price || 0),
-        selectedOption: i.selectedOption || "",
-        selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || [])
+        selectedOption: i.selectedOption || '',
+        selectedOptions: __ssNormalizeSelectedOptions(i.selectedOptions || []),
+        recoDiscountToken: i.recoDiscountToken || ''
     }));
 }
 
 function buildFullCartFromBasket() {
-    const basketObj = (typeof readBasket === "function") ? readBasket() : (() => {
-        try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; }
-    })();
-
-    const items = Object.values(basketObj || {});
-    return items
-        .map((item) => {
-            const unitEUR = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
-            const expected = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
-            const qty = Math.max(1, parseInt(item?.quantity ?? 1, 10) || 1);
-
-            const out = {
-                name: String(item?.name || "").slice(0, 120),
-                quantity: qty,
-                unitPriceEUR: Number(unitEUR.toFixed(2)),
-                price: Number(unitEUR.toFixed(2)),
-                expectedPurchasePrice: Number((expected || unitEUR).toFixed(2)),
-                productLink: String(item?.productLink || "N/A").slice(0, 800),
-                image: String(item?.image || "").slice(0, 800),
-                description: String(item?.description || "").slice(0, 2000)
-            };
-
-            if (item?.selectedOption) out.selectedOption = String(item.selectedOption).slice(0, 120);
-            const sel = __ssNormalizeSelectedOptions(item?.selectedOptions || []);
-            if (sel.length) out.selectedOptions = sel;
-
-            return out;
-        })
-        .filter((i) => i.name && i.quantity > 0 && Number(i.price) > 0);
+    // This is a legacy duplicate that used to strip productId + reco discount metadata.
+    // Delegate to the preserved full builder so checkout always has productId + recoDiscountToken.
+    try {
+        if (typeof window !== "undefined" && typeof window.__ssBuildFullCartFromBasketV2 === "function") {
+            return window.__ssBuildFullCartFromBasketV2();
+        }
+    } catch { }
+    return [];
 }
 
 function buildStripeOrderSummary(stripeCart) {
@@ -9414,7 +9815,25 @@ function __ssEnsureContributionProducts() {
         fetch(`${API_BASE}/products/contribution?limit=40`, { credentials: "include" })
             .then(r => r.json().catch(() => null))
             .then(d => {
-                if (d && d.ok && Array.isArray(d.items)) __ssContributionCache.items = d.items;
+                // Only accept contribution feed if it has enough renderable items.
+                // Otherwise we'd replace the local catalog pool and cart add-ons would vanish.
+                if (!(d && d.ok && Array.isArray(d.items))) return;
+
+                const items = d.items;
+                let okCount = 0;
+                for (const x of items) {
+                    const name = String(x?.name || "").trim();
+                    const price = Number(x?.price || 0) || 0;
+                    const img = String(x?.image || x?.imageUrl || (Array.isArray(x?.images) ? x.images[0] : "") || "").trim();
+                    if (name && price > 0 && img) okCount++;
+                    if (okCount >= 8) break;
+                }
+
+                if (okCount >= 8) {
+                    __ssContributionCache.items = items;
+                    // Invalidate pool cache so it can rebuild from contribution feed.
+                    try { __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
+                }
             })
             .catch(() => { });
     } catch { }
@@ -9617,7 +10036,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
             ? (() => {
                 const needEUR = Math.max(0, (nextTier.min - base));
                 // Amount is rendered as a data-eur fragment so currency+tariff conversion stays correct.
-                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}">${needEUR.toFixed(2)}€</span> to unlock ${nextTier.pct}% OFF`;
+                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${nextTier.min.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> to unlock ${nextTier.pct}% OFF`;
             })()
             : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
 
@@ -9653,7 +10072,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
         const shipText = shipEnabled
             ? (base >= shipThr ? "Free shipping unlocked" : (() => {
                 const needEUR = Math.max(0, (shipThr - base));
-                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`;
+                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`;
             })())
             : "";
 
@@ -9793,7 +10212,7 @@ function __ssBindCartIncentives(rootEl) {
             }
         } catch { }
 
-        addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel);
+        addToCart(p.name, Number(p.price || 0) || 0, p.image || "", p.expectedPurchasePrice || 0, p.productLink || "", p.description || "", "", sel, (p.productId || null));
 
         try { updateBasket(); } catch { }
     }, { passive: false });
@@ -10106,7 +10525,6 @@ function updateBasket() {
         }
     }
 }
-
 
 
 
