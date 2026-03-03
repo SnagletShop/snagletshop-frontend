@@ -1723,15 +1723,6 @@ async function preloadSettingsData() {
                 window.preloadedData.countries =
                     cached.countries || tariffsObjectToCountriesArray(tariffMultipliers);
                 window.preloadedData.storefrontConfig = cached.storefrontConfig || cached.storefront || null;
-                // Cache safety: if storefrontConfig is missing critical tier flag, ignore cached storefrontConfig
-                try {
-                    const sc = window.preloadedData.storefrontConfig;
-                    const flag = sc?.cartIncentives?.tierDiscount?.applyToDiscountedItems;
-                    if (typeof flag !== "boolean") {
-                        window.preloadedData.storefrontConfig = null;
-                    }
-                } catch { }
-
 
                 handlesTariffsDropdown(window.preloadedData.countries || []);
                 console.log("⚡ Using cached settings data.");
@@ -6189,9 +6180,27 @@ function GoToCart() {
 
     viewer.appendChild(Basket_Viewer); // Append the container to the viewer
 
+    // Reset per-open auto-scroll flag (mobile UX)
+    try { window.__ssBasketAutoScrolledForOpen = false; } catch { }
+
     // Delay updating the basket to ensure the UI is fully created
     setTimeout(() => {
         updateBasket();
+
+        // On small screens, gently scroll so the user can see the checkout area.
+        // Important: do this only once per basket open, and never fight user scrolling.
+        try {
+            const isMobile = window.matchMedia && window.matchMedia('(max-width: 520px)').matches;
+            if (isMobile && !window.__ssBasketAutoScrolledForOpen) {
+                window.__ssBasketAutoScrolledForOpen = true;
+                setTimeout(() => {
+                    try {
+                        const payBtn = document.querySelector('#Basket_Viewer .PayButton');
+                        if (payBtn) payBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    } catch { }
+                }, 220);
+            }
+        } catch { }
     }, 100);
 
     removeSortContainer();
@@ -6541,9 +6550,9 @@ function buildFullCartFromBasket() {
     })();
 
     const items = Object.values(basketObj || {});
-    try { __ssEnsureContributionProducts(); } catch { }
+    __ssEnsureContributionProducts();
     // IMPORTANT: cart checkout needs productId. Preserve productId/id when building a flat view.
-    const flat = ((typeof __ssContributionCache !== "undefined") && __ssContributionCache && Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
+    const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
         ? __ssContributionCache.items.map(x => ({
             name: x.name,
             price: x.price,
@@ -6692,7 +6701,7 @@ function __ssGetCartIncentivesConfig() {
             enabled: true,
             // If false, tier discount will NOT apply to items that already have an item-level discount (e.g. reco token).
             // Threshold unlock still uses the full cart subtotal.
-            applyToDiscountedItems: false,
+            applyToDiscountedItems: true,
             tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }]
         },
         bundles: { enabled: false, bundles: [] }
@@ -7982,7 +7991,7 @@ function __ssEnsureOptionChipStyles() {
 .BasketSelectedOption{display:none !important;}
 
 /* Basket layout: remove fixed aspect ratio so extra lines (chips) don't overlap */
-.Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;height:auto !important;}
+.Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;}
 .Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
 .Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
 
@@ -10297,6 +10306,15 @@ function updateBasket() {
     let __ssInc = null;
     let __fullCart = [];
 
+    // Preserve scroll position across re-renders.
+    // On mobile, async re-renders (smart-reco / quote refresh) can otherwise snap the user back to top.
+    let __ssPrevWinY = 0;
+    let __ssPrevContainerY = 0;
+    let __ssHasContainerScroll = false;
+    try {
+        __ssPrevWinY = (typeof window.scrollY === 'number') ? window.scrollY : (document.documentElement.scrollTop || 0);
+    } catch { }
+
 
     // Guard against re-entrant / repeated basket renders that can freeze the UI
     if (window.__ssUpdatingBasket) return;
@@ -10312,6 +10330,13 @@ function updateBasket() {
         if (!basketContainer) {
             return;
         }
+
+        try {
+            __ssPrevContainerY = Number(basketContainer.scrollTop || 0) || 0;
+            const st = window.getComputedStyle ? getComputedStyle(basketContainer) : null;
+            const oy = String(st?.overflowY || '').toLowerCase();
+            __ssHasContainerScroll = (oy === 'auto' || oy === 'scroll');
+        } catch { }
 
         basketContainer.innerHTML = "";
 
@@ -10340,20 +10365,6 @@ function updateBasket() {
         let __ssDiscountEUR = 0;
         try {
             __fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
-            // Fallback: if builder returns empty (or fails to include prices), derive a minimal cart from basket storage
-            try {
-                if (!Array.isArray(__fullCart) || __fullCart.length === 0) {
-                    const b = (typeof readBasketFromStorageSafe === "function") ? readBasketFromStorageSafe() : (() => { try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; } })();
-                    __fullCart = Object.values(b || {}).map(it => ({
-                        productId: String(it?.productId || it?.pid || "").trim(),
-                        quantity: Math.max(1, parseInt(it?.quantity ?? it?.quantity ?? 1, 10) || 1),
-                        unitPriceEUR: Number(parseFloat(it?.price ?? it?.unitPriceEUR ?? 0) || 0),
-                        recoDiscountToken: String(it?.recoDiscountToken || ""),
-                        recoDiscountPct: Number(it?.recoDiscountPct || 0) || 0,
-                        unitPriceOriginalEUR: (it?.unitPriceOriginalEUR != null) ? Number(it.unitPriceOriginalEUR) : undefined
-                    })).filter(x => x.quantity > 0 && Number.isFinite(x.unitPriceEUR) && x.unitPriceEUR > 0);
-                }
-            } catch { }
             __ssInc = __ssComputeCartIncentivesClient(totalSum, __fullCart);
             __ssTotalAfter = round2(Number(__ssInc?.subtotalAfterDiscountsEUR ?? totalSum) || totalSum);
             __ssDiscountEUR = round2((Number(__ssInc?.tierDiscountEUR || 0) || 0) + (Number(__ssInc?.bundleDiscountEUR || 0) || 0));
@@ -10515,6 +10526,21 @@ function updateBasket() {
 
         receiptDiv.innerHTML = receiptContent;
         basketContainer.appendChild(receiptDiv);
+
+        // Restore scroll position after DOM rebuild.
+        // Use rAF to ensure layout is settled before restoring.
+        try {
+            const restore = () => {
+                try {
+                    if (__ssHasContainerScroll) {
+                        basketContainer.scrollTop = __ssPrevContainerY;
+                    } else if (__ssPrevWinY > 0) {
+                        window.scrollTo(0, __ssPrevWinY);
+                    }
+                } catch { }
+            };
+            requestAnimationFrame(() => requestAnimationFrame(restore));
+        } catch { }
 
         try {
             window.__ssSuppressPriceObserver = true;
