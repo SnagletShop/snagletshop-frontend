@@ -6180,9 +6180,27 @@ function GoToCart() {
 
     viewer.appendChild(Basket_Viewer); // Append the container to the viewer
 
+    // Reset per-open auto-scroll flag (mobile UX)
+    try { window.__ssBasketAutoScrolledForOpen = false; } catch { }
+
     // Delay updating the basket to ensure the UI is fully created
     setTimeout(() => {
         updateBasket();
+
+        // On small screens, gently scroll so the user can see the checkout area.
+        // Important: do this only once per basket open, and never fight user scrolling.
+        try {
+            const isMobile = window.matchMedia && window.matchMedia('(max-width: 520px)').matches;
+            if (isMobile && !window.__ssBasketAutoScrolledForOpen) {
+                window.__ssBasketAutoScrolledForOpen = true;
+                setTimeout(() => {
+                    try {
+                        const payBtn = document.querySelector('#Basket_Viewer .PayButton');
+                        if (payBtn) payBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    } catch { }
+                }, 220);
+            }
+        } catch { }
     }, 100);
 
     removeSortContainer();
@@ -10288,6 +10306,15 @@ function updateBasket() {
     let __ssInc = null;
     let __fullCart = [];
 
+    // Preserve scroll position across re-renders.
+    // On mobile, async re-renders (smart-reco / quote refresh) can otherwise snap the user back to top.
+    let __ssPrevWinY = 0;
+    let __ssPrevContainerY = 0;
+    let __ssHasContainerScroll = false;
+    try {
+        __ssPrevWinY = (typeof window.scrollY === 'number') ? window.scrollY : (document.documentElement.scrollTop || 0);
+    } catch { }
+
 
     // Guard against re-entrant / repeated basket renders that can freeze the UI
     if (window.__ssUpdatingBasket) return;
@@ -10303,6 +10330,13 @@ function updateBasket() {
         if (!basketContainer) {
             return;
         }
+
+        try {
+            __ssPrevContainerY = Number(basketContainer.scrollTop || 0) || 0;
+            const st = window.getComputedStyle ? getComputedStyle(basketContainer) : null;
+            const oy = String(st?.overflowY || '').toLowerCase();
+            __ssHasContainerScroll = (oy === 'auto' || oy === 'scroll');
+        } catch { }
 
         basketContainer.innerHTML = "";
 
@@ -10492,6 +10526,21 @@ function updateBasket() {
 
         receiptDiv.innerHTML = receiptContent;
         basketContainer.appendChild(receiptDiv);
+
+        // Restore scroll position after DOM rebuild.
+        // Use rAF to ensure layout is settled before restoring.
+        try {
+            const restore = () => {
+                try {
+                    if (__ssHasContainerScroll) {
+                        basketContainer.scrollTop = __ssPrevContainerY;
+                    } else if (__ssPrevWinY > 0) {
+                        window.scrollTo(0, __ssPrevWinY);
+                    }
+                } catch { }
+            };
+            requestAnimationFrame(() => requestAnimationFrame(restore));
+        } catch { }
 
         try {
             window.__ssSuppressPriceObserver = true;
