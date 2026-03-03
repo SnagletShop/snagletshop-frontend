@@ -3200,8 +3200,7 @@
                 max-width: 100%;
                 padding-top: 3vw;
                 row-gap: 0vw;
-                max-height: 15vw;
-                height: 15vw;
+          
             }
 
             .WhiteText {
@@ -3830,6 +3829,14 @@
                 min-height: 500px;
                 height: fit-content;
                 overflow-y: auto;
+            }
+
+            .RecoStrip {
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scroll-behavior: smooth;
+                /* makes programmatic snap smooth too */
+                -webkit-overflow-scrolling: touch;
             }
 
             .settings-section input {
