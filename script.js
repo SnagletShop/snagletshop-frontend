@@ -1725,8 +1725,16 @@ async function preloadSettingsData() {
                 window.preloadedData.storefrontConfig = cached.storefrontConfig || cached.storefront || null;
 
                 handlesTariffsDropdown(window.preloadedData.countries || []);
-                console.log("⚡ Using cached settings data.");
-                return;
+
+                // If cached storefrontConfig is missing critical fields, ignore cache (prevents wrong tier logic defaults).
+                const _sc = window.preloadedData.storefrontConfig;
+                const _apply = _sc?.cartIncentives?.tierDiscount?.applyToDiscountedItems;
+                if (typeof _apply !== "boolean") {
+                    console.warn("⚠️ Cached storefrontConfig missing tier flag; refetching fresh config.");
+                } else {
+                    console.log("⚡ Using cached settings data.");
+                    return;
+                }
             }
 
             // Fetch fresh settings (NO fetchTariffs() here -> breaks recursion)
@@ -1769,7 +1777,7 @@ async function preloadSettingsData() {
                 rates: exchangeRates,
                 ratesFetchedAt: Number(window.exchangeRatesFetchedAt || 0) || 0,
                 countries: countriesList,
-                storefrontConfig: storefrontCfg || null,
+                storefrontConfig: (storefrontCfg && typeof storefrontCfg === "object") ? storefrontCfg : null,
                 timestamp: Date.now()
             }));
 
@@ -6701,7 +6709,7 @@ function __ssGetCartIncentivesConfig() {
             enabled: true,
             // If false, tier discount will NOT apply to items that already have an item-level discount (e.g. reco token).
             // Threshold unlock still uses the full cart subtotal.
-            applyToDiscountedItems: true,
+            applyToDiscountedItems: false,
             tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }]
         },
         bundles: { enabled: false, bundles: [] }
