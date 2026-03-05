@@ -6708,6 +6708,8 @@ function buildFullCartFromBasket() {
                 quantity: qty,
                 unitPriceEUR: unitEUR,
                 recoDiscountToken: String(item?.recoDiscountToken || "").slice(0, 500),
+                recoDiscountPct: Number(item?.recoDiscountPct || 0) || 0,
+                unitPriceOriginalEUR: (item?.unitPriceOriginalEUR != null ? Number(item.unitPriceOriginalEUR) : null),
                 price: unitEUR,
                 expectedPurchasePrice: expected,
                 productLink: String(item?.productLink || prod?.productLink || "N/A").slice(0, 800),
@@ -6899,7 +6901,7 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
         let subtotal = Number(baseTotalEUR) || 0;
 
         // Eligible subtotal for tier discount when applyToDiscountedItems is false.
-        // Discounted items are detected via recoDiscountPct/recoDiscountToken and/or original vs paid unit price.
+        // Discounted items are detected via recoDiscountPct or recoDiscountToken and/or original vs paid unit price.
 
         // Robust numeric parser for prices that may come as strings like "€4.99" or "4,99"
         function __ssParsePriceEUR(v) {
@@ -6940,7 +6942,7 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
                 const u0 = __ssParsePriceEUR(it?.unitPriceOriginalEUR ?? it?.unitPriceOriginalEur ?? it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? NaN);
                 const u1 = __ssParsePriceEUR(it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? NaN);
                 const looksDiscounted = (Number.isFinite(u0) && Number.isFinite(u1) && u0 > u1 + 1e-9);
-                const isDiscountedItem = (recoPct > 0) || looksDiscounted; // token alone should not exclude
+                const isDiscountedItem = (recoPct > 0) || hasTok || looksDiscounted;
                 try {
                     const __pid = String(it?.productId || it?.pid || it?.id || '').trim();
                     if (__pid) __tierDiscMap[__pid] = (__tierDiscMap[__pid] || false) || !!isDiscountedItem;
