@@ -182,6 +182,7 @@ function __ssGetExperiments() {
     const out = {};
     for (const k of keys) out[k] = __ssAbChooseBucket(k);
     __ss_ab_cache = out;
+    if (__dbg) { try { console.log('out', out); console.groupEnd(); } catch { } }
     return out;
 }
 
@@ -731,6 +732,49 @@ document.addEventListener("DOMContentLoaded", () => { __snagletInitTurnstileOnce
 
 let productsDatabase = {};
 
+// --- Image URL normalization (GitHub raw refs -> stable CDN) ---
+// Some catalogs contain image URLs like:
+//   https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/main/<path>
+// which can intermittently fail on some networks with ERR_SSL_PROTOCOL_ERROR.
+// Normalize to a stable URL and prefer jsDelivr CDN.
+function __ssFixImageUrl(u) {
+    try {
+        let s = String(u || "").trim();
+        if (!s) return s;
+        // raw.github.../refs/heads/<branch>/...  -> raw.github.../<branch>/...
+        if (s.includes("raw.githubusercontent.com/") && s.includes("/refs/heads/")) {
+            s = s.replace("/refs/heads/", "/");
+        }
+        // Prefer jsDelivr for SnagletShop image repo.
+        // raw: https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/<encodedPath>
+        const m = s.match(/^https:\/\/raw\.githubusercontent\.com\/SnagletShop\/snagletshop-frontend\/main\/(.+)$/);
+        if (m && m[1]) {
+            const decodedPath = decodeURIComponent(m[1]);
+            return `https://cdn.jsdelivr.net/gh/SnagletShop/snagletshop-frontend@main/${decodedPath}`;
+        }
+        return s;
+    } catch {
+        return String(u || "");
+    }
+}
+
+function __ssNormalizeCatalogImages(catalogObj) {
+    try {
+        if (!catalogObj || typeof catalogObj !== "object") return catalogObj;
+        for (const cat of Object.keys(catalogObj)) {
+            const list = catalogObj[cat];
+            if (!Array.isArray(list)) continue;
+            for (const p of list) {
+                if (!p || typeof p !== "object") continue;
+                if (p.image) p.image = __ssFixImageUrl(p.image);
+                if (Array.isArray(p.images)) p.images = p.images.map(__ssFixImageUrl);
+                if (Array.isArray(p.imagesB)) p.imagesB = p.imagesB.map(__ssFixImageUrl);
+            }
+        }
+    } catch { }
+    return catalogObj;
+}
+
 // Seed from legacy window.products (if present)
 if (typeof window !== "undefined" && window.products && typeof window.products === "object" && Object.keys(window.products).length > 0) {
     productsDatabase = window.products;
@@ -791,6 +835,7 @@ function initProducts() {
                 }
 
                 productsDatabase = resolvedCatalog;
+                __ssNormalizeCatalogImages(productsDatabase);
                 window.products = productsDatabase;
 
                 const cfg = productsPayload.config || {};
@@ -822,6 +867,7 @@ function initProducts() {
             }
 
             productsDatabase = deduped;
+            __ssNormalizeCatalogImages(productsDatabase);
             window.products = productsDatabase;
 
             if (typeof cfg.applyTariff === "boolean") {
@@ -4661,8 +4707,21 @@ function __ssUpdateLastChanceOfferUI() {
     if (!el) return;
 
     try {
-        const fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
-        const base = (fullCart || []).reduce((s, i) => s + (Number(i?.unitPriceEUR ?? i?.price ?? 0) || 0) * (Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1)), 0);
+        let fullCart = __ssGetFullCartPreferred();
+        // Fallback: if the legacy duplicate buildFullCartFromBasket() returns [], build from the in-memory basket.
+        // This prevents tier math from seeing an empty cart even though the UI basket has items.
+        try {
+            if ((!Array.isArray(fullCart) || fullCart.length === 0) && typeof basket === "object" && basket && Object.keys(basket).length) {
+                fullCart = Object.values(basket).map(it => ({
+                    ...it,
+                    productId: it?.productId || it?.id || it?.pid || "",
+                    quantity: it?.quantity ?? it?.qty ?? it?.count ?? 1,
+                    unitPriceEUR: it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? 0,
+                    originalUnitPriceEUR: it?.originalUnitPriceEUR ?? it?.originalPriceEUR ?? it?.compareAtPriceEUR ?? it?.originalPrice ?? 0
+                }));
+            }
+        } catch { }
+        const base = (fullCart || []).reduce((s, i) => s + (__ssParsePriceEUR(i?.unitPriceEUR ?? i?.price ?? 0)) * (Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1)), 0);
         const inc = __ssComputeCartIncentivesClient(base, fullCart);
 
         const cfg = __ssGetCartIncentivesConfig();
@@ -6629,6 +6688,49 @@ function buildFullCartFromBasket() {
         .filter((x) => x && x.name && x.quantity > 0);
 }
 
+function __ssBuildFullCartFromBasketObject(basketObj) {
+    try {
+        const items = Object.values(basketObj || {});
+        return items.map(it => {
+            const out = { ...it };
+            out.productId = it?.productId || it?.id || it?.pid || "";
+            out.quantity = it?.quantity ?? it?.qty ?? 1;
+            // best-effort price fields used by incentives math
+            if (out.unitPriceEUR == null) out.unitPriceEUR = it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? 0;
+            if (out.originalUnitPriceEUR == null) out.originalUnitPriceEUR = it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? it?.originalPriceEUR ?? it?.originalPriceEur ?? 0;
+            return out;
+        });
+    } catch {
+        return [];
+    }
+}
+
+function __ssGetFullCartPreferred() {
+    let fc = [];
+    try { fc = __ssGetFullCartPreferred(); } catch { fc = []; }
+    if (Array.isArray(fc) && fc.length) return fc;
+
+    // Fallback: use in-memory basket (updateBasket uses this) if localStorage is stale.
+    try {
+        if (typeof basket === "object" && basket && Object.keys(basket).length) {
+            const b = basket;
+            const out = __ssBuildFullCartFromBasketObject(b);
+            if (out.length) return out;
+        }
+    } catch { }
+
+    // Fallback: readBasket() if available
+    try {
+        if (typeof readBasket === "function") {
+            const b = readBasket();
+            const out = __ssBuildFullCartFromBasketObject(b);
+            if (out.length) return out;
+        }
+    } catch { }
+
+    return [];
+}
+
 // Preserve the "full" cart builder (includes productId + reco discount metadata).
 // Later in this file, a legacy duplicate definition may overwrite buildFullCartFromBasket;
 // checkout must continue using the full version.
@@ -6701,125 +6803,244 @@ function __ssGetCartIncentivesConfig() {
             enabled: true,
             // If false, tier discount will NOT apply to items that already have an item-level discount (e.g. reco token).
             // Threshold unlock still uses the full cart subtotal.
-            applyToDiscountedItems: true,
+            applyToDiscountedItems: false,
             tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }]
         },
         bundles: { enabled: false, bundles: [] }
     };
 }
 
+
+// --- Tier/Basket debug helpers (safe groups + reentry guard) ---
+function __ssDbgTierEnabled() {
+    try { return localStorage.getItem('ss_debug_tier') === '1'; } catch { return false; }
+}
+function __ssTierDbgGroup(label, fn) {
+    if (!__ssDbgTierEnabled()) return fn(0);
+    const runId = (window.__ssTierDbgRunId = (window.__ssTierDbgRunId || 0) + 1);
+    console.groupCollapsed(`[tier][dbg] ${label} #${runId}`);
+    try {
+        return fn(runId);
+    } catch (e) {
+        console.error('[tier][dbg] ERROR', e);
+        throw e;
+    } finally {
+        console.groupEnd();
+    }
+}
+// --------------------------------------------------------------
+
 function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
-    const cfg = __ssGetCartIncentivesConfig();
-    const enabled = !!cfg?.enabled;
-    const out = {
-        enabled,
-        baseTotalEUR: round2(baseTotalEUR),
-        tierPct: 0,
-        tierDiscountEUR: 0,
-        bundlePct: 0,
-        bundleDiscountEUR: 0,
-        shippingFeeEUR: 0,
-        freeShippingEligible: false,
-        subtotalAfterDiscountsEUR: round2(baseTotalEUR),
-        totalWithShippingEUR: round2(baseTotalEUR)
-    };
-    if (!enabled) return out;
 
-    let subtotal = Number(baseTotalEUR) || 0;
-
-    // Eligible subtotal for tier discount when applyToDiscountedItems is false.
-    // Discounted items are detected via recoDiscountPct/recoDiscountToken and/or original vs paid unit price.
-    let tierEligibleSubtotal = 0;
+    if (window.__ssComputingIncentives) {
+        if (__ssDbgTierEnabled()) console.warn('[tier][dbg] reentry blocked');
+        return window.__ssLastIncentives || null;
+    }
+    window.__ssComputingIncentives = true;
     try {
-        const items = Array.isArray(fullCart) ? fullCart : [];
-        for (const it of items) {
-            const qty = Math.max(1, parseInt(it?.quantity ?? 1, 10) || 1);
-            const unit = Number(it?.unitPriceEUR ?? it?.price ?? 0) || 0;
-            const line = unit * qty;
-            if (!Number.isFinite(line) || line <= 0) continue;
-            const recoPct = Number(it?.recoDiscountPct || 0) || 0;
-            const hasTok = !!it?.recoDiscountToken;
-            const u0 = Number(it?.unitPriceOriginalEUR ?? it?.unitPriceOriginalEur ?? NaN);
-            const u1 = Number(it?.unitPriceEUR ?? it?.price ?? NaN);
-            const looksDiscounted = (Number.isFinite(u0) && Number.isFinite(u1) && u0 > u1 + 1e-9);
-            const isDiscountedItem = (recoPct > 0) || hasTok || looksDiscounted;
-            if (!isDiscountedItem) tierEligibleSubtotal += line;
-        }
-    } catch { }
+        const cfg = __ssGetCartIncentivesConfig();
+        const enabled = !!cfg?.enabled;
+        const out = {
+            enabled,
+            baseTotalEUR: round2(baseTotalEUR),
+            tierPct: 0,
+            tierDiscountEUR: 0,
+            bundlePct: 0,
+            bundleDiscountEUR: 0,
+            shippingFeeEUR: 0,
+            freeShippingEligible: false,
+            subtotalAfterDiscountsEUR: round2(baseTotalEUR),
+            totalWithShippingEUR: round2(baseTotalEUR)
+        };
+        if (!enabled) return out;
 
-    // Optional bundle discount (max one)
-    try {
-        const bcfg = cfg?.bundles;
-        if (bcfg?.enabled && Array.isArray(bcfg?.bundles) && bcfg.bundles.length) {
-            const ids = new Set((fullCart || []).map(i => String(i?.productId || "").trim()).filter(Boolean));
-            let best = null;
-            for (const b of bcfg.bundles) {
-                const pids = Array.isArray(b?.productIds) ? b.productIds.map(x => String(x || "").trim()).filter(Boolean) : [];
-                if (pids.length < 2) continue;
-                const ok = pids.every(pid => ids.has(pid));
-                if (!ok) continue;
-                const pct = Math.max(0, Math.min(80, Number(b?.pct || 0) || 0));
-                if (!best || pct > best.pct) best = { pct };
+        const __dbg = (() => {
+            try { return (localStorage.getItem('ss_debug_tier') === '1') || (window.__SS_DEBUG_TIER === 1); } catch { return false; }
+        })();
+
+        let subtotal = Number(baseTotalEUR) || 0;
+
+        // Eligible subtotal for tier discount when applyToDiscountedItems is false.
+        // Discounted items are detected via recoDiscountPct/recoDiscountToken and/or original vs paid unit price.
+
+        // Robust numeric parser for prices that may come as strings like "€4.99" or "4,99"
+        function __ssParsePriceEUR(v) {
+            if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+            if (typeof v !== "string") return 0;
+            let s = v.trim();
+            if (!s) return 0;
+            s = s.replace(/[^0-9,\.\-]/g, "");
+            if (!s) return 0;
+            const hasComma = s.indexOf(",") >= 0;
+            const hasDot = s.indexOf(".") >= 0;
+            if (hasComma && hasDot) {
+                // assume last separator is decimal
+                if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+                    s = s.replace(/\./g, "").replace(/,/g, ".");
+                } else {
+                    s = s.replace(/,/g, "");
+                }
+            } else if (hasComma && !hasDot) {
+                s = s.replace(/,/g, ".");
             }
-            if (best && best.pct > 0) {
-                out.bundlePct = best.pct;
-                out.bundleDiscountEUR = round2(subtotal * (best.pct / 100));
-                subtotal = subtotal - out.bundleDiscountEUR;
+            const n = parseFloat(s);
+            return Number.isFinite(n) ? n : 0;
+        }
 
-                // Keep tierEligibleSubtotal in the same "post-bundle" space by applying the same bundle %.
-                if (Number.isFinite(tierEligibleSubtotal) && tierEligibleSubtotal > 0) {
-                    tierEligibleSubtotal = tierEligibleSubtotal * (1 - (best.pct / 100));
+        let tierEligibleSubtotal = 0;
+        const __tierDbgRows = (__dbg ? [] : null);
+        const __tierDiscMap = {};
+        try {
+            const items = Array.isArray(fullCart) ? fullCart : [];
+            for (const it of items) {
+                const qty = Math.max(1, parseInt(it?.quantity ?? 1, 10) || 1);
+                const unit = __ssParsePriceEUR(it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? 0);
+                const line = unit * qty;
+                if (!Number.isFinite(line) || line <= 0) continue;
+                const recoPct = Number(it?.recoDiscountPct || 0) || 0;
+                const hasTok = !!it?.recoDiscountToken;
+                const u0 = __ssParsePriceEUR(it?.unitPriceOriginalEUR ?? it?.unitPriceOriginalEur ?? it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? NaN);
+                const u1 = __ssParsePriceEUR(it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? NaN);
+                const looksDiscounted = (Number.isFinite(u0) && Number.isFinite(u1) && u0 > u1 + 1e-9);
+                const isDiscountedItem = (recoPct > 0) || looksDiscounted; // token alone should not exclude
+                try {
+                    const __pid = String(it?.productId || it?.pid || it?.id || '').trim();
+                    if (__pid) __tierDiscMap[__pid] = (__tierDiscMap[__pid] || false) || !!isDiscountedItem;
+                    try { window.__ssTierDiscMap = __tierDiscMap; } catch { }
+                } catch { }
+                if (__tierDbgRows) {
+                    try {
+                        __tierDbgRows.push({
+                            name: String(it?.name || it?.title || it?.productName || it?.productId || '').slice(0, 80),
+                            productId: String(it?.productId || ''),
+                            qty,
+                            unit,
+                            line,
+                            recoPct,
+                            hasTok,
+                            orig: u0,
+                            cur: u1,
+                            looksDiscounted,
+                            isDiscountedItem,
+                            eligibleTier: !isDiscountedItem
+                        });
+                    } catch { }
+                }
+                if (!isDiscountedItem) tierEligibleSubtotal += line;
+            }
+        } catch { }
+
+        if (__dbg) {
+            __ssTierDbgGroup('compute incentives', (runId) => {
+                try {
+                    const tcfg = cfg?.tierDiscount;
+
+                    console.log("baseTotalEUR", round2(baseTotalEUR), "enabled", enabled);
+                    console.log("cfg", {
+                        enabled: cfg?.enabled,
+                        applyToDiscountedItems: cfg?.applyToDiscountedItems,
+                        tierApplyToDiscountedItems: tcfg?.applyToDiscountedItems,
+                        tiers: Array.isArray(tcfg?.tiers) ? tcfg.tiers : null,
+                        bundlesEnabled: !!cfg?.bundles?.enabled,
+                        freeShipping: cfg?.freeShipping || null
+                    });
+                    console.log("tierEligibleSubtotal(pre-bundle)=", round2(tierEligibleSubtotal), "fullCartItems=", Array.isArray(fullCart) ? fullCart.length : 0);
+                    if (Array.isArray(__tierDbgRows)) {
+                        try { console.table(__tierDbgRows); } catch { }
+                    }
+                } catch { }
+            });
+        }
+
+        // Optional bundle discount (max one)
+        try {
+            const bcfg = cfg?.bundles;
+            if (bcfg?.enabled && Array.isArray(bcfg?.bundles) && bcfg.bundles.length) {
+                const ids = new Set((fullCart || []).map(i => String(i?.productId || "").trim()).filter(Boolean));
+                let best = null;
+                for (const b of bcfg.bundles) {
+                    const pids = Array.isArray(b?.productIds) ? b.productIds.map(x => String(x || "").trim()).filter(Boolean) : [];
+                    if (pids.length < 2) continue;
+                    const ok = pids.every(pid => ids.has(pid));
+                    if (!ok) continue;
+                    const pct = Math.max(0, Math.min(80, Number(b?.pct || 0) || 0));
+                    if (!best || pct > best.pct) best = { pct };
+                }
+                if (best && best.pct > 0) {
+                    out.bundlePct = best.pct;
+                    out.bundleDiscountEUR = round2(subtotal * (best.pct / 100));
+                    subtotal = subtotal - out.bundleDiscountEUR;
+
+                    // Keep tierEligibleSubtotal in the same "post-bundle" space by applying the same bundle %.
+                    if (Number.isFinite(tierEligibleSubtotal) && tierEligibleSubtotal > 0) {
+                        tierEligibleSubtotal = tierEligibleSubtotal * (1 - (best.pct / 100));
+                    }
                 }
             }
-        }
-    } catch { }
+        } catch { }
 
-    // Tier discount
-    try {
-        const tcfg = cfg?.tierDiscount;
-        if (tcfg?.enabled && Array.isArray(tcfg?.tiers) && tcfg.tiers.length) {
-            let pct = 0;
-            for (const t of tcfg.tiers) {
-                const min = Math.max(0, Number(t?.minEUR || 0) || 0);
-                const p = Math.max(0, Math.min(80, Number(t?.pct || 0) || 0));
-                if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p);
+        // Tier discount
+        try {
+            const tcfg = cfg?.tierDiscount;
+            if (tcfg?.enabled && Array.isArray(tcfg?.tiers) && tcfg.tiers.length) {
+                let pct = 0;
+                for (const t of tcfg.tiers) {
+                    const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+                    const p = Math.max(0, Math.min(80, Number(t?.pct || 0) || 0));
+                    if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p);
+                }
+                out.tierPct = pct;
+
+                if (__dbg) {
+                    try {
+                        console.log("tier selection pct=", pct, "subtotalPostBundle=", round2(subtotal));
+                    } catch { }
+                }
+
+                // Threshold unlock uses full post-bundle subtotal (subtotal).
+                // Discount amount may optionally exclude already-discounted items.
+                const applyToDiscounted = (tcfg?.applyToDiscountedItems === true);
+                const tierBase = applyToDiscounted ? subtotal : Math.max(0, Number(tierEligibleSubtotal) || 0);
+                out.tierDiscountEUR = pct > 0 ? round2(tierBase * (pct / 100)) : 0;
+                if (__dbg) {
+                    try {
+                        console.log("tier base applyToDiscounted=", applyToDiscounted, "tierEligibleSubtotal=", round2(tierEligibleSubtotal), "tierBase=", round2(tierBase), "tierDiscountEUR=", out.tierDiscountEUR, "subtotalAfterTier=", round2(subtotal));
+                    } catch { }
+                }
+
+                subtotal = subtotal - out.tierDiscountEUR;
             }
-            out.tierPct = pct;
+        } catch { }
 
-            // Threshold unlock uses full post-bundle subtotal (subtotal).
-            // Discount amount may optionally exclude already-discounted items.
-            const applyToDiscounted = (tcfg?.applyToDiscountedItems !== false);
-            const tierBase = applyToDiscounted ? subtotal : Math.max(0, Number(tierEligibleSubtotal) || 0);
-            out.tierDiscountEUR = pct > 0 ? round2(tierBase * (pct / 100)) : 0;
-            subtotal = subtotal - out.tierDiscountEUR;
-        }
-    } catch { }
+        subtotal = Math.max(0, round2(subtotal));
+        out.subtotalAfterDiscountsEUR = subtotal;
 
-    subtotal = Math.max(0, round2(subtotal));
-    out.subtotalAfterDiscountsEUR = subtotal;
-
-    // Optional shipping fee
-    try {
-        const ship = cfg?.freeShipping;
-        const enabledShip = !!ship?.enabled;
-        const fee = Math.max(0, Number(ship?.shippingFeeEUR || 0) || 0);
-        const thr = Math.max(0, Number(ship?.thresholdEUR || 0) || 0);
-        if (enabledShip && fee > 0 && thr > 0) {
-            out.freeShippingEligible = subtotal >= thr;
-            out.shippingFeeEUR = out.freeShippingEligible ? 0 : round2(fee);
-            out.totalWithShippingEUR = round2(subtotal + out.shippingFeeEUR);
-        } else {
+        // Optional shipping fee
+        try {
+            const ship = cfg?.freeShipping;
+            const enabledShip = !!ship?.enabled;
+            const fee = Math.max(0, Number(ship?.shippingFeeEUR || 0) || 0);
+            const thr = Math.max(0, Number(ship?.thresholdEUR || 0) || 0);
+            if (enabledShip && fee > 0 && thr > 0) {
+                out.freeShippingEligible = subtotal >= thr;
+                out.shippingFeeEUR = out.freeShippingEligible ? 0 : round2(fee);
+                out.totalWithShippingEUR = round2(subtotal + out.shippingFeeEUR);
+            } else {
+                out.freeShippingEligible = true;
+                out.shippingFeeEUR = 0;
+                out.totalWithShippingEUR = subtotal;
+            }
+        } catch {
             out.freeShippingEligible = true;
             out.shippingFeeEUR = 0;
             out.totalWithShippingEUR = subtotal;
         }
-    } catch {
-        out.freeShippingEligible = true;
-        out.shippingFeeEUR = 0;
-        out.totalWithShippingEUR = subtotal;
-    }
 
-    return out;
+        return out;
+
+    } finally {
+        window.__ssComputingIncentives = false;
+    }
 }
 
 function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
@@ -6828,7 +7049,7 @@ function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
 
     const baseEUR = (fullCart || []).reduce((sum, i) => {
         const qty = Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1);
-        const unit = Number(i?.unitPriceEUR ?? i?.price ?? 0) || 0;
+        const unit = __ssParsePriceEUR(i?.unitPriceEUR ?? i?.price ?? 0);
         return sum + unit * qty;
     }, 0);
 
@@ -8235,7 +8456,10 @@ function GoToProductPage(productName, productPrice, productDescription) {
         const validImages = loadedImages.filter(Boolean);
         if (validImages.length === 0) {
             console.error("❌ No valid images loaded for:", productName);
-            viewer.innerHTML = `<p>${__ssEscHtml(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Products not loaded")}</p>`;
+            // Do not hard-fail the PDP; render with a fallback image so other features (pricing/discounts/cart) continue to work.
+            const fallback = __ssFixImageUrl(product?.image || "");
+            const safeImages = fallback ? [fallback] : [];
+            renderProductPage(product, safeImages, productName, productPrice, productDescription);
             return;
         }
         renderProductPage(product, validImages, productName, productPrice, productDescription);
@@ -9335,23 +9559,45 @@ async function __ssRecoRenderForProduct(product) {
             try {
                 // align width
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
-                const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+                const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
                 btnL.disabled = viewport.scrollLeft <= 2;
                 btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
             } catch { }
         }
 
-        btnL.addEventListener('click', () => {
-            const idx = currentIndex();
-            const next = Math.max(0, idx - recState.visibleCount);
-            scrollToIndex(next);
-        });
-        btnR.addEventListener('click', async () => {
-            const idx = currentIndex();
-            const next = idx + recState.visibleCount;
-            scrollToIndex(next);
-            await maybeLoadMore();
-        });
+        // Nav buttons: support mobile tap reliably + step one item on mobile
+        function navStepItems() {
+            return (recState.device === "mobile") ? 1 : recState.visibleCount;
+        }
+
+        async function handleNav(dir) {
+            try {
+                const step = navStepItems();
+                const idx = currentIndex();
+                const next = Math.max(0, idx + (dir * step));
+                scrollToIndex(next);
+                if (dir > 0) await maybeLoadMore();
+            } catch { }
+        }
+
+        function bindNav(btn, dir) {
+            // Click (desktop + many mobiles)
+            btn.addEventListener('click', (e) => {
+                try { e.preventDefault(); e.stopPropagation(); } catch { }
+                handleNav(dir);
+            });
+
+            // Pointer/touch (some mobile browsers delay or miss click on small buttons near scroll areas)
+            const onDown = (e) => {
+                try { e.preventDefault(); e.stopPropagation(); } catch { }
+                handleNav(dir);
+            };
+            btn.addEventListener('pointerdown', onDown, { passive: false });
+            btn.addEventListener('touchstart', onDown, { passive: false });
+        }
+
+        bindNav(btnL, -1);
+        bindNav(btnR, +1);
 
         // Swipe gestures
         let tStartX = 0, tStartY = 0, tDidMove = false;
@@ -10035,7 +10281,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
         if (!cfg0?.enabled) return "";
         __ssEnsureCartIncentiveStyles();
 
-        const fullCart = (opts && Array.isArray(opts.fullCart)) ? opts.fullCart : ((typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : []);
+        const fullCart = (opts && Array.isArray(opts.fullCart)) ? opts.fullCart : (__ssGetFullCartPreferred());
         const inc = (opts && opts.inc) ? opts.inc : __ssComputeCartIncentivesClient(totalSumEUR, fullCart);
 
         const cfg = __ssGetCartIncentivesConfig();
@@ -10364,7 +10610,7 @@ function updateBasket() {
         let __ssTotalAfter = round2(totalSum);
         let __ssDiscountEUR = 0;
         try {
-            __fullCart = (typeof buildFullCartFromBasket === "function") ? buildFullCartFromBasket() : [];
+            __fullCart = __ssGetFullCartPreferred();
             __ssInc = __ssComputeCartIncentivesClient(totalSum, __fullCart);
             __ssTotalAfter = round2(Number(__ssInc?.subtotalAfterDiscountsEUR ?? totalSum) || totalSum);
             __ssDiscountEUR = round2((Number(__ssInc?.tierDiscountEUR || 0) || 0) + (Number(__ssInc?.bundleDiscountEUR || 0) || 0));
@@ -10372,8 +10618,172 @@ function updateBasket() {
             try { localStorage.setItem("ss_cart_incentives_last_v1", JSON.stringify({ t: Date.now(), inc: __ssInc })); } catch { }
         } catch { }
 
-        // Prorate cart-level discount across line items for display (avoid per-line rounding drift by fixing last line)
-        const __ratio = (totalSum > 0 && __ssTotalAfter >= 0 && __ssTotalAfter <= totalSum) ? (__ssTotalAfter / totalSum) : 1;
+
+        // Apply cart-level discounts for display:
+        // We must support: "bundle applies to all lines" and "tier applies only to eligible lines"
+        // WITHOUT breaking rounding, and WITHOUT relying on a single global ratio.
+        const __incCfg = __ssGetCartIncentivesConfig();
+        const __applyToDiscounted = (
+            (__incCfg?.applyToDiscountedItems === true) ||
+            (__incCfg?.tierDiscount?.applyToDiscountedItems === true)
+        );
+
+        const __tierPct = Math.max(0, Math.min(80, Number(__ssInc?.tierPct || 0) || 0));
+        const __bundlePct = Math.max(0, Math.min(80, Number(__ssInc?.bundlePct || 0) || 0));
+
+        const __isDiscountedCartItem = (it) => {
+            try {
+                const __pid = String(it?.productId || it?.pid || it?.id || '').trim();
+                if (__pid) {
+                    const m = (typeof window !== 'undefined') ? window.__ssTierDiscMap : null;
+                    if (m && m[__pid] === true) return true;
+                }
+                const recoPct = Number(it?.recoDiscountPct || 0) || 0;
+                const hasTok = !!it?.recoDiscountToken;
+
+                // Explicit original/current price fields (preferred)
+                const u0 = __ssParsePriceEUR(it?.unitPriceOriginalEUR ?? it?.unitPriceOriginalEur ?? it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? NaN);
+                const u1 = __ssParsePriceEUR(it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? NaN);
+                const looksDiscounted = (Number.isFinite(u0) && Number.isFinite(u1) && u0 > u1 + 1e-9);
+
+                // If we only have a reco token (basket rows often drop recoPct/original),
+                // try to infer discount by comparing against the catalog/base price.
+                let looksDiscountedCatalog = false;
+                if (hasTok && !looksDiscounted && !(recoPct > 0) && Number.isFinite(u1) && u1 > 0) {
+                    const pid = String(it?.productId || it?.pid || it?.id || '').trim();
+                    const sel = String(it?.category || it?.variant || it?.selectedCategory || it?.selectedVariant || it?.option || '').trim();
+
+                    const flat = window.__ssCatalogIndexCache?.flat || window.__ssCatalogIndexCache?.flat?.flat || null;
+                    const arr = Array.isArray(flat) ? flat : (Array.isArray(window.__ssCatalogIndexCache?.flat) ? window.__ssCatalogIndexCache.flat : null);
+
+                    let baseUnit = NaN;
+                    if (arr && pid) {
+                        const p = arr.find(x => String(x?.productId || x?.pid || x?.id || '') === pid);
+                        if (p) {
+                            // product base price
+                            baseUnit = __ssParsePriceEUR(p?.priceEUR ?? p?.priceEur ?? p?.price ?? NaN);
+
+                            // category/variant override if selectable and we can match
+                            const cats = p?.categories || p?.variants || p?.options;
+                            if (Array.isArray(cats) && sel) {
+                                const hit = cats.find(c =>
+                                    String(c?.name || c?.label || c?.title || '').trim().toLowerCase() === sel.toLowerCase()
+                                );
+                                if (hit) {
+                                    const v = __ssParsePriceEUR(hit?.priceEUR ?? hit?.priceEur ?? hit?.price ?? hit?.value ?? NaN);
+                                    if (Number.isFinite(v) && v > 0) baseUnit = v;
+                                }
+                            }
+                        }
+                    }
+                    if (Number.isFinite(baseUnit) && baseUnit > u1 + 1e-9) looksDiscountedCatalog = true;
+                }
+
+                return (recoPct > 0) || looksDiscounted || looksDiscountedCatalog;
+            } catch { return false; }
+        };
+
+        // --- Precise per-line totals in cents (prevents "last item not discounted" due to rounding drift) ---
+        function __ssToCents(v) {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return 0;
+            return Math.round(n * 100);
+        }
+        function __ssFromCents(c) {
+            return round2((Number(c) || 0) / 100);
+        }
+        function __ssAllocateProportional(totalCents, weights) {
+            // weights: array of non-negative integers
+            const out = new Array(weights.length).fill(0);
+            const sumW = weights.reduce((a, b) => a + (Number(b) || 0), 0);
+            if (!(totalCents > 0) || !(sumW > 0)) return out;
+
+            // Largest remainder method
+            let used = 0;
+            const rema = [];
+            for (let i = 0; i < weights.length; i++) {
+                const w = Math.max(0, Number(weights[i]) || 0);
+                if (!w) { out[i] = 0; rema.push({ i, frac: 0 }); continue; }
+                const raw = (totalCents * w) / sumW;
+                const base = Math.floor(raw);
+                out[i] = base;
+                used += base;
+                rema.push({ i, frac: raw - base });
+            }
+            let left = totalCents - used;
+            if (left > 0) {
+                rema.sort((a, b) => (b.frac - a.frac));
+                for (let k = 0; k < rema.length && left > 0; k++) {
+                    const idx = rema[k].i;
+                    out[idx] += 1;
+                    left -= 1;
+                }
+            }
+            return out;
+        }
+
+        // Build arrays aligned to entries order
+        const __cartLines = entries.map(([k, it]) => {
+            const qty = Math.max(1, parseInt(it?.quantity || 1, 10) || 1);
+            const unit = Number(parseFloat(it?.price) || 0);
+            const preCents = __ssToCents(unit) * qty;
+            const isDisc = __isDiscountedCartItem(it);
+            const eligibleTier = __applyToDiscounted ? true : !isDisc;
+            return { key: k, it, qty, unit, preCents, isDisc, eligibleTier };
+        });
+
+        // Prefer server-computed totals (avoids drift if backend rounds differently)
+        const __bundleDiscountCents = Math.max(0, __ssToCents(__ssInc?.bundleDiscountEUR || 0));
+        const __tierDiscountCents = Math.max(0, __ssToCents(__ssInc?.tierDiscountEUR || 0));
+
+        // Allocate bundle discount across ALL lines proportional to preCents
+        const __bundleAlloc = __ssAllocateProportional(__bundleDiscountCents, __cartLines.map(x => x.preCents));
+        const __postBundleCents = __cartLines.map((x, i) => Math.max(0, x.preCents - (__bundleAlloc[i] || 0)));
+
+        // Allocate tier discount ONLY across eligible lines proportional to postBundleCents
+        const __eligibleWeights = __cartLines.map((x, i) => (x.eligibleTier ? (__postBundleCents[i] || 0) : 0));
+        const __tierAlloc = __ssAllocateProportional(__tierDiscountCents, __eligibleWeights);
+
+        // Final per-line after totals in cents
+        const __lineAfterCents = __cartLines.map((x, i) => Math.max(0, (__postBundleCents[i] || 0) - (__tierAlloc[i] || 0)));
+        const __lineAfter = __lineAfterCents.map(__ssFromCents);
+
+        // Debug (enable via: localStorage.setItem('ss_debug_tier','1'))
+        try {
+            const dbg = (localStorage.getItem('ss_debug_tier') === '1') || (window.__SS_DEBUG_TIER === 1);
+            if (dbg) {
+                const sumPre = __cartLines.reduce((a, x) => a + (x.preCents || 0), 0);
+                const sumAfter = __lineAfterCents.reduce((a, c) => a + (c || 0), 0);
+                console.log("[tier][dbg] pct", { tierPct: __tierPct, bundlePct: __bundlePct, applyToDiscounted: __applyToDiscounted });
+                console.log("[tier][dbg] totals", {
+                    sumPre: __ssFromCents(sumPre),
+                    bundleDiscount: __ssFromCents(__bundleDiscountCents),
+                    tierDiscount: __ssFromCents(__tierDiscountCents),
+                    sumAfter: __ssFromCents(sumAfter),
+                    expectedAfter: Number(__ssTotalAfter) || null,
+                    delta: round2(__ssFromCents(sumAfter) - (Number(__ssTotalAfter) || 0))
+                });
+                console.table(__cartLines.map((x, i) => ({
+                    i,
+                    name: String(x.it?.name || ""),
+                    qty: x.qty,
+                    pre: __ssFromCents(x.preCents),
+                    bundle: __ssFromCents(__bundleAlloc[i] || 0),
+                    postBundle: __ssFromCents(__postBundleCents[i] || 0),
+                    isDiscounted: !!x.isDisc,
+                    eligibleTier: !!x.eligibleTier,
+                    tier: __ssFromCents(__tierAlloc[i] || 0),
+                    after: __ssFromCents(__lineAfterCents[i] || 0)
+                })));
+            }
+        } catch { }
+
+        // Convenience helper for row rendering
+        function __computeLineTotalsForRenderByIndex(i) {
+            const pre = __ssFromCents(__cartLines[i]?.preCents || 0);
+            const after = __lineAfter[i] || 0;
+            return { pre, after };
+        }
 
         // Precompute product lookup once per render (avoids O(cartItems * catalogSize) scans that can freeze the page)
         let __ssProductByName = null;
@@ -10391,7 +10801,8 @@ function updateBasket() {
         } catch { __ssProductByName = null; }
 
         // -------- Basket items (top section) --------
-        for (const [key, item] of entries) {
+        for (let __i = 0; __i < entries.length; __i++) {
+            const [key, item] = entries[__i];
             const productDiv = document.createElement("div");
             productDiv.classList.add("Basket_Item_Container");
 
@@ -10403,6 +10814,24 @@ function updateBasket() {
             const safeDesc = __ssEscHtml(item?.description || "");
             const safeImg = __ssEscHtml(item?.image || "");
             const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+
+            // Basket row price HTML (post-bundle and post-tier, matches receipt math)
+            const __lt = __computeLineTotalsForRenderByIndex(__i);
+            const __preLine = Number(__lt?.pre || 0) || 0;
+            const __afterLine = Number(__lt?.after || 0) || 0;
+
+            const __showDiscount = (__afterLine > 0) && (__preLine > 0) && (__afterLine < (__preLine - 0.001));
+            let __basketPriceHTML = __showDiscount
+                ? `
+          <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <span style="text-decoration:line-through;opacity:.55;font-weight:700;font-size:14px">${__preLine.toFixed(2)}€</span>
+            <span style="font-weight:900;font-size:16px">${__afterLine.toFixed(2)}€</span>
+          </div>`
+                : `
+          <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <span style="font-weight:900;font-size:16px">${__preLine.toFixed(2)}€</span>
+          </div>`;
+
 
             const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
 
@@ -10434,6 +10863,7 @@ function updateBasket() {
           <button class="BasketChangeQuantityButton" type="button"
                   data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
         </div>
+        ${__basketPriceHTML}
       </div>
     `;
 
@@ -10446,24 +10876,18 @@ function updateBasket() {
 
         let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
 
-        let __runningDiscSum = 0;
+        // Per-line totals after incentives were computed above in __lineAfter (aligned to entries order).
         for (let i = 0; i < entries.length; i++) {
             const [k, item] = entries[i];
             const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
             const unit = Number(parseFloat(item?.price) || 0);
             const itemTotal = unit * qty;
 
-            // Per-line discounted total AFTER cart-level discounts (prorated)
-            let lineTotalAfter = itemTotal;
-            if (__ratio < 0.999999) {
-                if (i < entries.length - 1) {
-                    lineTotalAfter = round2(itemTotal * __ratio);
-                    __runningDiscSum += lineTotalAfter;
-                } else {
-                    // last line absorbs rounding remainder
-                    lineTotalAfter = round2(__ssTotalAfter - __runningDiscSum);
-                }
-            }
+            // Per-line total AFTER cart incentives:
+            // - bundle discount applies to all items
+            // - tier discount applies only to eligible items (unless applyToDiscountedItems=true)
+            let lineTotalAfter = Number(__lineAfter[i]) || 0;
+
 
             const name = __ssEscHtml(item?.name || "");
             const productForReceipt = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
@@ -10478,7 +10902,7 @@ function updateBasket() {
             const recoOrigTotal = round2((Number(item?.unitPriceOriginalEUR || 0) * qty));
 
             let priceCellHTML = "";
-            if (__ratio < 0.999999 && postCartTotal < preCartTotal) {
+            if (postCartTotal < preCartTotal - 1e-9) {
                 // cart-level discount applies => show strike-through of pre-cart total and the post-cart total
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${postCartTotal.toFixed(2)}" data-eur-original="${preCartTotal.toFixed(2)}">
