@@ -10868,9 +10868,7 @@ function updateBasket() {
               <span style="font-weight:900;font-size:16px">${__afterLine.toFixed(2)}€</span>
             </div>`
                 : `
-            <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-              <span style="font-weight:900;font-size:16px">${__preLine.toFixed(2)}€</span>
-            </div>`;
+            `;
 
 
             const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
@@ -11038,7 +11036,6 @@ function updateBasket() {
         }
     }
 }
-
 
 
 
