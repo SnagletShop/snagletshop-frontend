@@ -1,3 +1,41 @@
+
+// --- PRICE PARSER (global, hoisted) ---
+function __ssParsePriceEUR(v) {
+    try {
+        if (v == null) return 0;
+        if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+        let s = String(v).trim();
+        if (!s) return 0;
+
+        // remove spaces and currency/other symbols, keep digits and separators
+        s = s.replace(/\s+/g, "");
+        s = s.replace(/[^0-9,\.\-]/g, "");
+
+        // handle "1.234,56" vs "1,234.56"
+        const hasComma = s.includes(",");
+        const hasDot = s.includes(".");
+        if (hasComma && hasDot) {
+            const lastComma = s.lastIndexOf(",");
+            const lastDot = s.lastIndexOf(".");
+            if (lastComma > lastDot) {
+                // comma is decimal separator
+                s = s.replace(/\./g, "");
+                s = s.replace(/,/g, ".");
+            } else {
+                // dot is decimal separator
+                s = s.replace(/,/g, "");
+            }
+        } else if (hasComma && !hasDot) {
+            // treat comma as decimal separator
+            s = s.replace(/,/g, ".");
+        }
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : 0;
+    } catch {
+        return 0;
+    }
+}
+
 async function ensureStripePublishableKey() {
     // 1) Prefer explicitly injected key (e.g. in index.html or Netlify env replacement)
     if (window.STRIPE_PUBLISHABLE_KEY && String(window.STRIPE_PUBLISHABLE_KEY).trim()) {
@@ -226,11 +264,11 @@ function __ssEnsureABUiStyles() {
     const style = document.createElement("style");
     style.id = "__ss-ab-ui-styles";
     style.textContent = `
-.ReceiptItemName{display:block;}
-.ReceiptItemShipFree{font-size:12px;opacity:.85;margin-top:2px;line-height:1.2;}
-.BasketItemShipFree{font-size:12px;opacity:.85;margin-top:6px;line-height:1.2;}
-.Product_Delivery_Info{margin-top:10px;font-size:13px;opacity:.9;line-height:1.2;}
-`;
+  .ReceiptItemName{display:block;}
+  .ReceiptItemShipFree{font-size:12px;opacity:.85;margin-top:2px;line-height:1.2;}
+  .BasketItemShipFree{font-size:12px;opacity:.85;margin-top:6px;line-height:1.2;}
+  .Product_Delivery_Info{margin-top:10px;font-size:13px;opacity:.9;line-height:1.2;}
+  `;
     document.head.appendChild(style);
 }
 
@@ -2434,46 +2472,46 @@ function ensureAppLoaderStyles() {
     const style = document.createElement("style");
     style.id = APP_LOADER_STYLE_ID;
     style.textContent = `
-         @keyframes appLoaderSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-   
-         #${APP_LOADER_ID}{
-           position:fixed; inset:0; z-index:90000;
-           display:flex; align-items:center; justify-content:center;
-           padding:16px;
-           background:rgba(0,0,0,.45);
-           backdrop-filter: blur(8px);
-           -webkit-backdrop-filter: blur(8px);
-         }
-         #${APP_LOADER_ID} .card{
-           width:min(520px, calc(100vw - 32px));
-           border-radius:16px;
-           border:1px solid rgba(255,255,255,0.12);
-           background:rgba(20,20,20,0.9);
-           box-shadow:0 20px 60px rgba(0,0,0,.65);
-           padding:16px;
-           font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-           color:#fff;
-         }
-         #${APP_LOADER_ID} .row{
-           display:flex; align-items:center; gap:12px;
-         }
-         #${APP_LOADER_ID} .spinner{
-           width:22px; height:22px; border-radius:999px;
-           border:3px solid rgba(255,255,255,0.22);
-           border-top-color: rgba(255,255,255,0.95);
-           animation: appLoaderSpin 900ms linear infinite;
-           flex:0 0 auto;
-         }
-         #${APP_LOADER_ID} .title{
-           font-weight:700; font-size:15px; line-height:1.2;
-         }
-         #${APP_LOADER_ID} .sub{
-           margin-top:6px;
-           font-size:13px;
-           opacity:.85;
-           line-height:1.35;
-         }
-       `;
+           @keyframes appLoaderSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+     
+           #${APP_LOADER_ID}{
+             position:fixed; inset:0; z-index:90000;
+             display:flex; align-items:center; justify-content:center;
+             padding:16px;
+             background:rgba(0,0,0,.45);
+             backdrop-filter: blur(8px);
+             -webkit-backdrop-filter: blur(8px);
+           }
+           #${APP_LOADER_ID} .card{
+             width:min(520px, calc(100vw - 32px));
+             border-radius:16px;
+             border:1px solid rgba(255,255,255,0.12);
+             background:rgba(20,20,20,0.9);
+             box-shadow:0 20px 60px rgba(0,0,0,.65);
+             padding:16px;
+             font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+             color:#fff;
+           }
+           #${APP_LOADER_ID} .row{
+             display:flex; align-items:center; gap:12px;
+           }
+           #${APP_LOADER_ID} .spinner{
+             width:22px; height:22px; border-radius:999px;
+             border:3px solid rgba(255,255,255,0.22);
+             border-top-color: rgba(255,255,255,0.95);
+             animation: appLoaderSpin 900ms linear infinite;
+             flex:0 0 auto;
+           }
+           #${APP_LOADER_ID} .title{
+             font-weight:700; font-size:15px; line-height:1.2;
+           }
+           #${APP_LOADER_ID} .sub{
+             margin-top:6px;
+             font-size:13px;
+             opacity:.85;
+             line-height:1.35;
+           }
+         `;
     document.head.appendChild(style);
 
 }
@@ -2488,14 +2526,14 @@ function showAppLoader(text = "Loading…") {
         overlay.setAttribute("role", "status");
         overlay.setAttribute("aria-live", "polite");
         overlay.innerHTML = `
-             <div class="card">
-               <div class="row">
-                 <div class="spinner" aria-hidden="true"></div>
-                 <div class="title">Loading SnagletShop</div>
+               <div class="card">
+                 <div class="row">
+                   <div class="spinner" aria-hidden="true"></div>
+                   <div class="title">Loading SnagletShop</div>
+                 </div>
+                 <div class="sub" id="${APP_LOADER_ID}_text"></div>
                </div>
-               <div class="sub" id="${APP_LOADER_ID}_text"></div>
-             </div>
-           `;
+             `;
         (document.body || document.documentElement).appendChild(overlay);
     }
 
@@ -3443,14 +3481,14 @@ function searchProducts() {
             addToCartBtn.className = "add-to-cart";
 
             addToCartBtn.innerHTML = `
-              <span style="display: flex; align-items: center; gap: 6px;">
-                ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
-                <svg class="cart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            `;
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
+                  <svg class="cart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              `;
 
             addToCartBtn.addEventListener("click", () => {
                 addToCart(
@@ -3933,39 +3971,39 @@ async function GoToSettings() {
     const themeSection = document.createElement("div");
     themeSection.classList.add("settings-section");
     themeSection.innerHTML = `
-      <h3>Theme</h3>
-      <label for="themeToggle">${TEXTS.GENERAL.DARK_MODE_LABEL}</label>
-      <label class="switch">
-        <input type="checkbox" id="themeToggle">
-        <span class="slider"></span>
-      </label>
-    `;
+        <h3>Theme</h3>
+        <label for="themeToggle">${TEXTS.GENERAL.DARK_MODE_LABEL}</label>
+        <label class="switch">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+      `;
 
     // Currency Selector
     const currencySection = document.createElement("div");
     currencySection.classList.add("settings-section");
     currencySection.innerHTML = `
-      <h3>Currency</h3>
-      <label for="currencySelect">Preferred currency:</label>
-      <select id="currencySelect" class="currencySelect tom-hidden" style="width: 100%"></select>
-    `;
+        <h3>Currency</h3>
+        <label for="currencySelect">Preferred currency:</label>
+        <select id="currencySelect" class="currencySelect tom-hidden" style="width: 100%"></select>
+      `;
 
     // Country Selector
     const countrySection = document.createElement("div");
     countrySection.classList.add("settings-section");
     countrySection.innerHTML = `
-      <h3>Shipping Country</h3>
-      <label for="countrySelect">Detected: <span id="detected-country"></span></label>
-      <select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
-    `;
+        <h3>Shipping Country</h3>
+        <label for="countrySelect">Detected: <span id="detected-country"></span></label>
+        <select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
+      `;
 
     // Clear Data Button
     const clearSection = document.createElement("div");
     clearSection.classList.add("settings-section");
     clearSection.innerHTML = `
-      <h3>Reset</h3>
-      <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
-    `;
+        <h3>Reset</h3>
+        <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
+      `;
 
     // Contact Form
 
@@ -3973,36 +4011,36 @@ async function GoToSettings() {
     const contactSection = document.createElement("div");
     contactSection.classList.add("settings-section");
     contactSection.innerHTML = `
-  <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
-  <form id="contact-form" autocomplete="off">
-    <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
-    <input type="email" id="contact-email" name="email" autocomplete="email" required>
-
-    <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
-    <textarea id="contact-message" name="message" class="MessageTextArea" required></textarea>
-
-    <!-- honeypot (hidden from humans, should stay empty) -->
-    <div aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;pointer-events:none;">
-      <label for="contact-website">Website</label>
-      <input
-        type="text"
-        id="contact-website"
-        name="contact_website_do_not_fill"
-        autocomplete="new-password"
-        tabindex="-1"
-        inputmode="none"
-        value=""
-        readonly
-      >
-    </div>
-
-    <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
-  </form>
-
-  <p class="contact-note">If the form doesn't work, email us at
-    <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
-  </p>
-`;
+    <h3>${TEXTS.CONTACT_FORM.TITLE}</h3>
+    <form id="contact-form" autocomplete="off">
+      <label for="contact-email">${TEXTS.CONTACT_FORM.FIELDS.EMAIL}</label>
+      <input type="email" id="contact-email" name="email" autocomplete="email" required>
+  
+      <label for="contact-message">${TEXTS.CONTACT_FORM.FIELDS.MESSAGE}</label>
+      <textarea id="contact-message" name="message" class="MessageTextArea" required></textarea>
+  
+      <!-- honeypot (hidden from humans, should stay empty) -->
+      <div aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;pointer-events:none;">
+        <label for="contact-website">Website</label>
+        <input
+          type="text"
+          id="contact-website"
+          name="contact_website_do_not_fill"
+          autocomplete="new-password"
+          tabindex="-1"
+          inputmode="none"
+          value=""
+          readonly
+        >
+      </div>
+  
+      <button type="submit">${TEXTS.CONTACT_FORM.SEND_BUTTON}</button>
+    </form>
+  
+    <p class="contact-note">If the form doesn't work, email us at
+      <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a>
+    </p>
+  `;
 
 
 
@@ -4010,65 +4048,65 @@ async function GoToSettings() {
     const legalSection = document.createElement("div");
     legalSection.classList.add("settings-section");
     legalSection.innerHTML = `
-      <h3>Legal Notice &amp; Store Policies</h3>
-      <p><strong>Legal Notice:</strong><br>
-      Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
-  
-      <h4>Shipping Policy</h4>
-      <p>
-        We operate on a dropshipping model. Most items ship from global suppliers and logistics partners.
-        Estimated delivery: <strong>2&nbsp;weeks to several weeks</strong>, depending on destination, carrier performance,
-        customs processing, and product availability. Estimated dates are <strong>not guaranteed</strong>.<br><br>
-        We are not responsible for delays caused by customs, carriers, labor actions, natural disasters, or other events outside our direct control.
-      </p>
-  
-      <h4>Returns, Cancellations &amp; Refunds</h4>
-      <p><strong>Before shipment:</strong> We may be able to cancel an order if it has not yet been processed; this is not guaranteed.</p>
-      <p><strong>After shipment (general rule):</strong> We do not accept cancellations or “change-of-mind” returns once an order has been handed to a carrier, <strong>except</strong> where mandatory consumer law grants you a right to withdraw.</p>
-      <p><strong>EU/EEA/UK consumers (cooling-off):</strong> For most physical goods, you have a statutory right to withdraw from a distance contract within <strong>14 days</strong> after delivery without giving a reason (exceptions apply). This paragraph prevails over any conflicting term in these policies.</p>
-  
-      <h4>Items Damaged, Defective, or Not-as-Described</h4>
-      <p>
-        If your item arrives damaged, defective, or significantly different from its description, contact us <strong>promptly</strong>
-        with your order number and clear photos/videos so we can assist. Any request for early notice does not limit your
-        <strong>non-waivable statutory rights</strong>.
-      </p>
-  
-      <h4>Warranty / Legal Guarantee</h4>
-      <p>
-        Unless a manufacturer warranty is explicitly provided with the product, we do not offer a separate commercial warranty.
-        <strong>This does not affect your statutory rights</strong>.
-      </p>
-  
-      <h4>Customs, Duties &amp; Taxes</h4>
-      <p>
-        Prices may or may not include taxes and import fees depending on your destination and the shipping method:
+        <h3>Legal Notice &amp; Store Policies</h3>
+        <p><strong>Legal Notice:</strong><br>
+        Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
+    
+        <h4>Shipping Policy</h4>
+        <p>
+          We operate on a dropshipping model. Most items ship from global suppliers and logistics partners.
+          Estimated delivery: <strong>2&nbsp;weeks to several weeks</strong>, depending on destination, carrier performance,
+          customs processing, and product availability. Estimated dates are <strong>not guaranteed</strong>.<br><br>
+          We are not responsible for delays caused by customs, carriers, labor actions, natural disasters, or other events outside our direct control.
+        </p>
+    
+        <h4>Returns, Cancellations &amp; Refunds</h4>
+        <p><strong>Before shipment:</strong> We may be able to cancel an order if it has not yet been processed; this is not guaranteed.</p>
+        <p><strong>After shipment (general rule):</strong> We do not accept cancellations or “change-of-mind” returns once an order has been handed to a carrier, <strong>except</strong> where mandatory consumer law grants you a right to withdraw.</p>
+        <p><strong>EU/EEA/UK consumers (cooling-off):</strong> For most physical goods, you have a statutory right to withdraw from a distance contract within <strong>14 days</strong> after delivery without giving a reason (exceptions apply). This paragraph prevails over any conflicting term in these policies.</p>
+    
+        <h4>Items Damaged, Defective, or Not-as-Described</h4>
+        <p>
+          If your item arrives damaged, defective, or significantly different from its description, contact us <strong>promptly</strong>
+          with your order number and clear photos/videos so we can assist. Any request for early notice does not limit your
+          <strong>non-waivable statutory rights</strong>.
+        </p>
+    
+        <h4>Warranty / Legal Guarantee</h4>
+        <p>
+          Unless a manufacturer warranty is explicitly provided with the product, we do not offer a separate commercial warranty.
+          <strong>This does not affect your statutory rights</strong>.
+        </p>
+    
+        <h4>Customs, Duties &amp; Taxes</h4>
+        <p>
+          Prices may or may not include taxes and import fees depending on your destination and the shipping method:
+          <ul>
+            <li><strong>Taxes collected at checkout (e.g., VAT/IOSS, DDP):</strong> If stated at checkout, these are included in your final price.</li>
+            <li><strong>Taxes due on delivery (DDU/DAP):</strong> If not shown as included, you are responsible for any applicable import duties/VAT/GST/fees.</li>
+          </ul>
+        </p>
+    
+        <h4>Delivery Issues &amp; Risk of Loss</h4>
+        <p>
+          Ensure your shipping address and contact details are accurate. We are not responsible for loss, delay, or misdelivery
+          arising from incorrect or incomplete addresses provided by you.
+        </p>
+    
+        <h4>Exclusions</h4>
         <ul>
-          <li><strong>Taxes collected at checkout (e.g., VAT/IOSS, DDP):</strong> If stated at checkout, these are included in your final price.</li>
-          <li><strong>Taxes due on delivery (DDU/DAP):</strong> If not shown as included, you are responsible for any applicable import duties/VAT/GST/fees.</li>
+          <li>We do not accept returns for buyer’s remorse where not required by law.</li>
+          <li>We do not accept returns for incorrect size/color/variant chosen by the customer, unless required by law.</li>
+          <li>Minor variations in color, packaging, or appearance that do not affect basic function are not considered defects.</li>
         </ul>
-      </p>
-  
-      <h4>Delivery Issues &amp; Risk of Loss</h4>
-      <p>
-        Ensure your shipping address and contact details are accurate. We are not responsible for loss, delay, or misdelivery
-        arising from incorrect or incomplete addresses provided by you.
-      </p>
-  
-      <h4>Exclusions</h4>
-      <ul>
-        <li>We do not accept returns for buyer’s remorse where not required by law.</li>
-        <li>We do not accept returns for incorrect size/color/variant chosen by the customer, unless required by law.</li>
-        <li>Minor variations in color, packaging, or appearance that do not affect basic function are not considered defects.</li>
-      </ul>
-  
-      <h4>Contact</h4>
-      <p>
-        To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email. You can always use our contact form or the email, listed below it, in case of problems!
-      </p>
-  
-      <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
-    `;
+    
+        <h4>Contact</h4>
+        <p>
+          To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email. You can always use our contact form or the email, listed below it, in case of problems!
+        </p>
+    
+        <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>
+      `;
 
     wrapper.append(themeSection, currencySection, countrySection, clearSection, contactSection, legalSection);
     viewer.appendChild(wrapper);
@@ -4455,20 +4493,20 @@ function CategoryButtons() {
 
                     if (isImageIcon) {
                         heading.innerHTML = `
-            <span class="category-icon-wrapper">
-                <img class="category-icon-img" src="${iconPath}" alt="${displayName} icon" />
-            </span>
-            <span class="category-label">${displayName}</span>
-        `;
+              <span class="category-icon-wrapper">
+                  <img class="category-icon-img" src="${iconPath}" alt="${displayName} icon" />
+              </span>
+              <span class="category-label">${displayName}</span>
+          `;
                     } else {
                         heading.innerHTML = `
-            <span class="category-icon-wrapper">
-                <svg viewBox="0 0 24 24" class="category-icon-svg">
-                    <path d="${iconPath}" />
-                </svg>
-            </span>
-            <span class="category-label">${displayName}</span>
-        `;
+              <span class="category-icon-wrapper">
+                  <svg viewBox="0 0 24 24" class="category-icon-svg">
+                      <path d="${iconPath}" />
+                  </svg>
+              </span>
+              <span class="category-label">${displayName}</span>
+          `;
                     }
                 } else {
                     heading.textContent = displayName;
@@ -4514,45 +4552,45 @@ async function createPaymentModal() {
     const modal = document.createElement("div");
     modal.id = "paymentModal";
     modal.innerHTML = `
-      <div class="payment-modal-card">
-        <span class="payment-modal-close" onclick="closeModal()">&times;</span>
-        <h2>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.TITLE) ? TEXTS.PAYMENT_MODAL.TITLE : "Checkout"}</h2>
+        <div class="payment-modal-card">
+          <span class="payment-modal-close" onclick="closeModal()">&times;</span>
+          <h2>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.TITLE) ? TEXTS.PAYMENT_MODAL.TITLE : "Checkout"}</h2>
+    
+          <form id="paymentForm">
+            <div id="Name_Holder">
+              <div><input type="text" id="Name" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.NAME || "Name"}" required></div>
+              <div><input type="text" id="Surname" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.SURNAME || "Surname"}" required></div>
+            </div>
+    
+            <div><input type="email" id="email" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.EMAIL || "Email"}" required></div>
   
-        <form id="paymentForm">
-          <div id="Name_Holder">
-            <div><input type="text" id="Name" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.NAME || "Name"}" required></div>
-            <div><input type="text" id="Surname" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.SURNAME || "Surname"}" required></div>
-          </div>
   
-          <div><input type="email" id="email" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.EMAIL || "Email"}" required></div>
-
-
-  
-          <div id="Address_Holder">
-            <input type="text" id="Street" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.STREET_HOUSE_NUMBER || "Street + number"}" required>
-            <input type="text" id="City" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.CITY || "City"}" required>
-            <input type="text" id="Postal_Code" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.POSTAL_CODE || "Postal code"}" required>
-            <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
-            <input type="text" id="State" placeholder="State / Province / Region">
-            <input type="tel"  id="Phone" placeholder="Phone (optional)">
-  
-            <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
-            <select id="Country" class="tom-hidden" required style="width: 100%"></select>
-          </div>
-  
-          <div id="payment-request-button" style="margin: 16px 0;"></div>
-          <div id="payment-element" class = "payment_element"style="margin-top: 16px;"></div>
-          <div id="ss-last-chance" style="margin-top:12px;"></div>
-            <label class="ss-marketing-optin">
-            <input type="checkbox" id="MarketingOptIn" checked/>
-            <span>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.FIELDS?.MARKETING_OPTIN) ? TEXTS.PAYMENT_MODAL.FIELDS.MARKETING_OPTIN : "Send me occasional product offers by email"}</span>
-          </label>
-          <button class="Submit_Button" id="confirm-payment-button" type="button">
-            ${TEXTS?.PAYMENT_MODAL?.BUTTONS?.SUBMIT || "Pay"}
-          </button>
-        </form>
-      </div>
-    `;
+    
+            <div id="Address_Holder">
+              <input type="text" id="Street" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.STREET_HOUSE_NUMBER || "Street + number"}" required>
+              <input type="text" id="City" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.CITY || "City"}" required>
+              <input type="text" id="Postal_Code" placeholder="${TEXTS?.PAYMENT_MODAL?.FIELDS?.POSTAL_CODE || "Postal code"}" required>
+              <input type="text" id="Address_Line2" placeholder="Apartment, suite, etc. (optional)">
+              <input type="text" id="State" placeholder="State / Province / Region">
+              <input type="tel"  id="Phone" placeholder="Phone (optional)">
+    
+              <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
+              <select id="Country" class="tom-hidden" required style="width: 100%"></select>
+            </div>
+    
+            <div id="payment-request-button" style="margin: 16px 0;"></div>
+            <div id="payment-element" class = "payment_element"style="margin-top: 16px;"></div>
+            <div id="ss-last-chance" style="margin-top:12px;"></div>
+              <label class="ss-marketing-optin">
+              <input type="checkbox" id="MarketingOptIn" checked/>
+              <span>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.FIELDS?.MARKETING_OPTIN) ? TEXTS.PAYMENT_MODAL.FIELDS.MARKETING_OPTIN : "Send me occasional product offers by email"}</span>
+            </label>
+            <button class="Submit_Button" id="confirm-payment-button" type="button">
+              ${TEXTS?.PAYMENT_MODAL?.BUTTONS?.SUBMIT || "Pay"}
+            </button>
+          </form>
+        </div>
+      `;
 
     document.body.appendChild(modal);
 
@@ -4560,113 +4598,113 @@ async function createPaymentModal() {
     const style = document.createElement("style");
     style.id = "paymentModalStyle";
     style.textContent = `
-      #paymentModal{
-        position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
-        padding:24px 12px; background: rgba(0,0,0,.55);
-      }
-      #paymentModal .payment-modal-card{
-        width:min(520px, 100%); border-radius:20px; padding:18px 16px;
-        background: var(--Card_Background, #fff);
-        box-shadow: 0 12px 40px rgba(0,0,0,.35);
-        color: var(--Default_Text_Colour, #111);
-        position: relative;
-            max-height: calc(100dvh - 48px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-        border: 1px solid rgba(0,0,0,.08);
-      }
-      #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
-      #paymentModal .ss-marketing-optin{ display:flex; gap:10px; align-items:flex-start; margin:10px 0 2px; font-size:12px; line-height:1.35; opacity:.9; user-select:none; }
-      #paymentModal .ss-marketing-optin input{ margin-top:2px; width:16px; height:16px; accent-color: var(--Accent, #111); }
-      #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
-      #paymentModal .payment-modal-close{
-        position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
-      }
-      #paymentModal input, #paymentModal select{
-        width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
-        border: 1px solid rgba(0,0,0,.15);
-        background: var(--Input_Background, rgba(255,255,255,.92));
-        color: inherit;
-        outline: none;
-      }
-      #paymentModal input::placeholder{ color: rgba(0,0,0,.45); }
-      #paymentModal input:focus, #paymentModal select:focus{
-        border-color: rgba(0,0,0,.28);
-        box-shadow: 0 0 0 3px rgba(37,99,235,.12);
-      }
-      #paymentModal #payment-element{
-        margin-top: 16px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        border: 1px solid rgba(0,0,0,.15);
-        background: var(--Input_Background, rgba(255,255,255,.92));
-      }
-      #paymentModal #payment-request-button{ margin: 16px 0; }
-      #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-
-      /* TomSelect (country dropdown) */
-      #paymentModal .ts-control, 
-      #paymentModal .ts-dropdown{
-        border-radius: 12px;
-        border: 1px solid rgba(0,0,0,.15);
-        background: var(--Input_Background, rgba(255,255,255,.92));
-        color: inherit;
-      }
-      #paymentModal .ts-dropdown .option{ padding: 10px 12px; }
-      #paymentModal .ts-dropdown .active{ background: rgba(0,0,0,.06); }
-
-      .Submit_Button{
-        width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
-        background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
-      }
-      .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
-
-      /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
-
-      html.dark-mode #paymentModal input,
-      html.dark-mode #paymentModal select,
-      html.dark-mode #paymentModal #payment-element{
-        border: 1px solid rgba(255,255,255,.16);
-        background: rgba(255,255,255,.06);
-        color: inherit;
-      }
-      html.dark-mode #paymentModal input::placeholder{ color: rgba(255,255,255,.45); }
-      html.dark-mode #paymentModal input:focus,
-      html.dark-mode #paymentModal select:focus{
-        border-color: rgba(255,255,255,.28);
-        box-shadow: 0 0 0 3px rgba(59,130,246,.20);
-      }
-      html.dark-mode #paymentModal .payment-modal-close{ opacity:.9; }
-
-      html.dark-mode #paymentModal .ts-control,
-      html.dark-mode #paymentModal .ts-dropdown{
-        border: 1px solid rgba(255,255,255,.16);
-        background: rgba(255,255,255,.06);
-        color: inherit;
-      }
-      html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
-
-      /* Last-chance upsell */
-      #paymentModal #ss-last-chance{
-        padding: 12px;
-        border-radius: 16px;
-        border: 1px solid rgba(0,0,0,.10);
-        background: rgba(0,0,0,.02);
-      }
-      html.dark-mode #paymentModal #ss-last-chance{
-        border-color: rgba(255,255,255,.14);
-        background: rgba(255,255,255,.06);
-      }
-      #paymentModal .ss-lc-row{ display:flex; gap:10px; align-items:center; }
-      #paymentModal .ss-lc-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
-      #paymentModal .ss-lc-name{ font-weight:700; font-size:.92rem; line-height:1.15; }
-      #paymentModal .ss-lc-sub{ font-size:.86rem; opacity:.85; }
-      #paymentModal .ss-lc-btn{
-        margin-left:auto; padding: 9px 12px; border-radius: 12px; cursor:pointer;
-        border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); font-weight:700;
-      }
-      html.dark-mode #paymentModal .ss-lc-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
-    `;
+        #paymentModal{
+          position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+          padding:24px 12px; background: rgba(0,0,0,.55);
+        }
+        #paymentModal .payment-modal-card{
+          width:min(520px, 100%); border-radius:20px; padding:18px 16px;
+          background: var(--Card_Background, #fff);
+          box-shadow: 0 12px 40px rgba(0,0,0,.35);
+          color: var(--Default_Text_Colour, #111);
+          position: relative;
+              max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+          border: 1px solid rgba(0,0,0,.08);
+        }
+        #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
+        #paymentModal .ss-marketing-optin{ display:flex; gap:10px; align-items:flex-start; margin:10px 0 2px; font-size:12px; line-height:1.35; opacity:.9; user-select:none; }
+        #paymentModal .ss-marketing-optin input{ margin-top:2px; width:16px; height:16px; accent-color: var(--Accent, #111); }
+        #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
+        #paymentModal .payment-modal-close{
+          position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
+        }
+        #paymentModal input, #paymentModal select{
+          width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
+          border: 1px solid rgba(0,0,0,.15);
+          background: var(--Input_Background, rgba(255,255,255,.92));
+          color: inherit;
+          outline: none;
+        }
+        #paymentModal input::placeholder{ color: rgba(0,0,0,.45); }
+        #paymentModal input:focus, #paymentModal select:focus{
+          border-color: rgba(0,0,0,.28);
+          box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+        #paymentModal #payment-element{
+          margin-top: 16px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(0,0,0,.15);
+          background: var(--Input_Background, rgba(255,255,255,.92));
+        }
+        #paymentModal #payment-request-button{ margin: 16px 0; }
+        #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  
+        /* TomSelect (country dropdown) */
+        #paymentModal .ts-control, 
+        #paymentModal .ts-dropdown{
+          border-radius: 12px;
+          border: 1px solid rgba(0,0,0,.15);
+          background: var(--Input_Background, rgba(255,255,255,.92));
+          color: inherit;
+        }
+        #paymentModal .ts-dropdown .option{ padding: 10px 12px; }
+        #paymentModal .ts-dropdown .active{ background: rgba(0,0,0,.06); }
+  
+        .Submit_Button{
+          width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
+          background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
+        }
+        .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
+  
+        /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
+  
+        html.dark-mode #paymentModal input,
+        html.dark-mode #paymentModal select,
+        html.dark-mode #paymentModal #payment-element{
+          border: 1px solid rgba(255,255,255,.16);
+          background: rgba(255,255,255,.06);
+          color: inherit;
+        }
+        html.dark-mode #paymentModal input::placeholder{ color: rgba(255,255,255,.45); }
+        html.dark-mode #paymentModal input:focus,
+        html.dark-mode #paymentModal select:focus{
+          border-color: rgba(255,255,255,.28);
+          box-shadow: 0 0 0 3px rgba(59,130,246,.20);
+        }
+        html.dark-mode #paymentModal .payment-modal-close{ opacity:.9; }
+  
+        html.dark-mode #paymentModal .ts-control,
+        html.dark-mode #paymentModal .ts-dropdown{
+          border: 1px solid rgba(255,255,255,.16);
+          background: rgba(255,255,255,.06);
+          color: inherit;
+        }
+        html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
+  
+        /* Last-chance upsell */
+        #paymentModal #ss-last-chance{
+          padding: 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(0,0,0,.10);
+          background: rgba(0,0,0,.02);
+        }
+        html.dark-mode #paymentModal #ss-last-chance{
+          border-color: rgba(255,255,255,.14);
+          background: rgba(255,255,255,.06);
+        }
+        #paymentModal .ss-lc-row{ display:flex; gap:10px; align-items:center; }
+        #paymentModal .ss-lc-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
+        #paymentModal .ss-lc-name{ font-weight:700; font-size:.92rem; line-height:1.15; }
+        #paymentModal .ss-lc-sub{ font-size:.86rem; opacity:.85; }
+        #paymentModal .ss-lc-btn{
+          margin-left:auto; padding: 9px 12px; border-radius: 12px; cursor:pointer;
+          border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); font-weight:700;
+        }
+        html.dark-mode #paymentModal .ss-lc-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
+      `;
     document.head.appendChild(style);
 
     // Restore any draft customer data (name/address/email) saved when closing the modal.
@@ -4747,16 +4785,16 @@ function __ssUpdateLastChanceOfferUI() {
             : "Last chance: frequently added";
 
         el.innerHTML = `
-          <div class="ss-lc-sub" style="margin-bottom:8px; font-weight:700;">${__ssEscHtml(headline)}</div>
-          <div class="ss-lc-row">
-            <img class="ss-lc-img" src="${__ssEscHtml(pick?.image || "")}" alt="${__ssEscHtml(pick?.name || "")}">
-            <div style="min-width:0;">
-              <div class="ss-lc-name">${__ssEscHtml(pick?.name || "")}</div>
-              <div class="ss-lc-sub">${price.toFixed(2)}€</div>
+            <div class="ss-lc-sub" style="margin-bottom:8px; font-weight:700;">${__ssEscHtml(headline)}</div>
+            <div class="ss-lc-row">
+              <img class="ss-lc-img" src="${__ssEscHtml(pick?.image || "")}" alt="${__ssEscHtml(pick?.name || "")}">
+              <div style="min-width:0;">
+                <div class="ss-lc-name">${__ssEscHtml(pick?.name || "")}</div>
+                <div class="ss-lc-sub">${price.toFixed(2)}€</div>
+              </div>
+              <button class="ss-lc-btn" type="button" data-ss-lc-add="${__ssEscHtml(pick?.name || "")}">Add</button>
             </div>
-            <button class="ss-lc-btn" type="button" data-ss-lc-add="${__ssEscHtml(pick?.name || "")}">Add</button>
-          </div>
-        `;
+          `;
 
         if (!el.dataset.bound) {
             el.dataset.bound = "1";
@@ -5645,34 +5683,34 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
 
         // Custom-styled dropdown (native <select> can't be styled like the target design across browsers)
         sortContainer.innerHTML = `
-          <div class="SSSort" id="SSSort">
-            <div class="SSSortLabel">${TEXTS.SORTING.LABEL}</div>
-
-            <button class="SSSortTrigger" id="SSSortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-              <span class="SSSortTriggerText" id="SSSortTriggerText">${TEXTS.SORTING.OPTIONS.NAME_ASC}</span>
-              <span class="SSSortChevron" aria-hidden="true"></span>
-            </button>
-
-            <div class="SSSortMenu" id="SSSortMenu" role="listbox" tabindex="-1" hidden>
-              <button class="SSSortItem" type="button" role="option" data-value="NameFirst" aria-selected="false">
-                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.NAME_ASC}</span>
-                <span class="SSSortCheck" aria-hidden="true"></span>
+            <div class="SSSort" id="SSSort">
+              <div class="SSSortLabel">${TEXTS.SORTING.LABEL}</div>
+  
+              <button class="SSSortTrigger" id="SSSortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span class="SSSortTriggerText" id="SSSortTriggerText">${TEXTS.SORTING.OPTIONS.NAME_ASC}</span>
+                <span class="SSSortChevron" aria-hidden="true"></span>
               </button>
-              <button class="SSSortItem" type="button" role="option" data-value="NameLast" aria-selected="false">
-                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.NAME_DESC}</span>
-                <span class="SSSortCheck" aria-hidden="true"></span>
-              </button>
-              <button class="SSSortItem" type="button" role="option" data-value="Cheapest" aria-selected="false">
-                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.PRICE_ASC}</span>
-                <span class="SSSortCheck" aria-hidden="true"></span>
-              </button>
-              <button class="SSSortItem" type="button" role="option" data-value="Priciest" aria-selected="false">
-                <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.PRICE_DESC}</span>
-                <span class="SSSortCheck" aria-hidden="true"></span>
-              </button>
+  
+              <div class="SSSortMenu" id="SSSortMenu" role="listbox" tabindex="-1" hidden>
+                <button class="SSSortItem" type="button" role="option" data-value="NameFirst" aria-selected="false">
+                  <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.NAME_ASC}</span>
+                  <span class="SSSortCheck" aria-hidden="true"></span>
+                </button>
+                <button class="SSSortItem" type="button" role="option" data-value="NameLast" aria-selected="false">
+                  <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.NAME_DESC}</span>
+                  <span class="SSSortCheck" aria-hidden="true"></span>
+                </button>
+                <button class="SSSortItem" type="button" role="option" data-value="Cheapest" aria-selected="false">
+                  <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.PRICE_ASC}</span>
+                  <span class="SSSortCheck" aria-hidden="true"></span>
+                </button>
+                <button class="SSSortItem" type="button" role="option" data-value="Priciest" aria-selected="false">
+                  <span class="SSSortItemLabel">${TEXTS.SORTING.OPTIONS.PRICE_DESC}</span>
+                  <span class="SSSortCheck" aria-hidden="true"></span>
+                </button>
+              </div>
             </div>
-          </div>
-        `;
+          `;
         wrapper.insertBefore(sortContainer, viewer);
     }
 
@@ -5754,14 +5792,14 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
 
         // Use flexbox to align text and SVG
         addToCartBtn.innerHTML = `
-        <span style="display: flex; align-items: center;">
-          ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
-          <svg class="cart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-      `;
+          <span style="display: flex; align-items: center;">
+            ${TEXTS.PRODUCT_SECTION.ADD_TO_CART}
+            <svg class="cart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        `;
 
 
         addToCartBtn.addEventListener("click", () => {
@@ -7882,9 +7920,9 @@ async function setupCheckoutFlow(selectedCurrency) {
 
         if (paymentSlot) {
             paymentSlot.innerHTML = `
-          <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
-            Loading payment options…
-          </div>`;
+            <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
+              Loading payment options…
+            </div>`;
         }
 
         // Mounts Stripe elements into #payment-element
@@ -7901,10 +7939,10 @@ async function setupCheckoutFlow(selectedCurrency) {
         if (paymentSlot) {
             const msg = String(e?.message || "Checkout initialization failed.");
             paymentSlot.innerHTML = `
-          <div style="padding:10px 12px;border:1px solid rgba(255,0,0,.35);border-radius:12px">
-            <strong>Payment UI could not load.</strong><br>${msg}<br><br>
-            Common causes: Stripe.js blocked, API error, or empty cart.
-          </div>`;
+            <div style="padding:10px 12px;border:1px solid rgba(255,0,0,.35);border-radius:12px">
+              <strong>Payment UI could not load.</strong><br>${msg}<br><br>
+              Common causes: Stripe.js blocked, API error, or empty cart.
+            </div>`;
         }
 
         alert(e?.message || "Checkout initialization failed. Please try again.");
@@ -8208,55 +8246,55 @@ function __ssEnsureOptionChipStyles() {
     const style = document.createElement("style");
     style.id = "__ss-option-chip-styles";
     style.textContent = `
-/* Hide legacy inline "Selected ..." label (we use chips instead) */
-.BasketSelectedOption{display:none !important;}
-
-/* Basket layout: remove fixed aspect ratio so extra lines (chips) don't overlap */
-.Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;}
-.Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
-.Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
-
-.BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-/* Quantity controls: compact vertical stack, centered */
-
-
-.Quantity-Controls-Basket .BasketChangeQuantityButton:hover{
-  background:rgba(0,0,0,0.06);
-}
-.Quantity-Controls-Basket .BasketChangeQuantityText{
-  font-family:'Afacad',sans-serif;
-  font-size:20px;
-  line-height:1;
-  margin:0;
-  padding:0;
-  min-width:1.5em;
-  text-align:center;
-}
-/* Option chips */
-.BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:flex-start;}
-.BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
-
-/* Receipt */
-.Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
-.ReceiptTable{width:100% !important;border-collapse:collapse;}
-.ReceiptTable td{vertical-align:top;padding:6px 8px;}
-.ReceiptItemName{display:block;}
-.ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
-.ReceiptOptionChips .BasketOptionChip{padding:5px 10px;font-size:15px;}
-
-@media (max-width: 700px){
-
-
-.Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
-.Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
-  .Basket-Item{padding:12px 12px !important;gap:12px !important;}
-
-  .BasketOptionChip{font-size:14px;padding:5px 10px;}
-  .BasketTextDescription{-webkit-line-clamp:2;}
-  .ReceiptOptionChips .BasketOptionChip{font-size:13px;}
-}
-`;
+  /* Hide legacy inline "Selected ..." label (we use chips instead) */
+  .BasketSelectedOption{display:none !important;}
+  
+  /* Basket layout: remove fixed aspect ratio so extra lines (chips) don't overlap */
+  .Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;}
+  .Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
+  .Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
+  
+  .BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  /* Quantity controls: compact vertical stack, centered */
+  
+  
+  .Quantity-Controls-Basket .BasketChangeQuantityButton:hover{
+    background:rgba(0,0,0,0.06);
+  }
+  .Quantity-Controls-Basket .BasketChangeQuantityText{
+    font-family:'Afacad',sans-serif;
+    font-size:20px;
+    line-height:1;
+    margin:0;
+    padding:0;
+    min-width:1.5em;
+    text-align:center;
+  }
+  /* Option chips */
+  .BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:flex-start;}
+  .BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
+  
+  /* Receipt */
+  .Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
+  .ReceiptTable{width:100% !important;border-collapse:collapse;}
+  .ReceiptTable td{vertical-align:top;padding:6px 8px;}
+  .ReceiptItemName{display:block;}
+  .ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .ReceiptOptionChips .BasketOptionChip{padding:5px 10px;font-size:15px;}
+  
+  @media (max-width: 700px){
+  
+  
+  .Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
+  .Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
+    .Basket-Item{padding:12px 12px !important;gap:12px !important;}
+  
+    .BasketOptionChip{font-size:14px;padding:5px 10px;}
+    .BasketTextDescription{-webkit-line-clamp:2;}
+    .ReceiptOptionChips .BasketOptionChip{font-size:13px;}
+  }
+  `;
     document.head.appendChild(style);
 }
 
@@ -8747,14 +8785,14 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     addBtn.className = "add-to-cart-product";
     addBtn.type = "button";
     addBtn.innerHTML = `
-    <span style="display:flex;align-items:center;gap:6px;">
-      ${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
-      <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-        <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </span>
-  `;
+      <span style="display:flex;align-items:center;gap:6px;">
+        ${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
+        <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+          <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    `;
 
     addBtn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -8936,71 +8974,71 @@ function __ssRecoEnsureStyles() {
     const s = document.createElement("style");
     s.id = "__ssRecoStyles";
     s.textContent = `
-    .RecoSection{
-      margin-top:24px;
-      border-top:1px solid rgba(255,255,255,.12);
-      padding-top:18px;
-      /* lock to viewport width on first paint (prevents initial oversized cards) */
-      width:100%;
-      max-width:100%;
-      margin-left:auto;
-      margin-right:auto;
-      box-sizing:border-box;
-    }
-    .RecoHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
-    .RecoHead h3{margin:0;font-size:18px;}
-    .RecoNavs{display:flex;gap:8px;align-items:center;}
-    .RecoNav{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;display:grid;place-items:center;user-select:none}
-    .RecoNav:disabled{opacity:.35;cursor:default}
-
-    /* single-row AliExpress-like strip */
-    .RecoViewport{
-      overflow-x:auto;
-      scroll-snap-type:x mandatory;
-      -webkit-overflow-scrolling:touch;
-      padding-bottom:10px;
-
-      width:100%;
-      box-sizing:border-box;
-    }
-    .RecoViewport::-webkit-scrollbar{height:10px}
-    .RecoViewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
-
-    .RecoStrip{
-      --reco-cols: 3;
-      --reco-gap: 12px;
-      width:100%;
-      min-width:100%;
-      box-sizing:border-box;
-      display:grid;
-      grid-auto-flow:column;
-      grid-template-rows:1fr;
-      gap:var(--reco-gap);
-      align-content:start;
-      padding-right:6px;
-      /* auto-fit N cards in the viewport; JS sets --reco-cols */
-      grid-auto-columns:minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
-    }
-    @media (max-width: 460px){
-      .RecoStrip{
-      
-        grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+      .RecoSection{
+        margin-top:24px;
+        border-top:1px solid rgba(255,255,255,.12);
+        padding-top:18px;
+        /* lock to viewport width on first paint (prevents initial oversized cards) */
+        width:100%;
+        max-width:100%;
+        margin-left:auto;
+        margin-right:auto;
+        box-sizing:border-box;
       }
-      .RecoNav{width:34px;height:34px;border-radius:11px;}
-    }
-
- 
-    .RecoCard:hover{background:rgba(255,255,255,.07)}
-    .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
-    .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
-    .RecoMeta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;opacity:.9}
-    .RecoBadge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);opacity:.9}
-
-    .RecoOld{text-decoration:line-through;opacity:.65;margin-right:4px}
-    .RecoNew{font-weight:700}
-    .RecoDisc{border-color:rgba(255,255,255,.22)}
-
-  `;
+      .RecoHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+      .RecoHead h3{margin:0;font-size:18px;}
+      .RecoNavs{display:flex;gap:8px;align-items:center;}
+      .RecoNav{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;display:grid;place-items:center;user-select:none}
+      .RecoNav:disabled{opacity:.35;cursor:default}
+  
+      /* single-row AliExpress-like strip */
+      .RecoViewport{
+        overflow-x:auto;
+        scroll-snap-type:x mandatory;
+        -webkit-overflow-scrolling:touch;
+        padding-bottom:10px;
+  
+        width:100%;
+        box-sizing:border-box;
+      }
+      .RecoViewport::-webkit-scrollbar{height:10px}
+      .RecoViewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
+  
+      .RecoStrip{
+        --reco-cols: 3;
+        --reco-gap: 12px;
+        width:100%;
+        min-width:100%;
+        box-sizing:border-box;
+        display:grid;
+        grid-auto-flow:column;
+        grid-template-rows:1fr;
+        gap:var(--reco-gap);
+        align-content:start;
+        padding-right:6px;
+        /* auto-fit N cards in the viewport; JS sets --reco-cols */
+        grid-auto-columns:minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+      }
+      @media (max-width: 460px){
+        .RecoStrip{
+        
+          grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+        }
+        .RecoNav{width:34px;height:34px;border-radius:11px;}
+      }
+  
+   
+      .RecoCard:hover{background:rgba(255,255,255,.07)}
+      .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
+      .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
+      .RecoMeta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;opacity:.9}
+      .RecoBadge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);opacity:.9}
+  
+      .RecoOld{text-decoration:line-through;opacity:.65;margin-right:4px}
+      .RecoNew{font-weight:700}
+      .RecoDisc{border-color:rgba(255,255,255,.22)}
+  
+    `;
     document.head.appendChild(s);
 }
 
@@ -9906,35 +9944,35 @@ function __ssEnsureCartIncentiveStyles() {
     const s = document.createElement("style");
     s.id = "__ssCartIncentiveStyles";
     s.textContent = `
+       
      
-   
-      .ss-ci-title{ font-weight:700; font-size: .95rem; }
-      .ss-ci-sub{ font-size: .86rem; opacity:.85; }
-.ss-ci-ticks-title{ margin-top:6px; font-size:.78rem; opacity:.75; text-align:center; }
-      .ss-ci-bar{ position:relative; width:100%; height:10px; border-radius: 999px; background: rgba(0,0,0,.08); overflow:visible; margin-top:8px; }
-      html.dark-mode .ss-ci-bar{ background: rgba(255,255,255,.12); }
-      .ss-ci-fill{ position:absolute; inset:0; width:0%; background: var(--Accent, #2563eb); border-radius: 999px; }
-      
-      .ss-ci-ticks{ position:absolute; inset:0; pointer-events:none; }
-      .ss-ci-tick{ position:absolute; top:50%; width:8px; height:8px; border-radius:999px; transform:translate(-50%,-50%); background: rgba(255,255,255,.9); border:1px solid rgba(0,0,0,.18); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-      html.dark-mode .ss-ci-tick{ background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.35); box-shadow: none; }
-      .ss-ci-ticklbl{ position:absolute; top: -18px; font-size:.72rem; font-weight:600; opacity:.8; transform:translateX(-50%); white-space:nowrap; }
-.ss-ci-badges{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-      .ss-ci-badge{ padding:6px 10px; border-radius: 999px; font-size:.82rem; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.75); }
-      html.dark-mode .ss-ci-badge{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
-      
-      @media (max-width: 520px){ .ss-ci-addons{ grid-template-columns: 1fr; } }
-      .ss-ci-card{ display:flex; gap:10px; align-items:center; padding:10px; border-radius: 14px; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.85); }
-      .ss-ci-card, .ss-ci-card *{ color: rgba(0,0,0,.92); }
-      html.dark-mode .ss-ci-card, html.dark-mode .ss-ci-card *{ color: rgba(255,255,255,.92); }
-      html.dark-mode .ss-ci-card{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
-      .ss-ci-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
-      .ss-ci-name{ font-weight:650; font-size:.9rem; line-height:1.15; }
-      .ss-ci-price{ font-size:.86rem; opacity:.85; }
-      .ss-ci-btn{ margin-left:auto; padding:8px 10px; border-radius: 12px; border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); cursor:pointer; font-weight:650; }
-      html.dark-mode .ss-ci-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
-      .ss-ci-btn:hover{ filter: brightness(1.02); }
-    `;
+        .ss-ci-title{ font-weight:700; font-size: .95rem; }
+        .ss-ci-sub{ font-size: .86rem; opacity:.85; }
+  .ss-ci-ticks-title{ margin-top:6px; font-size:.78rem; opacity:.75; text-align:center; }
+        .ss-ci-bar{ position:relative; width:100%; height:10px; border-radius: 999px; background: rgba(0,0,0,.08); overflow:visible; margin-top:8px; }
+        html.dark-mode .ss-ci-bar{ background: rgba(255,255,255,.12); }
+        .ss-ci-fill{ position:absolute; inset:0; width:0%; background: var(--Accent, #2563eb); border-radius: 999px; }
+        
+        .ss-ci-ticks{ position:absolute; inset:0; pointer-events:none; }
+        .ss-ci-tick{ position:absolute; top:50%; width:8px; height:8px; border-radius:999px; transform:translate(-50%,-50%); background: rgba(255,255,255,.9); border:1px solid rgba(0,0,0,.18); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+        html.dark-mode .ss-ci-tick{ background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.35); box-shadow: none; }
+        .ss-ci-ticklbl{ position:absolute; top: -18px; font-size:.72rem; font-weight:600; opacity:.8; transform:translateX(-50%); white-space:nowrap; }
+  .ss-ci-badges{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+        .ss-ci-badge{ padding:6px 10px; border-radius: 999px; font-size:.82rem; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.75); }
+        html.dark-mode .ss-ci-badge{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
+        
+        @media (max-width: 520px){ .ss-ci-addons{ grid-template-columns: 1fr; } }
+        .ss-ci-card{ display:flex; gap:10px; align-items:center; padding:10px; border-radius: 14px; border:1px solid rgba(0,0,0,.10); background: rgba(255,255,255,.85); }
+        .ss-ci-card, .ss-ci-card *{ color: rgba(0,0,0,.92); }
+        html.dark-mode .ss-ci-card, html.dark-mode .ss-ci-card *{ color: rgba(255,255,255,.92); }
+        html.dark-mode .ss-ci-card{ border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.25); }
+        .ss-ci-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
+        .ss-ci-name{ font-weight:650; font-size:.9rem; line-height:1.15; }
+        .ss-ci-price{ font-size:.86rem; opacity:.85; }
+        .ss-ci-btn{ margin-left:auto; padding:8px 10px; border-radius: 12px; border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); cursor:pointer; font-weight:650; }
+        html.dark-mode .ss-ci-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
+        .ss-ci-btn:hover{ filter: brightness(1.02); }
+      `;
     document.head.appendChild(s);
 }
 
@@ -10359,9 +10397,9 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
         if (shipEnabled && base >= shipThr) badges.push({ kind: "text", text: "Free shipping" });
 
         const addonHTML = addons.length ? `
-          <div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div>
-          <div class="ss-ci-addons">
-            ${addons.map(p => {
+            <div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div>
+            <div class="ss-ci-addons">
+              ${addons.map(p => {
             const price = Number(p?.price || 0) || 0;
             const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price);
             const eur = hasDisc ? Number(p.discountedPrice || 0) : price;
@@ -10377,40 +10415,40 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
             }
 
             return `
-                  <div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ""))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ""))}">
-                    <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:block;">
-                      <img class="ss-ci-img" src="${__ssEscHtml(p?.image || "")}" alt="${__ssEscHtml(p?.name || "")}">
-                    </a>
-                    <div style="min-width:0;">
-                      <a href="${href}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">
-                        <div class="ss-ci-name">${__ssEscHtml(p?.name || "")}</div>
+                    <div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ""))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ""))}">
+                      <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:block;">
+                        <img class="ss-ci-img" src="${__ssEscHtml(p?.image || "")}" alt="${__ssEscHtml(p?.name || "")}">
                       </a>
-                      ${hasDisc
+                      <div style="min-width:0;">
+                        <a href="${href}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">
+                          <div class="ss-ci-name">${__ssEscHtml(p?.name || "")}</div>
+                        </a>
+                        ${hasDisc
                     ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>`
                     : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}
+                      </div>
+                      <button class="ss-ci-btn" type="button"
+                              data-ss-quickadd="${__ssEscHtml(p?.name || "")}"
+                              data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ""))}"
+                              data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ""))}"
+                              data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ""))}"
+                              data-ss-quickadd-orig="${__ssEscHtml(String(price))}"
+                              data-ss-quickadd-disc="${__ssEscHtml(String(p?.discountedPrice || ""))}"
+                        >Add</button>
                     </div>
-                    <button class="ss-ci-btn" type="button"
-                            data-ss-quickadd="${__ssEscHtml(p?.name || "")}"
-                            data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ""))}"
-                            data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ""))}"
-                            data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ""))}"
-                            data-ss-quickadd-orig="${__ssEscHtml(String(price))}"
-                            data-ss-quickadd-disc="${__ssEscHtml(String(p?.discountedPrice || ""))}"
-                      >Add</button>
-                  </div>
-                `;
+                  `;
         }).join("")}
-          </div>
-        ` : "";
+            </div>
+          ` : "";
 
         return `
-          <div class="ss-cart-inc" id="ss-cart-inc">
-     
-         
-            <div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>
-            ${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}
-             <div class= "Badges_Div">
-              ${badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
+            <div class="ss-cart-inc" id="ss-cart-inc">
+       
+           
+              <div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>
+              ${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}
+               <div class= "Badges_Div">
+                ${badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
             if (b && b.kind === "saved") {
                 const eur = Number(b.eur || 0) || 0;
                 return `<span class="ss-ci-badge" data-badge-kind="saved" data-eur="${eur.toFixed(2)}">Saved ${eur.toFixed(2)}€</span>`;
@@ -10422,13 +10460,13 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
             const txt = String(b?.text || "");
             return `<span class="ss-ci-badge">${__ssEscHtml(txt)}</span>`;
         }).join("")}</div>` : ``}
-                <div class="ss-ci-title">${tierText}</div>
-                ${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}
-              </div>
-           
-            ${addonHTML}
-          </div>
-        `;
+                  <div class="ss-ci-title">${tierText}</div>
+                  ${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}
+                </div>
+             
+              ${addonHTML}
+            </div>
+          `;
     } catch {
         return "";
     }
@@ -10823,14 +10861,14 @@ function updateBasket() {
             const __showDiscount = (__afterLine > 0) && (__preLine > 0) && (__afterLine < (__preLine - 0.001));
             let __basketPriceHTML = __showDiscount
                 ? `
-          <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-            <span style="text-decoration:line-through;opacity:.55;font-weight:700;font-size:14px">${__preLine.toFixed(2)}€</span>
-            <span style="font-weight:900;font-size:16px">${__afterLine.toFixed(2)}€</span>
-          </div>`
+            <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+              <span style="text-decoration:line-through;opacity:.55;font-weight:700;font-size:14px">${__preLine.toFixed(2)}€</span>
+              <span style="font-weight:900;font-size:16px">${__afterLine.toFixed(2)}€</span>
+            </div>`
                 : `
-          <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-            <span style="font-weight:900;font-size:16px">${__preLine.toFixed(2)}€</span>
-          </div>`;
+            <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+              <span style="font-weight:900;font-size:16px">${__preLine.toFixed(2)}€</span>
+            </div>`;
 
 
             const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
@@ -10839,33 +10877,33 @@ function updateBasket() {
             const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
 
             productDiv.innerHTML = `
-      <div class="Basket-Item">
-        <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer">
-          <img class="Basket_Image"
-               src="${safeImg}"
-               alt="${safeName}"
-               data-name="${safeName}"
-               data-price="${__ssEscHtml(item?.price ?? "")}"
-               data-description="${safeDesc}"
-               data-imageurl="${safeImg}">
-        </a>
-        <div class="Item-Details">
-          <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer" class="BasketText">
-            <strong class="BasketText BasketTitle">${safeName}</strong>
+        <div class="Basket-Item">
+          <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer">
+            <img class="Basket_Image"
+                 src="${safeImg}"
+                 alt="${safeName}"
+                 data-name="${safeName}"
+                 data-price="${__ssEscHtml(item?.price ?? "")}"
+                 data-description="${safeDesc}"
+                 data-imageurl="${safeImg}">
           </a>
-          ${optionChipsHTML}
-          <p class="BasketTextDescription">${safeDesc}</p>
+          <div class="Item-Details">
+            <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer" class="BasketText">
+              <strong class="BasketText BasketTitle">${safeName}</strong>
+            </a>
+            ${optionChipsHTML}
+            <p class="BasketTextDescription">${safeDesc}</p>
+          </div>
+          <div class="Quantity-Controls-Basket">
+            <button class="BasketChangeQuantityButton" type="button"
+                    data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
+            <span class="BasketChangeQuantityText">${qty}</span>
+            <button class="BasketChangeQuantityButton" type="button"
+                    data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
+          </div>
+          ${__basketPriceHTML}
         </div>
-        <div class="Quantity-Controls-Basket">
-          <button class="BasketChangeQuantityButton" type="button"
-                  data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
-          <span class="BasketChangeQuantityText">${qty}</span>
-          <button class="BasketChangeQuantityButton" type="button"
-                  data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
-        </div>
-        ${__basketPriceHTML}
-      </div>
-    `;
+      `;
 
             basketContainer.appendChild(productDiv);
         }
@@ -10906,30 +10944,30 @@ function updateBasket() {
                 // cart-level discount applies => show strike-through of pre-cart total and the post-cart total
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${postCartTotal.toFixed(2)}" data-eur-original="${preCartTotal.toFixed(2)}">
-                    <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${preCartTotal.toFixed(2)}€</span>
-                    <span style="font-weight:700">${postCartTotal.toFixed(2)}€</span>
-                 </td>`;
+                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${preCartTotal.toFixed(2)}€</span>
+                      <span style="font-weight:700">${postCartTotal.toFixed(2)}€</span>
+                   </td>`;
             } else if (hasRecoDisc && recoOrigTotal > preCartTotal) {
                 // only reco discount
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}" data-eur-original="${recoOrigTotal.toFixed(2)}" data-discount-pct="${Number(item.recoDiscountPct || 0)}">
-                    <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${recoOrigTotal.toFixed(2)}€</span>
-                    <span style="font-weight:700">${preCartTotal.toFixed(2)}€</span>
-                 </td>`;
+                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${recoOrigTotal.toFixed(2)}€</span>
+                      <span style="font-weight:700">${preCartTotal.toFixed(2)}€</span>
+                   </td>`;
             } else {
                 priceCellHTML = `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}">${preCartTotal.toFixed(2)}€</td>`;
             }
 
             receiptContent += `
-  <tr>
-    <td>${qty} ×</td>
-    <td>
-      <div class="ReceiptItemName">${name}</div>
-            ${receiptChipsHTML}
-    </td>
-    ${priceCellHTML}
-  </tr>
-`;
+    <tr>
+      <td>${qty} ×</td>
+      <td>
+        <div class="ReceiptItemName">${name}</div>
+              ${receiptChipsHTML}
+      </td>
+      ${priceCellHTML}
+    </tr>
+  `;
         }
 
         receiptContent += `</table></div>`;
@@ -10938,15 +10976,15 @@ function updateBasket() {
         try { receiptContent += __ssRenderCartIncentivesHTML(totalSum, { inc: __ssInc, fullCart: __fullCart }); } catch { }
 
         receiptContent += `
-    <div class="ReceiptFooter">
-      <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
-      <strong class="PayTotalText" id="basket-total" data-eur="${__ssTotalAfter.toFixed(2)}">
-        Total: ${(__ssDiscountEUR > 0 && __ssTotalAfter < totalSum)
+      <div class="ReceiptFooter">
+        <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
+        <strong class="PayTotalText" id="basket-total" data-eur="${__ssTotalAfter.toFixed(2)}">
+          Total: ${(__ssDiscountEUR > 0 && __ssTotalAfter < totalSum)
                 ? `<span style="text-decoration:line-through; opacity:.75;">${totalSum.toFixed(2)}€</span> <span>${__ssTotalAfter.toFixed(2)}€</span>`
                 : `${__ssTotalAfter.toFixed(2)}€`}
-      </strong>
-    </div>
-  `;
+        </strong>
+      </div>
+    `;
 
         receiptDiv.innerHTML = receiptContent;
         basketContainer.appendChild(receiptDiv);
