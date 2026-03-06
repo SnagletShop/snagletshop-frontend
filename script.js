@@ -3470,7 +3470,7 @@ function searchProducts() {
             const quantitySpan = document.createElement("span");
             quantitySpan.className = "WhiteText";
             quantitySpan.id = `quantity-${__ssGetQtyKey(product.productId || product.id || product.name)}`;
-            quantitySpan.textContent = "1";
+            quantitySpan.textContent = String(__ssGetQtyValue(product.productId || product.id || product.name));
 
             const incBtn = document.createElement("button");
             incBtn.className = "Button";
@@ -5780,7 +5780,7 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
         const quantitySpan = document.createElement("span");
         quantitySpan.className = "WhiteText";
         quantitySpan.id = `quantity-${__ssGetQtyKey(product.productId || product.id || product.name)}`;
-        quantitySpan.textContent = "1";
+        quantitySpan.textContent = String(__ssGetQtyValue(product.productId || product.id || product.name));
 
         const incBtn = document.createElement("button");
         incBtn.className = "Button";
@@ -6199,22 +6199,33 @@ function __ssGetQtyKey(k) {
     return String(k || "").trim().replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 80);
 }
 
-function increaseQuantity(productKey) {
+function __ssGetQtyValue(productKey) {
     const key = __ssGetQtyKey(productKey);
     window.__ssQtyByKey = window.__ssQtyByKey || {};
-    if (!window.__ssQtyByKey[key]) window.__ssQtyByKey[key] = 1;
-    window.__ssQtyByKey[key] += 1;
+    const raw = parseInt(window.__ssQtyByKey[key], 10);
+    const qty = Math.max(1, Number.isFinite(raw) ? raw : 1);
+    window.__ssQtyByKey[key] = qty;
+    return qty;
+}
+
+function __ssSetQtyValue(productKey, qty) {
+    const key = __ssGetQtyKey(productKey);
+    window.__ssQtyByKey = window.__ssQtyByKey || {};
+    const safeQty = Math.max(1, parseInt(qty, 10) || 1);
+    window.__ssQtyByKey[key] = safeQty;
     const el = document.getElementById(`quantity-${key}`);
-    if (el) el.innerText = window.__ssQtyByKey[key];
+    if (el) el.innerText = safeQty;
+    return safeQty;
+}
+
+function increaseQuantity(productKey) {
+    const next = __ssGetQtyValue(productKey) + 1;
+    __ssSetQtyValue(productKey, next);
 }
 
 function decreaseQuantity(productKey) {
-    const key = __ssGetQtyKey(productKey);
-    window.__ssQtyByKey = window.__ssQtyByKey || {};
-    if (!window.__ssQtyByKey[key]) window.__ssQtyByKey[key] = 1;
-    if (window.__ssQtyByKey[key] > 1) window.__ssQtyByKey[key] -= 1;
-    const el = document.getElementById(`quantity-${key}`);
-    if (el) el.innerText = window.__ssQtyByKey[key];
+    const next = Math.max(1, __ssGetQtyValue(productKey) - 1);
+    __ssSetQtyValue(productKey, next);
 }
 
 function addToCart_legacy(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = '') {// analytics: add to cart
@@ -8764,22 +8775,24 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const qtyControls = document.createElement("div");
     qtyControls.className = "Quantity_Controls_ProductPage";
 
+    const qtyKey = (window.__ssCurrentProductId || product.productId || product.id || productName);
+
     const dec = document.createElement("button");
     dec.className = "Button";
     dec.type = "button";
     dec.textContent = TEXTS?.BASKET?.BUTTONS?.DECREASE || "-";
-    dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(productName); } catch { } });
+    dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(qtyKey); } catch { } });
 
     const qtySpan = document.createElement("span");
     qtySpan.className = "WhiteText";
-    qtySpan.id = `quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`;
-    qtySpan.textContent = "1";
+    qtySpan.id = `quantity-${__ssGetQtyKey(qtyKey)}`;
+    qtySpan.textContent = String(__ssGetQtyValue(qtyKey));
 
     const inc = document.createElement("button");
     inc.className = "Button";
     inc.type = "button";
     inc.textContent = TEXTS?.BASKET?.BUTTONS?.INCREASE || "+";
-    inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(productName); } catch { } });
+    inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(qtyKey); } catch { } });
 
     qtyControls.append(dec, qtySpan, inc);
 
@@ -9166,22 +9179,16 @@ async function __ssRecoRenderForProduct(product) {
                 u.searchParams.set("limit", String(recState.batchSize));
                 if (recState.listToken) u.searchParams.set("listToken", recState.listToken);
                 try {
-                    // Build exclude list from stable state + already-rendered items.
-                    const exSet = (recState.excludeSet instanceof Set) ? recState.excludeSet : new Set();
+                    // Build exclude list only from stable exclusions. Do not add already-rendered
+                    // items here because this request also uses offset pagination; mixing both can
+                    // skip later pages on mobile and leave the strip non-scrollable.
+                    const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
 
                     // Always exclude current PDP + source
                     const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
                     const src = __ssIdNorm(recState.sourceProductId || '');
                     if (cur && !__ssIsBadId(cur)) exSet.add(cur);
                     if (src && !__ssIsBadId(src)) exSet.add(src);
-
-                    // Also exclude whatever has already been rendered in this section
-                    if (Array.isArray(recState.items)) {
-                        for (const it of recState.items) {
-                            const pid = __ssIdNorm(it && it.productId);
-                            if (pid && !__ssIsBadId(pid)) exSet.add(pid);
-                        }
-                    }
 
                     const exCsv = Array.from(exSet).filter(Boolean).join(",");
                     // Always include exclude param (helps backend logs + deterministic behavior)
@@ -9245,12 +9252,13 @@ async function __ssRecoRenderForProduct(product) {
                 recState.batchesLoaded += 1;
                 recState.hasMore = !!d.hasMore && serverReturned > 0;
                 try {
-                    // add returned ids to stable exclude set to prevent repeats across pages
-                    const exSet = (recState.excludeSet instanceof Set) ? recState.excludeSet : new Set();
-                    for (const it of (d.items || [])) {
-                        const pid = __ssIdNorm(it && it.productId);
-                        if (pid && !__ssIsBadId(pid)) exSet.add(pid);
-                    }
+                    // Keep stable exclusions limited to explicit/current/source ids.
+                    // Already-rendered items are de-duplicated client-side via seenSet.
+                    const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
+                    const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
+                    const src = __ssIdNorm(recState.sourceProductId || '');
+                    if (cur && !__ssIsBadId(cur)) exSet.add(cur);
+                    if (src && !__ssIsBadId(src)) exSet.add(src);
                     recState.excludeSet = exSet;
                 } catch { }
 
@@ -9773,8 +9781,15 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
         : (String(__ssABGetProductDescription(__pForAB) || "")).trim();
 
 
-    const qty = (typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1;
+    const qtyKeyForCart = productIdForCart || productIdHint || window.__ssCurrentProductId || productName;
+    const qty = Math.max(
+        1,
+        (typeof __ssGetQtyValue === "function")
+            ? __ssGetQtyValue(qtyKeyForCart)
+            : ((typeof cart === "object" && cart && cart[productName]) ? (parseInt(cart[productName], 10) || 1) : 1)
+    );
     if (typeof cart === "object" && cart) cart[productName] = 1;
+    try { __ssSetQtyValue(qtyKeyForCart, 1); } catch { }
 
     // Normalize selected options
     let selOpts = __ssNormalizeSelectedOptions(selectedOptions);
