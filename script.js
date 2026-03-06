@@ -9162,7 +9162,6 @@ async function __ssRecoRenderForProduct(product) {
                 u.searchParams.set("sourceProductId", recState.sourceProductId);
                 if (recState.currentProductId) u.searchParams.set("currentProductId", String(recState.currentProductId));
                 u.searchParams.set("device", recState.device);
-                u.searchParams.set("offset", String(recState.offset));
                 u.searchParams.set("limit", String(recState.batchSize));
                 if (recState.listToken) u.searchParams.set("listToken", recState.listToken);
                 try {
@@ -9186,6 +9185,10 @@ async function __ssRecoRenderForProduct(product) {
                     const exCsv = Array.from(exSet).filter(Boolean).join(",");
                     // Always include exclude param (helps backend logs + deterministic behavior)
                     u.searchParams.set("exclude", exCsv);
+
+                    // Once exclusion-based paging is active, do not also send offset.
+                    if (exSet.size > 0) u.searchParams.delete("offset");
+                    else u.searchParams.set("offset", String(recState.offset));
 
                     // Keep for client-side filtering too
                     recState.__excludeSet = exSet;
