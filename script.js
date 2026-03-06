@@ -10861,14 +10861,7 @@ function updateBasket() {
             const __afterLine = Number(__lt?.after || 0) || 0;
 
             const __showDiscount = (__afterLine > 0) && (__preLine > 0) && (__afterLine < (__preLine - 0.001));
-            let __basketPriceHTML = __showDiscount
-                ? `
-            <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-              <span style="text-decoration:line-through;opacity:.55;font-weight:700;font-size:14px">${__preLine.toFixed(2)}€</span>
-              <span style="font-weight:900;font-size:16px">${__afterLine.toFixed(2)}€</span>
-            </div>`
-                : `
-            `;
+
 
 
             const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
@@ -11036,7 +11029,6 @@ function updateBasket() {
         }
     }
 }
-
 
 
 
