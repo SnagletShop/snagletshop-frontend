@@ -10736,44 +10736,44 @@ function updateBasket() {
             // weights: array of non-negative integers
             const out = new Array(weights.length).fill(0);
             const sumW = weights.reduce((a, b) => a + (Number(b) || 0), 0);
-          
+
             if (!(totalCents > 0) || !(sumW > 0)) return out;
-          
+
             // Largest remainder method
             let used = 0;
             const rema = [];
-          
+
             for (let i = 0; i < weights.length; i++) {
-              const w = Math.max(0, Number(weights[i]) || 0);
-          
-              if (!w) {
-                out[i] = 0;
-                rema.push({ i, frac: 0 });
-                continue;
-              }
-          
-              const raw = (totalCents * w) / sumW;
-              const base = Math.floor(raw);
-          
-              out[i] = base;
-              used += base;
-              rema.push({ i, frac: raw - base });
+                const w = Math.max(0, Number(weights[i]) || 0);
+
+                if (!w) {
+                    out[i] = 0;
+                    rema.push({ i, frac: 0 });
+                    continue;
+                }
+
+                const raw = (totalCents * w) / sumW;
+                const base = Math.floor(raw);
+
+                out[i] = base;
+                used += base;
+                rema.push({ i, frac: raw - base });
             }
-          
+
             let left = totalCents - used;
-          
+
             if (left > 0) {
-              rema.sort((a, b) => b.frac - a.frac);
-          
-              for (let k = 0; k < rema.length && left > 0; k++) {
-                const idx = rema[k].i;
-                out[idx] += 1;
-                left -= 1;
-              }
+                rema.sort((a, b) => b.frac - a.frac);
+
+                for (let k = 0; k < rema.length && left > 0; k++) {
+                    const idx = rema[k].i;
+                    out[idx] += 1;
+                    left -= 1;
+                }
             }
-          
+
             return out;
-          }
+        }
 
         // Build arrays aligned to entries order
         const __cartLines = entries.map(([k, it]) => {
@@ -10868,59 +10868,41 @@ function updateBasket() {
             const safeImg = __ssEscHtml(item?.image || "");
             const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
 
-            // Basket row price HTML (post-bundle and post-tier, matches receipt math)
-            const __lt = __computeLineTotalsForRenderByIndex(__i);
-            const __preLine = Number(__lt?.pre || 0) || 0;
-            const __afterLine = Number(__lt?.after || 0) || 0;
-
-            const __showDiscount = (__afterLine > 0) && (__preLine > 0) && (__afterLine < (__preLine - 0.001));
-            let __basketPriceHTML = __showDiscount
-                ? `
-            <div class="BasketItemPrice" style="margin-left:auto;text-align:right;min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-              <span style="text-decoration:line-through;opacity:.55;font-weight:700;font-size:14px">${__preLine.toFixed(2)}€</span>
-              <span style="font-weight:900;font-size:16px">${__afterLine.toFixed(2)}€</span>
-            </div>`
-                : `
-            `;
-
-
-            const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;;
+            const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;
 
             const __dispOpts = __ssGetSelectedOptionsForDisplay(item, product);
             const optionChipsHTML = __ssBuildOptionChipsHTML(__dispOpts, false);
 
             productDiv.innerHTML = `
-        <div class="Basket-Item">
-          <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer">
-            <img class="Basket_Image"
-                 src="${safeImg}"
-                 alt="${safeName}"
-                 data-name="${safeName}"
-                 data-price="${__ssEscHtml(item?.price ?? "")}"
-                 data-description="${safeDesc}"
-                 data-imageurl="${safeImg}">
-          </a>
-          <div class="Item-Details">
-            <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer" class="BasketText">
-              <strong class="BasketText BasketTitle">${safeName}</strong>
-            </a>
-            ${optionChipsHTML}
-            <p class="BasketTextDescription">${safeDesc}</p>
-          </div>
-          <div class="Quantity-Controls-Basket">
-            <button class="BasketChangeQuantityButton" type="button"
-                    data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
-            <span class="BasketChangeQuantityText">${qty}</span>
-            <button class="BasketChangeQuantityButton" type="button"
-                    data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
-          </div>
-          ${__basketPriceHTML}
-        </div>
-      `;
+              <div class="Basket-Item">
+                <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer">
+                  <img class="Basket_Image"
+                       src="${safeImg}"
+                       alt="${safeName}"
+                       data-name="${safeName}"
+                       data-price="${__ssEscHtml(item?.price ?? "")}"
+                       data-description="${safeDesc}"
+                       data-imageurl="${safeImg}">
+                </a>
+                <div class="Item-Details">
+                  <a href="https://www.snagletshop.com/?product=${encName}${__recoQ}" target="_blank" rel="noopener noreferrer" class="BasketText">
+                    <strong class="BasketText BasketTitle">${safeName}</strong>
+                  </a>
+                  ${optionChipsHTML}
+                  <p class="BasketTextDescription">${safeDesc}</p>
+                </div>
+                <div class="Quantity-Controls-Basket">
+                  <button class="BasketChangeQuantityButton" type="button"
+                          data-key="${encodeURIComponent(key)}" data-delta="-1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.DECREASE || "-")}</button>
+                  <span class="BasketChangeQuantityText">${qty}</span>
+                  <button class="BasketChangeQuantityButton" type="button"
+                          data-key="${encodeURIComponent(key)}" data-delta="1">${__ssEscHtml(TEXTS?.BASKET?.BUTTONS?.INCREASE || "+")}</button>
+                </div>
+              </div>
+            `;
 
             basketContainer.appendChild(productDiv);
         }
-
         // -------- Receipt (checkout summary) --------
         const receiptDiv = document.createElement("div");
         receiptDiv.classList.add("BasketReceipt");
