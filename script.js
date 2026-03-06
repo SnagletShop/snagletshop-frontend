@@ -8764,24 +8764,22 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const qtyControls = document.createElement("div");
     qtyControls.className = "Quantity_Controls_ProductPage";
 
-    const __pdpQtyKeySource = String(window.__ssCurrentProductId || productName || "").trim();
-
     const dec = document.createElement("button");
     dec.className = "Button";
     dec.type = "button";
     dec.textContent = TEXTS?.BASKET?.BUTTONS?.DECREASE || "-";
-    dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(__pdpQtyKeySource); } catch { } });
+    dec.addEventListener("click", (e) => { e.preventDefault(); try { decreaseQuantity(productName); } catch { } });
 
     const qtySpan = document.createElement("span");
     qtySpan.className = "WhiteText";
-    qtySpan.id = `quantity-${__ssGetQtyKey(__pdpQtyKeySource)}`;
+    qtySpan.id = `quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`;
     qtySpan.textContent = "1";
 
     const inc = document.createElement("button");
     inc.className = "Button";
     inc.type = "button";
     inc.textContent = TEXTS?.BASKET?.BUTTONS?.INCREASE || "+";
-    inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(__pdpQtyKeySource); } catch { } });
+    inc.addEventListener("click", (e) => { e.preventDefault(); try { increaseQuantity(productName); } catch { } });
 
     qtyControls.append(dec, qtySpan, inc);
 
@@ -9164,8 +9162,7 @@ async function __ssRecoRenderForProduct(product) {
                 u.searchParams.set("sourceProductId", recState.sourceProductId);
                 if (recState.currentProductId) u.searchParams.set("currentProductId", String(recState.currentProductId));
                 u.searchParams.set("device", recState.device);
-                const __useOffsetPaging = !(recState.excludeSet instanceof Set) || recState.excludeSet.size <= 2;
-                if (__useOffsetPaging) u.searchParams.set("offset", String(recState.offset));
+                u.searchParams.set("offset", String(recState.offset));
                 u.searchParams.set("limit", String(recState.batchSize));
                 if (recState.listToken) u.searchParams.set("listToken", recState.listToken);
                 try {
