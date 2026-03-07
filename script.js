@@ -8507,6 +8507,19 @@ function __ssHideProductPageSkeleton() {
     try { sk.remove(); } catch {}
 }
 
+function __ssScrollToTopForProductSkeleton() {
+    try {
+        const isPhone = !!(window.matchMedia && window.matchMedia("(max-width: 680px)").matches);
+        if (!isPhone) return;
+        requestAnimationFrame(() => {
+            try { window.scrollTo({ top: 0, behavior: "smooth" }); }
+            catch {
+                try { window.scrollTo(0, 0); } catch {}
+            }
+        });
+    } catch {}
+}
+
 /* Override: safe product page with multi-options + option→image mapping */
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
@@ -8530,6 +8543,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     }
 
     __ssShowProductPageSkeleton();
+    __ssScrollToTopForProductSkeleton();
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
@@ -8961,7 +8975,10 @@ function renderProductPage(product, validImages, productName, productPrice, prod
         });
     } catch { }
 
-    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { }
+    try {
+        const __isPhoneAfterRender = !!(window.matchMedia && window.matchMedia("(max-width: 680px)").matches);
+        if (!__isPhoneAfterRender) window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch { }
     try { updateAllPrices(); } catch { }
     try { updateImage(); } catch { }
 }
