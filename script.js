@@ -1406,6 +1406,32 @@ let debounceTimeout;
 
 let userHistoryStack = [];
 let currentIndex = -1;
+const HISTORY_SESSION_KEY = "ss_history_stack_v1";
+const HISTORY_INDEX_SESSION_KEY = "ss_history_index_v1";
+let __ssHandlingPopstate = false;
+let __ssModalHistoryPushed = false;
+
+function __ssPersistHistoryState() {
+    try {
+        sessionStorage.setItem(HISTORY_SESSION_KEY, JSON.stringify(userHistoryStack || []));
+        sessionStorage.setItem(HISTORY_INDEX_SESSION_KEY, String(Number.isFinite(currentIndex) ? currentIndex : -1));
+    } catch { }
+}
+
+function __ssRestoreHistoryStateFromSession() {
+    try {
+        const rawStack = sessionStorage.getItem(HISTORY_SESSION_KEY);
+        const rawIndex = sessionStorage.getItem(HISTORY_INDEX_SESSION_KEY);
+        const parsed = rawStack ? JSON.parse(rawStack) : null;
+        if (Array.isArray(parsed) && parsed.length) {
+            userHistoryStack = parsed;
+            const idx = parseInt(rawIndex ?? String(parsed.length - 1), 10);
+            currentIndex = Number.isFinite(idx) ? Math.max(0, Math.min(idx, parsed.length - 1)) : (parsed.length - 1);
+            return true;
+        }
+    } catch { }
+    return false;
+}
 
 if (location.pathname !== "/" && !location.pathname.includes(".") && !location.pathname.startsWith("/order-status/") && !location.pathname.startsWith("/p/")) {
     // Allow deep links for product slugs and /p/<id>.
@@ -1474,10 +1500,29 @@ function buildUrlForState(state) {
     return "/";
 }
 
-function navigate(action, data = null) {
+function navigate(action, data = null, options = null) {
     if (isReplaying) return;
 
+    const opts = (options && typeof options === "object") ? options : {};
+    const replaceCurrent = opts.replaceCurrent === true;
     const newState = { action, data };
+    const lastState = userHistoryStack[currentIndex] || null;
+    const sameAsLast = !!(lastState && JSON.stringify(lastState) === JSON.stringify(newState));
+
+    if (sameAsLast) {
+        try { history.replaceState({ index: currentIndex }, "", buildUrlForState(newState)); } catch { }
+        __ssPersistHistoryState();
+        handleStateChange(newState);
+        return;
+    }
+
+    if (replaceCurrent && currentIndex >= 0 && userHistoryStack[currentIndex]) {
+        userHistoryStack[currentIndex] = newState;
+        try { history.replaceState({ index: currentIndex }, "", buildUrlForState(newState)); } catch { }
+        __ssPersistHistoryState();
+        handleStateChange(newState);
+        return;
+    }
 
     // Trim future if navigating from mid-history
     if (currentIndex < userHistoryStack.length - 1) {
@@ -1486,9 +1531,17 @@ function navigate(action, data = null) {
 
     // Add new state
     userHistoryStack.push(newState);
-    currentIndex = userHistoryStack.length - 1;
+
+    if (userHistoryStack.length > MAX_HISTORY_LENGTH) {
+        const overflow = userHistoryStack.length - MAX_HISTORY_LENGTH;
+        userHistoryStack = userHistoryStack.slice(overflow);
+        currentIndex = userHistoryStack.length - 1;
+    } else {
+        currentIndex = userHistoryStack.length - 1;
+    }
 
     history.pushState({ index: currentIndex }, "", buildUrlForState(newState));
+    __ssPersistHistoryState();
     handleStateChange(newState);
 }
 
@@ -2322,20 +2375,38 @@ function handleStateChange(state) {
 
 window.addEventListener('popstate', (event) => {
     const modal = document.getElementById("paymentModal");
-    if (modal && typeof closeModal === "function") {
-        closeModal();
-        return;
-    }
-
     const index = event.state?.index;
-    if (typeof index === 'number' && userHistoryStack[index]) {
-        isReplaying = true;
-        handleStateChange(userHistoryStack[index]);
-        currentIndex = index;
+    const wantsModalOpen = event.state?.modalOpen === true;
+    __ssHandlingPopstate = true;
+    try {
+        if (modal && typeof closeModal === "function") {
+            closeModal({ fromHistory: true });
+        }
 
-        isReplaying = false;
-    } else {
+        if (typeof index === 'number' && userHistoryStack[index]) {
+            isReplaying = true;
+            currentIndex = index;
+            __ssPersistHistoryState();
+            handleStateChange(userHistoryStack[index]);
+            isReplaying = false;
+            __ssModalHistoryPushed = wantsModalOpen;
+
+            if (wantsModalOpen && typeof openModal === "function") {
+                Promise.resolve().then(() => openModal({ fromHistory: true })).catch(() => { });
+            }
+            return;
+        }
+
+        if (wantsModalOpen && typeof openModal === "function") {
+            __ssModalHistoryPushed = true;
+            Promise.resolve().then(() => openModal({ fromHistory: true })).catch(() => { });
+            return;
+        }
+
+        __ssModalHistoryPushed = false;
         console.warn("⚠️ Invalid popstate index:", event.state);
+    } finally {
+        __ssHandlingPopstate = false;
     }
 });
 function initializeHistory() {
@@ -2355,7 +2426,6 @@ function initializeHistory() {
                     TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER ||
                     "No description available.";
 
-                // If reco token exists, hydrate PDP discount payload from durable store.
                 if (recoTok) {
                     try {
                         const ent = __ssRecoDiscountStoreGet(recoTok);
@@ -2378,7 +2448,7 @@ function initializeHistory() {
 
                 userHistoryStack = [state];
                 currentIndex = 0;
-
+                __ssPersistHistoryState();
                 history.replaceState({ index: 0 }, "", buildUrlForState(state));
                 handleStateChange(state);
                 return;
@@ -2388,7 +2458,6 @@ function initializeHistory() {
         }
     } catch { }
 
-    // Deep link: /?product=...
     // Deep link: /?p=<productId>
     const pidParam = params.get("p") || params.get("pid") || params.get("productId");
     if (pidParam) {
@@ -2400,6 +2469,7 @@ function initializeHistory() {
                 const state = { action: "GoToProductPage", data: [prod.name, (__ssResolveVariantPriceEUR(prod, [], "") || prod.price), desc, null, pid, null] };
                 userHistoryStack = [state];
                 currentIndex = 0;
+                __ssPersistHistoryState();
                 history.replaceState({ index: 0 }, "", buildUrlForState(state));
                 handleStateChange(state);
                 return;
@@ -2408,10 +2478,8 @@ function initializeHistory() {
     }
 
     const productParam = params.get("product");
-
     if (productParam) {
         const prod = findProductByNameParam(productParam);
-
         if (prod) {
             const desc =
                 prod.description ||
@@ -2425,7 +2493,7 @@ function initializeHistory() {
 
             userHistoryStack = [state];
             currentIndex = 0;
-
+            __ssPersistHistoryState();
             history.replaceState({ index: 0 }, "", buildUrlForState(state));
             handleStateChange(state);
             return;
@@ -2434,14 +2502,14 @@ function initializeHistory() {
         history.replaceState({ index: 0 }, "", "/");
     }
 
-    // Normal boot path
-    if (currentIndex >= 0 && userHistoryStack[currentIndex]) {
+    if (__ssRestoreHistoryStateFromSession() && currentIndex >= 0 && userHistoryStack[currentIndex]) {
+        try { history.replaceState({ index: currentIndex }, "", buildUrlForState(userHistoryStack[currentIndex])); } catch { }
         handleStateChange(userHistoryStack[currentIndex]);
-    } else {
-        navigate("loadProducts", ["Default_Page", "NameFirst", "asc"]);
+        return;
     }
-}
 
+    navigate("loadProducts", ["Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
+}
 // Replace old trackUserEvent calls with navigate()
 function trackedGoToSettings() {
     navigate('GoToSettings');
@@ -2452,10 +2520,16 @@ function trackedGoToCart() {
 }
 
 function trackSearch(query) {
-    const lastEvent = userHistoryStack[userHistoryStack.length - 1];
-    if (!lastEvent || lastEvent.action !== 'searchQuery' || lastEvent.data[0] !== query) {
-        navigate('searchQuery', [query]);
+    const trimmed = String(query || "").trim();
+    const currentState = userHistoryStack[currentIndex] || null;
+    const currentQuery = String(currentState?.data?.[0] || "").trim();
+    if (currentState?.action === 'searchQuery') {
+        if (currentQuery !== trimmed) {
+            navigate('searchQuery', [trimmed], { replaceCurrent: true });
+        }
+        return;
     }
+    navigate('searchQuery', [trimmed]);
 }
 /* =========================
    APP BOOT LOADER (Products)
@@ -2736,10 +2810,10 @@ function setupSearchInputs() {
 
         if (trimmed.length > 0) {
             trackSearch(trimmed);
-            searchProducts(trimmed);
-        } else {
-            loadProducts(lastCategory || "Default_Page");
+            return;
         }
+
+        navigate("loadProducts", [window.currentCategory || lastCategory || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
     };
 
     const debouncedDesktop = debounce(() => {
@@ -2777,6 +2851,9 @@ const functionRegistry = {
     searchQuery
     // add more functions here as needed
 };
+window.addEventListener("beforeunload", () => {
+    try { __ssPersistHistoryState(); } catch { }
+});
 
 // === LOAD FROM SESSION ===
 
@@ -3274,7 +3351,7 @@ async function handleStripeRedirectReturnOnLoad() {
     stripStripeReturnParamsFromUrl(url);
     const q = url.searchParams.toString();
     const cleaned = url.pathname + (q ? `?${q}` : "");
-    try { window.history.replaceState({}, "", cleaned); } catch { }
+    try { window.history.replaceState({ index: currentIndex }, "", cleaned); } catch { }
 
     return true;
 }
@@ -3314,12 +3391,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const isPageRefresh = navEntry?.type === "reload";
 
     const params = new URLSearchParams(window.location.search);
-    if (isPageRefresh && !params.has("product")) {
-        console.log("🔄 Page refresh detected, clearing session history...");
-
-
-
-        history.replaceState({ page: "loadProducts", index: 0 }, "", window.location.pathname);
+    const path = String(window.location.pathname || "/");
+    const isProductDeepLink = path.startsWith("/p/") || params.has("product") || params.has("p") || params.has("pid") || params.has("productId");
+    if (isPageRefresh && !isProductDeepLink && currentIndex >= 0) {
+        try { history.replaceState({ index: currentIndex }, "", buildUrlForState(userHistoryStack[currentIndex] || { action: "loadProducts", data: [window.currentCategory || lastCategory || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"] })); } catch { }
     }
 });
 
@@ -3346,27 +3421,30 @@ document.addEventListener("keydown", (e) => {
 
 
 function searchQuery(query) {
+    const normalized = String(query || "").trim();
     const input = document.getElementById("Search_Bar");
     const mobileInput = document.getElementById("Mobile_Search_Bar");
 
-    if (input) input.value = query;
-    if (mobileInput) mobileInput.value = query;
+    if (input) input.value = normalized;
+    if (mobileInput) mobileInput.value = normalized;
 
-    console.debug(`🔍 Replaying search for: ${query}`);
-    searchProducts(query); // ✅ This triggers the actual search display
+    console.debug(`🔍 Replaying search for: ${normalized}`);
+    searchProducts(normalized);
 }
 
 
 
 
-function searchProducts() {
+function searchProducts(forcedQuery = null) {
     const queryDesktop = document.getElementById("Search_Bar")?.value || "";
     const queryMobile = document.getElementById("Mobile_Search_Bar")?.value || "";
 
     const activeElement = document.activeElement;
     let rawQuery = "";
 
-    if (activeElement?.id === "Mobile_Search_Bar") {
+    if (typeof forcedQuery === "string") {
+        rawQuery = forcedQuery;
+    } else if (activeElement?.id === "Mobile_Search_Bar") {
         rawQuery = queryMobile;
     } else {
         rawQuery = queryDesktop;
@@ -5455,13 +5533,23 @@ function clearBasketCompletely() {
 
 
 // Function to show the modal
-async function openModal() {
+async function openModal(options = {}) {
+    const opts = (options && typeof options === "object") ? options : {};
+    const fromHistory = opts.fromHistory === true;
+
     await createPaymentModal();
 
     const modal = document.getElementById("paymentModal");
     if (modal) modal.style.display = "flex";
 
-    history.pushState({ modalOpen: true }, "", window.location.href);
+    if (!__ssModalHistoryPushed && !fromHistory) {
+        try {
+            history.pushState({ index: currentIndex, modalOpen: true }, "", window.location.href);
+            __ssModalHistoryPushed = true;
+        } catch { }
+    } else if (fromHistory) {
+        __ssModalHistoryPushed = true;
+    }
 
     // ✅ Re-wire modal logic to the new server-truth flow (tariffs + PI + mismatch handling)
     await initPaymentModalLogic();
@@ -5471,6 +5559,11 @@ function closeModal(opts = {}) {
     const options = (opts && typeof opts === "object") ? opts : {};
     const preserveDraft = options.preserveDraft !== false; // default true
     const clearDraft = options.clearDraft === true;
+    const fromHistory = options.fromHistory === true;
+
+    if (!fromHistory && !__ssHandlingPopstate && history.state?.modalOpen) {
+        try { history.back(); return; } catch { }
+    }
 
     if (preserveDraft) saveCheckoutDraftFromModal();
     if (clearDraft) clearCheckoutDraft();
@@ -5498,6 +5591,7 @@ function closeModal(opts = {}) {
     window.latestClientSecret = null;
     window.latestOrderId = null;
     window.latestPaymentIntentId = null;
+    __ssModalHistoryPushed = false;
 }
 
 
@@ -5580,7 +5674,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.hash;
 
         // IMPORTANT: no reload here. Just clean the address bar.
-        history.replaceState({}, "", cleanUrl);
+        history.replaceState({ index: currentIndex }, "", cleanUrl);
 
         // Show success overlay (non-blocking)
         checkAndShowPaymentSuccess();
@@ -5619,7 +5713,11 @@ function handleSortChange(newSort) {
     localStorage.setItem("defaultSort", newSort);
     syncSortSelects(newSort); // Updates both dropdowns
     if (typeof window.currentCategory !== "undefined") {
-        loadProducts(window.currentCategory, newSort, window.currentSortOrder || "asc");
+        if (isReplaying) {
+            loadProducts(window.currentCategory, newSort, window.currentSortOrder || "asc");
+        } else {
+            navigate("loadProducts", [window.currentCategory || lastCategory || "Default_Page", newSort, window.currentSortOrder || "asc"]);
+        }
     }
 }
 
@@ -5637,6 +5735,8 @@ function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
     sortBy = sortBy || "NameFirst";
     sortOrder = sortOrder || "asc";
     category = category || Object.keys(productsDatabase).find(k => Array.isArray(productsDatabase[k]) && productsDatabase[k].length) || "Default_Page";
+    window.currentSortOrder = sortOrder;
+    window.currentCategory = category;
 
     document.getElementById('Viewer').innerHTML = '';
 
@@ -6497,8 +6597,6 @@ function parseIncomingProductRef() {
 }
 
 function navigateToProduct(productName) {
-    const formattedName = productName.toLowerCase().replace(/\s+/g, "-");
-
     // analytics: product clicked
     const __ssClickToken = __ssToken('click');
     __ssRememberClickToken(__ssClickToken);
@@ -6507,8 +6605,15 @@ function navigateToProduct(productName) {
         extra: { clickToken: __ssClickToken }
     });
 
-    history.pushState({}, "", `/${formattedName}`);
-    GoToProductPage(productName, getProductPrice(productName), getProductDescription(productName));
+    try {
+        const prod = getAllProductsFlatSafe().find(p => String(p?.name || "") === String(productName || "")) || null;
+        const desc = (prod && ((__ssABGetProductDescription(prod) || prod.description))) || getProductDescription(productName);
+        const price = (prod && (__ssResolveVariantPriceEUR(prod, [], "") || prod.price)) || getProductPrice(productName);
+        const pid = __ssIdNorm(prod?.productId || "");
+        navigate("GoToProductPage", [productName, price, desc, null, pid || null, null]);
+    } catch {
+        navigate("GoToProductPage", [productName, getProductPrice(productName), getProductDescription(productName)]);
+    }
 }
 
 
