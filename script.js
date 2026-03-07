@@ -8504,8 +8504,7 @@ function __ssShowProductPageSkeleton() {
 function __ssHideProductPageSkeleton() {
     const sk = document.getElementById("ProductPageSkeleton");
     if (!sk) return;
-    try { sk.classList.add("is-hiding"); } catch {}
-    window.setTimeout(() => { try { sk.remove(); } catch {} }, 240);
+    try { sk.remove(); } catch {}
 }
 
 /* Override: safe product page with multi-options + option→image mapping */
@@ -8934,8 +8933,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     details.append(imagesCol, infoCol);
     productDiv.appendChild(details);
     Product_Viewer.appendChild(productDiv);
-    viewer.appendChild(Product_Viewer);
-    try { __ssHideProductPageSkeleton(); } catch {}
+    try { viewer.replaceChildren(Product_Viewer); } catch { viewer.innerHTML = ''; viewer.appendChild(Product_Viewer); }
 
     // Ensure product.productId is sane for recommendations + discount matching
     try {
@@ -8945,6 +8943,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
             window.__ssCurrentProductId = __pid;
         }
     } catch { }
+
+    try { requestAnimationFrame(() => { try { Product_Viewer.classList.add('is-ready'); } catch {} }); } catch {}
 
     try { __ssRecoRenderForProduct(product); } catch { }
 
