@@ -4750,6 +4750,511 @@
             justify-content: center !important;
         }
 
+        /* Product page skeleton */
+        .pps {
+            width: 100%;
+            display: block;
+            padding: 14px 10px 20px;
+            box-sizing: border-box;
+        }
+
+        .pps-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        .pps-top {
+            display: grid;
+            grid-template-columns: minmax(320px, 620px) minmax(300px, 420px);
+            gap: 34px;
+            align-items: start;
+        }
+
+        /* left side */
+        .pps-left {
+            position: relative;
+            padding: 12px 36px 0;
+        }
+
+        .pps-main-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .pps-arrow {
+            position: absolute;
+            top: 42%;
+            width: 0;
+            height: 0;
+            opacity: 0.9;
+            transform: translateY(-50%);
+            border-top: 16px solid transparent;
+            border-bottom: 16px solid transparent;
+        }
+
+        .pps-arrow-left {
+            left: 0;
+            border-right: 26px solid #b9b2ab;
+        }
+
+        .pps-arrow-right {
+            right: 0;
+            border-left: 26px solid #b9b2ab;
+        }
+
+        .pps-thumbs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 10px 0 0 32px;
+        }
+
+        .pps-thumb {
+            width: 58px;
+            height: 58px;
+            border-radius: 6px;
+        }
+
+        /* right side */
+        .pps-right {
+            padding-top: 8px;
+        }
+
+        .pps-title-line {
+            height: 22px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .pps-title-line-1 {
+            width: 82%;
+            height: 24px;
+        }
+
+        .pps-title-line-2 {
+            width: 64%;
+            height: 24px;
+            margin-bottom: 22px;
+        }
+
+        .pps-desc {
+            margin-bottom: 18px;
+        }
+
+        .pps-text {
+            height: 14px;
+            border-radius: 7px;
+            margin-bottom: 10px;
+            width: 92%;
+        }
+
+        .pps-text.short {
+            width: 68%;
+        }
+
+        .pps-bullets {
+            margin-bottom: 16px;
+        }
+
+        .pps-bullet-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .pps-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            flex: 0 0 16px;
+        }
+
+        .pps-bullet-text {
+            height: 14px;
+            width: 72%;
+            border-radius: 7px;
+        }
+
+        .pps-shipping {
+            width: 90px;
+            height: 12px;
+            border-radius: 7px;
+            margin: 18px 0 16px;
+        }
+
+        .pps-price {
+            width: 110px;
+            height: 20px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+
+        .pps-buy-row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+
+        .pps-qty {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pps-qty-btn {
+            width: 48px;
+            height: 46px;
+            border-radius: 4px;
+        }
+
+        .pps-qty-num {
+            width: 44px;
+            height: 28px;
+            border-radius: 6px;
+        }
+
+        .pps-cart-btn {
+            width: 195px;
+            height: 46px;
+            border-radius: 4px;
+        }
+
+        .pps-buy-btn {
+            width: 100%;
+            max-width: 375px;
+            height: 52px;
+            border-radius: 4px;
+        }
+
+        /* related products */
+        .pps-related {
+            margin-top: 44px;
+        }
+
+        .pps-related-title {
+            width: 140px;
+            height: 24px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .pps-related-row {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(120px, 1fr));
+            gap: 14px;
+        }
+
+        .pps-related-card {
+            min-width: 0;
+        }
+
+        .pps-related-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .pps-related-line {
+            width: 92%;
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .pps-related-line.short {
+            width: 55%;
+        }
+
+        /* shimmer */
+        .sk {
+            background: linear-gradient(90deg,
+                    rgba(180, 174, 168, 0.22) 0%,
+                    rgba(230, 227, 223, 0.65) 50%,
+                    rgba(180, 174, 168, 0.22) 100%);
+            background-size: 220% 100%;
+            animation: ppsShimmer 1.15s linear infinite;
+        }
+
+        @keyframes ppsShimmer {
+            0% {
+                background-position: 220% 0;
+            }
+
+            100% {
+                background-position: -220% 0;
+            }
+        }
+
+        /* optional fade-out */
+        #ProductPageSkeleton {
+            opacity: 1;
+            transition: opacity 0.22s ease;
+        }
+
+        #ProductPageSkeleton.is-hiding {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* mobile */
+        @media (max-width: 680px) {
+            .pps {
+                width: 100%;
+                display: block;
+                padding: 1.8vw 2.2vw 5vw;
+                box-sizing: border-box;
+            }
+
+            .pps-inner {
+                width: 100%;
+                max-width: 100%;
+                margin: 0 auto;
+            }
+
+            .pps-top {
+                display: block;
+            }
+
+            .pps-left {
+                position: relative;
+                padding: 0;
+                margin-bottom: 4.8vw;
+            }
+
+            .pps-main-image {
+                width: 58vw;
+                max-width: 58vw;
+                aspect-ratio: 1 / 1;
+                margin: 0 auto;
+                border-radius: 1.1vw;
+                display: block;
+            }
+
+            .pps-arrow {
+                position: absolute;
+                top: 39%;
+                width: 0;
+                height: 0;
+                transform: translateY(-50%);
+                opacity: 0.95;
+                border-top: 2.6vw solid transparent;
+                border-bottom: 2.6vw solid transparent;
+            }
+
+            .pps-arrow-left {
+                left: calc(50% - 37.5vw);
+                border-right: 4vw solid #b8b1aa;
+            }
+
+            .pps-arrow-right {
+                right: calc(50% - 37.5vw);
+                border-left: 4vw solid #b8b1aa;
+            }
+
+            .pps-thumbs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1.8vw;
+                padding: 2.6vw 0 0;
+                justify-content: center;
+            }
+
+            .pps-thumb {
+                width: 9vw;
+                height: 9vw;
+                border-radius: 1vw;
+            }
+
+            .pps-right {
+                padding-top: 0;
+            }
+
+            .pps-title-line {
+                border-radius: 1.8vw;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .pps-title-line-1 {
+                width: 72%;
+                height: 4.6vw;
+                margin-bottom: 1.7vw;
+            }
+
+            .pps-title-line-2 {
+                width: 56%;
+                height: 4.6vw;
+                margin-bottom: 5vw;
+            }
+
+            .pps-desc {
+                margin-bottom: 4.2vw;
+                padding: 0 0.5vw;
+            }
+
+            .pps-text {
+                height: 3.1vw;
+                width: 100%;
+                border-radius: 1.5vw;
+                margin-bottom: 2vw;
+            }
+
+            .pps-text:nth-child(1) {
+                width: 94%;
+            }
+
+            .pps-text:nth-child(2) {
+                width: 92%;
+            }
+
+            .pps-text.short {
+                width: 76%;
+            }
+
+            .pps-bullets {
+                margin-bottom: 3.8vw;
+            }
+
+            .pps-bullet-row {
+                display: flex;
+                align-items: center;
+                gap: 2vw;
+                margin-bottom: 2vw;
+            }
+
+            .pps-icon {
+                width: 3.6vw;
+                height: 3.6vw;
+                border-radius: 0.8vw;
+                flex: 0 0 3.6vw;
+            }
+
+            .pps-bullet-text {
+                width: 78%;
+                height: 3.1vw;
+                border-radius: 1.4vw;
+            }
+
+            .pps-shipping {
+                width: 19vw;
+                height: 2.4vw;
+                border-radius: 1.2vw;
+                margin: 4.8vw auto 4vw;
+            }
+
+            .pps-price {
+                width: 25vw;
+                height: 4vw;
+                border-radius: 1.2vw;
+                margin: 0 0 4.2vw 0;
+            }
+
+            .pps-buy-row {
+                display: grid;
+                grid-template-columns: 50% 50%;
+                align-items: center;
+                gap: 3vw;
+                margin-bottom: 4.4vw;
+            }
+
+            .pps-qty {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1.6vw;
+                width: 40vw;
+                height: 100%;
+            }
+
+            .pps-qty-btn {
+                aspect-ratio: 1 / 1;
+
+                border-radius: 1vw;
+                flex: 0 0 10vw;
+            }
+
+            .pps-qty-num {
+                width: 6.5vw;
+                height: 5.8vw;
+                border-radius: 1.1vw;
+                flex: 0 0 6.5vw;
+            }
+
+            .pps-cart-btn {
+                aspect-ratio: 1 / 0.4;
+                min-width: 0;
+                height: 15vw;
+                border-radius: 1vw;
+            }
+
+            .pps-buy-btn {
+                aspect-ratio: 7 / 1;
+                max-width: 85vw;
+                width: 100%;
+
+                border-radius: 1vw;
+            }
+
+            .pps-related {
+                margin-top: 8vw;
+            }
+
+            .pps-related-title {
+                width: 31vw;
+                height: 4.4vw;
+                border-radius: 1.4vw;
+                margin-bottom: 3.5vw;
+            }
+
+            .pps-related-row {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 4vw;
+            }
+
+            .pps-related-card {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .pps-right {
+                margin-left: 2.5vw;
+            }
+
+            .pps-related-image {
+                width: 100%;
+                aspect-ratio: 0.92 / 1;
+                border-radius: 6vw;
+                margin-bottom: 2vw;
+            }
+
+            .pps-qty-btn {
+                height: 100%;
+                width: 100%;
+                aspect-ratio: 1/1;
+            }
+
+            .pps-related-line {
+                width: 90%;
+                height: 2.6vw;
+                border-radius: 1.3vw;
+                margin-bottom: 1.8vw;
+            }
+
+            .pps-related-line.short {
+                width: 52%;
+            }
+
+            .desktop-only {
+                display: none !important;
+            }
+        }
+
         /* If your video/second column exists, make it full width too */
     </style>
 </head>
