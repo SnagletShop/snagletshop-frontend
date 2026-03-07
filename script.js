@@ -8433,6 +8433,81 @@ function updateImage(direction = "none") {
     if (thumbs[idx]) thumbs[idx].classList.add("active");
 }
 
+function __ssBuildProductPageSkeletonHtml() {
+    return `
+<div id="ProductPageSkeleton" class="pps" aria-hidden="true">
+  <div class="pps-inner">
+    <div class="pps-top">
+      <div class="pps-left">
+        <div class="pps-arrow pps-arrow-left"></div>
+        <div class="pps-main-image sk"></div>
+        <div class="pps-arrow pps-arrow-right"></div>
+        <div class="pps-thumbs">
+          <div class="sk pps-thumb"></div>
+          <div class="sk pps-thumb"></div>
+          <div class="sk pps-thumb"></div>
+          <div class="sk pps-thumb"></div>
+          <div class="sk pps-thumb"></div>
+        </div>
+      </div>
+      <div class="pps-right">
+        <div class="sk pps-title-line pps-title-line-1"></div>
+        <div class="sk pps-title-line pps-title-line-2"></div>
+        <div class="pps-desc">
+          <div class="sk pps-text"></div>
+          <div class="sk pps-text"></div>
+          <div class="sk pps-text short"></div>
+        </div>
+        <div class="pps-bullets">
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+        </div>
+        <div class="sk pps-shipping"></div>
+        <div class="sk pps-price"></div>
+        <div class="pps-buy-row">
+          <div class="pps-qty">
+            <div class="sk pps-qty-btn"></div>
+            <div class="sk pps-qty-num"></div>
+            <div class="sk pps-qty-btn"></div>
+          </div>
+          <div class="sk pps-cart-btn"></div>
+        </div>
+        <div class="sk pps-buy-btn"></div>
+      </div>
+    </div>
+    <div class="pps-related">
+      <div class="sk pps-related-title"></div>
+      <div class="pps-related-row">
+        <div class="pps-related-card"><div class="sk pps-related-image"></div><div class="sk pps-related-line"></div><div class="sk pps-related-line short"></div></div>
+        <div class="pps-related-card"><div class="sk pps-related-image"></div><div class="sk pps-related-line"></div><div class="sk pps-related-line short"></div></div>
+        <div class="pps-related-card desktop-only"><div class="sk pps-related-image"></div><div class="sk pps-related-line"></div><div class="sk pps-related-line short"></div></div>
+        <div class="pps-related-card desktop-only"><div class="sk pps-related-image"></div><div class="sk pps-related-line"></div><div class="sk pps-related-line short"></div></div>
+        <div class="pps-related-card desktop-only"><div class="sk pps-related-image"></div><div class="sk pps-related-line"></div><div class="sk pps-related-line short"></div></div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function __ssShowProductPageSkeleton() {
+    const viewer = document.getElementById("Viewer");
+    if (!viewer) return;
+    try {
+        viewer.innerHTML = __ssBuildProductPageSkeletonHtml();
+    } catch {
+        viewer.innerHTML = '';
+    }
+}
+
+function __ssHideProductPageSkeleton() {
+    const sk = document.getElementById("ProductPageSkeleton");
+    if (!sk) return;
+    try { sk.classList.add("is-hiding"); } catch {}
+    window.setTimeout(() => { try { sk.remove(); } catch {} }, 240);
+}
+
 /* Override: safe product page with multi-options + option→image mapping */
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
@@ -8455,7 +8530,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
         return;
     }
 
-    viewer.innerHTML = "";
+    __ssShowProductPageSkeleton();
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
@@ -8493,6 +8568,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : (product?.images || []);
     if (!product || !Array.isArray(__ssImagesForViewer) || __ssImagesForViewer.length === 0) {
         console.error("❌ Product not found or no images:", productName);
+        try { __ssHideProductPageSkeleton(); } catch {}
         return;
     }
 
@@ -8859,6 +8935,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     productDiv.appendChild(details);
     Product_Viewer.appendChild(productDiv);
     viewer.appendChild(Product_Viewer);
+    try { __ssHideProductPageSkeleton(); } catch {}
 
     // Ensure product.productId is sane for recommendations + discount matching
     try {
@@ -11046,7 +11123,6 @@ function updateBasket() {
         }
     }
 }
-
 
 
 
