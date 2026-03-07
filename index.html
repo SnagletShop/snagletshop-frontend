@@ -5254,6 +5254,76 @@
             }
         }
 
+        @media (min-width: 681px) {
+            .pps-inner {
+                width: 1300px;
+                max-width: 1300px;
+                margin-top: 24px;
+                margin-left: 25px;
+                margin-right: auto;
+                padding: 32px 80px;
+                box-sizing: border-box;
+                background-color: var(--SearchBar_Background_Colour);
+                border-radius: 5px;
+                box-shadow: 0 0 0 24px var(--SearchBar_Background_Colour);
+            }
+
+            .pps-top {
+                grid-template-columns: 650px 520px;
+                gap: 40px;
+                width: 100%;
+            }
+
+            .pps-left {
+                width: 650px;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .pps-main-image {
+                width: 500px;
+                height: 500px;
+                border-radius: 5px;
+            }
+
+            .pps-arrow {
+                top: 235px;
+            }
+
+            .pps-arrow-left {
+                left: 10px;
+            }
+
+            .pps-arrow-right {
+                right: 10px;
+            }
+
+            .pps-thumbs {
+                display: grid;
+                grid-template-columns: repeat(5, 80px);
+                gap: 10px;
+                width: 500px;
+                max-width: 500px;
+                margin-top: 5px;
+                padding: 0;
+                justify-content: center;
+            }
+
+            .pps-thumb {
+                width: 80px;
+                height: 80px;
+                border-radius: 5px;
+            }
+
+            .pps-right {
+                width: 520px;
+                max-width: 520px;
+                padding-top: 0;
+            }
+        }
+
         /* If your video/second column exists, make it full width too */
     </style>
 </head>
