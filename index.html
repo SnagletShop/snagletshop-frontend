@@ -5323,7 +5323,46 @@
                 padding-top: 0;
             }
         }
+        @media (max-width: 679px) {
+  #ProductPageSkeleton .pps-top {
+    position: relative !important;
+    padding-top: 18vw !important; /* more space between title and image */
+  }
 
+  #ProductPageSkeleton .pps-right {
+    position: static !important;
+  }
+
+  #ProductPageSkeleton .pps-right .pps-title-line-1,
+  #ProductPageSkeleton .pps-right .pps-title-line-2 {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 5 !important;
+    margin: 0 !important;
+  }
+
+  #ProductPageSkeleton .pps-right .pps-title-line-1 {
+    top: 3vw !important;
+    width: 60% !important;
+    height: 4.8vw !important;
+    border-radius: 999px !important;
+  }
+
+  #ProductPageSkeleton .pps-right .pps-title-line-2 {
+    top: 10vw !important;
+    width: 48% !important;
+    height: 4.8vw !important;
+    border-radius: 999px !important;
+  }
+
+  #ProductPageSkeleton .pps-right .pps-title {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
         /* If your video/second column exists, make it full width too */
     </style>
 </head>
