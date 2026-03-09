@@ -5491,9 +5491,20 @@ function showPaymentSuccessOverlay(message) {
 
         overlay.remove();
 
-        // If you want “OK → reload to origin”
+        // Reset custom SPA history so the next load behaves like a true fresh visit.
         if (reloadOnOk) {
-            window.location.replace(window.location.origin);
+            try {
+                sessionStorage.removeItem(HISTORY_SESSION_KEY);
+                sessionStorage.removeItem(HISTORY_INDEX_SESSION_KEY);
+            } catch { }
+            try {
+                userHistoryStack = [];
+                currentIndex = -1;
+                if (typeof history.replaceState === "function") {
+                    history.replaceState({}, "", "/");
+                }
+            } catch { }
+            window.location.replace(window.location.origin + "/");
         }
     };
 
