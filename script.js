@@ -1332,6 +1332,41 @@ const currencySymbols = {
     BRL: "R$", ARS: "$", CLP: "$", COP: "$", PEN: "S/", VES: "Bs"
 };
 
+const currencyLocales = {
+    EUR: "fr-FR", USD: "en-US", GBP: "en-GB", CAD: "en-CA", AUD: "en-AU", CHF: "de-CH",
+    PLN: "pl-PL", CZK: "cs-CZ", SEK: "sv-SE", NOK: "nb-NO", DKK: "da-DK", HUF: "hu-HU",
+    RON: "ro-RO", BGN: "bg-BG", RUB: "ru-RU", UAH: "uk-UA", JPY: "ja-JP", CNY: "zh-CN",
+    INR: "en-IN", KRW: "ko-KR", IDR: "id-ID", MYR: "ms-MY", PHP: "en-PH", THB: "th-TH",
+    VND: "vi-VN", PKR: "en-PK", BDT: "bn-BD", ZAR: "en-ZA", NGN: "en-NG", KES: "sw-KE",
+    EGP: "ar-EG", GHS: "en-GH", TZS: "sw-TZ", NZD: "en-NZ", FJD: "en-FJ", PGK: "en-PG",
+    AED: "ar-AE", SAR: "ar-SA", ILS: "he-IL", TRY: "tr-TR", IRR: "fa-IR", BRL: "pt-BR",
+    ARS: "es-AR", CLP: "es-CL", COP: "es-CO", PEN: "es-PE", VES: "es-VE", MXN: "es-MX",
+    JMD: "en-JM", DOP: "es-DO"
+};
+
+function formatCurrencyAmount(amount, currency = selectedCurrency) {
+    const cur = String(currency || selectedCurrency || "EUR").toUpperCase();
+    const n = Number(amount);
+    const safe = Number.isFinite(n) ? n : 0;
+    try {
+        return new Intl.NumberFormat(currencyLocales[cur] || "en-US", {
+            style: "currency",
+            currency: cur,
+            currencyDisplay: "symbol",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(safe).replace(/[  ]/g, " ");
+    } catch {
+        const sym = currencySymbols[cur] || cur;
+        const suffixCurrencies = new Set(["EUR", "PLN", "CZK", "SEK", "NOK", "DKK", "HUF", "RON", "BGN", "RUB", "UAH", "VND", "BDT", "EGP", "AED", "SAR", "ILS"]);
+        return suffixCurrencies.has(cur) ? `${safe.toFixed(2)} ${sym}` : `${sym}${safe.toFixed(2)}`;
+    }
+}
+
+function formatConvertedCurrencyFromEUR(priceInEur, currency = selectedCurrency) {
+    return formatCurrencyAmount(convertPriceNumber(priceInEur), currency);
+}
+
 
 function showAppLoader(text = "Loading…") {
     const overlay = document.getElementById(APP_LOADER_ID);
@@ -3532,7 +3567,9 @@ function searchProducts(forcedQuery = null) {
 
             const priceP = document.createElement("p");
             priceP.className = "product-price";
-            priceP.textContent = `${(__ssResolveVariantPriceEUR(product, [], "") || product.price)}€`;
+            const __priceEUR = (__ssResolveVariantPriceEUR(product, [], "") || product.price);
+            priceP.dataset.eur = String(__priceEUR ?? "");
+            priceP.textContent = formatConvertedCurrencyFromEUR(__priceEUR);
 
             const quantityContainer = document.createElement("div");
             quantityContainer.className = "quantity-container";
@@ -3750,7 +3787,6 @@ function updateAllPrices(rootEl) {
 
     // Standard price nodes
     root.querySelectorAll(".price, .product-price, .basket-item-price, #product-page-price").forEach(element => {
-        const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
 
         // If element represents a recommendation discount (PDP or reco card), preserve the markup.
         const eur = parseFloat(element.dataset.eur);
@@ -3761,11 +3797,11 @@ function updateAllPrices(rootEl) {
             const convOrig = convertPrice(eurOrig);
             const convDisc = convertPrice(eur);
             if (pct > 0) {
-                const __html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+                const __html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${formatCurrencyAmount(convOrig, selectedCurrency)}</span> <span style="font-weight:700">${formatCurrencyAmount(convDisc, selectedCurrency)}</span> `;
                 if (element.innerHTML !== __html) element.innerHTML = __html;
             } else {
                 // Cart-level / generic discount strike-through (no pct)
-                const __html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+                const __html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${formatCurrencyAmount(convOrig, selectedCurrency)}</span> <span style="font-weight:700">${formatCurrencyAmount(convDisc, selectedCurrency)}</span> `;
                 if (element.innerHTML !== __html) element.innerHTML = __html;
             }
             return;
@@ -3773,13 +3809,12 @@ function updateAllPrices(rootEl) {
 
         if (!isNaN(eur)) {
             const convertedValue = convertPrice(eur);
-            element.textContent = `${currencySymbol}${convertedValue}`;
+            element.textContent = formatCurrencyAmount(convertedValue, selectedCurrency);
         }
     });
 
     // Cart incentive amount fragments (e.g., "Add X to unlock")
     root.querySelectorAll(".ss-ci-amt[data-eur]").forEach(el => {
-        const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
 
         const minEurRaw = el.dataset.ciMinEur;
         const baseEurRaw = el.dataset.ciBaseEur;
@@ -3791,7 +3826,7 @@ function updateAllPrices(rootEl) {
             const baseEUR = parseFloat(baseEurRaw);
             if (!isNaN(minEUR) && !isNaN(baseEUR)) {
                 const need = Math.max(0, Math.round((convertPriceNumber(minEUR) - convertPriceNumber(baseEUR)) * 100) / 100);
-                el.textContent = `${currencySymbol}${need.toFixed(2)}`;
+                el.textContent = formatCurrencyAmount(need, selectedCurrency);
                 return;
             }
         }
@@ -3799,16 +3834,15 @@ function updateAllPrices(rootEl) {
         // Fallback: direct conversion of a EUR amount
         const eur = parseFloat(el.dataset.eur);
         if (isNaN(eur)) return;
-        el.textContent = `${currencySymbol}${convertPrice(eur)}`;
+        el.textContent = formatCurrencyAmount(convertPrice(eur), selectedCurrency);
     });
 
     // Cart incentive badges that represent EUR amounts (Saved / Bundle)
     root.querySelectorAll(".ss-ci-badge[data-eur]").forEach(el => {
-        const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
         const eur = parseFloat(el.dataset.eur);
         if (isNaN(eur)) return;
         const kind = String(el.dataset.badgeKind || "").toLowerCase();
-        const val = `${currencySymbol}${convertPrice(Math.abs(eur))}`;
+        const val = formatCurrencyAmount(convertPrice(Math.abs(eur)), selectedCurrency);
 
         if (kind === "saved") {
             el.textContent = `Saved ${val}`;
@@ -3825,8 +3859,7 @@ function updateAllPrices(rootEl) {
     if (totalElement) {
         let baseTotal = parseFloat(totalElement.dataset.eur);
         if (!isNaN(baseTotal)) {
-            const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
-            totalElement.textContent = `Total: ${convertPrice(baseTotal)} ${selectedCurrency}`;
+            totalElement.textContent = `Total: ${formatCurrencyAmount(convertPrice(baseTotal), selectedCurrency)}`;
         }
     }
 }
@@ -4859,7 +4892,7 @@ function __ssUpdateLastChanceOfferUI() {
 
         const price = Number(pick?.price || 0) || 0;
         const headline = nextTier
-            ? `Last chance: add ${(nextTier.min - base).toFixed(2)}€ to unlock ${nextTier.pct}% OFF`
+            ? `Last chance: add ${formatCurrencyAmount(convertPriceNumber(nextTier.min - base), selectedCurrency)} to unlock ${nextTier.pct}% OFF`
             : "Last chance: frequently added";
 
         el.innerHTML = `
@@ -4868,7 +4901,7 @@ function __ssUpdateLastChanceOfferUI() {
               <img class="ss-lc-img" src="${__ssEscHtml(pick?.image || "")}" alt="${__ssEscHtml(pick?.name || "")}">
               <div style="min-width:0;">
                 <div class="ss-lc-name">${__ssEscHtml(pick?.name || "")}</div>
-                <div class="ss-lc-sub">${price.toFixed(2)}€</div>
+                <div class="ss-lc-sub">${formatConvertedCurrencyFromEUR(price)}</div>
               </div>
               <button class="ss-lc-btn" type="button" data-ss-lc-add="${__ssEscHtml(pick?.name || "")}">Add</button>
             </div>
@@ -8870,7 +8903,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
                             const eur = __ssResolveVariantPriceEUR(product, current, current?.[0]?.value || "");
                             priceEl.dataset.eur = String(eur ?? "");
                             // Base EUR text; updateAllPrices() will convert if needed
-                            priceEl.textContent = `${eur} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
+                            priceEl.textContent = formatConvertedCurrencyFromEUR(eur);
                             if (typeof updateAllPrices === "function") updateAllPrices();
                         }
                     } catch { }
@@ -8906,7 +8939,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const _selInit = __ssGetSelectedOptions();
     const _eurInit = __ssResolveVariantPriceEUR(product, _selInit, _selInit?.[0]?.value || "");
     pSpan.dataset.eur = String(_eurInit ?? "");
-    pSpan.textContent = `${_eurInit} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
+    pSpan.textContent = formatConvertedCurrencyFromEUR(_eurInit);
 
     // If user arrived from a discounted recommendation, show discount on PDP and avoid double-discounting.
     try {
@@ -8951,8 +8984,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
             pSpan.dataset.recoDiscountPct = String(pct);
             window.__ssRecoPdpDiscountAppliedFor = pid;
 
-            const cur = (TEXTS?.CURRENCIES?.EUR || "€");
-            pSpan.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${orig}${cur}</span> <span style="font-weight:700">${discPrice}${cur}</span> `;
+            pSpan.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${formatConvertedCurrencyFromEUR(orig)}</span> <span style="font-weight:700">${formatConvertedCurrencyFromEUR(discPrice)}</span> `;
             if (typeof updateAllPrices === "function") updateAllPrices();
         } else {
             window.__ssRecoPdpDiscountAppliedFor = null;
@@ -10554,7 +10586,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
             ? (() => {
                 const needEUR = Math.max(0, (nextTier.min - base));
                 // Amount is rendered as a data-eur fragment so currency+tariff conversion stays correct.
-                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${nextTier.min.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> to unlock ${nextTier.pct}% OFF`;
+                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${nextTier.min.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${formatConvertedCurrencyFromEUR(needEUR)}</span> to unlock ${nextTier.pct}% OFF`;
             })()
             : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
 
@@ -10590,7 +10622,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
         const shipText = shipEnabled
             ? (base >= shipThr ? "Free shipping unlocked" : (() => {
                 const needEUR = Math.max(0, (shipThr - base));
-                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`;
+                return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${formatConvertedCurrencyFromEUR(needEUR)}</span> for free shipping`;
             })())
             : "";
 
@@ -10640,8 +10672,8 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
                           <div class="ss-ci-name">${__ssEscHtml(p?.name || "")}</div>
                         </a>
                         ${hasDisc
-                    ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>`
-                    : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}
+                    ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${formatConvertedCurrencyFromEUR(eur)}</div>`
+                    : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${formatConvertedCurrencyFromEUR(eur)}</div>`}
                       </div>
                       <button class="ss-ci-btn" type="button"
                               data-ss-quickadd="${__ssEscHtml(p?.name || "")}"
@@ -10667,11 +10699,11 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
                 ${badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
             if (b && b.kind === "saved") {
                 const eur = Number(b.eur || 0) || 0;
-                return `<span class="ss-ci-badge" data-badge-kind="saved" data-eur="${eur.toFixed(2)}">Saved ${eur.toFixed(2)}€</span>`;
+                return `<span class="ss-ci-badge" data-badge-kind="saved" data-eur="${eur.toFixed(2)}">Saved ${formatConvertedCurrencyFromEUR(eur)}</span>`;
             }
             if (b && b.kind === "bundle") {
                 const eur = Number(b.eur || 0) || 0;
-                return `<span class="ss-ci-badge" data-badge-kind="bundle" data-eur="${eur.toFixed(2)}">Bundle -${eur.toFixed(2)}€</span>`;
+                return `<span class="ss-ci-badge" data-badge-kind="bundle" data-eur="${eur.toFixed(2)}">Bundle -${formatConvertedCurrencyFromEUR(eur)}</span>`;
             }
             const txt = String(b?.text || "");
             return `<span class="ss-ci-badge">${__ssEscHtml(txt)}</span>`;
@@ -11153,18 +11185,18 @@ function updateBasket() {
                 // cart-level discount applies => show strike-through of pre-cart total and the post-cart total
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${postCartTotal.toFixed(2)}" data-eur-original="${preCartTotal.toFixed(2)}">
-                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${preCartTotal.toFixed(2)}€</span>
-                      <span style="font-weight:700">${postCartTotal.toFixed(2)}€</span>
+                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${formatConvertedCurrencyFromEUR(preCartTotal)}</span>
+                      <span style="font-weight:700">${formatConvertedCurrencyFromEUR(postCartTotal)}</span>
                    </td>`;
             } else if (hasRecoDisc && recoOrigTotal > preCartTotal) {
                 // only reco discount
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}" data-eur-original="${recoOrigTotal.toFixed(2)}" data-discount-pct="${Number(item.recoDiscountPct || 0)}">
-                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${recoOrigTotal.toFixed(2)}€</span>
-                      <span style="font-weight:700">${preCartTotal.toFixed(2)}€</span>
+                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${formatConvertedCurrencyFromEUR(recoOrigTotal)}</span>
+                      <span style="font-weight:700">${formatConvertedCurrencyFromEUR(preCartTotal)}</span>
                    </td>`;
             } else {
-                priceCellHTML = `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}">${preCartTotal.toFixed(2)}€</td>`;
+                priceCellHTML = `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}">${formatConvertedCurrencyFromEUR(preCartTotal)}</td>`;
             }
 
             receiptContent += `
@@ -11189,8 +11221,8 @@ function updateBasket() {
         <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
         <strong class="PayTotalText" id="basket-total" data-eur="${__ssTotalAfter.toFixed(2)}">
           Total: ${(__ssDiscountEUR > 0 && __ssTotalAfter < totalSum)
-                ? `<span style="text-decoration:line-through; opacity:.75;">${totalSum.toFixed(2)}€</span> <span>${__ssTotalAfter.toFixed(2)}€</span>`
-                : `${__ssTotalAfter.toFixed(2)}€`}
+                ? `<span style="text-decoration:line-through; opacity:.75;">${formatConvertedCurrencyFromEUR(totalSum)}</span> <span>${formatConvertedCurrencyFromEUR(__ssTotalAfter)}</span>`
+                : `${formatConvertedCurrencyFromEUR(__ssTotalAfter)}`}
         </strong>
       </div>
     `;
