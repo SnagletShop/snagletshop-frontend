@@ -151,6 +151,9 @@ function __ssNormalizeCatalogImages(catalogObj) {
     if (runtime && typeof runtime.normalizeCatalogImages === "function") return runtime.normalizeCatalogImages(catalogObj);
     return catalogObj;
 }
+if (typeof window !== "undefined") {
+    window.__ssNormalizeCatalogImages = __ssNormalizeCatalogImages;
+}
 
 const { TEXTS, countryToCurrency, countryNames } = window.__SS_SHARED_DATA__ || { TEXTS: {}, countryToCurrency: {}, countryNames: {} };
 // Exchange rates
