@@ -39,8 +39,7 @@
 
   async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const preload = window.preloadSettingsData || window.__SS_SETTINGS_RUNTIME__?.preloadSettingsData;
-      if (typeof preload === 'function') await preload();
+      await window.preloadSettingsData();
 
       const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
       const order_summary = buildStripeOrderSummary(stripeCart);
@@ -212,8 +211,7 @@
   }
 
   async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, country, fullCart, stripeCart }) {
-    const preload = window.preloadSettingsData || window.__SS_SETTINGS_RUNTIME__?.preloadSettingsData;
-      if (typeof preload === 'function') await preload();
+    await window.preloadSettingsData();
     const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
     const expectedTotalCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
     const sig = _buildPiSig({ currency, country, stripeCart, expectedTotalCents });

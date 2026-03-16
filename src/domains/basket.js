@@ -684,9 +684,9 @@ function updateBasket() {
     } finally {
         window.__ssUpdatingBasket = false;
         __ssBasketRenderInProgress = false;
-        if (window.__ssBasketNeedsRerender) {
-            window.__ssBasketNeedsRerender = false;
-            (window.__ssRequestBasketRerender || __ssRequestBasketRerender)("post-render");
+        if (__ssBasketNeedsRerender) {
+            __ssBasketNeedsRerender = false;
+            __ssRequestBasketRerender("post-render");
         }
     }
 }

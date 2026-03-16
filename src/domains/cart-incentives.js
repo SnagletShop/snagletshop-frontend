@@ -222,13 +222,6 @@ async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
     if (changed) { try { persistBasket('reco_quote_revalidated'); } catch {} try { updateBasket(); } catch {} }
   } catch {}
 }
-try {
-  Object.defineProperty(window, '__ssBasketNeedsRerender', { configurable: true, enumerable: false, get: () => __ssBasketNeedsRerender, set: (v) => { __ssBasketNeedsRerender = !!v; } });
-  Object.defineProperty(window, '__ssBasketRenderInProgress', { configurable: true, enumerable: false, get: () => __ssBasketRenderInProgress, set: (v) => { __ssBasketRenderInProgress = !!v; } });
-  Object.defineProperty(window, '__ssBasketRerenderQueued', { configurable: true, enumerable: false, get: () => __ssBasketRerenderQueued, set: (v) => { __ssBasketRerenderQueued = !!v; } });
-  window.__ssRequestBasketRerender = __ssRequestBasketRerender;
-} catch {}
-
 window.__SS_CART_INCENTIVES__ = {
   __ssGetCartIncentivesConfig, __ssDbgTierEnabled, __ssTierDbgGroup, __ssComputeCartIncentivesClient,
   __ssEnsureCartIncentiveStyles, __ssCartSigForSmartReco, __ssFetchSmartCartRecs, __ssEnsureSmartCartRecs,
