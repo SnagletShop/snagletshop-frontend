@@ -11,9 +11,35 @@
         type="image/png">
 
     <title>SnagletShop</title>
-    <script src="Products.js" defer></script>
-    <script src="script.js" defer></script>
-    <script src="https://js.stripe.com/v3/"></script>
+        <script src="src/app/boot.js" defer></script>
+    <script src="src/core/config.js" defer></script>
+    <script src="src/core/storage.js" defer></script>
+    <script src="src/core/api-client.js" defer></script>
+    <script src="src/core/state.js" defer></script>
+    <script src="src/app/router.js" defer></script>
+    <script src="src/app/public-api.js" defer></script>
+    <script src="src/ui/orientation.js" defer></script>
+    <script src="src/ui/mobile-sidebar.js" defer></script>
+    <script src="src/ui/product-media-relayout.js" defer></script>
+    <script src="src/ui/product-wrapper-placement.js" defer></script>
+    <script src="src/domains/pricing.js" defer></script>
+    <script src="src/domains/search.js" defer></script>
+    <script src="src/domains/orders.js" defer></script>
+    <script src="src/domains/contact.js" defer></script>
+    <script src="src/domains/checkout-api.js" defer></script>
+    <script src="src/domains/checkout-helpers.js" defer></script>
+    <script src="src/domains/product-options.js" defer></script>
+    <script src="src/domains/product.js" defer></script>
+    <script src="src/domains/basket.js" defer></script>
+    <script src="src/domains/checkout.js" defer></script>
+    <script src="src/domains/recommendations.js" defer></script>
+    <script src="src/domains/analytics.js" defer></script>
+    <script src="src/domains/analytics-helpers.js" defer></script>
+    <script src="src/domains/turnstile.js" defer></script>
+    <script src="src/ui/basket-toast.js" defer></script>
+    <script src="src/app/startup.js" defer></script>
+<script src="script.js" defer></script>
+        <script src="https://js.stripe.com/v3/"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
@@ -3439,72 +3465,11 @@
     <div class="mobileModalDiv" id="ModalDiv"></div>
 
 
-    <script>
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock("portrait").catch(function (err) {
-                console.warn("Orientation lock failed:", err);
-            });
-        }
-    </script>
+    
 
 
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const sidebar = document.querySelector(".mobileSideBar");
-            const modal = document.querySelector(".mobileModalDiv");
-            const openBtn = document.getElementById("openSidebarButton");
-            const closeBtn = document.getElementById("closeSidebarButton");
-            const sidebarLogo = document.querySelector("#SideBar .mobileLogo");
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-
-            function toggleSidebar() {
-                sidebar.classList.toggle("open");
-                modal.classList.toggle("active");
-            }
-
-            const boundHandlers = {
-                open: () => toggleSidebar(),
-                close: () => toggleSidebar(),
-                modal: () => toggleSidebar(),
-                categoryClick: function (e) {
-                    const target = e.target.closest(".Category_Button");
-                    if (target) {
-                        toggleSidebar();
-                    }
-                },
-                sidebarLogoClick: () => toggleSidebar()
-            };
-
-            function addListeners() {
-                openBtn?.addEventListener("click", boundHandlers.open);
-                closeBtn?.addEventListener("click", boundHandlers.close);
-                modal?.addEventListener("click", boundHandlers.modal);
-                document.body.addEventListener("click", boundHandlers.categoryClick);
-                sidebarLogo?.addEventListener("click", boundHandlers.sidebarLogoClick);
-            }
-
-            function removeListeners() {
-                openBtn?.removeEventListener("click", boundHandlers.open);
-                closeBtn?.removeEventListener("click", boundHandlers.close);
-                modal?.removeEventListener("click", boundHandlers.modal);
-                document.body.removeEventListener("click", boundHandlers.categoryClick);
-                sidebarLogo?.removeEventListener("click", boundHandlers.sidebarLogoClick);
-            }
-
-            function handleResize(e) {
-                if (e.matches) {
-                    addListeners();
-                } else {
-                    removeListeners();
-                }
-            }
-
-            // Initial setup
-            handleResize(mediaQuery);
-            mediaQuery.addEventListener("change", handleResize);
-        });
-    </script>
+    
 
 
 
@@ -3514,146 +3479,14 @@
 
 
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-
-            function moveImagesIfNeeded(productWrapper) {
-                const imagesDiv = productWrapper.querySelector(".Product_Images");
-                const productNameHeading = productWrapper.querySelector(".Product_Name_Heading");
-
-                if (!imagesDiv || !productNameHeading) return;
-
-                // Save original parent and index if not already stored
-                if (!imagesDiv.dataset.originalParentId) {
-                    const parent = imagesDiv.parentElement;
-                    if (!parent.id) {
-                        parent.id = "original-parent-" + Math.random().toString(36).substr(2, 9);
-                    }
-                    imagesDiv.dataset.originalParentId = parent.id;
-
-                    const siblings = Array.from(parent.children);
-                    imagesDiv.dataset.originalIndex = siblings.indexOf(imagesDiv);
-                }
-
-                function moveImages() {
-                    if (mediaQuery.matches) {
-                        // Mobile: move under name heading
-                        if (productNameHeading.nextElementSibling !== imagesDiv) {
-                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextElementSibling);
-                        }
-                    } else {
-                        // Desktop: move back to original spot
-                        const originalParent = document.getElementById(imagesDiv.dataset.originalParentId);
-                        const originalIndex = parseInt(imagesDiv.dataset.originalIndex, 10);
-                        if (originalParent && originalParent.children[originalIndex] !== imagesDiv) {
-                            const referenceNode = originalParent.children[originalIndex] || null;
-                            originalParent.insertBefore(imagesDiv, referenceNode);
-                        }
-                    }
-                }
-
-                // Run initially and on screen size change
-                moveImages();
-                mediaQuery.addEventListener("change", moveImages);
-            }
-
-            // Observe body for dynamically inserted Product Detail pages
-            const globalObserver = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1) {
-                            const detailPage = node.matches(".Product_Detail_Page")
-                                ? node
-                                : node.querySelector(".Product_Detail_Page");
-                            if (detailPage) moveImagesIfNeeded(detailPage);
-                        }
-                    });
-                });
-            });
-
-            globalObserver.observe(document.body, { childList: true, subtree: true });
-
-            // Also check immediately if a page is already loaded
-            const existingPage = document.querySelector(".Product_Detail_Page");
-            if (existingPage) moveImagesIfNeeded(existingPage);
-        });
-    </script>
+    
 
 
 
 
 
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-            let placeholder = null;
-            const moveDownBy = 4;  // Number of places to move down
-
-            function moveProductWrapper() {
-                const productWrapper = document.getElementById("ProductWrapper");
-                const modalDiv = document.getElementById("ModalDiv");
-                const sideBar = document.getElementById("SideBar");
-
-                if (!productWrapper || !modalDiv || !sideBar) {
-
-                    return;
-                }
-
-                if (mediaQuery.matches) {
-
-
-                    // Store placeholder for original location only once
-                    if (!placeholder) {
-                        placeholder = document.createComment("Original ProductWrapper location");
-                        productWrapper.parentNode.insertBefore(placeholder, productWrapper);
-
-                    }
-
-                    // Move ProductWrapper down by 'moveDownBy' places
-                    let targetElement = modalDiv;
-                    for (let i = 0; i < moveDownBy; i++) {
-                        if (targetElement.nextElementSibling) {
-                            targetElement = targetElement.nextElementSibling;
-                        } else {
-                            break;  // Exit if there aren't enough siblings
-                        }
-                    }
-
-                    // Insert ProductWrapper after the target element
-                    if (targetElement.nextElementSibling) {
-                        document.body.insertBefore(productWrapper, targetElement.nextElementSibling);
-                    } else {
-                        document.body.appendChild(productWrapper); // If there's no sibling, append at the end
-                    }
-
-                } else {
-
-
-                    if (placeholder && placeholder.parentNode) {
-                        placeholder.parentNode.insertBefore(productWrapper, placeholder);
-
-                    } else {
-
-                    }
-                }
-            }
-
-            // Wait until ProductWrapper appears
-            const observer = new MutationObserver(() => {
-                const productWrapper = document.getElementById("ProductWrapper");
-                if (productWrapper) {
-                    console.log("✅ ProductWrapper found");
-                    moveProductWrapper();
-                    mediaQuery.addEventListener("change", moveProductWrapper);
-                    observer.disconnect();
-                }
-            });
-
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    </script>
+    
 </body>
 
 

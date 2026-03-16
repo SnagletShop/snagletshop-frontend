@@ -16,7 +16,78 @@
 
     <title>SnagletShop</title>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
-    <script src="script.js" defer></script>
+    <script src="src/app/boot.js" defer></script>
+    <script src="src/core/config.js" defer></script>
+    <script src="src/core/storage.js" defer></script>
+    <script src="src/core/api-client.js" defer></script>
+    <script src="src/core/state.js" defer></script>
+    <script src="src/core/shared-data.js" defer></script>
+    <script src="src/core/utils-runtime.js" defer></script>
+    <script src="src/core/storage-runtime.js" defer></script>
+    <script src="src/state/runtime-store.js" defer></script>
+    <script src="src/services/storage-service.js" defer></script>
+    <script src="src/services/catalog-service.js" defer></script>
+    <script src="src/services/pricing-service.js" defer></script>
+    <script src="src/services/checkout-service.js" defer></script>
+    <script src="src/services/orders-service.js" defer></script>
+    <script src="src/services/analytics-service.js" defer></script>
+    <script src="src/services/recommendations-service.js" defer></script>
+    <script src="src/app/create-app.js" defer></script>
+    <script src="src/app/history-runtime.js" defer></script>
+    <script src="src/app/router.js"></script>
+    <script src="src/app/loader-runtime.js"></script>
+    <script src="src/app/boot-runtime.js" defer></script>
+    <script src="src/app/main.js" defer></script>
+    <script src="src/app/diagnostics.js" defer></script>
+    <script src="src/app/resolve.js" defer></script>
+    <script src="src/app/public-api.js" defer></script>
+    <script src="src/ui/orientation.js" defer></script>
+    <script src="src/ui/mobile-sidebar.js" defer></script>
+    <script src="src/ui/product-media-relayout.js" defer></script>
+    <script src="src/ui/product-wrapper-placement.js" defer></script>
+    <script src="src/domains/pricing.js" defer></script>
+    <script src="src/domains/search.js" defer></script>
+    <script src="src/domains/orders.js" defer></script>
+    <script src="src/domains/contact.js" defer></script>
+    <script src="src/domains/checkout-api.js" defer></script>
+    <script src="src/domains/checkout-helpers.js" defer></script>
+    <script src="src/domains/product-options.js" defer></script>
+    <script src="src/domains/product-id-runtime.js" defer></script>
+    <script src="src/domains/product.js" defer></script>
+    <script src="src/domains/basket.js" defer></script>
+    <script src="src/domains/checkout.js" defer></script>
+    <script src="src/domains/recommendations.js" defer></script>
+    <script src="src/domains/catalog.js" defer></script>
+    <script src="src/domains/analytics.js" defer></script>
+    <script src="src/domains/analytics-helpers.js" defer></script>
+    <script src="src/domains/cart-incentives.js" defer></script>
+    <script src="src/domains/turnstile.js" defer></script>
+    <script src="src/domains/catalog-runtime.js" defer></script>
+    <script src="src/domains/catalog-image-runtime.js" defer></script>
+    <script src="src/domains/pricing-runtime.js" defer></script>
+    <script src="src/domains/settings-runtime.js" defer></script>
+    <script src="src/domains/settings-country-runtime.js" defer></script>
+    <script src="src/domains/media-runtime.js" defer></script>
+    <script src="src/domains/checkout-runtime.js" defer></script>
+    <script src="src/domains/stripe-config-runtime.js" defer></script>
+    <script src="src/domains/checkout-ui.js" defer></script>
+    <script src="src/domains/modal-runtime.js" defer></script>
+    <script src="src/domains/basket-runtime.js" defer></script>
+    <script src="src/domains/cart-runtime.js" defer></script>
+    <script src="src/ui/basket-toast.js" defer></script>
+    <script src="src/components/quantity-controls.js" defer></script>
+    <script src="src/components/product-card.js" defer></script>
+    <script src="src/components/basket-row.js" defer></script>
+    <script src="src/screens/index.js" defer></script>
+    <script src="src/screens/catalog-screen.js" defer></script>
+    <script src="src/screens/product-screen.js" defer></script>
+    <script src="src/screens/basket-screen.js" defer></script>
+    <script src="src/screens/settings-screen.js" defer></script>
+    <script src="src/screens/search-screen.js" defer></script>
+    <script src="src/screens/order-status-screen.js" defer></script>
+    <script src="src/app/startup.js" defer></script>
+<script src="script.js" defer></script>
+    <script src="src/app/lifecycle/teardown.js" defer></script>
     <script src="https://js.stripe.com/v3/"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -5411,602 +5482,6 @@
             <h1 style=" color: var(--Default_Text_Colour); margin: 0;">SnagletShop</h1>
         </button>
     </div>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Code injected by live-server -->
-    <script>
-        // <![CDATA[  <-- For SVG support
-        if ('WebSocket' in window) {
-            (function () {
-                function refreshCSS() {
-                    var sheets = [].slice.call(document.getElementsByTagName("link"));
-                    var head = document.getElementsByTagName("head")[0];
-                    for (var i = 0; i < sheets.length; ++i) {
-                        var elem = sheets[i];
-                        var parent = elem.parentElement || head;
-                        parent.removeChild(elem);
-                        var rel = elem.rel;
-                        if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-                            var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-                            elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-                        }
-                        parent.appendChild(elem);
-                    }
-                }
-                var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-                var address = protocol + window.location.host + window.location.pathname + '/ws';
-                var socket = new WebSocket(address);
-                socket.onmessage = function (msg) {
-                    if (msg.data == 'reload') window.location.reload();
-                    else if (msg.data == 'refreshcss') refreshCSS();
-                };
-                if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-                    console.log('Live reload enabled.');
-                    sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-                }
-            })();
-        }
-        else {
-            console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-        }
-        // ]]>
-    </script>
-    <!-- Offscreen Turnstile widget (used to protect API actions like /create-payment-intent) -->
-    <div id="snaglet-turnstile"
-        style="position:fixed; bottom:12px; right:12px; width:150px; min-height:140px; z-index:2147483647;"></div>
-
+    
 </body>
-
-
-<body>
-    <div id="appBootLoaderOverlay" role="status" aria-live="polite">
-        <div class="card">
-            <div class="row">
-                <div class="spinner" aria-hidden="true"></div>
-                <div class="title">Loading SnagletShop</div>
-            </div>
-            <div class="sub" id="appBootLoaderOverlay_text">Loading products…</div>
-        </div>
-    </div>
-
-    <!-- Container for both rows -->
-    <div class="mobileHeaderWrapper">
-        <!-- First row -->
-        <div class="mobileTopBar">
-            <button id="openSidebarButton" class="mobileHamburgerMenu">☰</button>
-
-
-            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
-                <h1>SnagletShop</h1>
-            </div>
-
-            <!-- Wrapped buttons and select in navButtonDiv -->
-            <div class="mobileNavButtonDiv">
-
-
-                <button class="mobileBasketButton" id="BasketButtonMobile" onclick="trackedGoToCart()">
-                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-
-                        <path
-                            d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
-                    </svg>
-
-                </button>
-
-                <button class="mobileSettingsButton" id="SettingsButton" onclick="trackedGoToSettings()">
-                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
-                    </svg>
-                </button>
-
-            </div>
-        </div>
-
-        <!-- Second row (search bar only) -->
-        <div class="mobileSearchRow">
-            <input type="text" class="mobileSearch_Bar" id="Mobile_Search_Bar" placeholder="Search" />
-
-
-        </div>
-    </div>
-
-
-    <div id="SideBar" class="mobileSideBar">
-        <!-- First row: Hamburger + Logo -->
-        <div class="sidebar-header">
-            <button id="closeSidebarButton" class="mobileHamburgerMenu">☰</button>
-            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
-                <h1>SnagletShop</h1>
-            </div>
-        </div>
-
-        <!-- Scrollable area for category buttons -->
-        <div id="SidebarCategories" class="sidebar-categories"></div>
-    </div>
-
-
-
-    <div class="mobileModalDiv" id="ModalDiv"></div>
-
-
-    <script>
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock("portrait").catch(function (err) {
-                console.warn("Orientation lock failed:", err);
-            });
-        }
-    </script>
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const sidebar = document.querySelector(".mobileSideBar");
-            const modal = document.querySelector(".mobileModalDiv");
-            const openBtn = document.getElementById("openSidebarButton");
-            const closeBtn = document.getElementById("closeSidebarButton");
-            const sidebarLogo = document.querySelector("#SideBar .mobileLogo");
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-
-            function toggleSidebar() {
-                sidebar.classList.toggle("open");
-                modal.classList.toggle("active");
-            }
-
-            const boundHandlers = {
-                open: () => toggleSidebar(),
-                close: () => toggleSidebar(),
-                modal: () => toggleSidebar(),
-                categoryClick: function (e) {
-                    const target = e.target.closest(".Category_Button");
-                    if (target) {
-                        toggleSidebar();
-                    }
-                },
-                sidebarLogoClick: () => toggleSidebar()
-            };
-
-            function addListeners() {
-                openBtn?.addEventListener("click", boundHandlers.open);
-                closeBtn?.addEventListener("click", boundHandlers.close);
-                modal?.addEventListener("click", boundHandlers.modal);
-                document.body.addEventListener("click", boundHandlers.categoryClick);
-                sidebarLogo?.addEventListener("click", boundHandlers.sidebarLogoClick);
-            }
-
-            function removeListeners() {
-                openBtn?.removeEventListener("click", boundHandlers.open);
-                closeBtn?.removeEventListener("click", boundHandlers.close);
-                modal?.removeEventListener("click", boundHandlers.modal);
-                document.body.removeEventListener("click", boundHandlers.categoryClick);
-                sidebarLogo?.removeEventListener("click", boundHandlers.sidebarLogoClick);
-            }
-
-            function handleResize(e) {
-                if (e.matches) {
-                    addListeners();
-                } else {
-                    removeListeners();
-                }
-            }
-
-            // Initial setup
-            handleResize(mediaQuery);
-            mediaQuery.addEventListener("change", handleResize);
-        });
-    </script>
-
-
-
-
-
-
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-
-            function moveImagesIfNeeded(productWrapper) {
-                const imagesDiv = productWrapper.querySelector(".Product_Images");
-                const productNameHeading = productWrapper.querySelector(".Product_Name_Heading");
-
-                if (!imagesDiv || !productNameHeading) return;
-
-                // Save original parent and index if not already stored
-                if (!imagesDiv.dataset.originalParentId) {
-                    const parent = imagesDiv.parentElement;
-                    if (!parent.id) {
-                        parent.id = "original-parent-" + Math.random().toString(36).substr(2, 9);
-                    }
-                    imagesDiv.dataset.originalParentId = parent.id;
-
-                    const siblings = Array.from(parent.children);
-                    imagesDiv.dataset.originalIndex = siblings.indexOf(imagesDiv);
-                }
-
-                function moveImages() {
-                    if (mediaQuery.matches) {
-                        // Mobile: move under name heading
-                        if (productNameHeading.nextElementSibling !== imagesDiv) {
-                            productNameHeading.parentNode.insertBefore(imagesDiv, productNameHeading.nextElementSibling);
-                        }
-                    } else {
-                        // Desktop: move back to original spot
-                        const originalParent = document.getElementById(imagesDiv.dataset.originalParentId);
-                        const originalIndex = parseInt(imagesDiv.dataset.originalIndex, 10);
-                        if (originalParent && originalParent.children[originalIndex] !== imagesDiv) {
-                            const referenceNode = originalParent.children[originalIndex] || null;
-                            originalParent.insertBefore(imagesDiv, referenceNode);
-                        }
-                    }
-                }
-
-                // Run initially and on screen size change
-                moveImages();
-                mediaQuery.addEventListener("change", moveImages);
-            }
-
-            // Observe body for dynamically inserted Product Detail pages
-            const globalObserver = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1) {
-                            const detailPage = node.matches(".Product_Detail_Page")
-                                ? node
-                                : node.querySelector(".Product_Detail_Page");
-                            if (detailPage) moveImagesIfNeeded(detailPage);
-                        }
-                    });
-                });
-            });
-
-            globalObserver.observe(document.body, { childList: true, subtree: true });
-
-            // Also check immediately if a page is already loaded
-            const existingPage = document.querySelector(".Product_Detail_Page");
-            if (existingPage) moveImagesIfNeeded(existingPage);
-        });
-    </script>
-
-
-
-
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const mediaQuery = window.matchMedia("(max-width: 680px)");
-            let placeholder = null;
-            const moveDownBy = 4;  // Number of places to move down
-
-            function moveProductWrapper() {
-                const productWrapper = document.getElementById("ProductWrapper");
-                const modalDiv = document.getElementById("ModalDiv");
-                const sideBar = document.getElementById("SideBar");
-
-                if (!productWrapper || !modalDiv || !sideBar) {
-
-                    return;
-                }
-
-                if (mediaQuery.matches) {
-
-
-                    // Store placeholder for original location only once
-                    if (!placeholder) {
-                        placeholder = document.createComment("Original ProductWrapper location");
-                        productWrapper.parentNode.insertBefore(placeholder, productWrapper);
-
-                    }
-
-                    // Move ProductWrapper down by 'moveDownBy' places
-                    let targetElement = modalDiv;
-                    for (let i = 0; i < moveDownBy; i++) {
-                        if (targetElement.nextElementSibling) {
-                            targetElement = targetElement.nextElementSibling;
-                        } else {
-                            break;  // Exit if there aren't enough siblings
-                        }
-                    }
-
-                    // Insert ProductWrapper after the target element
-                    if (targetElement.nextElementSibling) {
-                        document.body.insertBefore(productWrapper, targetElement.nextElementSibling);
-                    } else {
-                        document.body.appendChild(productWrapper); // If there's no sibling, append at the end
-                    }
-
-                } else {
-
-
-                    if (placeholder && placeholder.parentNode) {
-                        placeholder.parentNode.insertBefore(productWrapper, placeholder);
-
-                    } else {
-
-                    }
-                }
-            }
-
-            // Wait until ProductWrapper appears
-            const observer = new MutationObserver(() => {
-                const productWrapper = document.getElementById("ProductWrapper");
-                if (productWrapper) {
-                    console.log("✅ ProductWrapper found");
-                    moveProductWrapper();
-                    mediaQuery.addEventListener("change", moveProductWrapper);
-                    observer.disconnect();
-                }
-            });
-
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    </script>
+</html>
