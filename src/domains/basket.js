@@ -307,7 +307,7 @@ function updateBasket() {
     // Guard against re-entrant / repeated basket renders that can freeze the UI
     if (window.__ssUpdatingBasket) return;
     window.__ssUpdatingBasket = true;
-    __ssBasketRenderInProgress = true;
+    window.__ssBasketRenderInProgress = true;
     try {
         let basketContainer = document.getElementById("Basket_Viewer");
 
@@ -683,10 +683,10 @@ function updateBasket() {
 
     } finally {
         window.__ssUpdatingBasket = false;
-        __ssBasketRenderInProgress = false;
-        if (__ssBasketNeedsRerender) {
-            __ssBasketNeedsRerender = false;
-            __ssRequestBasketRerender("post-render");
+        window.__ssBasketRenderInProgress = false;
+        if (window.__ssBasketNeedsRerender) {
+            window.__ssBasketNeedsRerender = false;
+            (window.__ssRequestBasketRerender || (()=>{}))("post-render");
         }
     }
 }
