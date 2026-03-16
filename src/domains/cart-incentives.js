@@ -32,14 +32,6 @@ function __ssRequestBasketRerender() {
     setTimeout(() => { __ssBasketRerenderQueued = false; try { if (typeof updateBasket === 'function') updateBasket(); } catch {} }, 0);
   } catch {}
 }
-
-Object.defineProperties(window, {
-  __ssBasketRenderInProgress: { configurable: true, get: () => __ssBasketRenderInProgress, set: (v) => { __ssBasketRenderInProgress = !!v; } },
-  __ssBasketNeedsRerender: { configurable: true, get: () => __ssBasketNeedsRerender, set: (v) => { __ssBasketNeedsRerender = !!v; } },
-  __ssBasketRerenderQueued: { configurable: true, get: () => __ssBasketRerenderQueued, set: (v) => { __ssBasketRerenderQueued = !!v; } }
-});
-window.__ssRequestBasketRerender = __ssRequestBasketRerender;
-
 function __ssParsePriceEUR(v) {
   if (typeof v === "number") return Number.isFinite(v) ? v : 0;
   if (typeof v !== "string") return 0;

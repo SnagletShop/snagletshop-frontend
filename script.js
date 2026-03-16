@@ -151,9 +151,6 @@ function __ssNormalizeCatalogImages(catalogObj) {
     if (runtime && typeof runtime.normalizeCatalogImages === "function") return runtime.normalizeCatalogImages(catalogObj);
     return catalogObj;
 }
-if (typeof window !== "undefined") {
-    window.__ssNormalizeCatalogImages = __ssNormalizeCatalogImages;
-}
 
 const { TEXTS, countryToCurrency, countryNames } = window.__SS_SHARED_DATA__ || { TEXTS: {}, countryToCurrency: {}, countryNames: {} };
 // Exchange rates
@@ -169,7 +166,6 @@ let tariffMultipliers = {};
 let productsDatabase = (typeof window !== "undefined" && window.productsDatabase && typeof window.productsDatabase === "object")
     ? window.productsDatabase
     : ((typeof window !== "undefined" && window.products && typeof window.products === "object") ? window.products : {});
-let __ssSettingProductsBridge = false;
 if (typeof window !== "undefined") {
     window.productsDatabase = productsDatabase;
     if (!window.products || typeof window.products !== "object" || !Object.keys(window.products).length) {
@@ -179,13 +175,8 @@ if (typeof window !== "undefined") {
 function __ssSetProductsDatabase(next) {
     productsDatabase = (next && typeof next === 'object') ? next : {};
     if (typeof window !== 'undefined') {
-        __ssSettingProductsBridge = true;
-        try {
-            window.productsDatabase = productsDatabase;
-            window.products = productsDatabase;
-        } finally {
-            __ssSettingProductsBridge = false;
-        }
+        window.productsDatabase = productsDatabase;
+        window.products = productsDatabase;
     }
     return productsDatabase;
 }
@@ -310,20 +301,8 @@ function __ssInstallLegacyGlobalBridges() {
     __ssDefineWindowBridge('selectedCurrency', () => selectedCurrency, (v) => { selectedCurrency = String(v || 'EUR'); });
     __ssDefineWindowBridge('exchangeRates', () => exchangeRates, (v) => { exchangeRates = (v && typeof v === 'object') ? v : {}; });
     __ssDefineWindowBridge('tariffMultipliers', () => tariffMultipliers, (v) => { tariffMultipliers = (v && typeof v === 'object') ? v : {}; });
-    __ssDefineWindowBridge('productsDatabase', () => productsDatabase, (v) => {
-        if (__ssSettingProductsBridge) {
-            productsDatabase = (v && typeof v === 'object') ? v : {};
-            return;
-        }
-        __ssSetProductsDatabase(v);
-    });
-    __ssDefineWindowBridge('products', () => productsDatabase, (v) => {
-        if (__ssSettingProductsBridge) {
-            productsDatabase = (v && typeof v === 'object') ? v : {};
-            return;
-        }
-        __ssSetProductsDatabase(v);
-    });
+    __ssDefineWindowBridge('productsDatabase', () => productsDatabase, (v) => { __ssSetProductsDatabase(v); });
+    __ssDefineWindowBridge('products', () => productsDatabase, (v) => { __ssSetProductsDatabase(v); });
     __ssDefineWindowBridge('cart', () => cart, (v) => { cart = (v && typeof v === 'object') ? v : {}; });
     __ssDefineWindowBridge('basket', () => basket, (v) => { basket = (v && typeof v === 'object') ? v : {}; });
     __ssDefineWindowBridge('currentCategory', () => currentCategory, (v) => { currentCategory = v == null ? null : String(v); });
@@ -599,12 +578,7 @@ function buildAnalyticsCartItems(stripeCart) {
 }
 
 // Fire a simple "page opened" ping as soon as the script runs
-try {
-    const analyticsEvent = (typeof sendAnalyticsEvent === 'function')
-        ? sendAnalyticsEvent
-        : (typeof window !== 'undefined' && typeof window.sendAnalyticsEvent === 'function' ? window.sendAnalyticsEvent : null);
-    analyticsEvent?.('page_open');
-} catch {}
+sendAnalyticsEvent('page_open');
 
 function handleStateChange(state) {
     try {
@@ -670,6 +644,21 @@ function hideAppLoader() {
     const runtime = window.__SS_APP_LOADER__;
     if (runtime && typeof runtime.hide === "function") return runtime.hide();
 }
+function __ssResolveCategoryButtons() {
+    try {
+        if (typeof window.CategoryButtons === 'function') return window.CategoryButtons.bind(window);
+    } catch {}
+    try {
+        const runtime = window.__SS_CATALOG_UI_RUNTIME__;
+        if (runtime && typeof runtime.CategoryButtons === 'function') {
+            return function resolvedCategoryButtons() {
+                return runtime.CategoryButtons.apply(runtime, arguments);
+            };
+        }
+    } catch {}
+    return function noopCategoryButtons() {};
+}
+
 async function bootApp() {
     const runtime = window.__SS_BOOT_RUNTIME__;
     if (runtime && typeof runtime.boot === "function") {
@@ -682,7 +671,7 @@ async function bootApp() {
             syncCentralState: __ssSyncCentralState,
             initializeHistory,
             loadProducts,
-            categoryButtons: CategoryButtons,
+            categoryButtons: __ssResolveCategoryButtons(),
             updateBasketHeaderIndicator: __ssUpdateBasketHeaderIndicator
         });
     }
@@ -705,10 +694,10 @@ async function GoToSettings() {
 const functionRegistry = {
 
     loadProducts,
-    GoToProductPage: (typeof GoToProductPage === 'function') ? GoToProductPage : (window.GoToProductPage || null),
-    GoToCart: (typeof GoToCart === 'function') ? GoToCart : (window.GoToCart || null),
+    GoToProductPage,
+    GoToCart,
     GoToSettings,
-    searchQuery: (typeof searchQuery === 'function') ? searchQuery : (window.searchQuery || null)
+    searchQuery
     // add more functions here as needed
 };
 window.addEventListener("beforeunload", () => {
@@ -773,9 +762,7 @@ function calculateTotalAmount(){ return window.__SS_MODAL_RUNTIME__?.calculateTo
 function basketButtonFunction(){ return window.__SS_MODAL_RUNTIME__?.basketButtonFunction?.({ getBasket:()=>basket }); }
 let searchTimeout;
 function handleSortChange(newSort){ return window.__SS_CATALOG_UI_RUNTIME__?.handleSortChange?.({ lsSet:(k,v)=>localStorage.setItem(k,v), isReplaying:()=>isReplaying, loadProducts:(...args)=>loadProducts(...args), navigate:(...args)=>navigate(...args), getWindowCurrentCategory:()=>window.currentCategory, getWindowCurrentSortOrder:()=>window.currentSortOrder, getLastCategory:()=>lastCategory }, newSort); }
-function __ssBuildCatalogUiCtx(){ return { TEXTS, getProductsDatabase:()=>typeof productsDatabase!=='undefined'?productsDatabase:{}, getProducts:()=>typeof products!=='undefined'?products:(window.products||{}), setLastCategory:(v)=>{ lastCategory=v; }, getLastCategory:()=>lastCategory, setWindowCurrentSortOrder:(v)=>{ window.currentSortOrder=v; }, getWindowCurrentSortOrder:()=>window.currentSortOrder, setWindowCurrentCategory:(v)=>{ window.currentCategory=v; currentCategory=v; }, getWindowCurrentCategory:()=>window.currentCategory, syncCentralState:__ssSyncCentralState, clearCategoryHighlight, setCart:(obj)=>{ cart=obj||{}; }, getCart:()=>cart, setCartItemQty:(key,qty)=>{ cart[key]=qty; }, removeSortContainer, createProductCard:(product, options)=>window.__SS_PRODUCT_CARD__?.createProductCard?.(product, options), getABProductName:__ssABGetProductName, getABProductDescription:__ssABGetProductDescription, resolveVariantPriceEUR:__ssResolveVariantPriceEUR, navigate:(...args)=>navigate(...args), decreaseQuantity, increaseQuantity, addToCart:(...args)=>addToCart(...args), defaultSelectedOptions:__ssDefaultSelectedOptions, extractOptionGroups:__ssExtractOptionGroups, preloadProductImages:(cat)=>preloadProductImages(cat), categoryButtons:()=>CategoryButtons(), isDarkModeEnabled }; }
-window.__SS_CATALOG_UI_CTX__ = __ssBuildCatalogUiCtx();
-function renderCatalogProducts(category, sortBy = 'NameFirst', sortOrder = 'asc'){ return window.__SS_CATALOG_UI_RUNTIME__?.renderCatalogProducts?.(window.__SS_CATALOG_UI_CTX__ || __ssBuildCatalogUiCtx(), category, sortBy, sortOrder); }
+function renderCatalogProducts(category, sortBy = 'NameFirst', sortOrder = 'asc'){ return window.__SS_CATALOG_UI_RUNTIME__?.renderCatalogProducts?.({ TEXTS, getProductsDatabase:()=>typeof productsDatabase!=='undefined'?productsDatabase:{}, getProducts:()=>typeof products!=='undefined'?products:{}, setLastCategory:(v)=>{ lastCategory=v; }, getLastCategory:()=>lastCategory, setWindowCurrentSortOrder:(v)=>{ window.currentSortOrder=v; }, getWindowCurrentSortOrder:()=>window.currentSortOrder, setWindowCurrentCategory:(v)=>{ window.currentCategory=v; currentCategory=v; }, getWindowCurrentCategory:()=>window.currentCategory, syncCentralState:__ssSyncCentralState, clearCategoryHighlight, setCart:(obj)=>{ cart=obj||{}; }, getCart:()=>cart, setCartItemQty:(key,qty)=>{ cart[key]=qty; }, removeSortContainer, createProductCard:(product, options)=>window.__SS_PRODUCT_CARD__?.createProductCard?.(product, options), getABProductName:__ssABGetProductName, getABProductDescription:__ssABGetProductDescription, resolveVariantPriceEUR:__ssResolveVariantPriceEUR, navigate:(...args)=>navigate(...args), decreaseQuantity, increaseQuantity, addToCart:(...args)=>addToCart(...args), defaultSelectedOptions:__ssDefaultSelectedOptions, extractOptionGroups:__ssExtractOptionGroups, preloadProductImages:(cat)=>preloadProductImages(cat), categoryButtons:()=>__ssResolveCategoryButtons()(), isDarkModeEnabled }, category, sortBy, sortOrder); }
 async function renderSettingsScreen(){ return window.__SS_SETTINGS_RUNTIME__?.goToSettings?.({ preloadSettingsData, clearCategoryHighlight, removeSortContainer, TEXTS, currencySymbols, getExchangeRates:()=>exchangeRates, getSelectedCurrency:()=>selectedCurrency, setSelectedCurrency:(v)=>{ selectedCurrency=v; }, syncCentralState:__ssSyncCentralState, countryNames, countryToCurrency, AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE, syncCurrencySelects, updateAllPrices, snagletGetTurnstileToken:snagletGetTurnstileToken }); }
 function syncSortSelects(newSort){ return window.__SS_CATALOG_UI_RUNTIME__?.syncSortSelects?.({ setupSortDropdown:(value)=>__ssSetupSortDropdown(value) }, newSort); }
 function updateSorting(){ return window.__SS_CATALOG_UI_RUNTIME__?.updateSorting?.({ handleSortChange:(value)=>handleSortChange(value) }); }

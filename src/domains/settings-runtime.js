@@ -35,23 +35,16 @@
           ctx.syncCentralState?.('preload-cache-hit', { exchangeRates: safeRates, tariffMultipliers: safeTariffs });
           window.preloadedData.countries = cached.countries || ctx.tariffsObjectToCountriesArray?.(safeTariffs);
           window.preloadedData.storefrontConfig = cached.storefrontConfig || cached.storefront || null;
-          ctx.handlesTariffsDropdown?.(ctx, window.preloadedData.countries || []);
+          ctx.handlesTariffsDropdown?.(window.preloadedData.countries || []);
           console.log('⚡ Using cached settings data.');
           return;
         }
 
-        const fetchCountriesPromise = (typeof ctx.fetchCountriesFromServer === 'function')
-          ? Promise.resolve(ctx.fetchCountriesFromServer()).catch(() => null)
-          : Promise.resolve(null);
-        const fetchStorefrontConfigPromise = (typeof ctx.fetchStorefrontConfigFromServer === 'function')
-          ? Promise.resolve(ctx.fetchStorefrontConfigFromServer()).catch(() => null)
-          : Promise.resolve(null);
-
         const [tariffsObj, ratesData, countriesArr, storefrontCfg] = await Promise.all([
           ctx.fetchTariffsFromServer?.(),
           ctx.fetchExchangeRatesFromServer?.(),
-          fetchCountriesPromise,
-          fetchStorefrontConfigPromise
+          ctx.fetchCountriesFromServer?.().catch(() => null),
+          ctx.fetchStorefrontConfigFromServer?.().catch(() => null)
         ]);
 
         const safeTariffs = (tariffsObj && typeof tariffsObj === 'object' && !Array.isArray(tariffsObj)) ? tariffsObj : {};
@@ -69,7 +62,7 @@
         const countriesList = (Array.isArray(countriesArr) && countriesArr.length)
           ? countriesArr
           : ctx.tariffsObjectToCountriesArray?.(currentTariffs);
-        ctx.handlesTariffsDropdown?.(ctx, countriesList);
+        ctx.handlesTariffsDropdown?.(countriesList);
 
         window.preloadedData.tariffs = currentTariffs;
         window.preloadedData.exchangeRates = currentRates;
@@ -348,6 +341,4 @@
   }
 
   window.__SS_SETTINGS_RUNTIME__ = { preloadSettingsData, goToSettings };
-  window.preloadSettingsData = window.preloadSettingsData || ((ctx = {}) => preloadSettingsData(ctx));
-  window.goToSettings = window.goToSettings || ((ctx = {}) => goToSettings(ctx));
 })(window, document);

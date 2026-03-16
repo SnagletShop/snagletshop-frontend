@@ -3,21 +3,6 @@
 
   let initProductsPromise = null;
 
-  function __ssNormalizeCatalogImagesSafe(catalogObj) {
-    try {
-      const runtime = window.__SS_CATALOG_IMAGE_RUNTIME__;
-      if (runtime && typeof runtime.normalizeCatalogImages === 'function') {
-        return runtime.normalizeCatalogImages(catalogObj);
-      }
-      if (typeof window.__ssNormalizeCatalogImages === 'function') {
-        return window.__ssNormalizeCatalogImages(catalogObj);
-      }
-    } catch (err) {
-      console.warn('[catalog-runtime] image normalization skipped:', err);
-    }
-    return catalogObj;
-  }
-
 function initProducts() {
     if (initProductsPromise) return initProductsPromise;
 
@@ -59,7 +44,7 @@ function initProducts() {
                 }
 
                 window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(resolvedCatalog) : (window.productsDatabase = resolvedCatalog, window.products = resolvedCatalog);
-                __ssNormalizeCatalogImagesSafe(window.productsDatabase || window.products || {});
+                __ssNormalizeCatalogImages(window.productsDatabase || window.products || {});
 
                 const cfg = productsPayload.config || {};
                 if (typeof cfg.applyTariff === "boolean") {
@@ -90,7 +75,7 @@ function initProducts() {
             }
 
             window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(deduped) : (window.productsDatabase = deduped, window.products = deduped);
-            __ssNormalizeCatalogImagesSafe(window.productsDatabase || window.products || {});
+            __ssNormalizeCatalogImages(window.productsDatabase || window.products || {});
 
             if (typeof cfg.applyTariff === "boolean") {
                 window.serverApplyTariff = cfg.applyTariff;

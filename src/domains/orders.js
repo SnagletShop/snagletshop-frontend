@@ -153,12 +153,7 @@ function openOrderStatusModal(prefill = {}) {
 }
 
 window.__SS_BOOT__?.onReady(async () => {
-    try {
-        const preload = window.preloadSettingsData || window.__SS_SETTINGS_RUNTIME__?.preloadSettingsData;
-        if (typeof preload === "function") await preload();
-    } catch (e) {
-        console.warn("orders preloadSettingsData failed:", e);
-    }
+    await preloadSettingsData();
 });
 
 const ANALYTICS_VISITOR_KEY = 'snaglet_visitor_id';

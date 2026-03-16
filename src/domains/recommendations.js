@@ -1,8 +1,4 @@
 (function (window, document) {
-let __ssRecoUpdateNavImpl = function () {};
-function __ssRecoUpdateNav() {
-    try { return __ssRecoUpdateNavImpl.apply(this, arguments); } catch { }
-}
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
 }
@@ -724,7 +720,7 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
-        __ssRecoUpdateNavImpl = function __ssRecoUpdateNavInner() {
+        function __ssRecoUpdateNav() {
             try {
                 // align width
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
@@ -732,7 +728,7 @@ async function __ssRecoRenderForProduct(product) {
                 btnL.disabled = viewport.scrollLeft <= 2;
                 btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
             } catch { }
-        };
+        }
 
         // Nav buttons: support mobile tap reliably + step one item on mobile
         function navStepItems() {
