@@ -348,4 +348,6 @@
   }
 
   window.__SS_SETTINGS_RUNTIME__ = { preloadSettingsData, goToSettings };
+  window.preloadSettingsData = window.preloadSettingsData || ((ctx = {}) => preloadSettingsData(ctx));
+  window.goToSettings = window.goToSettings || ((ctx = {}) => goToSettings(ctx));
 })(window, document);
