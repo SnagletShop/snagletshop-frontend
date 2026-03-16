@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recommendations — Management</title>
+  <link rel="stylesheet" href="styles.css?v=21" />
+  <style>
+    .wrap{max-width:1100px;margin:20px auto;padding:0 14px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+    .card{border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px;background:rgba(255,255,255,.04)}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .field label{display:block;font-size:12px;opacity:.85;margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;outline:none}
+    .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:10px 8px;text-align:left;font-size:13px;vertical-align:top}
+    th{font-size:12px;opacity:.85}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:11px;opacity:.9}
+    .muted{opacity:.75}
+    .ok{color:#8ef0b6}
+    .err{color:#ff9b9b}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 900px){.split{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between;align-items:center;">
+      <h1 style="margin:0;font-size:20px;">Product-page Recommendations</h1>
+      <div class="row" style="align-items:center;">
+        <a class="btn" href="index.html">Back to console</a>
+      </div>
+    </div>
+
+    <div id="status" class="muted" style="margin:10px 0 0 0;"></div>
+
+    <div class="grid" style="margin-top:14px;">
+      <div class="card">
+        <div class="row">
+          <div class="field" style="min-width:260px;flex:1">
+            <label>API base (localStorage.api_base)</label>
+            <input id="apiBase" placeholder="https://api.snagletshop.com" />
+          </div>
+          <div class="field" style="min-width:200px;flex:1">
+            <label>Widget ID (localStorage.recs_widget_id)</label>
+            <input id="widgetId" placeholder="product_page_recs_v1" />
+          </div>
+          <div class="field" style="min-width:220px;flex:1">
+            <label>Admin token (localStorage.api_token)</label>
+            <input id="apiToken" placeholder="Bearer token" />
+          </div>
+          <div class="field" style="min-width:160px;flex:1">
+            <label>Admin code (localStorage.admin_code)</label>
+            <input id="adminCode" placeholder="X-Admin-Code" />
+          </div>
+          <button class="btn" id="saveCreds">Save</button>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="field" style="min-width:180px;flex:1">
+            <label>Login user (localStorage.admin_user)</label>
+            <input id="loginUser" placeholder="admin" />
+          </div>
+          <div class="field" style="min-width:180px;flex:1">
+            <label>Login pass (localStorage.admin_pass)</label>
+            <input id="loginPass" type="password" placeholder="admin" />
+          </div>
+          <button class="btn" id="loginBtn">Login (get token)</button>
+          <div class="muted" style="flex:2;min-width:280px;align-self:center;">Use this if your token expires (401 Invalid token).</div>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="card">
+          <h2 style="margin:0 0 10px 0;font-size:16px;">Overview</h2>
+          <button class="btn" id="loadOverview">Load overview</button>
+          <div id="overview" class="muted" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 10px 0;font-size:16px;">Global config</h2>
+          <div class="row">
+            <div class="field" style="flex:1;min-width:120px"><label>Stable slots</label><input id="cfgStable" type="number" min="0" max="60" /></div>
+            <div class="field" style="flex:1;min-width:120px"><label>Evolution slots</label><input id="cfgEvo" type="number" min="0" max="120" /></div>
+            <div class="field" style="flex:1;min-width:120px"><label>Global winner slots</label><input id="cfgGlobalSlots" type="number" min="0" max="10" /></div>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <label class="muted"><input id="cfgGlobalEnabled" type="checkbox" /> Enable global winners</label>
+            <label class="muted"><input id="cfgCross" type="checkbox" /> Allow cross-category global winners</label>
+
+<div class="card" style="margin-top:12px;">
+  <div class="muted" style="margin-bottom:10px;">Carousel UI (storefront)</div>
+  <div class="row">
+    <div class="field" style="flex:1;min-width:160px"><label>Desktop visible</label><input id="cfgUiDesktopVisible" type="number" min="1" max="6" /></div>
+    <div class="field" style="flex:1;min-width:160px"><label>Mobile visible</label><input id="cfgUiMobileVisible" type="number" min="1" max="4" /></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Desktop batch size</label><input id="cfgUiBatchDesktop" type="number" min="1" max="12" /></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Mobile batch size</label><input id="cfgUiBatchMobile" type="number" min="1" max="8" /></div>
+  </div>
+  <div class="row">
+    <div class="field" style="flex:1;min-width:170px"><label>Desktop max batches</label><input id="cfgUiMaxBatchesDesktop" type="number" min="1" max="50" /></div>
+    <div class="field" style="flex:1;min-width:170px"><label>Mobile max batches</label><input id="cfgUiMaxBatchesMobile" type="number" min="1" max="50" /></div>
+    <div class="field" style="flex:1;min-width:170px"><label>Desktop max items (0 = no cap)</label><input id="cfgUiMaxItemsDesktop" type="number" min="0" max="300" /></div>
+    <div class="field" style="flex:1;min-width:170px"><label>Mobile max items (0 = no cap)</label><input id="cfgUiMaxItemsMobile" type="number" min="0" max="300" /></div>
+    <div class="field" style="flex:1;min-width:160px"><label>Swipe small px</label><input id="cfgUiSwipeSmall" type="number" min="5" max="200" /></div>
+    <div class="field" style="flex:1;min-width:160px"><label>Swipe big px</label><input id="cfgUiSwipeBig" type="number" min="20" max="400" /></div>
+    <div class="field" style="flex:1;min-width:180px"><label>List token TTL (minutes)</label><input id="cfgUiTokenTtl" type="number" min="5" max="1440" /></div>
+  
+  <div class="row">
+    <div class="field" style="flex:1;min-width:180px"><label>Mobile prefetch threshold (items)</label><input id="cfgUiPrefetchMobile" type="number" min="0" max="50" /></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Desktop prefetch threshold (items)</label><input id="cfgUiPrefetchDesktop" type="number" min="0" max="80" /></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Mobile append count</label><input id="cfgUiAppendMobile" type="number" min="1" max="20" /></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Desktop append count</label><input id="cfgUiAppendDesktop" type="number" min="1" max="40" /></div>
+  </div>
+</div>
+</div>
+
+          </div>
+<div class="row" style="margin-top:10px;align-items:flex-end;">
+  <div class="field" style="flex:1;min-width:160px">
+    <label class="muted"><input id="cfgDiscEnabled" type="checkbox" /> Enable smart discounts on recs</label>
+  </div>
+  <div class="field" style="flex:1;min-width:120px"><label>Min %</label><input id="cfgDiscMinPct" type="number" min="0" max="50" step="0.5" /></div>
+  <div class="field" style="flex:1;min-width:120px"><label>Max %</label><input id="cfgDiscMaxPct" type="number" min="0" max="80" step="0.5" /></div>
+  <div class="field" style="flex:1;min-width:140px"><label>Max discounted items</label><input id="cfgDiscMaxItems" type="number" min="0" max="20" /></div>
+</div>
+<div class="row" style="margin-top:8px;align-items:flex-end;">
+  <div class="field" style="flex:1;min-width:140px"><label>Min clicks to qualify</label><input id="cfgDiscMinClicks" type="number" min="0" max="100000" /></div>
+  <div class="field" style="flex:1;min-width:160px"><label>Max ATC/click</label><input id="cfgDiscMaxAtcClick" type="number" min="0" max="1" step="0.01" /></div>
+  <div class="field" style="flex:1;min-width:160px"><label>Min margin after discount</label><input id="cfgDiscMinMargin" type="number" min="0" max="0.99" step="0.01" /></div>
+  <div class="field" style="flex:1;min-width:160px"><label>Token TTL (minutes)</label><input id="cfgDiscTtl" type="number" min="1" max="1440" /></div>
+</div>
+
+          
+<div class="row" style="margin-top:8px;align-items:flex-end;">
+  <div class="field" style="flex:1;min-width:220px"><label>Discount strategy</label>
+    <select id="cfgDiscStrategy">
+      <option value="bestSellers">Best sellers only</option>
+      <option value="random">Random exploration</option>
+      <option value="mixed">Mixed</option>
+    </select>
+  </div>
+  <div class="field" style="flex:1;min-width:180px"><label>Random chance (0-1)</label><input id="cfgDiscRandomChance" type="number" min="0" max="1" step="0.01" /></div>
+  <div class="field" style="flex:1;min-width:200px"><label>Max random discounts per batch</label><input id="cfgDiscMaxRandom" type="number" min="0" max="10" /></div>
+</div>
+<div class="row" style="margin-top:8px;">
+            <button class="btn" id="loadCfg">Load</button>
+            <button class="btn" id="saveCfg">Save</button>
+            <span id="cfgStatus" class="muted"></span>
+          </div>
+        </div>
+      </div>
+
+      
+      <div class="card">
+        <h2 style="margin:0 0 10px 0;font-size:16px;">Per-product slot override</h2>
+        <div class="muted" style="margin:-4px 0 10px 0;">Optional. Overrides global slots for a single source product page.</div>
+        <div class="row">
+          <div class="field" style="flex:2;min-width:220px">
+            <label>Source productId</label>
+            <input id="pcfgSource" placeholder="e.g. 123" />
+          </div>
+          <div class="field" style="flex:1;min-width:120px">
+            <label>Stable slots</label>
+            <input id="pcfgStable" type="number" min="0" max="60" />
+          </div>
+          <div class="field" style="flex:1;min-width:120px">
+            <label>Evolution slots</label>
+            <input id="pcfgEvo" type="number" min="0" max="120" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn" id="pcfgLoad">Load</button>
+          <button class="btn" id="pcfgSave">Save</button>
+          <button class="btn" id="pcfgClear">Clear override</button>
+          <span id="pcfgStatus" class="muted"></span>
+        </div>
+      </div>
+
+<div class="card">
+        <h2 style="margin:0 0 10px 0;font-size:16px;">Per-source analytics + controls</h2>
+        <div class="row">
+          <div class="field" style="min-width:260px;flex:1">
+            <label>Source productId</label>
+            <input id="sourceId" placeholder="e.g. 123" />
+          </div>
+          <button class="btn" id="loadSource">Load</button>
+        </div>
+        <div id="sourceMeta" class="muted" style="margin-top:10px;"></div>
+        <div style="overflow:auto;margin-top:10px;">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th>Target</th>
+                <th>Impr</th>
+                <th>Clicks</th>
+                <th>ATC</th>
+                <th>scoreAuto</th>
+                <th>manualBoost</th>
+                <th>manualMult</th>
+                <th>Actions</th>
+                <th>Ban</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 10px 0;font-size:16px;">Ban / unban</h2>
+        <div class="row">
+          <div class="field" style="min-width:220px;flex:1">
+            <label>Type</label>
+            <select id="banType">
+              <option value="global_product_ban">Global product ban</option>
+              <option value="per_source_ban">Per-source product ban</option>
+              <option value="category_ban">Category ban</option>
+            </select>
+          </div>
+          <div class="field" style="min-width:200px;flex:1">
+            <label>productId (for product bans)</label>
+            <input id="banProductId" placeholder="target productId" />
+          </div>
+          <div class="field" style="min-width:200px;flex:1">
+            <label>sourceProductId (for per-source)</label>
+            <input id="banSourceId" placeholder="source productId" />
+          </div>
+          <div class="field" style="min-width:200px;flex:1">
+            <label>categoryKey (for category ban)</label>
+            <input id="banCategory" placeholder="category key" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div class="field" style="flex:2;min-width:260px">
+            <label>Reason</label>
+            <input id="banReason" placeholder="optional" />
+          </div>
+          <label class="muted"><input id="banActive" type="checkbox" checked /> Active</label>
+          <button class="btn" id="saveBan">Save ban</button>
+          <span id="banStatus" class="muted"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script src="recommendations.js"></script>
+</body>
+</html>

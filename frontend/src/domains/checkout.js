@@ -103,7 +103,7 @@ async function createPaymentModal() {
     if (document.getElementById("paymentModal")) return;
 
     // Ensure texts/theme data exist (safe even if initPaymentModalLogic calls it again)
-    try { if (typeof preloadSettingsData === "function") await preloadSettingsData(); } catch { }
+    try { const preload = window.preloadSettingsData || window.__SS_SETTINGS_RUNTIME__?.preloadSettingsData; if (typeof preload === 'function') await preload(); } catch { }
 
     const savedTheme = localStorage.getItem("themeMode");
     if (savedTheme === "dark") {
@@ -614,8 +614,9 @@ async function setupCheckoutFlow(selectedCurrency) {
 
 async function initPaymentModalLogic() {
     // Ensure tariffs + rates exist (from your earlier preloadSettingsData rewrite)
-    if (typeof preloadSettingsData === "function") {
-        await preloadSettingsData();
+    const preload = window.preloadSettingsData || window.__SS_SETTINGS_RUNTIME__?.preloadSettingsData;
+    if (typeof preload === 'function') {
+        await preload();
     }
     if (typeof fetchTariffs === "function") {
         await fetchTariffs();

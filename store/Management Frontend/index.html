@@ -1,0 +1,1608 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="api-base" content="https://api.snagletshop.com">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script>
+    // Theme init (default: light; persisted in localStorage as "mgmt_theme")
+    (function () {
+      try {
+        var key = "mgmt_theme";
+        var v = localStorage.getItem(key);
+        var theme = (v === "dark" || v === "light") ? v : "light";
+        var root = document.documentElement;
+        root.classList.toggle("theme-dark", theme === "dark");
+        root.classList.toggle("theme-light", theme === "light");
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <title>Shop — Management Frontend</title>
+  <link rel="stylesheet" href="styles.css?v=21" />
+
+  <!-- Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <!-- Minimal modal styles (safe even if you already have some) -->
+  <style>
+    .hidden {
+      display: none !important;
+    }
+
+    .mgmt-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+    }
+
+    .mgmt-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+    }
+
+    .mgmt-modal-panel {
+      position: relative;
+      width: min(920px, calc(100vw - 24px));
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      margin: 12px auto;
+      background: #0f1115;
+      color: #e8eaf0;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 16px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+      padding: 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .mgmt-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mgmt-modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .mgmt-modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mgmt-modal-body {
+      margin-top: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .mgmt-field label {
+      display: block;
+      font-size: 12px;
+      opacity: .85;
+      margin-bottom: 6px;
+    }
+
+    .mgmt-field input[type="text"],
+    .mgmt-field input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: inherit;
+      outline: none;
+    }
+
+    .mgmt-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mgmt-hr {
+      height: 1px;
+      background: rgba(255, 255, 255, .12);
+      border: 0;
+      margin: 6px 0;
+    }
+
+    .mgmt-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .06);
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .mgmt-btn.primary {
+      background: rgba(0, 153, 255, .25);
+      border-color: rgba(0, 153, 255, .45);
+    }
+
+
+    .mgmt-btn.success {
+      background: rgba(34, 197, 94, .22);
+      border-color: rgba(34, 197, 94, .45);
+    }
+
+    .mgmt-btn.danger {
+      background: rgba(220, 38, 38, .18);
+      border-color: rgba(220, 38, 38, .45);
+    }
+
+    .Buttony.danger {
+      border-color: var(--ui-danger-border);
+      background: var(--ui-danger-bg);
+    }
+
+    .Buttony.success {
+      border-color: rgba(34, 197, 94, .45);
+      background: rgba(34, 197, 94, .10);
+    }
+
+    .mg-cat-checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+      padding: 6px 0;
+    }
+
+    .mg-cat-check {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .mg-cat-check input {
+      width: 16px;
+      height: 16px;
+    }
+
+    .mg-cat-picker-table td,
+    .mg-cat-picker-table th {
+      vertical-align: middle;
+    }
+
+    .drag-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .05);
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    .drag-item .meta {
+      opacity: .7;
+      font-size: 12px;
+    }
+
+    .drag-ghost {
+      opacity: .6;
+    }
+
+    .mgmt-radio-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+    }
+
+    .mgmt-radio-row label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="top-topbar">
+    <div class="container">
+
+    </div>
+  </header>
+
+
+  <!-- Login Screen (no prompts; credentials can be remembered on this device) -->
+  <div id="loginScreen" class="login-screen" aria-hidden="false">
+    <div class="login-card" role="dialog" aria-modal="true" aria-label="Admin login">
+      <div class="login-brand">
+        <div class="login-logo">SnagletShop</div>
+        <div class="login-sub">Management Console</div>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="on">
+
+        <label class="login-label" for="loginApiBase">Server URL</label>
+        <input id="loginApiBase" class="login-input" name="apiBase" autocomplete="url"
+          placeholder="https://api.snagletshop.com" />
+        <div class="login-hint">Example: https://api.snagletshop.com</div>
+
+        <label class="login-label" for="loginUsername">Username</label>
+        <input id="loginUsername" class="login-input" name="username" autocomplete="username"
+          placeholder="Admin username" />
+
+        <label class="login-label" for="loginPassword">Password</label>
+        <div class="login-password-row">
+          <input id="loginPassword" class="login-input" name="password" type="password" autocomplete="current-password"
+            placeholder="Admin password" />
+          <button id="togglePw" class="login-toggle" type="button" aria-label="Show password">Show</button>
+        </div>
+
+        <label class="login-label" for="loginAdminCode">Admin code (optional)</label>
+        <input id="loginAdminCode" class="login-input" name="adminCode" autocomplete="one-time-code"
+          placeholder="X-Admin-Code / Admin code" />
+
+        <div class="login-actions">
+          <label class="login-remember">
+            <input id="rememberCreds" type="checkbox" checked />
+            Remember on this device
+          </label>
+
+          <button id="loginBtn" class="login-btn" type="submit">Sign in</button>
+        </div>
+
+        <div id="loginStatus" class="login-status" role="status" aria-live="polite"></div>
+      </form>
+
+      <div class="login-foot">
+        <button id="logoutBtn" class="login-link" type="button" title="Clears the token and returns to login">Log
+          out</button>
+      </div>
+    </div>
+  </div>
+
+
+  <section class="container">
+    <div id="filters" class="filters"></div>
+    <div id="groups" class="groups"></div>
+
+    <div id="productsTab" class="mg-tab hidden" aria-hidden="true">
+      <div class="mg-subtabs">
+        <button class="mg-subtab active" data-subtab="catalogue" id="mgProdSubCatalogue">Catalogue</button>
+        <button class="mg-subtab" data-subtab="categories" id="mgProdSubCategories">Categories</button>
+      </div>
+
+      <!-- Catalogue workbench -->
+      <div class="mg-prod-pane" data-pane="catalogue">
+        <div class="mg-products-grid">
+          <section class="mg-cat-list">
+            <header class="mg-cat-toolbar">
+              <input id="prodSearch" placeholder="Search by name or ID…" />
+              <button id="prodReload">Reload</button>
+              <button id="prodNew">New product</button> <button id="catalogDownload">Download catalogs</button>
+              <span class="mg-count" id="prodCount"></span>
+            </header>
+
+            <div class="mg-cat-table-wrap">
+              <table class="mg-cat-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th class="mg-sortable" data-sort-key="id" aria-sort="none">ID <span class="mg-sort-arrow"
+                        aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="name" aria-sort="none">Name <span class="mg-sort-arrow"
+                        aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="buy" aria-sort="none">Buy <span class="mg-sort-arrow"
+                        aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="sell" aria-sort="none">Sell <span class="mg-sort-arrow"
+                        aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="profit" aria-sort="none">Profit <span class="mg-sort-arrow"
+                        aria-hidden="true"></span></th>
+                    <th class="mg-sortable" data-sort-key="opts" aria-sort="none">Opts <span class="mg-sort-arrow"
+                        aria-hidden="true"></span></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="prodTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="mg-cat-editor">
+            <header class="mg-editor-head">
+              <strong id="prodEditorTitle">Product editor</strong>
+              <span id="prodDirty" class="mg-dirty hidden">● Unsaved</span>
+              <span class="spacer"></span>
+              <button id="prodSave" class="primary">Save</button>
+              <button id="prodDiscard">Discard</button>
+            </header>
+            <div id="prodEditorBody" class="mg-editor-body">
+              <div class="mg-empty">Select a product or click “New product”.</div>
+            </div>
+          </section>
+
+          <aside class="mg-cat-history" id="prodHistory">
+            <header>
+              <strong>History</strong>
+              <span class="spacer"></span>
+              <button id="histPrev">◀</button>
+              <button id="histNext">▶</button>
+              <button id="histToggle">⤢</button>
+            </header>
+            <div id="prodHistoryList"></div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- Categories editor -->
+      <div class="mg-prod-pane hidden" data-pane="categories">
+        <div class="mg-categories-grid">
+          <section class="mg-catcats">
+            <header class="mg-cat-toolbar">
+              <input id="catSearch" placeholder="Search categories…" />
+              <button id="catReload">Reload</button>
+              <button id="catSave" class="primary">Save</button>
+            </header>
+            <div class="mg-cat-listbox" id="catList"></div>
+          </section>
+
+          <section class="mg-cat-editor">
+            <header class="mg-editor-head">
+              <strong id="catEditorTitle">Category</strong>
+              <span class="spacer"></span>
+              <input id="catAddSearch" placeholder="Search products in this category…" />
+              <button id="catAddProductBtn">Add product</button>
+            </header>
+            <div class="mg-editor-body">
+              <div id="catProducts"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div id="accountingTab" class="mg-tab hidden" aria-hidden="true">
+      <div class="mg-subtabs">
+        <button class="mg-subtab active" data-subtab="dashboard" id="mgAccSubDash">Dashboard</button>
+        <button class="mg-subtab" data-subtab="expenses" id="mgAccSubExpenses">Expenses</button>
+        <button class="mg-subtab" data-subtab="settings" id="mgAccSubSettings">Settings</button>
+      </div>
+
+      <div class="mg-acc-pane" data-pane="dashboard">
+        <div class="mg-acc-kpis" id="accKpis"></div>
+        <div class="mg-acc-grid">
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong>Orders (from Orders tab data)</strong>
+              <span class="spacer"></span>
+              <button class="Buttony" id="accRecalc">Recalculate</button>
+            </header>
+            <div class="mg-acc-card-body" id="accOrdersSummary"></div>
+          </section>
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong>Spending guidance</strong>
+            </header>
+            <div class="mg-acc-card-body" id="accGuidance"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="mg-acc-pane hidden" data-pane="expenses">
+        <div class="mg-acc-expenses">
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong>Expenses</strong>
+              <span class="spacer"></span>
+              <button class="Buttony" id="accExpExport">Export CSV</button>
+              <button class="Buttony" id="accExpNew">New</button>
+            </header>
+            <div class="mg-acc-exp-filters">
+              <input id="accExpSearch" placeholder="Search vendor / note / category" />
+              <select id="accExpCat"></select>
+              <input id="accExpFrom" type="date" />
+              <input id="accExpTo" type="date" />
+            </div>
+            <div class="mg-acc-table-wrap">
+              <table class="mg-acc-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Vendor</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>EUR</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="accExpTbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head">
+              <strong id="accExpEditorTitle">Expense</strong>
+              <span class="spacer"></span>
+              <button class="Buttony" id="accExpDelete">Delete</button>
+              <button class="Buttony" id="accExpSave">Save</button>
+            </header>
+            <div class="mg-acc-card-body">
+              <div class="mg-acc-form" id="accExpForm"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="mg-acc-pane hidden" data-pane="settings">
+        <div class="mg-acc-grid">
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head"><strong>Tax & VAT</strong></header>
+            <div class="mg-acc-card-body">
+              <div class="mg-acc-form" id="accSettingsForm"></div>
+            </div>
+          </section>
+          <section class="mg-acc-card">
+            <header class="mg-acc-card-head"><strong>Notes</strong></header>
+            <div class="mg-acc-card-body" style="color:#6b7280;line-height:1.45">
+              Configure a VAT effective date now (even if empty). When you set it later, the dashboard will mark orders
+              from that date as "VAT period".
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div id="tariffsTab" class="mg-tab hidden" aria-hidden="true"></div>
+    <div id="graphsTab" class="mg-tab hidden mg-graphs-hidden" aria-hidden="true"></div>
+    <div id="analyticsTab" class="mg-tab hidden" aria-hidden="true"></div>
+
+
+    <!-- Recommendations (rendered inside main SPA) -->
+    <div id="recommendationsTab" class="mg-tab hidden" aria-hidden="true">
+      <div class="mg-page">
+        <div class="mg-page-head">
+          <h2 style="margin:0;">Recommendations</h2>
+          <div class="muted" style="margin-top:6px;">Configure stable/evolution slots, bans, and smart discounts;
+            inspect per-source performance.</div>
+        </div>
+
+        <div id="recoStatus" class="muted" style="margin:10px 0;"></div>
+
+        <div class="mg-acc-card" style="margin-top:10px;">
+          <div class="mg-acc-card-title">Overview</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+            <button class="mgmt-btn" id="recoLoadOverview" type="button">Load overview</button>
+          </div>
+          <div id="recoOverview" class="mg-acc-card-body" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="mg-acc-card" style="margin-top:12px;">
+          <div class="mg-acc-card-title">Global config</div>
+          <div class="mg-acc-card-body">
+            <div class="mg-grid-2">
+              <div class="mgmt-field">
+                <label>Stable slots</label>
+                <input id="recoCfgStable" type="number" min="0" max="60" value="2" />
+              </div>
+              <div class="mgmt-field">
+                <label>Evolution slots</label>
+                <input id="recoCfgEvo" type="number" min="0" max="120" value="6" />
+              </div>
+            </div>
+
+            <div class="mg-grid-2" style="margin-top:10px;">
+              <div class="mgmt-field">
+                <label>Global winner slots</label>
+                <input id="recoCfgGlobalSlots" type="number" min="0" max="10" value="0" />
+              </div>
+              <div class="mgmt-field">
+                <label style="display:flex;align-items:center;gap:10px;">
+                  <input id="recoCfgGlobalEnabled" type="checkbox" /> Enable global winners
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                  <input id="recoCfgCross" type="checkbox" /> Allow cross-category global winners
+                </label>
+              </div>
+            </div>
+
+            <hr class="mgmt-hr" />
+
+            <div class="mgmt-field">
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="recoCfgDiscEnabled" type="checkbox" /> Smart discounts on recommendations
+              </label>
+              <div class="muted" style="margin-top:6px;">Server may offer a small discount on a few evolution slots when
+                it predicts it increases conversion without harming margin.</div>
+            </div>
+
+            <div class="mg-grid-2" style="margin-top:10px;">
+              <div class="mgmt-field"><label>Min %</label><input id="recoCfgDiscMinPct" type="number" min="0" max="80"
+                  value="2" /></div>
+              <div class="mgmt-field"><label>Max %</label><input id="recoCfgDiscMaxPct" type="number" min="0" max="80"
+                  value="5" /></div>
+            </div>
+            <div class="mg-grid-2" style="margin-top:10px;">
+              <div class="mgmt-field"><label>Max discounted items / widget</label><input id="recoCfgDiscMaxItems"
+                  type="number" min="0" max="10" value="2" /></div>
+              <div class="mgmt-field"><label>Token TTL (minutes)</label><input id="recoCfgDiscTtl" type="number" min="1"
+                  max="1440" value="60" /></div>
+            </div>
+            <div class="mg-grid-2" style="margin-top:10px;">
+              <div class="mgmt-field"><label>Min impressions to qualify</label><input id="recoCfgDiscMinImpr"
+                  type="number" min="0" max="100000" value="80" /></div>
+              <div class="mgmt-field"><label>Max ATC per click</label><input id="recoCfgDiscMaxAtcClick" type="number"
+                  min="0" max="1" step="0.01" value="0.10" /></div>
+            </div>
+            <div class="mgmt-field" style="margin-top:10px;">
+              <label>Min margin after discount (0–0.99)</label>
+              <input id="recoCfgDiscMinMargin" type="number" min="0" max="0.99" step="0.01" value="0.20" />
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+              <button class="mgmt-btn" id="recoLoadCfg" type="button">Load</button>
+              <button class="mgmt-btn primary" id="recoSaveCfg" type="button">Save</button>
+              <div id="recoCfgStatus" class="muted" style="align-self:center;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mg-acc-card" style="margin-top:12px;">
+          <div class="mg-acc-card-title">Per-source performance</div>
+          <div class="mg-acc-card-body">
+            <div class="mg-grid-2">
+              <div class="mgmt-field">
+                <label>Source productId</label>
+                <input id="recoSourceId" type="text" placeholder="e.g. P123" />
+              </div>
+              <div class="mgmt-field" style="display:flex;align-items:end;gap:10px;">
+                <button class="mgmt-btn" id="recoLoadSource" type="button">Load</button>
+              </div>
+            </div>
+            <div id="recoSourceStatus" class="muted" style="margin-top:10px;"></div>
+            <div class="mg-cat-table-wrap" style="margin-top:10px;">
+              <table class="mg-cat-table">
+                <thead>
+                  <tr>
+                    <th>Target</th>
+                    <th style="text-align:right;">Impr</th>
+                    <th style="text-align:right;">Clicks</th>
+                    <th style="text-align:right;">ATC</th>
+                    <th style="text-align:right;">CTR</th>
+                    <th style="text-align:right;">ATC/Click</th>
+                    <th style="text-align:right;">Auto</th>
+                    <th style="text-align:right;">Manual</th>
+                    <th style="text-align:right;">Final</th>
+                  </tr>
+                </thead>
+                <tbody id="recoSourceTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- Incentives (one-time buyer AOV boosters) -->
+    <div id="incentivesTab" class="mg-tab hidden" aria-hidden="true">
+      <div class="mg-page">
+        <div class="mg-page-head">
+          <h2 style="margin:0;">Incentives</h2>
+          <div class="muted" style="margin-top:6px;">Configure tier discounts, optional shipping unlock, and cart top-up
+            settings. Server-truth pricing (used for Stripe).</div>
+        </div>
+
+        <div id="incStatus" class="muted" style="margin:10px 0;"></div>
+
+        <div id="incWarnings" class="inc-alert hidden" aria-live="polite"></div>
+
+        <div class="inc-layout">
+          <div class="inc-main">
+
+            <div class="mg-acc-card" style="margin-top:12px;">
+              <div class="mg-acc-card-title">Actions</div>
+              <div class="mg-acc-card-body">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <button class="mgmt-btn" id="incLoad" type="button">Load config</button>
+                  <button class="mgmt-btn primary" id="incSave" type="button">Save config</button>
+                  <button class="mgmt-btn" id="incReset" type="button"
+                    title="Deletes DB override and falls back to ENV defaults">Reset to ENV defaults</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mg-acc-card" style="margin-top:12px;">
+              <div class="mg-acc-card-title">Core</div>
+              <div class="mg-acc-card-body">
+                <div class="mg-grid-2">
+                  <div class="mgmt-field">
+                    <label><input id="incEnabled" type="checkbox" checked /> Enable incentives</label>
+                    <div class="muted" style="margin-top:6px;">If disabled, no tier/bundle/shipping incentives are
+                      applied server-side.</div>
+                  </div>
+
+                  <div class="mgmt-field">
+                    <label>Typical order subtotal (optional)</label>
+                    <input id="incTypicalAov" type="number" min="0" step="0.01" placeholder="e.g. 28" />
+                    <div class="muted" style="margin-top:6px;">Used only for preview and recommendations in this admin
+                      page.</div>
+                  </div>
+
+                  <div class="mgmt-field">
+                    <label>Top-up widget</label>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                      <div class="mgmt-field" style="min-width:180px;flex:1;">
+                        <label>Max suggested items</label>
+                        <input id="incTopupMaxItems" type="number" min="0" max="50" value="8" />
+                      </div>
+                      <div class="mgmt-field" style="min-width:180px;flex:1;">
+                        <label>Max price delta %</label>
+                        <input id="incTopupDeltaPct" type="number" min="0" max="1000" value="30" />
+                      </div>
+                    </div>
+                    <div class="muted" style="margin-top:6px;">Client-side only (recommendation selection rules).</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mg-acc-card" style="margin-top:12px;">
+              <div class="mg-acc-card-title">Tier discount</div>
+              <div class="mg-acc-card-body">
+                <label class="muted"><input id="incTierEnabled" type="checkbox" checked /> Enable tier discounts</label>
+
+                <div style="margin-top:6px;">
+                  <label class="muted">
+                    <input id="incTierApplyToDiscounted" type="checkbox" checked />
+                    Apply tier discount to already discounted items
+                  </label>
+                  <div class="muted" style="margin-top:4px;">If disabled, tier unlock still triggers by total cart
+                    subtotal, but the tier % won’t reduce items that already have an item-level discount (e.g.
+                    recommendation token).</div>
+                </div>
+
+                <div class="muted" style="margin:8px 0;">Rules are evaluated on subtotal (after bundles, before
+                  tariffs). Highest matching tier applies.</div>
+
+                <div class="inc-preset-row">
+                  <div class="muted">Presets:</div>
+                  <button class="mgmt-btn" id="incPresetConservative" type="button">Conservative</button>
+                  <button class="mgmt-btn" id="incPresetBalanced" type="button">Balanced</button>
+                  <button class="mgmt-btn" id="incPresetAggressive" type="button">Aggressive</button>
+                  <span class="muted" style="margin-left:auto;">Use A/B testing after deploying.</span>
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                  <button class="mgmt-btn" id="incAddTier" type="button">Add tier</button>
+                  <span class="muted">Example: min €40 → 6% off</span>
+                </div>
+
+                <div style="margin-top:10px;overflow:auto;">
+                  <table class="mg-table">
+                    <thead>
+                      <tr>
+                        <th style="min-width:140px;">Min subtotal (EUR)</th>
+                        <th style="min-width:120px;">Discount %</th>
+                        <th style="min-width:110px;">Remove</th>
+                      </tr>
+                    </thead>
+                    <tbody id="incTiersBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="mg-acc-card" style="margin-top:12px;">
+              <div class="mg-acc-card-title">Free shipping unlock (optional)</div>
+              <div class="mg-acc-card-body">
+                <label class="muted"><input id="incShipEnabled" type="checkbox" /> Enable shipping fee unlock</label>
+                <div class="mg-grid-2" style="margin-top:10px;">
+                  <div class="mgmt-field">
+                    <label>Threshold EUR</label>
+                    <input id="incShipThreshold" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                  <div class="mgmt-field">
+                    <label>Shipping fee EUR</label>
+                    <input id="incShipFee" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                </div>
+                <div class="muted" style="margin-top:6px;">If you normally charge shipping fee, this allows “free
+                  shipping above threshold”.</div>
+              </div>
+            </div>
+
+            <div class="mg-acc-card" style="margin-top:12px;">
+              <div class="mg-acc-card-title">Bundle discounts (optional)</div>
+              <div class="mg-acc-card-body">
+                <label class="muted"><input id="incBundleEnabled" type="checkbox" /> Enable bundle discounts</label>
+                <div class="muted" style="margin:8px 0;">Provide bundles as JSON (advanced). Example format:</div>
+                <pre style="white-space:pre-wrap;opacity:.85;margin:0 0 10px 0;">[
+  {"id":"starter","title":"Starter set","pct":8,"productIds":["p1","p2","p3"]}
+]</pre>
+                <div class="mgmt-field">
+                  <label>Bundles JSON</label>
+                  <textarea id="incBundlesJson" rows="6" placeholder="[]"></textarea>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="inc-side">
+            <div class="mg-acc-card">
+              <div class="mg-acc-card-title">Sales-optimized setup</div>
+              <div class="mg-acc-card-body">
+                <ul class="inc-list">
+                  <li><b>Goal clarity:</b> one primary goal (free shipping <i>or</i> tier discount). Too many goals
+                    lowers conversion.</li>
+                  <li><b>First step close:</b> first unlock usually performs best at ~10–15% above typical order
+                    subtotal.</li>
+                  <li><b>Low-risk add-ons:</b> light, universal items; keep top-up items within ~30% price delta by
+                    default.</li>
+                  <li><b>Single checkout upsell:</b> avoid grids at checkout—show one best add-on only.</li>
+                  <li><b>A/B test:</b> threshold, copy (“unlock” vs “save”), and placement (cart vs checkout).</li>
+                </ul>
+                <div class="inc-note">This panel is guidance only; it does not affect storefront behavior.</div>
+              </div>
+            </div>
+
+            <div class="mg-acc-card" style="margin-top:12px;">
+              <div class="mg-acc-card-title">Preview</div>
+              <div class="mg-acc-card-body">
+                <div id="incPreview" class="inc-preview muted">Enter tiers (and optional typical subtotal) to see next
+                  unlock suggestions.</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Settings Modal (required by setupSettingsModal/openSettingsModal in script.js) -->
+  <div id="settingsModal" class="mgmt-modal hidden" aria-hidden="true">
+    <div class="mgmt-modal-backdrop" data-close-modal></div>
+
+    <div class="mgmt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="mgmt-modal-header">
+        <h2 id="settingsTitle">Settings</h2>
+        <div class="mgmt-modal-actions">
+          <button id="settingsClose" class="mgmt-btn" type="button" data-close-modal>Close</button>
+          <button id="settingsSave" class="mgmt-btn primary" type="button">Save</button>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-body">
+        <div class="mgmt-grid-2">
+          <div class="mgmt-field">
+            <label for="apiBaseInput">API base</label>
+            <input id="apiBaseInput" type="text" placeholder="https://www.snagletshop.com" />
+          </div>
+          <div class="mgmt-field">
+            <label for="adminCodeInput">Admin code (X-Admin-Code)</label>
+            <input id="adminCodeInput" type="text" placeholder="optional" />
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Done indicator (per-order)</label>
+          <div class="mgmt-radio-row">
+            <label style="display:flex;gap:10px;align-items:center;">
+              <input id="doneIndicatorBg" type="checkbox" />
+              Background (green/red)
+            </label>
+            <label style="display:flex;gap:10px;align-items:center;">
+              <input id="doneIndicatorText" type="checkbox" />
+              Text color (green/red)
+            </label>
+          </div>
+          <div class="login-hint" style="margin-top:8px;">Applies to the done status (check icon + “Time done” box).
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Open products button</label>
+          <div class="mgmt-radio-row">
+            <label><input type="radio" name="openProdMode" value="launcher" /> Open navigation page
+              (recommended)</label>
+            <label><input type="radio" name="openProdMode" value="direct" /> Open all products immediately</label>
+          </div>
+
+          <div class="mgmt-radio-row" style="margin-top:10px;">
+            <label><input type="radio" name="openProdTarget" value="newWindow" /> Open in a dedicated order window
+              (keeps orders separated)</label>
+            <label><input type="radio" name="openProdTarget" value="sameWindow" /> Open as tabs in the same browser
+              window as this admin page</label>
+          </div>
+
+          <label style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+            <input id="openProductsPreferWindow" type="checkbox" />
+            Try to open in a separate browser window (best-effort)
+          </label>
+
+          <label style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+            <input id="openProductsIncludeSummaryTab" type="checkbox" />
+            Add an “Order summary” as the last tab
+          </label>
+
+          <div class="login-hint" style="margin-top:8px;">
+            Your browser may open a new tab instead of a new window. If pop-ups are blocked, use the navigation page
+            mode.
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Default “Since”</label>
+          <div class="mgmt-radio-row">
+            <label><input type="radio" name="defSince" value="today" /> Today</label>
+            <label><input type="radio" name="defSince" value="yesterday" /> Yesterday</label>
+            <label><input type="radio" name="defSince" value="specific" /> Specific date</label>
+          </div>
+          <div style="margin-top:10px;">
+            <input id="defSinceDate" type="date" />
+          </div>
+        </div>
+
+        <div class="mgmt-field">
+          <label>Default “To”</label>
+          <div class="mgmt-radio-row">
+            <label><input type="radio" name="defTill" value="startOfYear" /> Start of year</label>
+            <label><input type="radio" name="defTill" value="specific" /> Specific date</label>
+          </div>
+          <div class="mgmt-grid-2" style="margin-top:10px;">
+            <div>
+              <label style="font-size:12px;opacity:.85;margin:0 0 6px;">Specific To date</label>
+              <input id="defTillDate" type="date" />
+            </div>
+            <label style="display:flex;gap:10px;align-items:center;margin-top:22px;">
+              <input id="rollYear" type="checkbox" />
+              Roll “To” year to current year
+            </label>
+          </div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Done highlighting</label>
+          <label style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input id="doneBgHighlightToggle" type="checkbox" />
+            Highlight done status background (green/red)
+          </label>
+          <label style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input id="doneTextHighlightToggle" type="checkbox" />
+            Highlight done status text (green/red)
+          </label>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Row order (drag & drop)</label>
+          <div id="dragList"></div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Advanced features</label>
+          <div id="mgFeatureToggles" class="mgmt-feature-toggles"></div>
+          <div class="login-hint" style="margin-top:8px;">Disable features if you want a simpler UI or if your browser
+            is slow.</div>
+        </div>
+
+        <hr class="mgmt-hr" />
+
+        <div class="mgmt-field">
+          <label>Analytics collection</label>
+
+          <label style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input id="mgAnalyticsEnabled" type="checkbox" />
+            Enable analytics collection (storefront tracking)
+          </label>
+
+          <div class="login-hint" style="margin-top:8px;">
+            The server can store all events, but the dashboard can ignore accidental clicks using the thresholds below.
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;">
+            <div>
+              <label style="font-size:12px;opacity:.85;margin:0 0 6px;">Min engaged time (seconds)</label>
+              <input id="mgAnalyticsMinSec" type="number" min="0" step="0.1" />
+            </div>
+            <div>
+              <label style="font-size:12px;opacity:.85;margin:0 0 6px;">Max engaged time (seconds)</label>
+              <input id="mgAnalyticsMaxSec" type="number" min="0" step="1" />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <label style="display:flex;gap:10px;align-items:center;">
+                <input id="mgAnalyticsLinkClicks" type="checkbox" />
+                Ignore clicks that do not lead to engaged views
+              </label>
+            </div>
+          </div>
+
+          <label style="display:flex;gap:10px;align-items:center;margin-top:12px;">
+            <input id="mgAnalyticsShowFaulty" type="checkbox" />
+            Show faulty analytics data in Analytics tab (when available)
+          </label>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Required for drag&drop row order -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="script.js?v=1"></script>
+  <script src="./management.js?v=1"></script>
+  <script src="graphEngine.js"></script>
+  <!-- Category product picker modal -->
+  <div id="catProductPickerModal" class="mgmt-modal hidden" aria-hidden="true">
+    <div class="mgmt-modal-backdrop" id="catProductPickerBackdrop"></div>
+
+    <div class="mgmt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="catProductPickerTitle">
+      <div class="mgmt-modal-header">
+        <h2 id="catProductPickerTitle">Manage category products</h2>
+        <div class="mgmt-modal-actions" style="align-items:center;">
+          <input id="catProductPickerSearch" type="text" placeholder="Search products…"
+            style="width:260px;max-width:40vw;" />
+          <button id="catProductPickerClose" class="mgmt-btn" type="button">Close</button>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-body">
+        <div style="overflow:auto;">
+          <table class="mg-cat-table mg-cat-picker-table" style="min-width:720px;">
+            <thead>
+              <tr>
+                <th style="width:200px;">ID</th>
+                <th>Name</th>
+                <th style="width:110px;">Added</th>
+                <th style="width:130px;"></th>
+              </tr>
+            </thead>
+            <tbody id="catProductPickerBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="productEditorModal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit product</h3>
+        <button id="peClose" class="modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="pe-grid">
+          <label>Categories
+            <select id="peCategory" multiple size="6"></select>
+            <div class="pe-hint">Select multiple categories (Ctrl/Shift). Product will appear in all selected
+              categories.</div>
+          </label>
+
+          <label>Product ID
+            <input type="text" id="peId" readonly />
+          </label>
+
+          <label>Name
+            <input type="text" id="peName" />
+          </label>
+
+          <label>AliExpress link
+            <input type="text" id="peLink" placeholder="https://www.aliexpress.com/item/..." />
+          </label>
+
+          <label>Selling price (EUR)
+            <input type="number" id="pePrice" step="0.01" />
+          </label>
+
+          <label>Purchase price (EUR)
+            <input type="number" id="pePurchase" step="0.01" />
+          </label>
+        </div>
+
+        <div class="pe-section">
+          <div class="pe-section-head">
+            <h4>Image links</h4>
+            <div class="pe-hint">One URL per line. Empty lines are ignored.</div>
+          </div>
+          <textarea id="peImages" rows="6" placeholder="https://..."></textarea>
+        </div>
+
+        <div class="pe-section">
+          <div class="pe-section-head">
+            <h4>Product options (JSON)</h4>
+            <div class="pe-hint">Use JSON. Leave blank to keep unchanged.</div>
+          </div>
+          <textarea id="peOptions" rows="8"
+            placeholder='Example: {"Color":["Red","Blue"],"Size":["S","M","L"]}'></textarea>
+        </div>
+
+        <div class="pe-section" id="peVariantPricingSection">
+          <div class="pe-section-head">
+            <h4>Option pricing</h4>
+            <div class="pe-hint">Set selling + purchase overrides per option value for a single option group (e.g.,
+              Size). Auto-syncs to JSON below.</div>
+          </div>
+
+          <div class="vp-top">
+            <div class="vp-field">
+              <label for="pePricedGroup">Priced option group</label>
+              <select id="pePricedGroup"></select>
+            </div>
+
+            <div class="vp-field vp-field-wide">
+              <div class="vp-mini">Base selling: <span id="vpBaseSell">—</span> • Base purchase: <span
+                  id="vpBaseBuy">—</span></div>
+              <div class="vp-mini vp-warn" id="vpKeyWarning" hidden></div>
+            </div>
+          </div>
+
+          <div class="vp-layout">
+            <div class="vp-main">
+              <div class="vp-table-wrap">
+                <table class="vp-table">
+                  <thead>
+                    <tr>
+                      <th>Option value</th>
+                      <th style="width:160px;">Sell (EUR)</th>
+                      <th style="width:160px;">Purchase (EUR)</th>
+                      <th style="width:120px;">Profit</th>
+                      <th style="width:92px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="vpTbody"></tbody>
+                </table>
+              </div>
+              <div class="vp-hintline" id="vpHintLine">Tip: leave a cell empty to fall back to the base price.</div>
+            </div>
+
+            <aside class="vp-tester">
+              <div class="vp-tester-head">
+                <div class="vp-tester-title">Test selection</div>
+                <button class="mgmt-btn" type="button" id="vpTesterReset">Reset</button>
+              </div>
+              <div id="vpTesterOptions" class="vp-tester-options"></div>
+              <div id="vpTesterSummary" class="vp-tester-summary"></div>
+            </aside>
+          </div>
+
+          <details class="vp-jsondrop" id="vpJsonDetails">
+            <summary class="vp-jsondrop-summary"><span>Advanced JSON (auto-sync)</span></summary>
+            <div class="vp-json-grid">
+              <div class="vp-json-col">
+                <div class="vp-json-title">Variant sell prices (variantPrices)</div>
+                <textarea id="peVariantPrices" rows="8" spellcheck="false"
+                  placeholder='Example: {"Size=M": 24.99, "Size=L": 26.99, "Color=Red | Size=M": 25.99}'></textarea>
+              </div>
+              <div class="vp-json-col">
+                <div class="vp-json-title">Variant purchase prices (variantPurchasePrices)</div>
+                <textarea id="peVariantPurchasePrices" rows="8" spellcheck="false"
+                  placeholder='Example: {"Size=M": 15.10, "Size=L": 16.30}'></textarea>
+              </div>
+            </div>
+            <div class="pe-hint">Keys can be simple ("Size=M") or full combinations ("Color=Red | Size=M"). UI edits
+              only the selected group.</div>
+          </details>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="peSave">Save changes</button>
+        <button id="peCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category options modal (rename + icon URLs) -->
+
+  <!-- Profit (contribution + refund analytics, discount guardrails config) -->
+  <div id="profitTab" class="mg-tab hidden" aria-hidden="true">
+    <div class="mg-page">
+      <div class="mg-page-head">
+        <h2 style="margin:0;">Profit</h2>
+        <div class="mg-page-sub" style="opacity:.8;">Contribution margin guardrails, refund-risk biasing, and velocity
+          protection.</div>
+      </div>
+
+      <div class="mg-grid" style="display:grid;grid-template-columns: 1fr;gap:14px;">
+        <div class="mg-card" style="padding:14px;border-radius:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-weight:700;">Configuration</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="profitReloadBtn" class="mgmt-btn" type="button">Reload</button>
+              <button id="profitResetBtn" class="mgmt-btn" type="button">Reset</button>
+              <button id="profitSaveBtn" class="mgmt-btn primary" type="button">Save</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns: repeat(12, minmax(0,1fr));gap:10px;margin-top:12px;">
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Enabled</label>
+              <select id="profitEnabled" class="mg-input">
+                <option value="true">On</option>
+                <option value="false">Off</option>
+              </select>
+            </div>
+
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Fees %</label>
+              <input id="profitFeesPct" class="mg-input" type="number" step="0.001" min="0" max="0.2"
+                placeholder="0.029" />
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Fees fixed (EUR)</label>
+              <input id="profitFeesFixed" class="mg-input" type="number" step="0.01" min="0" max="10"
+                placeholder="0.30" />
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Avg shipping cost (EUR)</label>
+              <input id="profitAvgShip" class="mg-input" type="number" step="0.01" min="0" max="200"
+                placeholder="3.50" />
+            </div>
+
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Min order margin %</label>
+              <input id="profitMinMargin" class="mg-input" type="number" step="0.01" min="0" max="0.9"
+                placeholder="0.18" />
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Min contribution (EUR)</label>
+              <input id="profitMinContrib" class="mg-input" type="number" step="0.1" min="-1000" max="10000"
+                placeholder="2.0" />
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Refund penalty weight</label>
+              <input id="profitRefundWeight" class="mg-input" type="number" step="0.1" min="0" max="10"
+                placeholder="0.8" />
+            </div>
+
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Fraud velocity</label>
+              <select id="profitFraudEnabled" class="mg-input">
+                <option value="true">On</option>
+                <option value="false">Off</option>
+              </select>
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Max PI/IP/hour</label>
+              <input id="profitFraudPi" class="mg-input" type="number" step="1" min="1" max="5000" placeholder="20" />
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Max Finalize/IP/hour</label>
+              <input id="profitFraudFinalize" class="mg-input" type="number" step="1" min="1" max="5000"
+                placeholder="30" />
+            </div>
+          </div>
+
+          <div style="margin-top:10px;font-size:12px;opacity:.75;">
+            Discounts are automatically capped at checkout if guardrails would make the order unprofitable (based on
+            expectedPurchasePrice + fees + avg shipping cost).
+          </div>
+        </div>
+
+        <div class="mg-card" style="padding:14px;border-radius:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-weight:700;">Profit report</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <select id="profitSort" class="mg-input" style="min-width:160px;">
+                <option value="contribution">Sort: Contribution</option>
+                <option value="sold">Sort: Sold qty</option>
+                <option value="refund">Sort: Refund rate</option>
+              </select>
+              <button id="profitRefreshReportBtn" class="mgmt-btn" type="button">Refresh</button>
+            </div>
+          </div>
+
+          <div style="overflow:auto;margin-top:10px;">
+            <table class="mg-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th style="text-align:right;">Sold</th>
+                  <th style="text-align:right;">Refund%</th>
+                  <th style="text-align:right;">Est margin%</th>
+                  <th style="text-align:right;">Contribution</th>
+                  <th style="text-align:center;">Alert</th>
+                </tr>
+              </thead>
+              <tbody id="profitReportBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="catMetaModal" class="mgmt-modal hidden" aria-hidden="true">
+    <div class="mgmt-modal-backdrop" id="catMetaBackdrop"></div>
+
+    <div class="mgmt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="catMetaTitle"
+      style="width:min(720px, calc(100vw - 24px));">
+      <div class="mgmt-modal-header">
+        <h2 id="catMetaTitle">Category options</h2>
+        <div class="mgmt-modal-actions" style="align-items:center;">
+          <button id="catMetaClose" class="mgmt-btn" type="button">Close</button>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-body">
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:10px 12px;align-items:center;">
+          <div style="font-weight:700;opacity:.8;">Current name</div>
+          <div id="catMetaCurrentName" style="font-weight:800;"></div>
+
+          <div style="font-weight:700;opacity:.8;">New name</div>
+          <input id="catMetaNewName" type="text" placeholder="e.g., Home &amp; Kitchen" />
+
+          <div style="font-weight:700;opacity:.8;">Icon URL (light)</div>
+          <div>
+            <input id="catMetaIconLight" type="text" placeholder="https://..." style="width:100%;" />
+            <div style="font-size:12px;opacity:.7;margin-top:4px;">Links only (png/jpg/webp/svg/avif). No uploads.</div>
+          </div>
+
+          <div style="font-weight:700;opacity:.8;">Icon URL (dark)</div>
+          <div>
+            <input id="catMetaIconDark" type="text" placeholder="https://... (optional)" style="width:100%;" />
+            <div style="font-size:12px;opacity:.7;margin-top:4px;">If set, storefront uses this in dark mode.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mgmt-modal-footer" style="display:flex;justify-content:flex-end;gap:10px;">
+        <button id="catMetaCancel" class="mgmt-btn" type="button">Cancel</button>
+        <button id="catMetaSave" class="mgmt-btn primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email marketing (abandoned cart + post-purchase offers) -->
+  <div id="emailTab" class="mg-tab hidden" aria-hidden="true">
+    <div class="mg-page">
+      <div class="mg-page-head">
+        <h2 style="margin:0;">Email</h2>
+        <div class="mg-page-sub" style="opacity:.8;">Automated emails that recover abandoned carts and upsell after
+          purchase.</div>
+      </div>
+
+      <div class="mg-grid" style="display:grid;grid-template-columns:1fr;gap:14px;">
+        <div class="mg-card" style="padding:14px;border-radius:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-weight:700;">Configuration</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="emailReloadBtn" class="mgmt-btn" type="button">Reload</button>
+              <button id="emailSaveBtn" class="mgmt-btn primary" type="button">Save</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns: repeat(12, minmax(0,1fr));gap:10px;margin-top:12px;">
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Enabled</label>
+              <select id="emailEnabled" class="mg-input">
+                <option value="true">On</option>
+                <option value="false">Off</option>
+              </select>
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Sending (pause/resume)</label>
+              <select id="emailSendingEnabled" class="mg-input">
+                <option value="true">On</option>
+                <option value="false">Off</option>
+              </select>
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Soft opt-in (paid customers)</label>
+              <select id="emailSoftOptIn" class="mg-input">
+                <option value="false">Off</option>
+                <option value="true">On</option>
+              </select>
+            </div>
+
+            <div style="grid-column: span 3;">
+              <label class="mg-label">From name</label>
+              <input id="emailFromName" class="mg-input" type="text" placeholder="SnagletShop" />
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">From email</label>
+              <input id="emailFromEmail" class="mg-input" type="email" placeholder="offers@yourdomain.com" />
+            </div>
+
+            <div style="grid-column: span 4;">
+              <label class="mg-label">Reply-to</label>
+              <input id="emailReplyTo" class="mg-input" type="email" placeholder="support@yourdomain.com" />
+            </div>
+          </div>
+
+          <div
+            style="margin-top:14px;border-top:1px solid rgba(0,0,0,.06);padding-top:12px;display:grid;grid-template-columns: repeat(12, minmax(0,1fr));gap:10px;">
+            <div style="grid-column: span 12;font-weight:800;">Abandoned cart</div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Enabled</label>
+              <select id="emailAbEnabled" class="mg-input">
+                <option value="true">On</option>
+                <option value="false">Off</option>
+              </select>
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Steps enabled</label>
+              <div
+                style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.08);border-radius:12px;">
+                <label style="display:flex;gap:6px;align-items:center;"><input id="emailAbStep1" type="checkbox"
+                    checked /> <span style="opacity:.9;">#1</span></label>
+                <label style="display:flex;gap:6px;align-items:center;"><input id="emailAbStep2" type="checkbox"
+                    checked /> <span style="opacity:.9;">#2</span></label>
+                <label style="display:flex;gap:6px;align-items:center;"><input id="emailAbStep3" type="checkbox"
+                    checked /> <span style="opacity:.9;">#3</span></label>
+              </div>
+            </div>
+            <div style="grid-column: span 5;">
+              <label class="mg-label">Delays (hours, comma-separated)</label>
+              <input id="emailAbDelays" class="mg-input" type="text" placeholder="1, 24" />
+            </div>
+            <div style="grid-column: span 2;">
+              <label class="mg-label">Max emails</label>
+              <input id="emailAbMax" class="mg-input" type="number" min="1" max="3" step="1" value="2" />
+            </div>
+          </div>
+
+          <div
+            style="margin-top:12px;border-top:1px solid rgba(0,0,0,.06);padding-top:12px;display:grid;grid-template-columns: repeat(12, minmax(0,1fr));gap:10px;">
+            <div style="grid-column: span 12;font-weight:800;">Post-purchase offers</div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Enabled</label>
+              <select id="emailPPEnabled" class="mg-input">
+                <option value="true">On</option>
+                <option value="false">Off</option>
+              </select>
+            </div>
+            <div style="grid-column: span 3;">
+              <label class="mg-label">Delay (days)</label>
+              <input id="emailPPDays" class="mg-input" type="number" min="1" max="30" step="1" value="3" />
+            </div>
+          </div>
+
+          <div
+            style="margin-top:14px;border-top:1px solid rgba(0,0,0,.06);padding-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:240px;">
+              <label class="mg-label">Send test email to</label>
+              <input id="emailTestTo" class="mg-input" type="email" placeholder="you@domain.com" />
+            </div>
+            <button id="emailSendTestBtn" class="mgmt-btn" type="button">Send test</button>
+            <div class="mg-page-sub" id="emailStatus" style="flex:1;min-width:240px;opacity:.85;"></div>
+          </div>
+        </div>
+
+        <div class="mg-card" style="padding:14px;border-radius:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-weight:700;">Stats</div>
+            <button id="emailStatsBtn" class="mgmt-btn" type="button">Refresh stats</button>
+          </div>
+          <div id="emailStats" style="margin-top:10px;font-size:13px;opacity:.9;">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Feature toggles (master switches) -->
+  <div id="featuresTab" class="mg-tab hidden" aria-hidden="true">
+    <div class="mg-page">
+      <div class="mg-page-head">
+        <h2 style="margin:0;">Features</h2>
+        <div class="mg-page-sub" style="opacity:.8;">Master on/off switches for major systems. Useful for quick rollback
+          or risk control.</div>
+      </div>
+
+      <div class="mg-grid" style="display:grid;grid-template-columns:1fr;gap:14px;">
+        <div class="mg-card" style="padding:14px;border-radius:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-weight:700;">Feature Flags</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="featuresReloadBtn" class="mgmt-btn" type="button">Reload</button>
+              <button id="featuresSaveBtn" class="mgmt-btn primary" type="button">Save</button>
+              <button id="featuresResetBtn" class="mgmt-btn" type="button" title="Reset to defaults">Reset</button>
+            </div>
+          </div>
+
+          <div class="mg-divider" style="margin:12px 0;"></div>
+
+          <div class="mg-form" style="display:grid;grid-template-columns:1fr;gap:10px;">
+            <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span>Cart incentives widgets</span>
+              <input id="ff_incentives_enabled" type="checkbox">
+            </label>
+
+            <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span>Smart recommendations (learning)</span>
+              <input id="ff_smartreco_enabled" type="checkbox">
+            </label>
+
+            <div style="padding-left:14px;display:grid;gap:8px;opacity:.95;">
+              <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <span>— cart_topup_v1</span>
+                <input id="ff_smartreco_cart_topup_v1" type="checkbox">
+              </label>
+              <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <span>— cart_crosssell_v1</span>
+                <input id="ff_smartreco_cart_crosssell_v1" type="checkbox">
+              </label>
+              <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <span>— checkout_lastchance_v1</span>
+                <input id="ff_smartreco_checkout_lastchance_v1" type="checkbox">
+              </label>
+            </div>
+
+            <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span>Profit guardrails (discount caps)</span>
+              <input id="ff_profitguardrails_enabled" type="checkbox">
+            </label>
+
+            <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span>Fraud velocity checks</span>
+              <input id="ff_fraudvelocity_enabled" type="checkbox">
+            </label>
+
+            <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span>Analytics ingestion</span>
+              <input id="ff_analytics_enabled" type="checkbox">
+            </label>
+
+            <label class="mg-row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <span>Email marketing automations</span>
+              <input id="ff_email_enabled" type="checkbox">
+            </label>
+
+            <div id="featuresStatus" style="font-size:12px;opacity:.85;white-space:pre-wrap;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Ops tab -->
+  <div id="opsTab" class="mg-page hidden">
+    <div class="mg-page-header">
+      <div>
+        <h2>Ops</h2>
+        <div class="mg-page-sub" style="opacity:.8;">Bulk actions, alerts, exports, and config rollback.</div>
+      </div>
+    </div>
+
+    <div class="mg-grid" style="grid-template-columns: 1fr 1fr; gap: 14px;">
+      <div class="mg-card">
+        <div class="mg-acc-card-title">Alerts</div>
+        <div class="mg-page-sub" style="margin-top:6px;">Operational warnings generated by the backend monitor.</div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="mg-btn" id="mgOpsReloadAlerts">Reload</button>
+          <label style="display:flex; gap:8px; align-items:center; font-size:12px; opacity:.9;">
+            <input type="checkbox" id="mgOpsIncludeAck" /> include acked
+          </label>
+        </div>
+        <div id="mgOpsAlertsList" style="margin-top:10px; display:grid; gap:10px;"></div>
+      </div>
+
+      <div class="mg-card">
+        <div class="mg-acc-card-title">Accounting export</div>
+        <div class="mg-page-sub" style="margin-top:6px;">CSV with net paid (after discounts), fees, shipping, COGS
+          estimate, contribution.</div>
+        <div class="mgmt-grid-2" style="margin-top:10px;">
+          <div class="mgmt-field">
+            <label>From</label>
+            <input id="mgOpsExportFrom" type="date" />
+          </div>
+          <div class="mgmt-field">
+            <label>To</label>
+            <input id="mgOpsExportTo" type="date" />
+          </div>
+        </div>
+        <div class="mgmt-grid-2" style="margin-top:10px;">
+          <div class="mgmt-field">
+            <label>Status (comma separated)</label>
+            <input id="mgOpsExportStatus" type="text" placeholder="PAID,FULFILLED" />
+          </div>
+          <div style="display:flex; align-items:end;">
+            <button class="mg-btn" id="mgOpsExportBtn" style="width:100%;">Download CSV</button>
+          </div>
+        </div>
+        <hr class="mgmt-hr" />
+        <div class="mg-acc-card-title">Invoice PDF</div>
+        <div class="mgmt-field" style="margin-top:10px;">
+          <label>Order ID</label>
+          <input id="mgOpsInvoiceOrderId" type="text" placeholder="e.g. 2026-000123" />
+        </div>
+        <button class="mg-btn" id="mgOpsInvoiceBtn" style="margin-top:10px; width:100%;">Download invoice PDF</button>
+      </div>
+
+      <div class="mg-card">
+        <div class="mg-acc-card-title">Bulk fulfill</div>
+        <div class="mg-page-sub" style="margin-top:6px;">Marks orders fulfilled (does not send emails unless you later
+          wire shipping emails).</div>
+        <div class="mgmt-field" style="margin-top:10px;">
+          <label>Order IDs (one per line)</label>
+          <textarea id="mgOpsFulfillIds" style="width:100%; min-height:120px;"></textarea>
+        </div>
+        <div class="mgmt-grid-2" style="margin-top:10px;">
+          <div class="mgmt-field">
+            <label>Carrier</label>
+            <input id="mgOpsFulfillCarrier" type="text" placeholder="Packeta / Slovak Post / DHL" />
+          </div>
+          <div class="mgmt-field">
+            <label>Tracking URL</label>
+            <input id="mgOpsFulfillTracking" type="text" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="mgmt-field" style="margin-top:10px;">
+          <label>Note</label>
+          <input id="mgOpsFulfillNote" type="text" placeholder="Optional internal note" />
+        </div>
+        <button class="mg-btn" id="mgOpsFulfillBtn" style="margin-top:10px; width:100%;">Apply</button>
+        <div id="mgOpsFulfillOut" style="margin-top:10px; font-size:12px; opacity:.9;"></div>
+      </div>
+
+      <div class="mg-card">
+        <div class="mg-acc-card-title">Bulk product updates</div>
+        <div class="mgmt-field" style="margin-top:10px;">
+          <label>Set costs (CSV: productId,costEUR) one per line</label>
+          <textarea id="mgOpsCostCsv" style="width:100%; min-height:110px;" placeholder="p123,9.40"></textarea>
+        </div>
+        <button class="mg-btn" id="mgOpsCostBtn" style="margin-top:10px; width:100%;">Update costs</button>
+        <hr class="mgmt-hr" />
+        <div class="mgmt-field" style="margin-top:10px;">
+          <label>Enable/disable products (productIds one per line)</label>
+          <textarea id="mgOpsEnableIds" style="width:100%; min-height:80px;"></textarea>
+        </div>
+        <label style="display:flex; gap:8px; align-items:center; font-size:12px; opacity:.9; margin-top:8px;">
+          <input type="checkbox" id="mgOpsEnableValue" checked /> enabled
+        </label>
+        <button class="mg-btn" id="mgOpsEnableBtn" style="margin-top:10px; width:100%;">Apply enable state</button>
+        <div id="mgOpsProdOut" style="margin-top:10px; font-size:12px; opacity:.9;"></div>
+      </div>
+
+      <div class="mg-card" style="grid-column: 1 / -1;">
+        <div class="mg-acc-card-title">Config history + rollback</div>
+        <div class="mgmt-grid-2" style="margin-top:10px;">
+          <div class="mgmt-field">
+            <label>Config type</label>
+            <input id="mgOpsHistType" type="text" placeholder="featureFlags | profit | incentives | emailMarketing"
+              value="featureFlags" />
+          </div>
+          <div style="display:flex; align-items:end; gap:8px;">
+            <button class="mg-btn" id="mgOpsHistLoad" style="flex:1;">Load</button>
+            <button class="mg-btn" id="mgOpsHistRollback" style="flex:1;">Rollback to selected</button>
+          </div>
+        </div>
+        <div class="mg-page-sub" style="margin-top:8px;">Rollback applies immediately. Use feature flags as a fast
+          kill-switch if unsure.</div>
+        <div id="mgOpsHistList" style="margin-top:10px; display:grid; gap:8px;"></div>
+        <div id="mgOpsHistOut" style="margin-top:10px; font-size:12px; opacity:.9;"></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
