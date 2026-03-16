@@ -724,18 +724,9 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
-        function __ssRecoUpdateNav() {
-            try {
-                // align width
-                try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
-                const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
-                btnL.disabled = viewport.scrollLeft <= 2;
-                btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
-            } catch { }
-        }
-
         __ssRecoUpdateNavImpl = function __ssRecoUpdateNavInner() {
             try {
+                // align width
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
                 const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
                 btnL.disabled = viewport.scrollLeft <= 2;
