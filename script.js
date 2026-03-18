@@ -41,7 +41,7 @@ if (localStorage.getItem("applyTariff") == null) localStorage.setItem("applyTari
 // or by setting <meta name="api-base" content="https://..."> in index.html.
 const DEFAULT_BACKEND_PORT = window.__SS_CONFIG__?.DEFAULT_BACKEND_PORT ?? 5500; // server.js default
 
-const API_BASE = String(window.__SS_CONFIG__?.API_BASE || "").replace(/\/+$/, "");
+const API_BASE = String(window.__SS_CONFIG__?.API_BASE || window.__API_BASE__ || (window.location.hostname === 'snagletshop.com' || window.location.hostname === 'www.snagletshop.com' ? 'https://api.snagletshop.com' : '')).replace(/\/+$/, "");
 
 /* ---------------- Add-to-basket popup toggles ----------------
    Two modes for the "added to basket" notification:
