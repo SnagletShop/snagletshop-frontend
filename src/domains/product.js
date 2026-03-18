@@ -9,6 +9,15 @@ function __ssSafeScrollToTopForProductSkeleton() {
     try { return window.__ssScrollToTopForProductSkeleton?.(); } catch {}
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
 }
+
+function __ssGetCatalogFlatSafe() {
+    try {
+        const flat = (typeof window.__ssGetCatalogFlat === "function") ? window.__ssGetCatalogFlat() : [];
+        return Array.isArray(flat) ? flat : [];
+    } catch {
+        return [];
+    }
+}
 function __ssGetPrimaryProductImage(product) {
     try {
         const fix = window.__SS_CATALOG_IMAGE_RUNTIME__?.fixImageUrl;
@@ -102,13 +111,14 @@ function GoToProductPage(productName, productPrice, productDescription) {
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
-    const product = (__pidArg ? __ssGetCatalogFlat().find(p => String(p?.productId || p?.id || "").trim() === __pidArg) : null) || __ssGetCatalogFlat().find(p => p?.name === productName);
+    const __catalogFlat = __ssGetCatalogFlatSafe();
+    const product = (__pidArg ? __catalogFlat.find(p => String(p?.productId || p?.id || "").trim() === __pidArg) : null) || __catalogFlat.find(p => p?.name === productName);
     // Robust current productId tracking (avoid accidental [object Set] etc.)
     try {
         let __pid = __ssIdNorm(arguments[4] || product?.productId || '');
         if (__ssIsBadId(__pid)) {
             // fallback: find by name and take its productId
-            const __p2 = __ssGetCatalogFlat().find(p => String(p?.name || '').trim() === String(productName || '').trim());
+            const __p2 = __catalogFlat.find(p => String(p?.name || '').trim() === String(productName || '').trim());
             __pid = __ssIdNorm(__p2?.productId || '');
         }
         if (!__ssIsBadId(__pid)) { window.__ssCurrentProductId = __pid; try { if (product && typeof product === 'object') product.productId = __pid; } catch { } }
