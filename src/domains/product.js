@@ -30,6 +30,58 @@ function __ssGetPrimaryProductImage(product) {
     }
 }
 
+function __ssHasUsableProductImages(product) {
+    try {
+        if (!product || typeof product !== 'object') return false;
+        if (String(product?.image || '').trim()) return true;
+        if (Array.isArray(product?.images) && product.images.some(v => String(v || '').trim())) return true;
+        if (Array.isArray(product?.imagesB) && product.imagesB.some(v => String(v || '').trim())) return true;
+        return false;
+    } catch {
+        return false;
+    }
+}
+function __ssNormName(value) {
+    return String(value || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function __ssResolveProductForViewer(productName, productIdHint, fallbackImage) {
+    const flat = __ssGetCatalogFlatSafe().filter(p => p && typeof p === 'object');
+    const pid = __ssIdNorm(productIdHint || '');
+    const nameNorm = __ssNormName(productName);
+    let product = null;
+    if (pid) product = flat.find(p => __ssIdNorm(p?.productId || p?.id || '') === pid) || null;
+    if (!product && nameNorm) product = flat.find(p => __ssNormName(p?.name) === nameNorm) || null;
+    if (!product && nameNorm) product = flat.find(p => __ssNormName(p?.name).includes(nameNorm) || nameNorm.includes(__ssNormName(p?.name))) || null;
+    if (product && !__ssHasUsableProductImages(product)) {
+        const richer = flat.find(p => {
+            const samePid = pid && __ssIdNorm(p?.productId || p?.id || '') === pid;
+            const sameName = nameNorm && __ssNormName(p?.name) === nameNorm;
+            return (samePid || sameName) && __ssHasUsableProductImages(p);
+        });
+        if (richer) product = richer;
+    }
+    if (!product) {
+        const img = String(fallbackImage || '').trim();
+        product = {
+            name: String(productName || '').trim(),
+            price: 0,
+            description: '',
+            productId: pid || null,
+            image: img || '',
+            images: img ? [img] : [],
+            imagesB: img ? [img] : []
+        };
+    } else if (!__ssHasUsableProductImages(product) && fallbackImage) {
+        const img = String(fallbackImage || '').trim();
+        if (img) {
+            if (!String(product.image || '').trim()) product.image = img;
+            if (!Array.isArray(product.images) || !product.images.length) product.images = [img];
+            if (!Array.isArray(product.imagesB) || !product.imagesB.length) product.imagesB = [img];
+        }
+    }
+    return { product, flat };
+}
+
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
     const qtyEl = document.getElementById(`quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`);
     const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
@@ -110,9 +162,11 @@ function GoToProductPage(productName, productPrice, productDescription) {
     __ssSafeScrollToTopForProductSkeleton();
     try { removeSortContainer(); } catch { }
 
+    const __fallbackImageArg = String(arguments[3] || "").trim();
     const __pidArg = String(arguments[4] || "").trim();
-    const __catalogFlat = __ssGetCatalogFlatSafe();
-    const product = (__pidArg ? __catalogFlat.find(p => String(p?.productId || p?.id || "").trim() === __pidArg) : null) || __catalogFlat.find(p => p?.name === productName);
+    const __resolved = __ssResolveProductForViewer(productName, __pidArg, __fallbackImageArg);
+    const __catalogFlat = Array.isArray(__resolved?.flat) ? __resolved.flat : [];
+    const product = (__resolved && __resolved.product) ? __resolved.product : null;
     // Robust current productId tracking (avoid accidental [object Set] etc.)
     try {
         let __pid = __ssIdNorm(arguments[4] || product?.productId || '');
@@ -143,7 +197,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
     // Store link for analytics / deep-linking if available.
     window.__ssCurrentViewedProductLink = (product?.productLink || product?.link || '');
-    const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : ((Array.isArray(product?.images) && product.images.length ? product.images : [__ssGetPrimaryProductImage(product)].filter(Boolean)));
+    const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : ((Array.isArray(product?.images) && product.images.length ? product.images : [__ssGetPrimaryProductImage(product), __fallbackImageArg].filter(Boolean)));
     if (!product || !Array.isArray(__ssImagesForViewer) || __ssImagesForViewer.length === 0) {
         console.error("❌ Product not found or no images:", productName);
         __ssSafeHideProductPageSkeleton();

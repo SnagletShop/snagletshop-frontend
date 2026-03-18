@@ -29,7 +29,7 @@
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>`;
-    addToCartBtn.addEventListener('click', () => onClick?.());
+    addToCartBtn.addEventListener('click', (e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} onClick?.(); });
     return addToCartBtn;
   }
 

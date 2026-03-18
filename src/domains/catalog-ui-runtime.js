@@ -205,10 +205,15 @@
           displayDescription: ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
           priceValue: (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price),
           currencySymbol: ctx.TEXTS?.CURRENCIES?.EUR || '€',
-          onOpenProduct: () => ctx.navigate?.('GoToProductPage', [product.name, (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price), ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), null, (product.productId || product.id || null), null]),
+          onOpenProduct: (_product, primaryImage) => ctx.navigate?.('GoToProductPage', [product.name, (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price), ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), primaryImage || product.image || product.images?.[0] || product.imagesB?.[0] || null, (product.productId || product.id || null), null]),
           onDecrease: (key) => ctx.decreaseQuantity?.(key),
           onIncrease: (key) => ctx.increaseQuantity?.(key),
-          onAddToCart: (_product, primaryImage) => ctx.addToCart?.(product.name, product.price, primaryImage || product.image || product.images?.[0] || product.imagesB?.[0] || '', product.expectedPurchasePrice, product.productLink, (ctx.getABProductDescription?.(product) || product.description), '', ctx.defaultSelectedOptions?.(ctx.extractOptionGroups?.(product)), (product.productId || null))
+          onAddToCart: (_product, primaryImage) => {
+            const fn = ctx.addToCart || window.addToCart || window.__SS_BASKET__?.addToCart;
+            const result = fn?.(product.name, product.price, primaryImage || product.image || product.images?.[0] || product.imagesB?.[0] || '', product.expectedPurchasePrice, product.productLink, (ctx.getABProductDescription?.(product) || product.description), '', ctx.defaultSelectedOptions?.(ctx.extractOptionGroups?.(product)), (product.productId || null));
+            try { ctx.updateBasketHeaderIndicator?.(); } catch {}
+            return result;
+          }
         }) || document.createElement('div');
         viewer.appendChild(productDiv);
       });
