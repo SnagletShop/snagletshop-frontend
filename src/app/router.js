@@ -1,6 +1,11 @@
 (function (window) {
   'use strict';
 
+  function getFirstRenderableCategory() {
+    const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+    return Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
+  }
+
   const actionHandlers = new Map();
   let popstateBound = false;
 
@@ -272,7 +277,8 @@
       return;
     }
 
-    navigate('loadProducts', ['Default_Page', localStorage.getItem('defaultSort') || 'NameFirst', window.currentSortOrder || 'asc']);
+    const firstCategory = getFirstRenderableCategory();
+    navigate('loadProducts', [firstCategory, localStorage.getItem('defaultSort') || 'NameFirst', window.currentSortOrder || 'asc']);
   }
 
   function bind() {

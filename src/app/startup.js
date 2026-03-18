@@ -39,7 +39,7 @@
       if (isPageRefresh && !isProductDeepLink && typeof currentIndex !== 'undefined' && currentIndex >= 0 && typeof buildUrlForState === 'function') {
         const fallbackState = {
           action: 'loadProducts',
-          data: [(typeof currentCategory !== 'undefined' ? currentCategory : null) || (typeof lastCategory !== 'undefined' ? lastCategory : null) || 'Default_Page', localStorage.getItem('defaultSort') || 'NameFirst', (typeof currentSortOrder !== 'undefined' ? currentSortOrder : null) || 'asc']
+          data: [(typeof currentCategory !== 'undefined' ? currentCategory : null) || (typeof lastCategory !== 'undefined' ? lastCategory : null) || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || 'Default_Page', localStorage.getItem('defaultSort') || 'NameFirst', (typeof currentSortOrder !== 'undefined' ? currentSortOrder : null) || 'asc']
         };
         const historyStack = (typeof userHistoryStack !== 'undefined' && Array.isArray(userHistoryStack)) ? userHistoryStack : [];
         const state = historyStack[currentIndex] || fallbackState;

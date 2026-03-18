@@ -1,4 +1,8 @@
 (function(){
+  function getFirstRenderableCategory() {
+    const db = (typeof window !== 'undefined' && window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+    return Object.keys(db || {}).find(k => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
+  }
   let started = false;
   const api = {
     async boot(ctx = {}) {
@@ -23,13 +27,14 @@
           ctx.syncCentralState?.('basket-storage-empty', { basket: empty });
           try { localStorage.setItem('basket', JSON.stringify(empty)); } catch {}
         }
-        if (typeof window.currentCategory === 'undefined') window.currentCategory = 'Default_Page';
+        if (typeof window.currentCategory === 'undefined' || !window.currentCategory || window.currentCategory === 'Default_Page') window.currentCategory = getFirstRenderableCategory();
         if (typeof window.currentSortOrder === 'undefined') window.currentSortOrder = 'asc';
         try {
           await ctx.initializeHistory?.();
         } catch (e) {
-          console.warn('⚠️ initializeHistory failed on boot, falling back to Default_Page:', e);
-          ctx.loadProducts?.('Default_Page', localStorage.getItem('defaultSort') || 'NameFirst', 'asc');
+          const fallbackCategory = getFirstRenderableCategory();
+          console.warn('⚠️ initializeHistory failed on boot, falling back to first renderable category:', e, fallbackCategory);
+          ctx.loadProducts?.(fallbackCategory, localStorage.getItem('defaultSort') || 'NameFirst', 'asc');
           ctx.categoryButtons?.();
         }
         try { ctx.updateBasketHeaderIndicator?.(); } catch {}

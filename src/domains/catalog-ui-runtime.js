@@ -1,6 +1,13 @@
 (function (window, document) {
   'use strict';
 
+  function getFirstRenderableCategory(productsDatabase = {}, products = {}) {
+    const source = (products && typeof products === 'object' && Object.keys(products).length) ? products : productsDatabase;
+    return Object.keys(source || {}).find(k => k !== 'Default_Page' && Array.isArray(source[k]) && source[k].length) ||
+      Object.keys(productsDatabase || {}).find(k => k !== 'Default_Page' && Array.isArray(productsDatabase[k]) && productsDatabase[k].length) ||
+      'Default_Page';
+  }
+
   function sortProducts(productList, sortBy, sortOrder) {
     productList.sort((a, b) => {
       if (sortBy === 'Cheapest') return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
@@ -134,7 +141,10 @@
       sortBy = sortBy || 'NameFirst';
       sortOrder = sortOrder || 'asc';
       const productsDatabase = ctx.getProductsDatabase?.() || {};
-      category = category || Object.keys(productsDatabase).find(k => Array.isArray(productsDatabase[k]) && productsDatabase[k].length) || 'Default_Page';
+      category = category || getFirstRenderableCategory(productsDatabase, ctx.getProducts?.() || {});
+      if (category === 'Default_Page' || !Array.isArray((ctx.getProducts?.() || {})[category])) {
+        category = getFirstRenderableCategory(productsDatabase, ctx.getProducts?.() || {});
+      }
       ctx.setWindowCurrentSortOrder?.(sortOrder);
       ctx.setWindowCurrentCategory?.(category);
       ctx.syncCentralState?.('window-category-set', { currentCategory: category });
@@ -153,6 +163,11 @@
       ctx.setCart?.({});
       ctx.syncCentralState?.('cart-cleared', { cart: ctx.getCart?.() || {} });
       const products = ctx.getProducts?.() || {};
+      if ((category === 'Default_Page' || !products.hasOwnProperty(category) || !Array.isArray(products[category])) && getFirstRenderableCategory(productsDatabase, products) !== 'Default_Page') {
+        category = getFirstRenderableCategory(productsDatabase, products);
+        ctx.setWindowCurrentCategory?.(category);
+        ctx.setCurrentCategory?.(category);
+      }
       if (!products.hasOwnProperty(category) || !Array.isArray(products[category])) {
         console.warn(`⚠️ Category '${category}' is invalid or does not contain a valid product list.`);
         return;

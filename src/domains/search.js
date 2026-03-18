@@ -21,7 +21,7 @@ function setupSearchInputs() {
             return;
         }
 
-        navigate("loadProducts", [window.currentCategory || lastCategory || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
+        navigate("loadProducts", [window.currentCategory || lastCategory || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
     };
 
     const debouncedDesktop = debounce(() => {
