@@ -11,13 +11,27 @@
     const sortBy = data[1] ?? (localStorage.getItem('defaultSort') || 'NameFirst');
     const sortOrder = data[2] ?? (window.currentSortOrder || 'asc');
     const runtime = getResolver()?.resolve?.('domain.catalogUiRuntime', window.__SS_CATALOG_UI_RUNTIME__ || null);
-    if (typeof runtime?.renderCatalogProducts === 'function') runtime.renderCatalogProducts(window.__SS_CATALOG_UI_CTX__ || {}, category, sortBy, sortOrder);
+    if (typeof runtime?.renderCatalogProducts === 'function') {
+      runtime.renderCatalogProducts(window.__SS_CATALOG_UI_CTX__ || {}, category, sortBy, sortOrder);
+    }
     try { (runtime?.categoryButtons || runtime?.CategoryButtons)?.call(runtime, window.__SS_CATALOG_UI_CTX__ || {}); } catch {}
     return function cleanupCatalogScreen() {};
   }
 
-  getScreens()?.register?.('catalog', mount);
-  getRouter()?.registerAction?.('loadProducts', function routeCatalog(state) {
-    return getScreens()?.show?.('catalog', state);
-  });
+  function registerWhenReady() {
+    const screens = getScreens();
+    const router = getRouter();
+    if (!screens || !router) return false;
+    screens.register?.('catalog', mount);
+    router.registerAction?.('loadProducts', function routeCatalog(state) {
+      return getScreens()?.show?.('catalog', state);
+    });
+    return true;
+  }
+
+  if (!registerWhenReady()) {
+    const retry = () => { try { registerWhenReady(); } catch {} };
+    window.addEventListener('load', retry, { once: true });
+    document.addEventListener('DOMContentLoaded', retry, { once: true });
+  }
 })(window);

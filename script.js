@@ -695,7 +695,10 @@ async function bootApp() {
 function loadProducts(category, sortBy = "NameFirst", sortOrder = "asc") {
     try {
         const screens = window.__SS_SCREENS__;
-        if (screens?.show) return screens.show('catalog', { action: 'loadProducts', data: [category, sortBy, sortOrder] });
+        if (screens?.show) {
+            const shown = screens.show('catalog', { action: 'loadProducts', data: [category, sortBy, sortOrder] });
+            if (shown) return shown;
+        }
     } catch {}
     return renderCatalogProducts(category, sortBy, sortOrder);
 }
