@@ -196,12 +196,6 @@
 
     register('core.config', window.__SS_CONFIG__ || null);
     register('core.storage', window.__SS_STORAGE__ || null);
-    register('core.compat', window.__SS_COMPAT__ || null);
-    register('core.runtimeAccess', window.__SS_RUNTIME_ACCESS__ || null);
-    register('core.sessionRuntime', window.__SS_SESSION_RUNTIME__ || null);
-    register('core.contracts', window.__SS_CONTRACTS_RUNTIME__ || null);
-    register('core.navigationRuntime', window.__SS_NAVIGATION_RUNTIME__ || null);
-    register('core.seoRuntime', window.__SS_SEO_RUNTIME__ || null);
     register('core.api', window.__SS_API__ || null);
     register('core.state', window.__SS_STATE__ || null);
   register('core.sharedData', window.__SS_SHARED_DATA__ || null);

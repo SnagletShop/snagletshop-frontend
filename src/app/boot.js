@@ -28,9 +28,9 @@
     }
   };
   window.__SS_BOOT__ = boot;
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => boot.start(), { once: true });
-  } else {
+  if (document.readyState === 'complete') {
     Promise.resolve().then(() => boot.start());
+  } else {
+    document.addEventListener('DOMContentLoaded', () => boot.start(), { once: true });
   }
 })(window, document);

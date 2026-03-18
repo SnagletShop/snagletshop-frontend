@@ -54,7 +54,7 @@ async function fetchTariffs() {
         }
 
         // Load via settings preload (safe now; no recursion)
-        await preloadSettingsData();
+        await window.preloadSettingsData();
 
         if (window.preloadedData.tariffs && Object.keys(window.preloadedData.tariffs).length) {
             tariffMultipliers = { ...window.preloadedData.tariffs };

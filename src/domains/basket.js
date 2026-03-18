@@ -3,7 +3,7 @@ const runtimeStore = window.__SS_RESOLVE__?.resolve?.('state.runtime', window.__
 const basketRowComponent = () => window.__SS_RESOLVE__?.resolve?.('component.basketRow', window.__SS_BASKET_ROW__ || null) || window.__SS_BASKET_ROW__ || null;
 function readBasketFromStorageSafe() {
     try {
-        const raw = localStorage.getItem(window.BASKET_STORAGE_KEY);
+        const raw = localStorage.getItem(BASKET_STORAGE_KEY);
         return raw ? JSON.parse(raw) : {};
     } catch {
         return {};
@@ -26,11 +26,11 @@ function syncBasketFromStorage(reason = "external") {
 }
 
 function persistBasket(reason = "update") {
-    try { localStorage.setItem(window.BASKET_STORAGE_KEY, JSON.stringify(basket)); } catch { }
-    try { localStorage.setItem(window.BASKET_REV_KEY, String(Date.now())); } catch { }
+    try { localStorage.setItem(BASKET_STORAGE_KEY, JSON.stringify(basket)); } catch { }
+    try { localStorage.setItem(BASKET_REV_KEY, String(Date.now())); } catch { }
 
-    if (window.basketBC) {
-        try { window.basketBC.postMessage({ type: "basket_changed", from: window.TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
+    if (basketBC) {
+        try { basketBC.postMessage({ type: "basket_changed", from: TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
     }
     try { __ssUpdateBasketHeaderIndicator(); } catch { }
     try { runtimeStore?.setBasket?.(basket, `persist:${reason}`); } catch {}
@@ -38,11 +38,11 @@ function persistBasket(reason = "update") {
 }
 
 function clearBasketStorage(reason = "clear") {
-    try { localStorage.removeItem(window.BASKET_STORAGE_KEY); } catch { }
-    try { localStorage.setItem(window.BASKET_REV_KEY, String(Date.now())); } catch { }
+    try { localStorage.removeItem(BASKET_STORAGE_KEY); } catch { }
+    try { localStorage.setItem(BASKET_REV_KEY, String(Date.now())); } catch { }
 
-    if (window.basketBC) {
-        try { window.basketBC.postMessage({ type: "basket_changed", from: window.TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
+    if (basketBC) {
+        try { basketBC.postMessage({ type: "basket_changed", from: TAB_SYNC_ID, reason, ts: Date.now() }); } catch { }
     }
     try { __ssUpdateBasketHeaderIndicator(); } catch { }
     try { runtimeStore?.setBasket?.({}, `clear:${reason}`); } catch {}
@@ -307,7 +307,7 @@ function updateBasket() {
     // Guard against re-entrant / repeated basket renders that can freeze the UI
     if (window.__ssUpdatingBasket) return;
     window.__ssUpdatingBasket = true;
-    window.__ssBasketRenderInProgress = true;
+    __ssBasketRenderInProgress = true;
     try {
         let basketContainer = document.getElementById("Basket_Viewer");
 
@@ -683,9 +683,9 @@ function updateBasket() {
 
     } finally {
         window.__ssUpdatingBasket = false;
-        window.__ssBasketRenderInProgress = false;
-        if (window.__ssBasketNeedsRerender) {
-            window.__ssBasketNeedsRerender = false;
+        __ssBasketRenderInProgress = false;
+        if (__ssBasketNeedsRerender) {
+            __ssBasketNeedsRerender = false;
             __ssRequestBasketRerender("post-render");
         }
     }

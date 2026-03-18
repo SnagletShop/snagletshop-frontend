@@ -73,13 +73,11 @@
         });
       });
     },
-    CategoryButtons(ctx = {}) { return api.categoryButtons(ctx); },
     clearCategoryHighlight(ctx = {}) {
       document.querySelectorAll('.Category_Button').forEach(button => button.classList.remove('Active'));
       ctx.setCurrentCategory?.(null);
       ctx.syncCentralState?.('category-cleared', { currentCategory: null });
     },
-    ClearCategoryHighlight(ctx = {}) { return api.clearCategoryHighlight(ctx); },
     syncSortSelects(ctx = {}, newSort) {
       document.querySelectorAll('#defaultSort').forEach(select => {
         if (select && select.value !== newSort) select.value = newSort;

@@ -12,7 +12,7 @@
     const sortOrder = data[2] ?? (window.currentSortOrder || 'asc');
     const runtime = getResolver()?.resolve?.('domain.catalogUiRuntime', window.__SS_CATALOG_UI_RUNTIME__ || null);
     if (typeof runtime?.renderCatalogProducts === 'function') runtime.renderCatalogProducts(window.__SS_CATALOG_UI_CTX__ || {}, category, sortBy, sortOrder);
-    try { (runtime?.categoryButtons || runtime?.CategoryButtons)?.(window.__SS_CATALOG_UI_CTX__ || (window.__ssGetCatalogUiCtx ? window.__ssGetCatalogUiCtx() : {})); } catch {}
+    try { runtime?.CategoryButtons?.(); } catch {}
     return function cleanupCatalogScreen() {};
   }
 

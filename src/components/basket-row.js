@@ -23,7 +23,9 @@
 
     const imgLink = document.createElement('a');
     imgLink.href = `${window.location.origin}/?product=${encName}${recoQ}`;
-        
+    imgLink.target = '_blank';
+    imgLink.rel = 'noopener noreferrer';
+
     const img = document.createElement('img');
     img.className = 'Basket_Image';
     img.src = item?.image || '';
@@ -38,7 +40,9 @@
     details.className = 'Item-Details';
     const titleLink = document.createElement('a');
     titleLink.href = `${window.location.origin}/?product=${encName}${recoQ}`;
-            titleLink.className = 'BasketText';
+    titleLink.target = '_blank';
+    titleLink.rel = 'noopener noreferrer';
+    titleLink.className = 'BasketText';
     titleLink.innerHTML = `<strong class="BasketText BasketTitle">${safeName}</strong>`;
 
     const chipsWrap = document.createElement('div');

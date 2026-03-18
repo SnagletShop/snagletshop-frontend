@@ -153,7 +153,7 @@ function openOrderStatusModal(prefill = {}) {
 }
 
 window.__SS_BOOT__?.onReady(async () => {
-    await preloadSettingsData();
+    try { if (typeof window.preloadSettingsData === "function") await window.preloadSettingsData(); } catch {}
 });
 
 const ANALYTICS_VISITOR_KEY = 'snaglet_visitor_id';

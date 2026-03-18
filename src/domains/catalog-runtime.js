@@ -44,7 +44,7 @@ function initProducts() {
                 }
 
                 window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(resolvedCatalog) : (window.productsDatabase = resolvedCatalog, window.products = resolvedCatalog);
-                __ssNormalizeCatalogImages(window.productsDatabase || window.products || {});
+                (window.__ssNormalizeCatalogImages || window.__SS_CATALOG_IMAGE_RUNTIME__?.normalizeCatalogImages || (()=>{}))(window.productsDatabase || window.products || {});
 
                 const cfg = productsPayload.config || {};
                 if (typeof cfg.applyTariff === "boolean") {
@@ -75,7 +75,7 @@ function initProducts() {
             }
 
             window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(deduped) : (window.productsDatabase = deduped, window.products = deduped);
-            __ssNormalizeCatalogImages(window.productsDatabase || window.products || {});
+            (window.__ssNormalizeCatalogImages || window.__SS_CATALOG_IMAGE_RUNTIME__?.normalizeCatalogImages || (()=>{}))(window.productsDatabase || window.products || {});
 
             if (typeof cfg.applyTariff === "boolean") {
                 window.serverApplyTariff = cfg.applyTariff;

@@ -103,7 +103,7 @@ async function createPaymentModal() {
     if (document.getElementById("paymentModal")) return;
 
     // Ensure texts/theme data exist (safe even if initPaymentModalLogic calls it again)
-    try { if (typeof preloadSettingsData === "function") await preloadSettingsData(); } catch { }
+    try { if (typeof window.preloadSettingsData === "function") await window.preloadSettingsData(); } catch { }
 
     const savedTheme = localStorage.getItem("themeMode");
     if (savedTheme === "dark") {
@@ -591,7 +591,7 @@ async function setupCheckoutFlow(selectedCurrency) {
         // Mounts Stripe elements into #payment-element
         await initStripePaymentUI(selectedCurrency);
 
-        window.attachConfirmHandlerOnce();
+        attachConfirmHandlerOnce();
 
         if (payBtn) payBtn.disabled = false;
     } catch (e) {
@@ -614,8 +614,8 @@ async function setupCheckoutFlow(selectedCurrency) {
 
 async function initPaymentModalLogic() {
     // Ensure tariffs + rates exist (from your earlier preloadSettingsData rewrite)
-    if (typeof preloadSettingsData === "function") {
-        await preloadSettingsData();
+    if (typeof window.preloadSettingsData === "function") {
+        await window.preloadSettingsData();
     }
     if (typeof fetchTariffs === "function") {
         await fetchTariffs();
@@ -623,39 +623,39 @@ async function initPaymentModalLogic() {
 
     // Remove legacy listeners that may still exist inside createPaymentModal()
     let confirmBtn = document.getElementById("confirm-payment-button");
-    if (confirmBtn) confirmBtn = window._replaceWithClone(confirmBtn);
+    if (confirmBtn) confirmBtn = _replaceWithClone(confirmBtn);
 
     let countrySelect = document.getElementById("Country");
-    if (countrySelect) countrySelect = window._replaceWithClone(countrySelect);
+    if (countrySelect) countrySelect = _replaceWithClone(countrySelect);
 
     // Populate + initialize Country select (modal)
     if (countrySelect) {
-        window._fillCountrySelectOptions(countrySelect);
+        _fillCountrySelectOptions(countrySelect);
 
-        const detected = window._getDetectedCountry();
+        const detected = _getDetectedCountry();
         countrySelect.value = detected;
         localStorage.setItem("detectedCountry", detected);
 
-        window._setupTomSelectCountry(countrySelect);
+        _setupTomSelectCountry(countrySelect);
 
         countrySelect.addEventListener("change", async () => {
             const cc = String(countrySelect.value || "").toUpperCase();
             localStorage.setItem("detectedCountry", cc);
 
-            window._syncSelectedCurrencyFromCountry(cc);
+            _syncSelectedCurrencyFromCountry(cc);
 
             if (typeof updateAllPrices === "function") updateAllPrices();
 
             // Recreate PI + remount Stripe Elements (server-truth)
             await setupCheckoutFlow(selectedCurrency);
-            try { window.__ssUpdateLastChanceOfferUI(); } catch { }
+            try { __ssUpdateLastChanceOfferUI(); } catch { }
         });
     }
 
     // Initialize Stripe UI once on open (server-truth)
     selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
     await setupCheckoutFlow(selectedCurrency);
-    try { window.__ssUpdateLastChanceOfferUI(); } catch { }
+    try { __ssUpdateLastChanceOfferUI(); } catch { }
 }
 
 async function handleStripeRedirectReturnOnLoad() {

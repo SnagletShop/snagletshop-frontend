@@ -1,9 +1,4 @@
 (function (window, document) {
-let __ssRecoNavState = null;
-function __ssRecoUpdateNav(){ try { const s = window.__ssRecoNavState || __ssRecoNavState; if (!s) return; const { anchor, section, viewport, btnL, btnR } = s; try { const w = anchor?.getBoundingClientRect?.().width; if (w && w > 240 && section) section.style.maxWidth = Math.round(w) + "px"; } catch {} const maxScroll = Math.max(0, (viewport?.scrollWidth||0) - (viewport?.clientWidth||0)); if (btnL) btnL.disabled = (viewport?.scrollLeft||0) <= 2; if (btnR) btnR.disabled = (viewport?.scrollLeft||0) >= (maxScroll - 2); } catch {} }
-function __ssGetFeatureFlags(){ try { return window.preloadedData?.storefrontConfig?.featureFlags || {}; } catch { return {}; } }
-function __ssFlagEnabled(name){ try { return !!__ssGetFeatureFlags()?.[name]; } catch { return false; } }
-function __ssGetCatalogFlat(){ try { const db = window.productsDatabase || window.products || {}; if (Array.isArray(db)) return db; return Object.values(db).flat().filter(Boolean); } catch { return []; } }
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
 }
@@ -683,8 +678,7 @@ async function __ssRecoRenderForProduct(product) {
                     appendItems(batch.items);
                     strip.style.setProperty("--reco-cols", String(recState.visibleCount));
                 }
-                try { window.__ssRecoNavState = __ssRecoNavState = { anchor, section, viewport, btnL, btnR }; } catch {}
-        __ssRecoUpdateNav();
+                __ssRecoUpdateNav();
             } catch { }
         }
 
@@ -721,12 +715,20 @@ async function __ssRecoRenderForProduct(product) {
                     appendItems(batch.items);
                     // refresh cols in case config changed
                     strip.style.setProperty("--reco-cols", String(recState.visibleCount));
-                    try { window.__ssRecoNavState = __ssRecoNavState = { anchor, section, viewport, btnL, btnR }; } catch {}
-        __ssRecoUpdateNav();
+                    __ssRecoUpdateNav();
                 }
             } catch { }
         }
 
+        function __ssRecoUpdateNav() {
+            try {
+                // align width
+                try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
+                const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+                btnL.disabled = viewport.scrollLeft <= 2;
+                btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
+            } catch { }
+        }
 
         // Nav buttons: support mobile tap reliably + step one item on mobile
         function navStepItems() {
@@ -804,11 +806,9 @@ async function __ssRecoRenderForProduct(product) {
         window.addEventListener('resize', () => {
             recState.device = (window.innerWidth <= 700) ? "mobile" : "desktop";
             strip.style.setProperty("--reco-cols", String(recState.visibleCount));
-            try { window.__ssRecoNavState = __ssRecoNavState = { anchor, section, viewport, btnL, btnR }; } catch {}
-        __ssRecoUpdateNav();
+            __ssRecoUpdateNav();
         });
 
-        try { window.__ssRecoNavState = __ssRecoNavState = { anchor, section, viewport, btnL, btnR }; } catch {}
         __ssRecoUpdateNav();
     } catch { }
 }
@@ -885,7 +885,7 @@ function __ssEnsureContributionProducts() {
                 if (okCount >= 8) {
                     __ssContributionCache.items = items;
                     // Invalidate pool cache so it can rebuild from contribution feed.
-                    try { window.__ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
+                    try { __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
                 }
             })
             .catch(() => { });
