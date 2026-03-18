@@ -1,4 +1,26 @@
 (function (window, document) {
+function __ssSafeShowProductPageSkeleton() {
+    try { return window.__ssShowProductPageSkeleton?.(); } catch {}
+}
+function __ssSafeHideProductPageSkeleton() {
+    try { return window.__ssHideProductPageSkeleton?.(); } catch {}
+}
+function __ssSafeScrollToTopForProductSkeleton() {
+    try { return window.__ssScrollToTopForProductSkeleton?.(); } catch {}
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+}
+function __ssGetPrimaryProductImage(product) {
+    try {
+        const fix = window.__SS_CATALOG_IMAGE_RUNTIME__?.fixImageUrl;
+        const candidates = [product?.image, ...(Array.isArray(product?.images) ? product.images : []), ...(Array.isArray(product?.imagesB) ? product.imagesB : [])]
+            .map((v) => typeof fix === 'function' ? fix(v) : String(v || '').trim())
+            .filter(Boolean);
+        return candidates[0] || '';
+    } catch {
+        return String(product?.image || '');
+    }
+}
+
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
     const qtyEl = document.getElementById(`quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`);
     const quantity = Math.max(1, parseInt(qtyEl?.innerText || "1", 10) || 1);
@@ -75,8 +97,8 @@ function GoToProductPage(productName, productPrice, productDescription) {
         return;
     }
 
-    __ssShowProductPageSkeleton();
-    __ssScrollToTopForProductSkeleton();
+    __ssSafeShowProductPageSkeleton();
+    __ssSafeScrollToTopForProductSkeleton();
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
@@ -111,10 +133,10 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
     // Store link for analytics / deep-linking if available.
     window.__ssCurrentViewedProductLink = (product?.productLink || product?.link || '');
-    const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : (product?.images || []);
+    const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : ((Array.isArray(product?.images) && product.images.length ? product.images : [__ssGetPrimaryProductImage(product)].filter(Boolean)));
     if (!product || !Array.isArray(__ssImagesForViewer) || __ssImagesForViewer.length === 0) {
         console.error("❌ Product not found or no images:", productName);
-        try { __ssHideProductPageSkeleton(); } catch {}
+        __ssSafeHideProductPageSkeleton();
         return;
     }
 

@@ -5,6 +5,17 @@
   function getQuantityControls() {
     return getResolver()?.resolve?.('component.quantityControls', window.__SS_QUANTITY_CONTROLS__ || null) || null;
   }
+  function fixImageUrl(src) {
+    try { return window.__SS_CATALOG_IMAGE_RUNTIME__?.fixImageUrl?.(src) || String(src || '').trim(); } catch { return String(src || '').trim(); }
+  }
+  function getCandidateImages(product) {
+    const out = [];
+    const push = (v) => { const s = fixImageUrl(v); if (s && !out.includes(s)) out.push(s); };
+    push(product?.image);
+    (Array.isArray(product?.images) ? product.images : []).forEach(push);
+    (Array.isArray(product?.imagesB) ? product.imagesB : []).forEach(push);
+    return out;
+  }
 
   function createCartButton(label, onClick) {
     const addToCartBtn = document.createElement('button');
@@ -42,12 +53,23 @@
 
     const img = document.createElement('img');
     img.className = 'Clickable_Image';
-    img.src = product?.image || '';
+    const candidates = getCandidateImages(product);
+    let imageIndex = 0;
+    img.src = candidates[0] || '';
     img.alt = product?.name || '';
     img.dataset.name = product?.name || '';
     img.dataset.price = String(product?.price ?? '');
-    img.dataset.imageurl = product?.image || '';
+    img.dataset.imageurl = candidates[0] || '';
     img.dataset.description = opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '';
+    img.addEventListener('error', () => {
+      imageIndex += 1;
+      if (candidates[imageIndex]) {
+        img.src = candidates[imageIndex];
+        img.dataset.imageurl = candidates[imageIndex];
+      } else {
+        img.style.visibility = 'hidden';
+      }
+    });
     img.addEventListener('click', () => opts.onOpenProduct?.(product));
 
     const priceP = document.createElement('p');
@@ -59,7 +81,7 @@
       onIncrease: opts.onIncrease,
     });
 
-    const addToCartBtn = createCartButton(window.TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || 'Add to cart', () => opts.onAddToCart?.(product));
+    const addToCartBtn = createCartButton(window.TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || 'Add to cart', () => opts.onAddToCart?.(product, candidates[0] || ''));
     qtyUi?.quantityContainer?.appendChild(addToCartBtn);
 
     card.append(nameLink, img, priceP, qtyUi?.quantityContainer || document.createElement('div'));
