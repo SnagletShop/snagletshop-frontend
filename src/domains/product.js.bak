@@ -80,8 +80,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
-    const __imgArg = String(arguments[3] || "").trim();
-    const product = __ssResolveProductForPdp(productName, __pidArg, __imgArg);
+    const product = (__pidArg ? __ssGetCatalogFlat().find(p => String(p?.productId || p?.id || "").trim() === __pidArg) : null) || __ssGetCatalogFlat().find(p => p?.name === productName);
     // Robust current productId tracking (avoid accidental [object Set] etc.)
     try {
         let __pid = __ssIdNorm(arguments[4] || product?.productId || '');
@@ -112,9 +111,9 @@ function GoToProductPage(productName, productPrice, productDescription) {
 
     // Store link for analytics / deep-linking if available.
     window.__ssCurrentViewedProductLink = (product?.productLink || product?.link || '');
-    const __ssImagesForViewer = __ssGetProductImageCandidates(product, __imgArg);
-    if (!product) {
-        console.error("❌ Product not found:", productName, __pidArg);
+    const __ssImagesForViewer = (__ssABIsB("pi") && Array.isArray(product?.imagesB) && product.imagesB.length) ? product.imagesB : (product?.images || []);
+    if (!product || !Array.isArray(__ssImagesForViewer) || __ssImagesForViewer.length === 0) {
+        console.error("❌ Product not found or no images:", productName);
         try { __ssHideProductPageSkeleton(); } catch {}
         return;
     }
@@ -130,7 +129,9 @@ function GoToProductPage(productName, productPrice, productDescription) {
         const validImages = loadedImages.filter(Boolean);
         if (validImages.length === 0) {
             console.error("❌ No valid images loaded for:", productName);
-            const safeImages = __ssGetProductImageCandidates(product, __imgArg);
+            // Do not hard-fail the PDP; render with a fallback image so other features (pricing/discounts/cart) continue to work.
+            const fallback = __ssFixImageUrl(product?.image || "");
+            const safeImages = fallback ? [fallback] : [];
             renderProductPage(product, safeImages, productName, productPrice, productDescription);
             return;
         }
@@ -149,8 +150,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     Product_Viewer.id = "Product_Viewer";
     Product_Viewer.className = "Product_Viewer";
 
-    window.currentProductImages = Array.isArray(validImages) ? validImages.filter(Boolean) : [];
-    window.__ssCurrentProductId = String(product?.productId || product?.id || '').trim() || null;
+    window.currentProductImages = Array.isArray(validImages) ? validImages : [];
+    window.__ssCurrentProductId = String(product.productId || product.id || '').trim() || null;
 
     window.currentIndex = 0;
 
@@ -337,7 +338,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     // If user arrived from a discounted recommendation, show discount on PDP and avoid double-discounting.
     try {
-        const pid = (typeof __ssGetCurrentPidFallback === "function" ? __ssGetCurrentPidFallback() : "") || String(product?.productId || "").trim();
+        const pid = __ssGetCurrentPidFallback() || String(product?.productId || "").trim();
         let d = null;
         try { d = JSON.parse(sessionStorage.getItem("ss_reco_pdp_discount_v1") || "null"); } catch { d = null; }
         // If the stored payload is for a different product, ignore it (otherwise it blocks fallback sources).

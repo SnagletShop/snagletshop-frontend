@@ -18,7 +18,7 @@
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>`;
-    addToCartBtn.addEventListener('click', (e) => { try { e.preventDefault(); e.stopPropagation(); } catch {} onClick?.(); });
+    addToCartBtn.addEventListener('click', () => onClick?.());
     return addToCartBtn;
   }
 
@@ -42,11 +42,11 @@
 
     const img = document.createElement('img');
     img.className = 'Clickable_Image';
-    img.src = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
+    img.src = product?.image || '';
     img.alt = product?.name || '';
     img.dataset.name = product?.name || '';
     img.dataset.price = String(product?.price ?? '');
-    img.dataset.imageurl = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
+    img.dataset.imageurl = product?.image || '';
     img.dataset.description = opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '';
     img.addEventListener('click', () => opts.onOpenProduct?.(product));
 

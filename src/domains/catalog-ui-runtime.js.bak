@@ -205,10 +205,10 @@
           displayDescription: ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
           priceValue: (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price),
           currencySymbol: ctx.TEXTS?.CURRENCIES?.EUR || '€',
-          onOpenProduct: () => { const __img = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(); return ctx.navigate?.('GoToProductPage', [product.name, (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price), ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), __img, (product.productId || null), null]); },
+          onOpenProduct: () => ctx.navigate?.('GoToProductPage', [product.name, (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price), ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER)]),
           onDecrease: (key) => ctx.decreaseQuantity?.(key),
           onIncrease: (key) => ctx.increaseQuantity?.(key),
-          onAddToCart: () => { const __img = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(); const __ret = ctx.addToCart?.(product.name, product.price, __img, product.expectedPurchasePrice, product.productLink, (ctx.getABProductDescription?.(product) || product.description), '', ctx.defaultSelectedOptions?.(ctx.extractOptionGroups?.(product)), (product.productId || null)); try { ctx.updateBasketHeaderIndicator?.(); } catch {} return __ret; }
+          onAddToCart: () => ctx.addToCart?.(product.name, product.price, product.image, product.expectedPurchasePrice, product.productLink, (ctx.getABProductDescription?.(product) || product.description), '', ctx.defaultSelectedOptions?.(ctx.extractOptionGroups?.(product)), (product.productId || null))
         }) || document.createElement('div');
         viewer.appendChild(productDiv);
       });

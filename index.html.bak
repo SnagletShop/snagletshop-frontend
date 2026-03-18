@@ -41,12 +41,6 @@
     <script src="src/app/diagnostics.js" defer></script>
     <script src="src/app/resolve.js" defer></script>
     <script src="src/app/public-api.js" defer></script>
-    <script src="src/core/session-runtime.js" defer></script>
-    <script src="src/core/contracts-runtime.js" defer></script>
-    <script src="src/core/compat-runtime.js" defer></script>
-    <script src="src/core/runtime-access.js" defer></script>
-    <script src="src/core/navigation-runtime.js" defer></script>
-    <script src="src/core/seo-runtime.js" defer></script>
     <script src="src/ui/orientation.js" defer></script>
     <script src="src/ui/mobile-sidebar.js" defer></script>
     <script src="src/ui/product-media-relayout.js" defer></script>
@@ -69,9 +63,6 @@
     <script src="src/domains/cart-incentives.js" defer></script>
     <script src="src/domains/turnstile.js" defer></script>
     <script src="src/domains/catalog-runtime.js" defer></script>
-    <script src="src/domains/catalog-ui-runtime.js" defer></script>
-    <script src="src/domains/product-runtime.js" defer></script>
-    <script src="src/domains/orders-runtime.js" defer></script>
     <script src="src/domains/catalog-image-runtime.js" defer></script>
     <script src="src/domains/pricing-runtime.js" defer></script>
     <script src="src/domains/settings-runtime.js" defer></script>

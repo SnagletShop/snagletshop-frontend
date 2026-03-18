@@ -2,124 +2,90 @@
 function getProductCardComponent() {
     return window.__SS_RESOLVE__?.resolve?.('component.productCard', window.__SS_PRODUCT_CARD__ || null) || window.__SS_PRODUCT_CARD__ || null;
 }
+
 function getSearchInputs() {
-    return [document.getElementById('Search_Bar'), document.getElementById('Mobile_Search_Bar')].filter(Boolean);
+    return [document.getElementById("Search_Bar"), document.getElementById("Mobile_Search_Bar")].filter(Boolean);
 }
-function getCatalog() {
-    const base = window.products || window.productsDatabase || {};
-    return (base && typeof base === 'object') ? base : {};
-}
-function getPrimaryImage(product) {
-    const fix = window.__SS_CATALOG_IMAGE_RUNTIME__?.fixImageUrl;
-    const vals = [product?.image, ...(Array.isArray(product?.images) ? product.images : []), ...(Array.isArray(product?.imagesB) ? product.imagesB : [])]
-      .map(v => typeof fix === 'function' ? fix(v) : String(v || '').trim())
-      .filter(Boolean);
-    return vals[0] || '';
-}
-function syncInputs(value) {
-    getSearchInputs().forEach(el => { try { el.value = value; } catch {} });
-}
+
 function setupSearchInputs() {
     const inputs = getSearchInputs();
     if (!inputs.length) {
-        console.warn('⚠️ Search inputs not found; skipping search binding.');
+        console.warn("⚠️ Search inputs not found; skipping search binding.");
         return;
     }
     const handleSearch = (query) => {
-        const trimmed = String(query || '').trim();
-        syncInputs(trimmed);
+        const trimmed = String(query || "").trim();
+        for (const input of inputs) input.value = trimmed;
         if (trimmed.length > 0) {
-            try { if (typeof window.trackSearch === 'function') window.trackSearch(trimmed); } catch {}
-            try { if (typeof window.navigate === 'function') return window.navigate('searchQuery', [trimmed]); } catch {}
-            return searchProducts(trimmed);
+            try { trackSearch(trimmed); } catch {}
+            searchProducts(trimmed);
+            return;
         }
-        const db = getCatalog();
-        const fallbackCategory = window.currentCategory || window.lastCategory || Object.keys(db).find(k => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
-        try { return window.navigate?.('loadProducts', [fallbackCategory, localStorage.getItem('defaultSort') || 'NameFirst', window.currentSortOrder || 'asc']); } catch {}
+        navigate("loadProducts", [window.currentCategory || window.lastCategory || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
     };
-    const debounced = window.debounce ? window.debounce(handleSearch, 300) : handleSearch;
-    inputs.forEach(input => {
-        input.addEventListener('input', () => debounced(input.value));
-        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(input.value); } });
-    });
+    for (const input of inputs) {
+        const debounced = debounce(() => handleSearch(input.value), 250);
+        input.addEventListener("input", debounced);
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(input.value); } });
+    }
 }
+
 function searchQuery(query) {
-    const normalized = String(query || '').trim();
-    syncInputs(normalized);
-    return searchProducts(normalized);
+    const normalized = String(query || "").trim();
+    for (const input of getSearchInputs()) input.value = normalized;
+    searchProducts(normalized);
 }
+
 function searchProducts(forcedQuery = null) {
     const inputs = getSearchInputs();
-    const activeElement = document.activeElement;
-    let rawQuery = typeof forcedQuery === 'string' ? forcedQuery : '';
-    if (!rawQuery) {
-        const activeInput = inputs.find(el => el === activeElement);
-        rawQuery = activeInput?.value || inputs[0]?.value || '';
-    }
-    const query = String(rawQuery || '').toLowerCase().replace(/\s+/g, '').trim();
+    const rawQuery = typeof forcedQuery === "string" ? forcedQuery : String(inputs[0]?.value || "");
+    const query = rawQuery.toLowerCase().replace(/\s+/g, "").trim();
     if (!query) return;
-    syncInputs(rawQuery);
-    const viewer = document.getElementById('Viewer');
+    for (const input of inputs) input.value = rawQuery;
+    const viewer = document.getElementById("Viewer");
     if (!viewer) return;
-    viewer.innerHTML = '';
-    const catalog = getCatalog();
-    const results = [];
-    Object.keys(catalog).forEach(category => {
-        const list = Array.isArray(catalog[category]) ? catalog[category] : [];
-        results.push(...list.filter(product => {
+    viewer.innerHTML = "";
+    const db = window.productsDatabase || window.products || {};
+    let results = [];
+    Object.keys(db).forEach(category => {
+        const arr = Array.isArray(db[category]) ? db[category] : [];
+        results.push(...arr.filter(product => {
             if (!product || !product.name) return false;
-            const normalizedName = String(product.name).toLowerCase().replace(/\s+/g, '');
-            const normalizedDescription = String(product.description || '').toLowerCase().replace(/\s+/g, '');
+            const normalizedName = String(product.name).toLowerCase().replace(/\s+/g, "");
+            const normalizedDescription = String(product.description || "").toLowerCase().replace(/\s+/g, "");
             return normalizedName.includes(query) || normalizedDescription.includes(query);
         }));
     });
     const uniqueResults = [];
     const seenNames = new Set();
     results.forEach(product => {
-        const key = String(product?.productId || product?.id || product?.name || '').trim();
-        if (!key || seenNames.has(key)) return;
-        seenNames.add(key);
-        uniqueResults.push(product);
+        if (!seenNames.has(product.name)) {
+            seenNames.add(product.name);
+            uniqueResults.push(product);
+        }
     });
     if (uniqueResults.length > 0) {
         uniqueResults.forEach(product => {
-            const primaryImage = getPrimaryImage(product);
+            const resolvedImage = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim();
             const productDiv = getProductCardComponent()?.createProductCard?.(product, {
                 displayName: (window.__ssABGetProductName?.(product) || product.name),
                 displayDescription: ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
-                priceValue: (window.__ssResolveVariantPriceEUR?.(product, [], '') || product.price),
-                currencySymbol: window.TEXTS?.CURRENCIES?.EUR || '€',
+                priceValue: (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price),
+                currencySymbol: '€',
                 onOpenProduct: () => {
-                    window.navigate?.('GoToProductPage', [
-                        product.name,
-                        (window.__ssResolveVariantPriceEUR?.(product, [], '') || product.price),
-                        ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
-                        primaryImage || null,
-                        (product.productId || product.id || null),
-                        null
-                    ]);
+                    navigate("GoToProductPage", [product.name, (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price), ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]);
                 },
                 onDecrease: (key) => window.decreaseQuantity?.(key),
                 onIncrease: (key) => window.increaseQuantity?.(key),
                 onAddToCart: () => {
-                    const fn = window.addToCart || window.__SS_BASKET__?.addToCart;
-                    fn?.(
-                        product.name,
-                        product.price,
-                        primaryImage || '',
-                        product.expectedPurchasePrice,
-                        product.productLink,
-                        product.description,
-                        '',
-                        window.__ssDefaultSelectedOptions?.(window.__ssExtractOptionGroups?.(product)),
-                        (product.productId || product.id || null)
-                    );
+                    window.addToCart?.(product.name, product.price, resolvedImage, product.expectedPurchasePrice, product.productLink, product.description, "", window.__ssDefaultSelectedOptions?.(window.__ssExtractOptionGroups?.(product)), (product.productId || null));
+                    try { window.__ssUpdateBasketHeaderIndicator?.(); } catch {}
                 }
-            }) || document.createElement('div');
+            }) || document.createElement("div");
             viewer.appendChild(productDiv);
         });
     } else {
-        viewer.innerHTML = '<p>No products found.</p>';
+        viewer.innerHTML = "<p>No products found.</p>";
     }
 }
   window.__SS_SEARCH__ = {
