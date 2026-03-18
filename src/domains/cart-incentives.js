@@ -6,6 +6,13 @@ let __ssBasketNeedsRerender = false;
 let __ssBasketRerenderQueued = false;
 let __ssContributionCache = { at: 0, items: null };
 let __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] };
+window.__ssSmartCartRecoCache = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
+window.__ssSmartRecoRerenderTimer = window.__ssSmartRecoRerenderTimer || __ssSmartRecoRerenderTimer;
+window.__ssBasketRenderInProgress = !!window.__ssBasketRenderInProgress;
+window.__ssBasketNeedsRerender = !!window.__ssBasketNeedsRerender;
+window.__ssBasketRerenderQueued = !!window.__ssBasketRerenderQueued;
+window.__ssContributionCache = window.__ssContributionCache || __ssContributionCache;
+window.__ssAddonPoolSortedCache = window.__ssAddonPoolSortedCache || __ssAddonPoolSortedCache;
 
 function __ssGetCartIncentivesConfig() {
   const cfg = window?.preloadedData?.storefrontConfig?.cartIncentives;
@@ -121,7 +128,7 @@ async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
     const body = { placement:'cart_topup_v1', sessionId:String(window.__ssSessionId || ''), cartItems, desiredEUR:desired, limit:Math.max(1, Math.min(12, Number(limit || 4) || 4)), context:{ lang:String(window.currentLanguage || ''), device:(window.innerWidth <= 700 ? 'mobile' : 'desktop'), page:'cart', strictMaxPrice:true, optimization:'profit_popular', profitTieEUR:0.05, enableRecoDiscounts:true } };
     const data = await window.__SS_RECOMMENDATIONS__.getSmartRecommendations(body);
     if (!data || !data.ok || !Array.isArray(data.items)) return null;
-    __ssSmartCartRecoCache = { sig, desired: desiredKey, token: String(data.token || ''), items: data.items || [] };
+    __ssSmartCartRecoCache = { sig, desired: desiredKey, token: String(data.token || ''), items: data.items || [] }; window.__ssSmartCartRecoCache = __ssSmartCartRecoCache;
     return __ssSmartCartRecoCache;
   } catch { return null; }
 }
@@ -134,7 +141,7 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
     __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
       if (!cache) return; const sigAfter = __ssCartSigForSmartReco(); if (sigBefore !== sigAfter) return;
       try { if (__ssSmartRecoRerenderTimer) clearTimeout(__ssSmartRecoRerenderTimer); } catch {}
-      __ssSmartRecoRerenderTimer = setTimeout(() => { try { if (__ssCartSigForSmartReco() !== sigBefore) return; __ssRequestBasketRerender(); } catch {} }, 180);
+      __ssSmartRecoRerenderTimer = setTimeout(() => { try { if (__ssCartSigForSmartReco() !== sigBefore) return; __ssRequestBasketRerender(); } catch {} }, 180); window.__ssSmartRecoRerenderTimer = __ssSmartRecoRerenderTimer;
     }).catch(() => {});
   } catch {}
 }
@@ -149,7 +156,7 @@ function __ssGetAddonPoolSorted() {
   const raw = useContrib ? __ssContributionCache.items.map(x => ({ key:String(x.itemKey || x.productId || x.id || x.productLink || x.name || '').trim(), name:String(x.name || '').trim(), price:Number(x.price || 0) || 0, image:String(x.image || x.imageUrl || (Array.isArray(x.images) ? x.images[0] : '') || '').trim(), productLink:String(x.productLink || x.url || x.link || '').trim(), description:String(x.description || x.desc || '').trim(), productId:String(x.productId || x.id || '').trim() })) : (__ssGetCatalogFlat ? __ssGetCatalogFlat() : []);
   const seen = new Set(), cleaned=[];
   for (const p of raw) { const k = String(p?.key || p?.productId || p?.id || p?.productLink || p?.name || '').trim(); if (!k || seen.has(k)) continue; seen.add(k); const obj = { key:k, productId:String(p?.productId || '').trim(), name:String(p?.name || '').trim(), price:Number(p?.price || 0) || 0, image:String(p?.image || '').trim(), productLink:String(p?.productLink || '').trim(), description:String(p?.description || '').trim(), discountPct:Number(p?.discountPct || 0) || 0, discountedPrice:Number(p?.discountedPrice || 0) || 0, discountToken:String(p?.discountToken || '').trim() }; if (!obj.name || !(obj.price > 0) || !obj.image) continue; cleaned.push(obj); }
-  cleaned.sort((a,b) => a.price - b.price); __ssAddonPoolSortedCache = { src, ref: src === 'contrib' ? ref : null, len: src === 'contrib' ? len : 0, sorted: cleaned }; return cleaned;
+  cleaned.sort((a,b) => a.price - b.price); __ssAddonPoolSortedCache = { src, ref: src === 'contrib' ? ref : null, len: src === 'contrib' ? len : 0, sorted: cleaned }; window.__ssAddonPoolSortedCache = __ssAddonPoolSortedCache; return cleaned;
 }
 function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
   const desired = Math.max(0, Number(desiredEUR || 0) || 0); const maxN = Math.max(0, Number(limit || 4) || 4); const basketNames = new Set(Object.values(basket || {}).map(i => String(i?.name || '').trim()).filter(Boolean));

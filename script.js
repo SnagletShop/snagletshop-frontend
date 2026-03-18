@@ -174,11 +174,20 @@ if (typeof window !== "undefined") {
         window.products = productsDatabase;
     }
 }
+let __ssSyncingProductsDatabase = false;
 function __ssSetProductsDatabase(next) {
     productsDatabase = (next && typeof next === 'object') ? next : {};
-    if (typeof window !== 'undefined') {
-        window.productsDatabase = productsDatabase;
-        window.products = productsDatabase;
+    if (typeof window !== 'undefined' && !__ssSyncingProductsDatabase) {
+        __ssSyncingProductsDatabase = true;
+        try {
+            try { delete window.productsDatabase; } catch {}
+            try { delete window.products; } catch {}
+            window.productsDatabase = productsDatabase;
+            window.products = productsDatabase;
+        } finally {
+            __ssSyncingProductsDatabase = false;
+            try { __ssInstallLegacyGlobalBridges(); } catch {}
+        }
     }
     return productsDatabase;
 }
@@ -797,7 +806,7 @@ function collectUserDetails(){ return window.__SS_CHECKOUT_RUNTIME__?.collectUse
 function getApiBase(){ return window.__SS_CHECKOUT_RUNTIME__?.getApiBase?.({ API_BASE:typeof API_BASE!=='undefined' ? API_BASE : '' }) || ((typeof API_BASE!=='undefined' && API_BASE) ? API_BASE : ''); }
 function buildStripeSafeCart(fullCart){ return window.__SS_CHECKOUT_RUNTIME__?.buildStripeSafeCart?.({ normalizeSelectedOptions:(v)=>__ssNormalizeSelectedOptions(v) }, fullCart) || (Array.isArray(fullCart) ? fullCart.slice() : []); }
 try { if (typeof window!=='undefined' && typeof window.__ssBuildStripeSafeCartV2!=='function') window.__ssBuildStripeSafeCartV2=buildStripeSafeCart; } catch {}
-function buildFullCartFromBasket(){ return window.__SS_CHECKOUT_RUNTIME__?.buildFullCartFromBasket?.({ readBasket:typeof readBasket==='function'?readBasket:null, ensureContributionProducts:()=>__ssEnsureContributionProducts(), getContributionCache:()=>__ssContributionCache, getCatalogFlat:()=>__ssGetCatalogFlat(), normalizeSelectedOptions:(v)=>__ssNormalizeSelectedOptions(v), resolveVariantPriceEUR:(prod,sel,legacySel)=>__ssResolveVariantPriceEUR(prod, sel, legacySel), canonicalizeProductLink:(v)=>canonicalizeProductLink(v) }) || []; }
+function buildFullCartFromBasket(){ return window.__SS_CHECKOUT_RUNTIME__?.buildFullCartFromBasket?.({ readBasket:typeof readBasket==='function'?readBasket:null, ensureContributionProducts:()=>__ssEnsureContributionProducts(), getContributionCache:()=>window.__ssContributionCache, getCatalogFlat:()=>__ssGetCatalogFlat(), normalizeSelectedOptions:(v)=>__ssNormalizeSelectedOptions(v), resolveVariantPriceEUR:(prod,sel,legacySel)=>__ssResolveVariantPriceEUR(prod, sel, legacySel), canonicalizeProductLink:(v)=>canonicalizeProductLink(v) }) || []; }
 function __ssBuildFullCartFromBasketObject(basketObj){ return window.__SS_CHECKOUT_RUNTIME__?.buildFullCartFromBasketObject?.(basketObj) || []; }
 function __ssGetFullCartPreferred(){ return window.__SS_CHECKOUT_RUNTIME__?.getFullCartPreferred?.({ getPreservedBuilder:()=>typeof window.__ssBuildFullCartFromBasketV2==='function' ? window.__ssBuildFullCartFromBasketV2 : null, getBasket:()=>typeof basket==='object' ? basket : null, readBasket:typeof readBasket==='function' ? readBasket : null }) || []; }
 try { if (typeof window!=='undefined' && typeof window.__ssBuildFullCartFromBasketV2!=='function') window.__ssBuildFullCartFromBasketV2=buildFullCartFromBasket; } catch {}
@@ -814,3 +823,7 @@ function round2(n){ return window.__SS_CHECKOUT_RUNTIME__?.round2?.(n) ?? (Numbe
 
 
 window.preloadSettingsData = preloadSettingsData;
+window.__ssNormalizeCatalogImages = __ssNormalizeCatalogImages;
+window.__ssGetFeatureFlags = window.__ssGetFeatureFlags || function(){ try { return (window.preloadedData && window.preloadedData.storefrontConfig && window.preloadedData.storefrontConfig.featureFlags) || {}; } catch { return {}; } };
+window.__ssFlagEnabled = window.__ssFlagEnabled || function(name, fallback=false){ try { const flags = window.__ssGetFeatureFlags(); return (name in flags) ? !!flags[name] : !!fallback; } catch { return !!fallback; } };
+window.__ssGetCatalogFlat = window.__ssGetCatalogFlat || function(){ try { return Object.values(window.productsDatabase || window.products || {}).filter(Boolean); } catch { return []; } };

@@ -1,4 +1,6 @@
 (function (window, document) {
+let __ssRecoUpdateNav = function(){};
+
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
 }
@@ -430,8 +432,8 @@ async function __ssRecoRenderForProduct(product) {
         viewport.appendChild(strip);
 
         __ssEnsureContributionProducts();
-        const flat = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length)
-            ? __ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "", productId: x.productId }))
+        const flat = (Array.isArray(window.__ssContributionCache?.items) && window.__ssContributionCache.items.length)
+            ? window.__ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "", productId: x.productId }))
             : __ssGetCatalogFlat();
 
         function makeCard(it, idx) {
@@ -720,7 +722,7 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
-        function __ssRecoUpdateNav() {
+        __ssRecoUpdateNav = function __ssRecoUpdateNav() {
             try {
                 // align width
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
@@ -848,7 +850,7 @@ async function __ssRecoSendEvent(type, payload) {
 
 async function __ssSmartRecoEvent(type, itemKey) {
     try {
-        const token = String(__ssSmartCartRecoCache?.token || "").trim();
+        const token = String(window.__ssSmartCartRecoCache?.token || "").trim();
         if (!token) return;
         const recoService = window.__SS_RECOMMENDATIONS_SERVICE__;
         if (!recoService?.sendSmartRecoEvent) throw new Error('Recommendations service unavailable: sendSmartRecoEvent');
@@ -863,9 +865,9 @@ function __ssEnsureContributionProducts() {
         if (!enabled) return;
 
         const now = Date.now();
-        if (__ssContributionCache.items && (now - (__ssContributionCache.at || 0)) < 10 * 60 * 1000) return;
+        if (window.__ssContributionCache?.items && (now - (window.__ssContributionCache.at || 0)) < 10 * 60 * 1000) return;
 
-        __ssContributionCache.at = now;
+        (window.__ssContributionCache = window.__ssContributionCache || { at: 0, items: null }).at = now;
 (window.__SS_RECOMMENDATIONS_SERVICE__?.getContributionProducts ? window.__SS_RECOMMENDATIONS_SERVICE__.getContributionProducts(40) : Promise.reject(new Error('Recommendations service unavailable: getContributionProducts')))
             .then(d => {
                 // Only accept contribution feed if it has enough renderable items.
@@ -883,9 +885,9 @@ function __ssEnsureContributionProducts() {
                 }
 
                 if (okCount >= 8) {
-                    __ssContributionCache.items = items;
+                    (window.__ssContributionCache = window.__ssContributionCache || { at: 0, items: null }).items = items;
                     // Invalidate pool cache so it can rebuild from contribution feed.
-                    try { __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
+                    try { window.__ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
                 }
             })
             .catch(() => { });
@@ -902,10 +904,10 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
 
         const cacheValid =
             __ssSmartCartRecoCache &&
-            __ssSmartCartRecoCache.sig === sig &&
-            Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 &&
-            Array.isArray(__ssSmartCartRecoCache.items) &&
-            __ssSmartCartRecoCache.items.length;
+            window.__ssSmartCartRecoCache.sig === sig &&
+            Math.abs((window.__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 &&
+            Array.isArray(window.__ssSmartCartRecoCache.items) &&
+            window.__ssSmartCartRecoCache.items.length;
 
         if (cacheValid) return;
 
@@ -915,8 +917,8 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
             const sigAfter = __ssCartSigForSmartReco();
             if (sigBefore !== sigAfter) return;
 
-            try { if (__ssSmartRecoRerenderTimer) clearTimeout(__ssSmartRecoRerenderTimer); } catch { }
-            __ssSmartRecoRerenderTimer = setTimeout(() => {
+            try { if (window.__ssSmartRecoRerenderTimer) clearTimeout(window.__ssSmartRecoRerenderTimer); } catch { }
+            window.__ssSmartRecoRerenderTimer = setTimeout(() => {
                 try {
                     const sigNow = __ssCartSigForSmartReco();
                     if (sigNow !== sigBefore) return;

@@ -40,11 +40,19 @@
           return;
         }
 
+        const safeCall = (fn, fallback = null) => {
+          try {
+            if (typeof fn !== 'function') return Promise.resolve(fallback);
+            return Promise.resolve(fn()).catch(() => fallback);
+          } catch {
+            return Promise.resolve(fallback);
+          }
+        };
         const [tariffsObj, ratesData, countriesArr, storefrontCfg] = await Promise.all([
-          ctx.fetchTariffsFromServer?.(),
-          ctx.fetchExchangeRatesFromServer?.(),
-          ctx.fetchCountriesFromServer?.().catch(() => null),
-          ctx.fetchStorefrontConfigFromServer?.().catch(() => null)
+          safeCall(ctx.fetchTariffsFromServer, {}),
+          safeCall(ctx.fetchExchangeRatesFromServer, {}),
+          safeCall(ctx.fetchCountriesFromServer, null),
+          safeCall(ctx.fetchStorefrontConfigFromServer, null)
         ]);
 
         const safeTariffs = (tariffsObj && typeof tariffsObj === 'object' && !Array.isArray(tariffsObj)) ? tariffsObj : {};
