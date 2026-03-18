@@ -1,0 +1,1 @@
+(function(window){ const api={ navigate:(a,d=[])=>window.navigate?.(a,d), openProduct:(p)=>window.GoToProductPage?.(p?.name||p, p?.price, p?.description, p?.productId), openCategory:(c)=>window.loadProducts?.(c), openBasket:()=>window.GoToCart?.() }; window.__SS_NAVIGATION_RUNTIME__=api;})(window);

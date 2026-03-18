@@ -141,7 +141,7 @@
     ['handlesTariffsDropdown','domain.settingsCountryRuntime','handlesTariffsDropdown'],
     ['syncCurrencySelects','domain.settingsCountryRuntime','syncCurrencySelects'],
     ['isDarkModeEnabled','domain.settingsCountryRuntime','isDarkModeEnabled'],
-    ['CategoryButtons','domain.catalogUiRuntime','CategoryButtons'],
+    ['CategoryButtons','domain.catalogUiRuntime','categoryButtons'],
     ['clearCategoryHighlight','domain.catalogUiRuntime','clearCategoryHighlight'],
     ['handleSortChange','domain.catalogUiRuntime','handleSortChange'],
     ['syncSortSelects','domain.catalogUiRuntime','syncSortSelects'],

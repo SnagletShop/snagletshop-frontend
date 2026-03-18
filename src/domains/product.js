@@ -67,7 +67,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
         ...buildAnalyticsProductPayload(productName, { priceEUR: productPrice }),
         extra: { viewToken: __ssViewToken, clickToken: __ssClickToken2 }
     });
-    try { clearCategoryHighlight(); } catch { }
+    try { window.clearCategoryHighlight?.(); } catch { }
 
     const viewer = document.getElementById("Viewer");
     if (!viewer) {
@@ -86,7 +86,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
         let __pid = __ssIdNorm(arguments[4] || product?.productId || '');
         if (__ssIsBadId(__pid)) {
             // fallback: find by name and take its productId
-            const __p2 = __ssGetCatalogFlat().find(p => String(p?.name || '').trim() === String(productName || '').trim());
+            const __p2 = (window.__ssGetCatalogFlat ? window.__ssGetCatalogFlat() : __ssGetCatalogFlat()).find(p => String(p?.name || '').trim() === String(productName || '').trim());
             __pid = __ssIdNorm(__p2?.productId || '');
         }
         if (!__ssIsBadId(__pid)) { window.__ssCurrentProductId = __pid; try { if (product && typeof product === 'object') product.productId = __pid; } catch { } }

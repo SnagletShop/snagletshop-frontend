@@ -1,3 +1,5 @@
+(function(window, document){
+const debounce = window.debounce || ((fn, wait=150)=>{ let t; return function(){ const a=arguments,c=this; clearTimeout(t); t=setTimeout(()=>fn.apply(c,a), wait); }; });
 (function (window, document) {
 function getProductCardComponent() {
     return window.__SS_RESOLVE__?.resolve?.('component.productCard', window.__SS_PRODUCT_CARD__ || null) || window.__SS_PRODUCT_CARD__ || null;
@@ -145,4 +147,6 @@ function searchProducts(forcedQuery = null) {
     searchQuery,
     searchProducts
   };
+})(window, document);
+
 })(window, document);

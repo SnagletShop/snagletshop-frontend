@@ -1,0 +1,1 @@
+(function(window){ const api={ get:(k,f=null)=>{ try { return window[k] ?? f; } catch { return f; } }, call:(name,args=[],fb)=>{ try { const fn=window[name]; if (typeof fn==='function') return fn.apply(window,args||[]); } catch {} return typeof fb==='function'?fb():fb; } }; window.__SS_COMPAT__=api;})(window);

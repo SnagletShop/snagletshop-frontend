@@ -1,0 +1,1 @@
+(function(window){ function isObj(v){ return !!v && typeof v==='object' && !Array.isArray(v); } const api={ validateCatalog(v){ return isObj(v)||Array.isArray(v); }, validatePublicConfig(v){ return isObj(v); }, validateOrderStatus(v){ return isObj(v); }, validateRates(v){ return isObj(v); } }; window.__SS_CONTRACTS_RUNTIME__=api;})(window);

@@ -591,7 +591,7 @@ async function setupCheckoutFlow(selectedCurrency) {
         // Mounts Stripe elements into #payment-element
         await initStripePaymentUI(selectedCurrency);
 
-        attachConfirmHandlerOnce();
+        window.attachConfirmHandlerOnce();
 
         if (payBtn) payBtn.disabled = false;
     } catch (e) {
@@ -623,39 +623,39 @@ async function initPaymentModalLogic() {
 
     // Remove legacy listeners that may still exist inside createPaymentModal()
     let confirmBtn = document.getElementById("confirm-payment-button");
-    if (confirmBtn) confirmBtn = _replaceWithClone(confirmBtn);
+    if (confirmBtn) confirmBtn = window._replaceWithClone(confirmBtn);
 
     let countrySelect = document.getElementById("Country");
-    if (countrySelect) countrySelect = _replaceWithClone(countrySelect);
+    if (countrySelect) countrySelect = window._replaceWithClone(countrySelect);
 
     // Populate + initialize Country select (modal)
     if (countrySelect) {
-        _fillCountrySelectOptions(countrySelect);
+        window._fillCountrySelectOptions(countrySelect);
 
-        const detected = _getDetectedCountry();
+        const detected = window._getDetectedCountry();
         countrySelect.value = detected;
         localStorage.setItem("detectedCountry", detected);
 
-        _setupTomSelectCountry(countrySelect);
+        window._setupTomSelectCountry(countrySelect);
 
         countrySelect.addEventListener("change", async () => {
             const cc = String(countrySelect.value || "").toUpperCase();
             localStorage.setItem("detectedCountry", cc);
 
-            _syncSelectedCurrencyFromCountry(cc);
+            window._syncSelectedCurrencyFromCountry(cc);
 
             if (typeof updateAllPrices === "function") updateAllPrices();
 
             // Recreate PI + remount Stripe Elements (server-truth)
             await setupCheckoutFlow(selectedCurrency);
-            try { __ssUpdateLastChanceOfferUI(); } catch { }
+            try { window.__ssUpdateLastChanceOfferUI(); } catch { }
         });
     }
 
     // Initialize Stripe UI once on open (server-truth)
     selectedCurrency = localStorage.getItem("selectedCurrency") || selectedCurrency || "EUR";
     await setupCheckoutFlow(selectedCurrency);
-    try { __ssUpdateLastChanceOfferUI(); } catch { }
+    try { window.__ssUpdateLastChanceOfferUI(); } catch { }
 }
 
 async function handleStripeRedirectReturnOnLoad() {

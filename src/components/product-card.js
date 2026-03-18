@@ -34,8 +34,7 @@
     nameLink.style.textDecoration = 'none';
     nameLink.textContent = opts.displayName || product?.name || '';
     nameLink.href = opts.href || `${window.location.origin}/?product=${encodeURIComponent(product?.name || '')}`;
-    nameLink.target = '_blank';
-    nameLink.addEventListener('click', (e) => {
+        nameLink.addEventListener('click', (e) => {
       e.preventDefault();
       opts.onOpenProduct?.(product);
     });
