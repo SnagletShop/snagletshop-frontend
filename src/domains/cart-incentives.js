@@ -33,10 +33,23 @@ function __ssTierDbgGroup(label, fn) {
 }
 function __ssRequestBasketRerender() {
   try {
-    if (__ssBasketRenderInProgress) { __ssBasketNeedsRerender = true; return; }
-    if (__ssBasketRerenderQueued) return;
+    const renderInProgress = !!window.__ssBasketRenderInProgress;
+    if (renderInProgress) {
+      __ssBasketNeedsRerender = true;
+      window.__ssBasketNeedsRerender = true;
+      return;
+    }
+    if (window.__ssBasketRerenderQueued || __ssBasketRerenderQueued) return;
     __ssBasketRerenderQueued = true;
-    setTimeout(() => { __ssBasketRerenderQueued = false; try { if (typeof updateBasket === 'function') updateBasket(); } catch {} }, 0);
+    window.__ssBasketRerenderQueued = true;
+    setTimeout(() => {
+      __ssBasketRerenderQueued = false;
+      window.__ssBasketRerenderQueued = false;
+      try {
+        if (typeof window.updateBasket === 'function') window.updateBasket();
+        else if (typeof updateBasket === 'function') updateBasket();
+      } catch {}
+    }, 0);
   } catch {}
 }
 function __ssParsePriceEUR(v) {
@@ -229,10 +242,18 @@ async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
     if (changed) { try { persistBasket('reco_quote_revalidated'); } catch {} try { updateBasket(); } catch {} }
   } catch {}
 }
+try {
+  window.__ssRequestBasketRerender = __ssRequestBasketRerender;
+  window.__ssBindCartIncentives = __ssBindCartIncentives;
+  window.__ssRenderCartIncentivesHTML = __ssRenderCartIncentivesHTML;
+  window.__ssComputeCartIncentivesClient = __ssComputeCartIncentivesClient;
+  window.__ssGetCartIncentivesConfig = __ssGetCartIncentivesConfig;
+  window.__ssValidateRecoDiscountsInBasketBestEffort = __ssValidateRecoDiscountsInBasketBestEffort;
+} catch {}
 window.__SS_CART_INCENTIVES__ = {
   __ssGetCartIncentivesConfig, __ssDbgTierEnabled, __ssTierDbgGroup, __ssComputeCartIncentivesClient,
   __ssEnsureCartIncentiveStyles, __ssCartSigForSmartReco, __ssFetchSmartCartRecs, __ssEnsureSmartCartRecs,
   __ssLowerBoundByPrice, __ssGetAddonPoolSorted, __ssCartPickAddonProducts, __ssRenderCartIncentivesHTML,
-  __ssBindCartIncentives, __ssValidateRecoDiscountsInBasketBestEffort
+  __ssBindCartIncentives, __ssValidateRecoDiscountsInBasketBestEffort, __ssRequestBasketRerender
 };
 })(window, document);

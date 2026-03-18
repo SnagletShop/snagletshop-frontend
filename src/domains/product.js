@@ -54,6 +54,10 @@ function __ssGetProductImageCandidates(product, imageHint = '') {
 }
 
 function __ssResolveProductForPdp(productName, pidArg = '', imgArg = '') {
+    try {
+        if (typeof window.__ssProductLooksRicher !== 'function') window.__ssProductLooksRicher = __ssProductLooksRicher;
+        if (typeof window.__ssGetProductImageCandidates !== 'function') window.__ssGetProductImageCandidates = __ssGetProductImageCandidates;
+    } catch {}
     const flat = __ssSafeCatalogFlat();
     const pid = (typeof window.__ssIdNorm === 'function') ? window.__ssIdNorm(pidArg) : String(pidArg || '').trim();
     const rawName = String(productName || '').trim();
@@ -81,14 +85,16 @@ function __ssResolveProductForPdp(productName, pidArg = '', imgArg = '') {
 
     const scored = candidates
         .map(p => {
-            let score = __ssProductLooksRicher(p);
+            const scoreFn = (typeof window.__ssProductLooksRicher === 'function') ? window.__ssProductLooksRicher : __ssProductLooksRicher;
+            let score = scoreFn(p);
             const pName = String(p?.name || '').trim();
             if (rawName && pName === rawName) score += 50;
             if (nameKey && __ssNormalizeNameKey(pName) === nameKey) score += 40;
             const pPid = (typeof window.__ssIdNorm === 'function') ? window.__ssIdNorm(p?.productId || p?.id || '') : String(p?.productId || p?.id || '').trim();
             if (pid && pPid === pid) score += 100;
             if (imgKey) {
-                const imgs = __ssGetProductImageCandidates(p, '');
+                const imageCandidatesFn = (typeof window.__ssGetProductImageCandidates === 'function') ? window.__ssGetProductImageCandidates : __ssGetProductImageCandidates;
+                const imgs = imageCandidatesFn(p, '');
                 if (imgs.includes(imgKey)) score += 20;
             }
             return { p, score };
@@ -102,7 +108,10 @@ function __ssResolveProductForPdp(productName, pidArg = '', imgArg = '') {
         try { best.image = imgKey; } catch {}
     }
     if ((!Array.isArray(best.images) || !best.images.length) && imgKey) {
-        try { best.images = __ssGetProductImageCandidates(best, imgKey); } catch {}
+        try {
+            const imageCandidatesFn = (typeof window.__ssGetProductImageCandidates === 'function') ? window.__ssGetProductImageCandidates : __ssGetProductImageCandidates;
+            best.images = imageCandidatesFn(best, imgKey);
+        } catch {}
     }
     return best;
 }
@@ -625,10 +634,19 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     try { if (typeof window.__ssHideProductPageSkeleton === 'function') window.__ssHideProductPageSkeleton(); } catch {}
 }
 
+  try {
+    window.__ssSafeCatalogFlat = __ssSafeCatalogFlat;
+    window.__ssNormalizeNameKey = __ssNormalizeNameKey;
+    window.__ssProductLooksRicher = __ssProductLooksRicher;
+    window.__ssGetProductImageCandidates = __ssGetProductImageCandidates;
+    window.__ssResolveProductForPdp = __ssResolveProductForPdp;
+  } catch {}
+
   window.__SS_PRODUCT__ = {
     buyNow,
     updateImage,
     GoToProductPage,
-    renderProductPage
+    renderProductPage,
+    __ssResolveProductForPdp
   };
 })(window, document);

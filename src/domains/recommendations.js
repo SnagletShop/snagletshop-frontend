@@ -922,7 +922,7 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
                 try {
                     const sigNow = __ssCartSigForSmartReco();
                     if (sigNow !== sigBefore) return;
-                    __ssRequestBasketRerender("smart-reco");
+                    (window.__ssRequestBasketRerender || __ssRequestBasketRerender)?.("smart-reco");
                 } catch { }
             }, 180);
         }).catch(() => { });

@@ -665,7 +665,7 @@ function updateBasket() {
         finally {
             setTimeout(() => { try { window.__ssSuppressPriceObserver = false; } catch { } }, 250);
         }
-        try { __ssBindCartIncentives(basketContainer); } catch { }
+        try { (window.__ssBindCartIncentives || __ssBindCartIncentives)?.(basketContainer); } catch { }
 
         // Keep existing event delegation behavior for qty buttons
         if (!basketContainer.dataset.qtyBound) {
@@ -686,7 +686,7 @@ function updateBasket() {
         window.__ssBasketRenderInProgress = false;
         if (window.__ssBasketNeedsRerender) {
             window.__ssBasketNeedsRerender = false;
-            __ssRequestBasketRerender("post-render");
+            (window.__ssRequestBasketRerender || __ssRequestBasketRerender)?.("post-render");
         }
     }
 }
