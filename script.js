@@ -168,6 +168,7 @@ let tariffMultipliers = {};
 let productsDatabase = (typeof window !== "undefined" && window.productsDatabase && typeof window.productsDatabase === "object")
     ? window.productsDatabase
     : ((typeof window !== "undefined" && window.products && typeof window.products === "object") ? window.products : {});
+let products = productsDatabase;
 if (typeof window !== "undefined") {
     window.productsDatabase = productsDatabase;
     if (!window.products || typeof window.products !== "object" || !Object.keys(window.products).length) {
@@ -177,6 +178,7 @@ if (typeof window !== "undefined") {
 let __ssSyncingProductsDatabase = false;
 function __ssSetProductsDatabase(next) {
     productsDatabase = (next && typeof next === 'object') ? next : {};
+    products = productsDatabase;
     if (typeof window !== 'undefined' && !__ssSyncingProductsDatabase) {
         __ssSyncingProductsDatabase = true;
         try {
@@ -773,7 +775,12 @@ function calculateTotalAmount(){ return window.__SS_MODAL_RUNTIME__?.calculateTo
 function basketButtonFunction(){ return window.__SS_MODAL_RUNTIME__?.basketButtonFunction?.({ getBasket:()=>basket }); }
 let searchTimeout;
 function handleSortChange(newSort){ return window.__SS_CATALOG_UI_RUNTIME__?.handleSortChange?.({ lsSet:(k,v)=>localStorage.setItem(k,v), isReplaying:()=>isReplaying, loadProducts:(...args)=>loadProducts(...args), navigate:(...args)=>navigate(...args), getWindowCurrentCategory:()=>window.currentCategory, getWindowCurrentSortOrder:()=>window.currentSortOrder, getLastCategory:()=>lastCategory }, newSort); }
-function renderCatalogProducts(category, sortBy = 'NameFirst', sortOrder = 'asc'){ return window.__SS_CATALOG_UI_RUNTIME__?.renderCatalogProducts?.({ TEXTS, getProductsDatabase:()=>typeof productsDatabase!=='undefined'?productsDatabase:{}, getProducts:()=>typeof products!=='undefined'?products:{}, setLastCategory:(v)=>{ lastCategory=v; }, getLastCategory:()=>lastCategory, setWindowCurrentSortOrder:(v)=>{ window.currentSortOrder=v; }, getWindowCurrentSortOrder:()=>window.currentSortOrder, setWindowCurrentCategory:(v)=>{ window.currentCategory=v; currentCategory=v; }, getWindowCurrentCategory:()=>window.currentCategory, syncCentralState:__ssSyncCentralState, clearCategoryHighlight, setCart:(obj)=>{ cart=obj||{}; }, getCart:()=>cart, setCartItemQty:(key,qty)=>{ cart[key]=qty; }, removeSortContainer, createProductCard:(product, options)=>window.__SS_PRODUCT_CARD__?.createProductCard?.(product, options), getABProductName:__ssABGetProductName, getABProductDescription:__ssABGetProductDescription, resolveVariantPriceEUR:__ssResolveVariantPriceEUR, navigate:(...args)=>navigate(...args), decreaseQuantity, increaseQuantity, addToCart:(...args)=>addToCart(...args), defaultSelectedOptions:__ssDefaultSelectedOptions, extractOptionGroups:__ssExtractOptionGroups, preloadProductImages:(cat)=>preloadProductImages(cat), categoryButtons:()=>__ssResolveCategoryButtons()(), isDarkModeEnabled }, category, sortBy, sortOrder); }
+function __ssGetCatalogUiCtx(){
+  const ctx = { TEXTS, getProductsDatabase:()=>productsDatabase||{}, getProducts:()=>products||productsDatabase||window.products||{}, setLastCategory:(v)=>{ lastCategory=v; }, getLastCategory:()=>lastCategory, setWindowCurrentSortOrder:(v)=>{ window.currentSortOrder=v; }, getWindowCurrentSortOrder:()=>window.currentSortOrder, setWindowCurrentCategory:(v)=>{ window.currentCategory=v; currentCategory=v; }, getWindowCurrentCategory:()=>window.currentCategory, getCurrentCategory:()=>window.currentCategory || currentCategory, setCurrentCategory:(v)=>{ currentCategory=v==null?null:String(v); window.currentCategory=currentCategory; }, syncCentralState:__ssSyncCentralState, clearCategoryHighlight, setCart:(obj)=>{ cart=obj||{}; }, getCart:()=>cart, setCartItemQty:(key,qty)=>{ cart[key]=qty; }, removeSortContainer, createProductCard:(product, options)=>window.__SS_PRODUCT_CARD__?.createProductCard?.(product, options), getABProductName:__ssABGetProductName, getABProductDescription:__ssABGetProductDescription, resolveVariantPriceEUR:__ssResolveVariantPriceEUR, navigate:(...args)=>navigate(...args), decreaseQuantity, increaseQuantity, addToCart:(...args)=>addToCart(...args), defaultSelectedOptions:__ssDefaultSelectedOptions, extractOptionGroups:__ssExtractOptionGroups, preloadProductImages:(cat)=>preloadProductImages(cat), categoryButtons:()=>__ssResolveCategoryButtons()(), isDarkModeEnabled, getDefaultSort:()=>localStorage.getItem('defaultSort')||'NameFirst', lsSet:(k,v)=>localStorage.setItem(k,v), isReplaying:()=>!!window.isReplaying, loadProducts:(...args)=>loadProducts(...args) };
+  try { window.__SS_CATALOG_UI_CTX__ = ctx; } catch {}
+  return ctx;
+}
+function renderCatalogProducts(category, sortBy = 'NameFirst', sortOrder = 'asc'){ return window.__SS_CATALOG_UI_RUNTIME__?.renderCatalogProducts?.(__ssGetCatalogUiCtx(), category, sortBy, sortOrder); }
 async function renderSettingsScreen(){ return window.__SS_SETTINGS_RUNTIME__?.goToSettings?.({ preloadSettingsData, clearCategoryHighlight, removeSortContainer, TEXTS, currencySymbols, getExchangeRates:()=>exchangeRates, getSelectedCurrency:()=>selectedCurrency, setSelectedCurrency:(v)=>{ selectedCurrency=v; }, syncCentralState:__ssSyncCentralState, countryNames, countryToCurrency, AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE, syncCurrencySelects, updateAllPrices, snagletGetTurnstileToken:snagletGetTurnstileToken }); }
 function syncSortSelects(newSort){ return window.__SS_CATALOG_UI_RUNTIME__?.syncSortSelects?.({ setupSortDropdown:(value)=>__ssSetupSortDropdown(value) }, newSort); }
 function updateSorting(){ return window.__SS_CATALOG_UI_RUNTIME__?.updateSorting?.({ handleSortChange:(value)=>handleSortChange(value) }); }
@@ -823,6 +830,7 @@ function round2(n){ return window.__SS_CHECKOUT_RUNTIME__?.round2?.(n) ?? (Numbe
 
 
 window.preloadSettingsData = preloadSettingsData;
+window.__SS_CATALOG_UI_CTX__ = window.__SS_CATALOG_UI_CTX__ || __ssGetCatalogUiCtx();
 window.__ssNormalizeCatalogImages = __ssNormalizeCatalogImages;
 window.__ssGetFeatureFlags = window.__ssGetFeatureFlags || function(){ try { return (window.preloadedData && window.preloadedData.storefrontConfig && window.preloadedData.storefrontConfig.featureFlags) || {}; } catch { return {}; } };
 window.__ssFlagEnabled = window.__ssFlagEnabled || function(name, fallback=false){ try { const flags = window.__ssGetFeatureFlags(); return (name in flags) ? !!flags[name] : !!fallback; } catch { return !!fallback; } };

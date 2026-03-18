@@ -200,6 +200,8 @@
       try { ctx.preloadProductImages?.(category); } catch (e) { console.warn('⚠️ preloadProductImages failed:', e); }
       api.categoryButtons(ctx);
     }
+    ,CategoryButtons(ctx = {}) { return api.categoryButtons(ctx); }
+    ,ClearCategoryHighlight(ctx = {}) { return api.clearCategoryHighlight(ctx); }
   };
   window.__SS_CATALOG_UI_RUNTIME__ = api;
 })(window, document);
