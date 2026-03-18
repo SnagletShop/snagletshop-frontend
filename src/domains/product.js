@@ -75,8 +75,8 @@ function GoToProductPage(productName, productPrice, productDescription) {
         return;
     }
 
-    __ssShowProductPageSkeleton();
-    __ssScrollToTopForProductSkeleton();
+    try { if (typeof window.__ssShowProductPageSkeleton === 'function') window.__ssShowProductPageSkeleton(); } catch {}
+    try { if (typeof window.__ssScrollToTopForProductSkeleton === 'function') window.__ssScrollToTopForProductSkeleton(); } catch {}
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
@@ -115,7 +115,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     const __ssImagesForViewer = __ssGetProductImageCandidates(product, __imgArg);
     if (!product) {
         console.error("❌ Product not found:", productName, __pidArg);
-        try { __ssHideProductPageSkeleton(); } catch {}
+        try { if (typeof window.__ssHideProductPageSkeleton === 'function') window.__ssHideProductPageSkeleton(); } catch {}
         return;
     }
 
@@ -513,6 +513,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     } catch { }
     try { updateAllPrices(); } catch { }
     try { updateImage(); } catch { }
+    try { if (typeof window.__ssHideProductPageSkeleton === 'function') window.__ssHideProductPageSkeleton(); } catch {}
 }
 
   window.__SS_PRODUCT__ = {
