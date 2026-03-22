@@ -78,21 +78,42 @@
     if (Number.isFinite(num) && num > 0) out.push(num);
   }
 
+  function __ssCollectNestedPriceCandidates(out, value, depth = 0, seen = null) {
+    if (depth > 6 || value == null) return;
+    if (Array.isArray(value)) {
+      value.forEach((entry) => __ssCollectNestedPriceCandidates(out, entry, depth + 1, seen));
+      return;
+    }
+    if (typeof value === "object") {
+      if (typeof WeakSet !== "undefined") {
+        seen = seen || new WeakSet();
+        if (seen.has(value)) return;
+        seen.add(value);
+      }
+      __ssCollectPositivePrice(out, value.price);
+      __ssCollectPositivePrice(out, value.priceEUR);
+      __ssCollectPositivePrice(out, value.basePrice);
+      __ssCollectPositivePrice(out, value.sellPrice);
+      __ssCollectPositivePrice(out, value.priceB);
+      __ssCollectPositivePrice(out, value.addPrice);
+      Object.values(value).forEach((entry) => __ssCollectNestedPriceCandidates(out, entry, depth + 1, seen));
+      return;
+    }
+    __ssCollectPositivePrice(out, value);
+  }
+
+  function __ssResolvePositivePriceCandidate(value) {
+    const prices = [];
+    __ssCollectNestedPriceCandidates(prices, value);
+    return prices.length ? window.__ssRound2(Math.min(...prices)) : 0;
+  }
+
   function __ssCollectPositivePriceMap(out, map) {
-    if (!map || typeof map !== "object" || Array.isArray(map)) return;
-    Object.values(map).forEach((value) => __ssCollectPositivePrice(out, value));
+    __ssCollectNestedPriceCandidates(out, map);
   }
 
   function __ssCollectPositivePriceArray(out, list) {
-    if (!Array.isArray(list)) return;
-    list.forEach((entry) => {
-      if (!entry || typeof entry !== "object") return;
-      __ssCollectPositivePrice(out, entry.price);
-      __ssCollectPositivePrice(out, entry.priceEUR);
-      __ssCollectPositivePrice(out, entry.basePrice);
-      __ssCollectPositivePrice(out, entry.sellPrice);
-      if (Array.isArray(entry.options)) __ssCollectPositivePriceArray(out, entry.options);
-    });
+    __ssCollectNestedPriceCandidates(out, list);
   }
 
   function __ssInferBasePriceEUR(product, preferB = false) {
@@ -140,7 +161,7 @@
     const legacy = String(legacySelectedOption || "").trim();
     if (legacy) candidates.push(legacy);
     for (const k of candidates) {
-      const num = Number(parseFloat(map[String(k || "").trim()]) || 0);
+      const num = __ssResolvePositivePriceCandidate(map[String(k || "").trim()]);
       if (Number.isFinite(num) && num > 0) return window.__ssRound2(num);
     }
     return window.__ssRound2(base);
