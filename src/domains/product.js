@@ -424,11 +424,25 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     infoCol.append(heading, desc, delivery);
 
     // Options (multi)
-    const groups = __ssExtractOptionGroups(product);
-    const defaultSel = __ssDefaultSelectedOptions(groups);
-    __ssSetSelectedOptions(defaultSel);
+    const groups = Array.isArray(window.__ssExtractOptionGroups?.(product))
+        ? window.__ssExtractOptionGroups(product)
+        : (Array.isArray(window.__SS_PRODUCT_OPTIONS__?.__ssExtractOptionGroups?.(product))
+            ? window.__SS_PRODUCT_OPTIONS__.__ssExtractOptionGroups(product)
+            : []);
+    const defaultSel = Array.isArray(window.__ssDefaultSelectedOptions?.(groups))
+        ? window.__ssDefaultSelectedOptions(groups)
+        : (Array.isArray(window.__SS_PRODUCT_OPTIONS__?.__ssDefaultSelectedOptions?.(groups))
+            ? window.__SS_PRODUCT_OPTIONS__.__ssDefaultSelectedOptions(groups)
+            : []);
+    try {
+        if (typeof window.__ssSetSelectedOptions === 'function') window.__ssSetSelectedOptions(defaultSel);
+        else if (typeof window.__SS_PRODUCT_OPTIONS__?.__ssSetSelectedOptions === 'function') window.__SS_PRODUCT_OPTIONS__.__ssSetSelectedOptions(defaultSel);
+        else window.selectedProductOptions = Array.isArray(defaultSel) ? defaultSel : [];
+    } catch {
+        window.selectedProductOptions = Array.isArray(defaultSel) ? defaultSel : [];
+    }
 
-    if (groups.length) {
+    if (Array.isArray(groups) && groups.length) {
         groups.forEach((g, gIdx) => {
             const container = document.createElement("div");
             container.className = "Product_Options_Container";

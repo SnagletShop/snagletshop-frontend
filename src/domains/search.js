@@ -123,4 +123,15 @@ function searchProducts(forcedQuery = null) {
     searchQuery,
     searchProducts
   };
+
+  window.setupSearchInputs = setupSearchInputs;
+  window.searchQuery = searchQuery;
+  window.searchProducts = searchProducts;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => { try { setupSearchInputs(); } catch {} }, { once: true });
+  } else {
+    try { setupSearchInputs(); } catch {}
+  }
+
 })(window, document);
