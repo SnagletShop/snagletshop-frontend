@@ -763,6 +763,7 @@ async function bootApp() {
             showAppLoader,
             hideAppLoader,
             initProducts,
+            reconcileRememberedPrices: () => window.__SS_CATALOG_RUNTIME__?.reconcileRememberedPrices?.(),
             getProductsDatabase: () => productsDatabase,
             setBasket: (next) => { basket = next; },
             syncCentralState: __ssSyncCentralState,

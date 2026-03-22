@@ -2,6 +2,10 @@
   'use strict';
 
   const api = () => window.__SS_API__;
+  function catalogPath() {
+    const nonce = String(window.__SS_CATALOG_REQUEST_NONCE__ || (window.__SS_CATALOG_REQUEST_NONCE__ = Date.now().toString(36)));
+    return `/catalog?ssv=${encodeURIComponent(nonce)}`;
+  }
 
   async function getPublicConfig() {
     return api().json('/public-config', { method: 'GET' });
@@ -12,7 +16,7 @@
   }
 
   async function getCatalog() {
-    return api().json('/catalog', { method: 'GET' });
+    return api().json(catalogPath(), { method: 'GET', cache: 'no-store' });
   }
 
   window.__SS_CATALOG_SERVICE__ = { getPublicConfig, getAssignments, getCatalog };

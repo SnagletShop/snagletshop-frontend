@@ -13,6 +13,7 @@
       show('Loading products…');
       try {
         try { await ctx.initProducts?.(); } catch {}
+        try { ctx.reconcileRememberedPrices?.(); } catch {}
         show('Preparing store…');
         if (!window.products || typeof window.products !== 'object') {
           window.products = ctx.getProductsDatabase?.() || {};

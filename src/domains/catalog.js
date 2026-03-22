@@ -3,6 +3,10 @@
 
   function catalogService() { return window.__SS_CATALOG_SERVICE__ || null; }
   function api() { return window.__SS_API__ || null; }
+  function catalogPath() {
+    const nonce = String(window.__SS_CATALOG_REQUEST_NONCE__ || (window.__SS_CATALOG_REQUEST_NONCE__ = Date.now().toString(36)));
+    return `/catalog?ssv=${encodeURIComponent(nonce)}`;
+  }
 
   async function getPublicConfig() {
     const svc = catalogService();
@@ -21,7 +25,7 @@
   async function getCatalog() {
     const svc = catalogService();
     if (svc && typeof svc.getCatalog === 'function') return svc.getCatalog();
-    if (api() && typeof api().json === 'function') return api().json('/catalog', { method: 'GET' });
+    if (api() && typeof api().json === 'function') return api().json(catalogPath(), { method: 'GET', cache: 'no-store' });
     throw new Error('Catalog transport is unavailable.');
   }
 
