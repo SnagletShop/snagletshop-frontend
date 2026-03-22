@@ -227,35 +227,7 @@
   }
 
   function __ssEnsureOptionChipStyles() {
-    if (document.getElementById("__ss-option-chip-styles")) return;
-    const style = document.createElement("style");
-    style.id = "__ss-option-chip-styles";
-    style.textContent = `
-  .BasketSelectedOption{display:none !important;}
-  .Basket-Item,.Basket_Item_Container{aspect-ratio:auto !important;}
-  .Basket-Item{width:min(1000px,100%) !important;max-width:2000px !important;align-items:flex-start !important;padding:16px 18px !important;gap:18px !important;}
-  .Basket_Item_Container{width:min(1000px,100%) !important;max-width:2000px !important;}
-  .BasketTitle{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .BasketTextDescription{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-  .Quantity-Controls-Basket .BasketChangeQuantityButton:hover{background:rgba(0,0,0,0.06);}
-  .Quantity-Controls-Basket .BasketChangeQuantityText{font-family:'Afacad',sans-serif;font-size:20px;line-height:1;margin:0;padding:0;min-width:1.5em;text-align:center;}
-  .BasketOptionChips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;align-items:flex-start;}
-  .BasketOptionChip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;background:rgba(0,0,0,0.045);white-space:nowrap;font-family:'Afacad',sans-serif;font-size:16px;}
-  .Basket-Item-Pay{display:block !important;width:min(1000px,100%) !important;}
-  .ReceiptTable{width:100% !important;border-collapse:collapse;}
-  .ReceiptTable td{vertical-align:top;padding:6px 8px;}
-  .ReceiptItemName{display:block;}
-  .ReceiptOptionChips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
-  .ReceiptOptionChips .BasketOptionChip{padding:5px 10px;font-size:15px;}
-  @media (max-width: 700px){
-    .Quantity-Controls-Basket .BasketChangeQuantityButton{width:38px;height:38px;font-size:22px;}
-    .Quantity-Controls-Basket .BasketChangeQuantityText{font-size:18px;}
-    .Basket-Item{padding:12px 12px !important;gap:12px !important;}
-    .BasketOptionChip{font-size:14px;padding:5px 10px;}
-    .BasketTextDescription{-webkit-line-clamp:2;}
-    .ReceiptOptionChips .BasketOptionChip{font-size:13px;}
-  }`;
-    document.head.appendChild(style);
+    return true;
   }
 
   function __ssGetSelectedOptionsForDisplay(item, product) {
@@ -302,7 +274,7 @@
     if (typeof mapped === "number" && Number.isFinite(mapped)) {
       const idx = Math.max(0, Math.min(imgs.length - 1, Math.floor(mapped)));
       if (imgs[idx]) {
-        window.currentIndex = idx;
+        window.currentProductImageIndex = idx;
         if (typeof window.updateImage === 'function') window.updateImage();
         return true;
       }
@@ -312,7 +284,7 @@
     if (!url) return false;
     const idx = imgs.indexOf(url);
     if (idx !== -1) {
-      window.currentIndex = idx;
+      window.currentProductImageIndex = idx;
       if (typeof window.updateImage === 'function') window.updateImage();
       return true;
     }

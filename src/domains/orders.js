@@ -5,85 +5,64 @@ function openOrderStatusModal(prefill = {}) {
 
     const overlay = document.createElement("div");
     overlay.id = "orderStatusModal";
-    overlay.style.cssText = [
-        "position:fixed",
-        "inset:0",
-        "z-index:999999",
-        "background:rgba(0,0,0,0.55)",
-        "display:flex",
-        "align-items:center",
-        "justify-content:center",
-        "padding:12px"
-    ].join(";");
 
     const card = document.createElement("div");
-    card.style.cssText = [
-        "width:min(720px,100%)",
-        "max-height:calc(100vh - 24px)",
-        "overflow:auto",
-        "background:var(--Modal_Background_Colour)",
-        "border-radius:18px",
-        "padding:18px 18px 14px",
-        "box-shadow:0 20px 70px rgba(0,0,0,0.35)",
-        "border:1px solid rgba(0,0,0,0.08)",
-        "color:var(--Default_Text_Colour)",
-        "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
-    ].join(";");
+    card.className = "order-status-modal__card";
 
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;";
+    header.className = "order-status-modal__header";
 
     const h = document.createElement("div");
     h.textContent = "Track your order";
-    h.style.cssText = "font-size:18px;font-weight:800;";
+    h.className = "order-status-modal__title";
 
     const close = document.createElement("button");
     close.type = "button";
     close.textContent = "×";
-    close.style.cssText = "font-size:22px;line-height:1;border:none;background:transparent;cursor:pointer;padding:6px 10px;border-radius:10px;";
+    close.className = "order-status-modal__close";
     close.onclick = () => overlay.remove();
 
     header.appendChild(h);
     header.appendChild(close);
 
     const form = document.createElement("div");
-    form.style.cssText = "display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px;";
+    form.className = "order-status-modal__form";
 
     const oidWrap = document.createElement("div");
     const oidLabel = document.createElement("div");
     oidLabel.textContent = "Order ID";
-    oidLabel.style.cssText = "font-size:12px;opacity:0.75;margin-bottom:4px;";
+    oidLabel.className = "order-status-modal__label";
     const oidInput = document.createElement("input");
     oidInput.type = "text";
     oidInput.placeholder = "e.g. SS-2026-000123";
     oidInput.value = prefill.orderId ? String(prefill.orderId) : "";
-    oidInput.style.cssText = "width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);";
+    oidInput.className = "order-status-modal__input";
     oidWrap.appendChild(oidLabel);
     oidWrap.appendChild(oidInput);
 
     const tokWrap = document.createElement("div");
     const tokLabel = document.createElement("div");
     tokLabel.textContent = "Token";
-    tokLabel.style.cssText = "font-size:12px;opacity:0.75;margin-bottom:4px;";
+    tokLabel.className = "order-status-modal__label";
     const tokInput = document.createElement("input");
     tokInput.type = "text";
     tokInput.placeholder = "public token";
     tokInput.value = prefill.token ? String(prefill.token) : "";
-    tokInput.style.cssText = "width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);";
+    tokInput.className = "order-status-modal__input";
     tokWrap.appendChild(tokLabel);
     tokWrap.appendChild(tokInput);
 
     const go = document.createElement("button");
     go.type = "button";
     go.textContent = "Check";
-    go.style.cssText = "padding:10px 14px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+    go.className = "order-status-modal__primary";
 
     form.appendChild(oidWrap);
     form.appendChild(tokWrap);
     form.appendChild(go);
 
     const out = document.createElement("div");
-    out.style.cssText = "border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:12px;background:rgba(0,0,0,0.03);min-height:90px;white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:12px;";
+    out.className = "order-status-modal__output";
 
     function render(obj) {
         try {
@@ -142,14 +121,14 @@ function openOrderStatusModal(prefill = {}) {
     tokInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
 
     const recent = document.createElement("div");
-    recent.style.cssText = "margin-top:12px;";
+    recent.className = "order-status-modal__recent";
 
     const recentTitle = document.createElement("div");
     recentTitle.textContent = "Recent orders on this device";
-    recentTitle.style.cssText = "font-weight:800;margin-bottom:8px;font-size:13px;opacity:0.9;";
+    recentTitle.className = "order-status-modal__recent-title";
 
     const recentList = document.createElement("div");
-    recentList.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+    recentList.className = "order-status-modal__recent-list";
 
     function renderRecent() {
         recentList.innerHTML = "";
@@ -157,29 +136,29 @@ function openOrderStatusModal(prefill = {}) {
         if (!items.length) {
             const empty = document.createElement("div");
             empty.textContent = "No recent orders stored yet.";
-            empty.style.cssText = "font-size:12px;opacity:0.75;";
+            empty.className = "order-status-modal__empty";
             recentList.appendChild(empty);
             return;
         }
         for (const it of items) {
             const row = document.createElement("div");
-            row.style.cssText = "display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:10px 12px;background:rgba(0,0,0,0.02);";
+            row.className = "order-status-modal__row";
             const left = document.createElement("div");
-            left.style.cssText = "display:flex;flex-direction:column;gap:2px;min-width:0;";
+            left.className = "order-status-modal__row-main";
             const a = document.createElement("div");
             a.textContent = String(it.orderId);
-            a.style.cssText = "font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+            a.className = "order-status-modal__row-id";
             const b = document.createElement("div");
             b.textContent = _formatDateMaybe(it.ts);
-            b.style.cssText = "font-size:11px;opacity:0.72;";
+            b.className = "order-status-modal__row-date";
             left.appendChild(a);
             left.appendChild(b);
             const actions = document.createElement("div");
-            actions.style.cssText = "display:flex;gap:8px;align-items:center;";
+            actions.className = "order-status-modal__row-actions";
             const view = document.createElement("button");
             view.type = "button";
             view.textContent = "View";
-            view.style.cssText = "padding:8px 10px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+            view.className = "order-status-modal__view";
             view.onclick = () => {
                 oidInput.value = String(it.orderId);
                 tokInput.value = String(it.token || "");

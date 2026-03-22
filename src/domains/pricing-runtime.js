@@ -314,7 +314,7 @@
       if (!isNaN(eurOrig) && eurOrig > 0 && !isNaN(eur) && eur > 0 && eurOrig > eur) {
         const convOrig = convertPrice(ctx, eurOrig);
         const convDisc = convertPrice(ctx, eur);
-        const html = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${currencySymbol}${convOrig}</span> <span style="font-weight:700">${currencySymbol}${convDisc}</span> `;
+        const html = `<span class="ss-price-old">${currencySymbol}${convOrig}</span> <span class="ss-price-new">${currencySymbol}${convDisc}</span> `;
         if (element.innerHTML !== html) element.innerHTML = html;
         return;
       }

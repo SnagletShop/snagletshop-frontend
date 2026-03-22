@@ -65,7 +65,9 @@
         };
         const historyStack = (typeof userHistoryStack !== 'undefined' && Array.isArray(userHistoryStack)) ? userHistoryStack : [];
         const state = historyStack[currentIndex] || fallbackState;
-        history.replaceState({ index: currentIndex }, '', buildUrlForState(state));
+        const currentState = (history.state && typeof history.state === 'object') ? history.state : {};
+        const snapshot = window.__SS_ROUTER__?.buildHistoryState?.(state, currentIndex, { modalOpen: currentState.modalOpen === true }) || { ...currentState, index: currentIndex, route: state };
+        history.replaceState(snapshot, '', buildUrlForState(state));
       }
     } catch {}
   }
@@ -139,7 +141,11 @@
         params.delete('payment_intent_client_secret');
         const newQuery = params.toString();
         const cleanUrl = window.location.pathname + (newQuery ? '?' + newQuery : '') + window.location.hash;
-        history.replaceState({ index: (typeof currentIndex !== 'undefined' ? currentIndex : -1) }, '', cleanUrl);
+        const idx = (typeof currentIndex !== 'undefined' ? currentIndex : -1);
+        const currentState = (history.state && typeof history.state === 'object') ? history.state : {};
+        const routeState = currentState.route || (Array.isArray(userHistoryStack) ? userHistoryStack[idx] : null) || null;
+        const snapshot = window.__SS_ROUTER__?.buildHistoryState?.(routeState, idx, { modalOpen: currentState.modalOpen === true }) || { ...currentState, index: idx, route: routeState };
+        history.replaceState(snapshot, '', cleanUrl);
         try { if (typeof window.checkAndShowPaymentSuccess === 'function') window.checkAndShowPaymentSuccess(); } catch {}
       }
     } catch {}

@@ -14,7 +14,7 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'snaglet-turnstile';
-      el.style.cssText = 'display:none;min-height:1px;';
+      el.className = 'snaglet-turnstile-hidden';
       (document.body || document.documentElement).appendChild(el);
     }
     return el;

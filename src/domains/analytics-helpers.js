@@ -93,11 +93,7 @@
   }
 
   function __ssEnsureABUiStyles() {
-    if (document.getElementById('__ss_ab_ui_styles')) return;
-    const style = document.createElement('style');
-    style.id = '__ss_ab_ui_styles';
-    style.textContent = '.ss-ab-hidden{display:none !important;}';
-    document.head.appendChild(style);
+    return true;
   }
 
   function __ssABGetPrimaryImageUrl(product) {

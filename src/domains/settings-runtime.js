@@ -186,8 +186,6 @@
 
     const wrapper = document.createElement('div');
     wrapper.classList.add('settings-panel');
-    wrapper.style.backgroundColor = 'var(--SearchBar_Background_Colour)';
-    wrapper.style.color = 'var(--Default_Text_Colour)';
 
     const TEXTS = ctx.TEXTS || {};
     const themeSection = document.createElement('div');
@@ -206,7 +204,7 @@
     currencySection.innerHTML = `
         <h3>Currency</h3>
         <label for="currencySelect">Preferred currency:</label>
-        <select id="currencySelect" class="currencySelect tom-hidden" style="width: 100%"></select>
+        <select id="currencySelect" class="currencySelect tom-hidden ss-select-fullwidth"></select>
       `;
 
     const countrySection = document.createElement('div');
@@ -214,7 +212,7 @@
     countrySection.innerHTML = `
         <h3>Shipping Country</h3>
         <label for="countrySelect">Detected: <span id="detected-country"></span></label>
-        <select id="countrySelect" class="tom-hidden" style="width: 100%"></select>
+        <select id="countrySelect" class="tom-hidden ss-select-fullwidth"></select>
       `;
 
     const clearSection = document.createElement('div');
@@ -233,7 +231,7 @@
       <input type="email" id="contact-email" name="email" autocomplete="email" required>
       <label for="contact-message">${TEXTS?.CONTACT_FORM?.FIELDS?.MESSAGE || 'Message'}</label>
       <textarea id="contact-message" name="message" class="MessageTextArea" required></textarea>
-      <div aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;pointer-events:none;">
+      <div aria-hidden="true" class="ss-hidden-honeypot">
         <label for="contact-website">Website</label>
         <input type="text" id="contact-website" name="contact_website_do_not_fill" autocomplete="new-password" tabindex="-1" inputmode="none" value="" readonly>
       </div>

@@ -602,15 +602,15 @@ function updateBasket() {
                 // cart-level discount applies => show strike-through of pre-cart total and the post-cart total
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${postCartTotal.toFixed(2)}" data-eur-original="${preCartTotal.toFixed(2)}">
-                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${preCartTotal.toFixed(2)}€</span>
-                      <span style="font-weight:700">${postCartTotal.toFixed(2)}€</span>
+                      <span class="ss-price-old">${preCartTotal.toFixed(2)}€</span>
+                      <span class="ss-price-new">${postCartTotal.toFixed(2)}€</span>
                    </td>`;
             } else if (hasRecoDisc && recoOrigTotal > preCartTotal) {
                 // only reco discount
                 priceCellHTML =
                     `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}" data-eur-original="${recoOrigTotal.toFixed(2)}" data-discount-pct="${Number(item.recoDiscountPct || 0)}">
-                      <span style="text-decoration:line-through;opacity:.65;margin-right:4px">${recoOrigTotal.toFixed(2)}€</span>
-                      <span style="font-weight:700">${preCartTotal.toFixed(2)}€</span>
+                      <span class="ss-price-old">${recoOrigTotal.toFixed(2)}€</span>
+                      <span class="ss-price-new">${preCartTotal.toFixed(2)}€</span>
                    </td>`;
             } else {
                 priceCellHTML = `<td class="basket-item-price" data-eur="${preCartTotal.toFixed(2)}">${preCartTotal.toFixed(2)}€</td>`;
@@ -638,7 +638,7 @@ function updateBasket() {
         <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || "Buy now")}</button>
         <strong class="PayTotalText" id="basket-total" data-eur="${__ssTotalAfter.toFixed(2)}">
           Total: ${(__ssDiscountEUR > 0 && __ssTotalAfter < totalSum)
-                ? `<span style="text-decoration:line-through; opacity:.75;">${totalSum.toFixed(2)}€</span> <span>${__ssTotalAfter.toFixed(2)}€</span>`
+                ? `<span class="ss-price-old--muted">${totalSum.toFixed(2)}€</span> <span>${__ssTotalAfter.toFixed(2)}€</span>`
                 : `${__ssTotalAfter.toFixed(2)}€`}
         </strong>
       </div>

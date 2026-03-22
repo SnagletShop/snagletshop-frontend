@@ -172,12 +172,12 @@ async function createPaymentModal() {
               <input type="tel"  id="Phone" placeholder="Phone (optional)">
     
               <label for="Country">${TEXTS?.PAYMENT_MODAL?.FIELDS?.COUNTRY || "Country"}</label>
-              <select id="Country" class="tom-hidden" required style="width: 100%"></select>
+              <select id="Country" class="tom-hidden payment-modal-country ss-select-fullwidth" required></select>
             </div>
     
-            <div id="payment-request-button" style="margin: 16px 0;"></div>
-            <div id="payment-element" class = "payment_element"style="margin-top: 16px;"></div>
-            <div id="ss-last-chance" style="margin-top:12px;"></div>
+            <div id="payment-request-button" class="payment-request-slot"></div>
+            <div id="payment-element" class="payment_element payment-element-slot"></div>
+            <div id="ss-last-chance" class="payment-last-chance-slot"></div>
               <label class="ss-marketing-optin">
               <input type="checkbox" id="MarketingOptIn" checked/>
               <span>${(typeof TEXTS !== "undefined" && TEXTS?.PAYMENT_MODAL?.FIELDS?.MARKETING_OPTIN) ? TEXTS.PAYMENT_MODAL.FIELDS.MARKETING_OPTIN : "Send me occasional product offers by email"}</span>
@@ -190,119 +190,6 @@ async function createPaymentModal() {
       `;
 
     document.body.appendChild(modal);
-
-    // Minimal styling (keeps layout stable; your global CSS can further refine it)
-    const style = document.createElement("style");
-    style.id = "paymentModalStyle";
-    style.textContent = `
-        #paymentModal{
-          position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
-          padding:24px 12px; background: rgba(0,0,0,.55);
-        }
-        #paymentModal .payment-modal-card{
-          width:min(520px, 100%); border-radius:20px; padding:18px 16px;
-          background: var(--Card_Background, #fff);
-          box-shadow: 0 12px 40px rgba(0,0,0,.35);
-          color: var(--Default_Text_Colour, #111);
-          position: relative;
-              max-height: calc(100dvh - 48px);
-      overflow-y: auto;
-      overscroll-behavior: contain;
-          border: 1px solid rgba(0,0,0,.08);
-        }
-        #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
-        #paymentModal .ss-marketing-optin{ display:flex; gap:10px; align-items:flex-start; margin:10px 0 2px; font-size:12px; line-height:1.35; opacity:.9; user-select:none; }
-        #paymentModal .ss-marketing-optin input{ margin-top:2px; width:16px; height:16px; accent-color: var(--Accent, #111); }
-        #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
-        #paymentModal .payment-modal-close{
-          position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
-        }
-        #paymentModal input, #paymentModal select{
-          width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
-          border: 1px solid rgba(0,0,0,.15);
-          background: var(--Input_Background, rgba(255,255,255,.92));
-          color: inherit;
-          outline: none;
-        }
-        #paymentModal input::placeholder{ color: rgba(0,0,0,.45); }
-        #paymentModal input:focus, #paymentModal select:focus{
-          border-color: rgba(0,0,0,.28);
-          box-shadow: 0 0 0 3px rgba(37,99,235,.12);
-        }
-        #paymentModal #payment-element{
-          margin-top: 16px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(0,0,0,.15);
-          background: var(--Input_Background, rgba(255,255,255,.92));
-        }
-        #paymentModal #payment-request-button{ margin: 16px 0; }
-        #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  
-        /* TomSelect (country dropdown) */
-        #paymentModal .ts-control, 
-        #paymentModal .ts-dropdown{
-          border-radius: 12px;
-          border: 1px solid rgba(0,0,0,.15);
-          background: var(--Input_Background, rgba(255,255,255,.92));
-          color: inherit;
-        }
-        #paymentModal .ts-dropdown .option{ padding: 10px 12px; }
-        #paymentModal .ts-dropdown .active{ background: rgba(0,0,0,.06); }
-  
-        .Submit_Button{
-          width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
-          background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
-        }
-        .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
-  
-        /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
-  
-        html.dark-mode #paymentModal input,
-        html.dark-mode #paymentModal select,
-        html.dark-mode #paymentModal #payment-element{
-          border: 1px solid rgba(255,255,255,.16);
-          background: rgba(255,255,255,.06);
-          color: inherit;
-        }
-        html.dark-mode #paymentModal input::placeholder{ color: rgba(255,255,255,.45); }
-        html.dark-mode #paymentModal input:focus,
-        html.dark-mode #paymentModal select:focus{
-          border-color: rgba(255,255,255,.28);
-          box-shadow: 0 0 0 3px rgba(59,130,246,.20);
-        }
-        html.dark-mode #paymentModal .payment-modal-close{ opacity:.9; }
-  
-        html.dark-mode #paymentModal .ts-control,
-        html.dark-mode #paymentModal .ts-dropdown{
-          border: 1px solid rgba(255,255,255,.16);
-          background: rgba(255,255,255,.06);
-          color: inherit;
-        }
-        html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
-  
-        /* Last-chance upsell */
-        #paymentModal #ss-last-chance{
-          padding: 12px;
-          border-radius: 16px;
-          border: 1px solid rgba(0,0,0,.10);
-          background: rgba(0,0,0,.02);
-        }
-        html.dark-mode #paymentModal #ss-last-chance{
-          border-color: rgba(255,255,255,.14);
-          background: rgba(255,255,255,.06);
-        }
-        #paymentModal .ss-lc-row{ display:flex; gap:10px; align-items:center; }
-        #paymentModal .ss-lc-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
-        #paymentModal .ss-lc-name{ font-weight:700; font-size:.92rem; line-height:1.15; }
-        #paymentModal .ss-lc-sub{ font-size:.86rem; opacity:.85; }
-        #paymentModal .ss-lc-btn{
-          margin-left:auto; padding: 9px 12px; border-radius: 12px; cursor:pointer;
-          border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); font-weight:700;
-        }
-        html.dark-mode #paymentModal .ss-lc-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
-      `;
-    document.head.appendChild(style);
 
     // Restore any draft customer data (name/address/email) saved when closing the modal.
     // Note: Stripe PaymentElement details (card, etc.) cannot be persisted for compliance reasons.
@@ -617,7 +504,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
                 if (paymentElContainer) {
                     paymentElContainer.innerHTML = `
-                    <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
+                    <div class="ss-note-box">
                       Refreshing payment session...
                     </div>`;
                 }
@@ -687,7 +574,7 @@ async function setupCheckoutFlow(selectedCurrency) {
 
         if (paymentSlot) {
             paymentSlot.innerHTML = `
-            <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
+            <div class="ss-note-box">
               Loading payment options…
             </div>`;
         }
@@ -706,7 +593,7 @@ async function setupCheckoutFlow(selectedCurrency) {
         if (paymentSlot) {
             const msg = String(e?.message || "Checkout initialization failed.");
             paymentSlot.innerHTML = `
-            <div style="padding:10px 12px;border:1px solid rgba(255,0,0,.35);border-radius:12px">
+            <div class="ss-note-box ss-note-box--danger">
               <strong>Payment UI could not load.</strong><br>${msg}<br><br>
               Common causes: Stripe.js blocked, API error, or empty cart.
             </div>`;
@@ -1126,12 +1013,17 @@ async function handleStripeRedirectReturnOnLoad() {
 
     // Always clean URL so reloads don't re-trigger
     stripStripeReturnParamsFromUrl(url);
-    const q = url.searchParams.toString();
-    const cleaned = url.pathname + (q ? `?${q}` : "");
-    try { window.history.replaceState({ index: currentIndex }, "", cleaned); } catch { }
+      const q = url.searchParams.toString();
+      const cleaned = url.pathname + (q ? `?${q}` : "");
+    try {
+      const currentState = (window.history.state && typeof window.history.state === "object") ? window.history.state : {};
+      const routeState = currentState.route || (Array.isArray(window.userHistoryStack) ? window.userHistoryStack[currentIndex] : null) || null;
+      const snapshot = window.__SS_ROUTER__?.buildHistoryState?.(routeState, currentIndex, { modalOpen: currentState.modalOpen === true }) || { ...currentState, index: currentIndex, route: routeState };
+      window.history.replaceState(snapshot, "", cleaned);
+    } catch { }
 
-    return true;
-}
+      return true;
+  }
 
   attachPayButtonHandlerOnce();
 

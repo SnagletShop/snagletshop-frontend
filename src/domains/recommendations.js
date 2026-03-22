@@ -70,80 +70,7 @@ function __ssRecoDiscountStorePut(token, payload) {
 }
 
 function __ssRecoEnsureStyles() {
-    if (document.getElementById("__ssRecoStyles")) return;
-    const s = document.createElement("style");
-    s.id = "__ssRecoStyles";
-    s.textContent = `
-      .RecoSection{
-        margin-top:24px;
-        border-top:1px solid rgba(255,255,255,.12);
-        padding-top:18px;
-        /* lock to viewport width on first paint (prevents initial oversized cards) */
-        width:100%;
-        max-width:100%;
-        margin-left:auto;
-        margin-right:auto;
-        box-sizing:border-box;
-      }
-      .RecoHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
-      .RecoHead h3{margin:0;font-size:18px;}
-      .RecoNavs{display:flex;gap:8px;align-items:center;}
-      .RecoNav{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;display:grid;place-items:center;user-select:none}
-      .RecoNav:disabled{opacity:.35;cursor:default}
-  
-      /* single-row AliExpress-like strip */
-      .RecoViewport{
-        overflow-x:auto;
-        overflow-y:hidden;
-        scroll-snap-type:x mandatory;
-        -webkit-overflow-scrolling:touch;
-        overscroll-behavior-x:contain;
-        touch-action:pan-x;
-        padding-bottom:10px;
-  
-        width:100%;
-        box-sizing:border-box;
-      }
-      .RecoViewport::-webkit-scrollbar{height:10px}
-      .RecoViewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
-  
-      .RecoStrip{
-        --reco-cols: 3;
-        --reco-gap: 12px;
-        width:100%;
-        min-width:100%;
-        box-sizing:border-box;
-        display:grid;
-        grid-auto-flow:column;
-        grid-template-rows:1fr;
-        gap:var(--reco-gap);
-        align-content:start;
-        align-items:start;
-        padding-right:6px;
-        /* monolith sizing: keep a usable minimum so cards never collapse into tiny tiles */
-        grid-auto-columns:minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
-      }
-      @media (max-width: 460px){
-        .RecoStrip{
-          grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
-        }
-        .RecoNav{width:34px;height:34px;border-radius:11px;}
-      }
-  
-   
-      .RecoCard{scroll-snap-align:start;min-width:0;width:100%;display:flex;flex-direction:column}
-      .RecoCard:hover{background:rgba(255,255,255,.07)}
-      .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
-      .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
-      .RecoMeta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;opacity:.9}
-      .RecoBadge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);opacity:.9}
-  
-      .RecoOld{text-decoration:line-through;opacity:.65;margin-right:4px}
-      .RecoNew{font-weight:700}
-      .RecoDisc{border-color:rgba(255,255,255,.22)}
-  
-    `;
-    document.head.appendChild(s);
+    return true;
 }
 
 function __ssRecoGetExcludeIds(sourceProductId = "") {
@@ -662,7 +589,7 @@ async function __ssRecoRenderForProduct(product) {
                 price.dataset.eur = String(discPrice);
                 price.dataset.discountPct = String(discPct);
                 // initial paint (will be rewritten by updateAllPrices)
-                price.innerHTML = `<span style="text-decoration:line-through;opacity:.65;margin-right:4px">${eur}</span> <span style="font-weight:700">${discPrice}</span>`;
+                price.innerHTML = `<span class="ss-price-old">${eur}</span> <span class="ss-price-new">${discPrice}</span>`;
             } else {
                 price.dataset.eur = String(eur || "");
                 price.textContent = eur ? `${eur}` : "";

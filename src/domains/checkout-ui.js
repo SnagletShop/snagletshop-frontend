@@ -297,53 +297,25 @@ function showPaymentSuccessOverlay(message) {
 
     const overlay = document.createElement("div");
     overlay.id = "paymentSuccessOverlay";
-    overlay.style.cssText = [
-        "position:fixed",
-        "inset:0",
-        "z-index:100000",
-        "display:flex",
-        "align-items:center",
-        "justify-content:center",
-        "padding:16px",
-        "background:rgba(0,0,0,0.55)",
-        "backdrop-filter:blur(6px)"
-    ].join(";");
 
     const card = document.createElement("div");
-    card.style.cssText = [
-        "width:min(520px, calc(100vw - 32px))",
-        "background:#141414",
-        "color:#fff",
-        "border:1px solid rgba(255,255,255,0.12)",
-        "border-radius:14px",
-        "box-shadow:0 20px 60px rgba(0,0,0,0.65)",
-        "padding:16px 16px 14px",
-        "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif"
-    ].join(";");
+    card.className = "payment-success__card";
 
     const title = document.createElement("div");
     title.textContent = "Payment successful";
-    title.style.cssText = "font-size:16px;font-weight:700;margin-bottom:8px;";
+    title.className = "payment-success__title";
 
     const body = document.createElement("div");
     body.textContent = message || "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!";
-    body.style.cssText = "font-size:14px;opacity:0.92;line-height:1.35;margin-bottom:14px;";
+    body.className = "payment-success__body";
 
     const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;justify-content:flex-end;gap:10px;";
+    actions.className = "payment-success__actions";
 
     const track = document.createElement("button");
     track.type = "button";
     track.textContent = "Track order";
-    track.style.cssText = [
-        "padding:10px 14px",
-        "border-radius:10px",
-        "border:1px solid rgba(255,255,255,0.18)",
-        "background:rgba(255,255,255,0.14)",
-        "color:#fff",
-        "cursor:pointer",
-        "font-weight:700"
-    ].join(";");
+    track.className = "payment-success__track";
 
     track.onclick = () => {
         try {
@@ -357,15 +329,7 @@ function showPaymentSuccessOverlay(message) {
     const ok = document.createElement("button");
     ok.type = "button";
     ok.textContent = "OK";
-    ok.style.cssText = [
-        "padding:10px 14px",
-        "border-radius:10px",
-        "border:1px solid rgba(255,255,255,0.18)",
-        "background:rgba(255,255,255,0.08)",
-        "color:#fff",
-        "cursor:pointer",
-        "font-weight:600"
-    ].join(";");
+    ok.className = "payment-success__ok";
 
     if (window.latestOrderId && window.latestOrderPublicToken) {
         actions.appendChild(track);

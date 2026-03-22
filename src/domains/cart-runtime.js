@@ -104,10 +104,10 @@
       const price = Number(pick?.price || 0) || 0;
       const headline = nextTier ? `Last chance: add ${(nextTier.min - base).toFixed(2)}€ to unlock ${nextTier.pct}% OFF` : 'Last chance: frequently added';
       el.innerHTML = `
-        <div class="ss-lc-sub" style="margin-bottom:8px; font-weight:700;">${ctx.escHtml?.(headline) || headline}</div>
+        <div class="ss-lc-sub ss-lc-title">${ctx.escHtml?.(headline) || headline}</div>
         <div class="ss-lc-row">
           <img class="ss-lc-img" src="${ctx.escHtml?.(pick?.image || '') || ''}" alt="${ctx.escHtml?.(pick?.name || '') || ''}">
-          <div style="min-width:0;">
+          <div class="ss-lc-row-body">
             <div class="ss-lc-name">${ctx.escHtml?.(pick?.name || '') || ''}</div>
             <div class="ss-lc-sub">${price.toFixed(2)}€</div>
           </div>

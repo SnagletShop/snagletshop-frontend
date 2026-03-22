@@ -1,0 +1,140 @@
+/* Extracted and normalized modal/overlay styles */
+
+/* checkout modal */
+#paymentModal{
+          position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+          padding:24px 12px; background: rgba(0,0,0,.55);
+        }
+        #paymentModal .payment-modal-card{
+          width:min(520px, 100%); border-radius:20px; padding:18px 16px;
+          background: var(--Card_Background, #fff);
+          box-shadow: 0 12px 40px rgba(0,0,0,.35);
+          color: var(--Default_Text_Colour, #111);
+          position: relative;
+              max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+          border: 1px solid rgba(0,0,0,.08);
+        }
+        #paymentModal h2{ margin: 6px 0 12px; font-size: 1.25rem; }
+        #paymentModal .ss-marketing-optin{ display:flex; gap:10px; align-items:flex-start; margin:10px 0 2px; font-size:12px; line-height:1.35; opacity:.9; user-select:none; }
+        #paymentModal .ss-marketing-optin input{ margin-top:2px; width:16px; height:16px; accent-color: var(--Accent, #111); }
+        #paymentModal label{ display:block; margin-top:10px; font-size:.9rem; opacity:.85; }
+        #paymentModal .payment-modal-close{
+          position:absolute; right:14px; top:10px; font-size:26px; cursor:pointer; opacity:.85;
+        }
+        #paymentModal input, #paymentModal select{
+          width:100%; margin:6px 0; padding:10px 12px; border-radius:12px;
+          border: 1px solid rgba(0,0,0,.15);
+          background: var(--Input_Background, rgba(255,255,255,.92));
+          color: inherit;
+          outline: none;
+        }
+        #paymentModal input::placeholder{ color: rgba(0,0,0,.45); }
+        #paymentModal input:focus, #paymentModal select:focus{
+          border-color: rgba(0,0,0,.28);
+          box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+        #paymentModal #payment-element{
+          margin-top: 16px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(0,0,0,.15);
+          background: var(--Input_Background, rgba(255,255,255,.92));
+        }
+        #paymentModal #payment-request-button{ margin: 16px 0; }
+        #Name_Holder{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  
+        /* TomSelect (country dropdown) */
+        #paymentModal .ts-control, 
+        #paymentModal .ts-dropdown{
+          border-radius: 12px;
+          border: 1px solid rgba(0,0,0,.15);
+          background: var(--Input_Background, rgba(255,255,255,.92));
+          color: inherit;
+        }
+        #paymentModal .ts-dropdown .option{ padding: 10px 12px; }
+        #paymentModal .ts-dropdown .active{ background: rgba(0,0,0,.06); }
+  
+        .Submit_Button{
+          width:100%; margin-top:12px; padding:12px 14px; border-radius:14px; border:none;
+          background: var(--Accent, #2563eb); color:#fff; font-weight:600; cursor:pointer;
+        }
+        .Submit_Button:disabled{ opacity:.6; cursor:not-allowed; }
+  
+        /* Dark mode overrides (modal + TomSelect). Stripe PaymentElement is themed via Appearance in JS. */
+  
+        html.dark-mode #paymentModal input,
+        html.dark-mode #paymentModal select,
+        html.dark-mode #paymentModal #payment-element{
+          border: 1px solid rgba(255,255,255,.16);
+          background: rgba(255,255,255,.06);
+          color: inherit;
+        }
+        html.dark-mode #paymentModal input::placeholder{ color: rgba(255,255,255,.45); }
+        html.dark-mode #paymentModal input:focus,
+        html.dark-mode #paymentModal select:focus{
+          border-color: rgba(255,255,255,.28);
+          box-shadow: 0 0 0 3px rgba(59,130,246,.20);
+        }
+        html.dark-mode #paymentModal .payment-modal-close{ opacity:.9; }
+  
+        html.dark-mode #paymentModal .ts-control,
+        html.dark-mode #paymentModal .ts-dropdown{
+          border: 1px solid rgba(255,255,255,.16);
+          background: rgba(255,255,255,.06);
+          color: inherit;
+        }
+        html.dark-mode #paymentModal .ts-dropdown .active{ background: rgba(255,255,255,.12); }
+  
+        /* Last-chance upsell */
+        #paymentModal #ss-last-chance{
+          padding: 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(0,0,0,.10);
+          background: rgba(0,0,0,.02);
+        }
+        html.dark-mode #paymentModal #ss-last-chance{
+          border-color: rgba(255,255,255,.14);
+          background: rgba(255,255,255,.06);
+        }
+        #paymentModal .ss-lc-row{ display:flex; gap:10px; align-items:center; }
+        #paymentModal .ss-lc-img{ width:44px; height:44px; border-radius: 10px; object-fit:cover; flex:0 0 auto; background: rgba(0,0,0,.05); }
+        #paymentModal .ss-lc-name{ font-weight:700; font-size:.92rem; line-height:1.15; }
+        #paymentModal .ss-lc-sub{ font-size:.86rem; opacity:.85; }
+        #paymentModal .ss-lc-btn{
+          margin-left:auto; padding: 9px 12px; border-radius: 12px; cursor:pointer;
+          border: 1px solid rgba(0,0,0,.12); background: rgba(0,0,0,.03); font-weight:700;
+        }
+        html.dark-mode #paymentModal .ss-lc-btn{ border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: inherit; }
+
+/* order status modal */
+#orderStatusModal{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:12px;}
+#orderStatusModal .order-status-modal__card{width:min(720px,100%);max-height:calc(100vh - 24px);overflow:auto;background:var(--Modal_Background_Colour);border-radius:18px;padding:18px 18px 14px;box-shadow:0 20px 70px rgba(0,0,0,0.35);border:1px solid rgba(0,0,0,0.08);color:var(--Default_Text_Colour);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+.order-status-modal__header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.order-status-modal__title{font-size:18px;font-weight:800;}
+.order-status-modal__close{font-size:22px;line-height:1;border:none;background:transparent;cursor:pointer;padding:6px 10px;border-radius:10px;color:inherit;}
+.order-status-modal__form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px;}
+.order-status-modal__label{font-size:12px;opacity:0.75;margin-bottom:4px;}
+.order-status-modal__input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:var(--Input_Background,rgba(255,255,255,.92));color:inherit;}
+.order-status-modal__primary,.order-status-modal__view{padding:10px 14px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;}
+.order-status-modal__output{border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:12px;background:rgba(0,0,0,0.03);min-height:90px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;}
+.order-status-modal__recent{margin-top:12px;}
+.order-status-modal__recent-title{font-weight:800;margin-bottom:8px;font-size:13px;opacity:0.9;}
+.order-status-modal__recent-list{display:flex;flex-direction:column;gap:8px;}
+.order-status-modal__empty{font-size:12px;opacity:0.75;}
+.order-status-modal__row{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:10px 12px;background:rgba(0,0,0,0.02);}
+.order-status-modal__row-main{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.order-status-modal__row-id{font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.order-status-modal__row-date{font-size:11px;opacity:0.72;}
+.order-status-modal__row-actions{display:flex;gap:8px;align-items:center;}
+
+/* payment success overlay */
+#paymentSuccessOverlay{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);}
+.payment-success__card{width:min(520px,calc(100vw - 32px));background:#141414;color:#fff;border:1px solid rgba(255,255,255,0.12);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.65);padding:16px 16px 14px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+.payment-success__title{font-size:16px;font-weight:700;margin-bottom:8px;}
+.payment-success__body{font-size:14px;opacity:0.92;line-height:1.35;margin-bottom:14px;}
+.payment-success__actions{display:flex;justify-content:flex-end;gap:10px;}
+.payment-success__track,.payment-success__ok{padding:10px 14px;border-radius:10px;color:#fff;cursor:pointer;}
+.payment-success__track{border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.14);font-weight:700;}
+.payment-success__ok{border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);font-weight:600;}

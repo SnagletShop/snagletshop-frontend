@@ -55,7 +55,13 @@
 
     if (!deps?.getModalHistoryPushed?.() && !fromHistory) {
       try {
-        history.pushState({ index: deps?.getCurrentIndex?.(), modalOpen: true }, "", window.location.href);
+        const currentState = (history.state && typeof history.state === "object") ? history.state : {};
+        const nextIndex = Number.isFinite(deps?.getCurrentIndex?.()) ? deps.getCurrentIndex() : currentState.index;
+        history.pushState({
+          ...currentState,
+          index: Number.isFinite(nextIndex) ? nextIndex : -1,
+          modalOpen: true
+        }, "", window.location.href);
         deps?.setModalHistoryPushed?.(true);
       } catch {}
     } else if (fromHistory) {

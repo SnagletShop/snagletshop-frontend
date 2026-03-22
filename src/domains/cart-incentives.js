@@ -133,195 +133,7 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
   } finally { window.__ssComputingIncentives = false; }
 }
 function __ssEnsureCartIncentiveStyles() {
-  if (document.getElementById('__ssCartIncentiveStyles')) return;
-  const s = document.createElement('style'); s.id='__ssCartIncentiveStyles';
-  s.textContent = `
-    .ss-cart-inc{
-      background-color: var(--Modal_Background_Colour);
-      margin: 12px 0 8px;
-      padding: 2%;
-      border-radius: 14px;
-      font-family: 'Afacad', sans-serif;
-      border: 1px solid rgba(0,0,0,.10);
-      background: rgba(0,0,0,.02);
-    }
-    .ss-ci-wrap{
-      display: block;
-    }
-    .ss-ci-title{
-      color: var(--Default_Text_Colour) !important;
-      font-weight: 700;
-      font-size: .95rem;
-      margin-left: auto;
-      font-family: 'Afacad', sans-serif;
-      height: fit-content;
-    }
-    .ss-ci-sub{
-      font-size: .86rem;
-      opacity: .85;
-      margin-top: 4%;
-      margin-bottom: 2%;
-      color: var(--Default_Text_Colour);
-      font-family: 'Afacad', sans-serif;
-    }
-    .ss-ci-ticks-title{
-      margin-top: 6px;
-      font-size: .78rem;
-      opacity: .75;
-      text-align: center;
-    }
-    .ss-ci-bar{
-      position: relative;
-      width: 100%;
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.08);
-      overflow: visible;
-      margin-top: 8px;
-      color: var(--Default_Text_Colour) !important;
-      font-family: 'Afacad', sans-serif;
-    }
-    html.dark-mode .ss-ci-bar{
-      background: rgba(255,255,255,.12);
-    }
-    .ss-ci-fill{
-      position: absolute;
-      inset: 0;
-      width: 0%;
-      background: var(--Accent,#2563eb);
-      border-radius: 999px;
-    }
-    .ss-ci-ticks{
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-    .ss-ci-tick{
-      position: absolute;
-      top: 50%;
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      transform: translate(-50%,-50%);
-      background: rgba(255,255,255,.9);
-      border: 1px solid rgba(0,0,0,.18);
-      box-shadow: 0 1px 2px rgba(0,0,0,.12);
-    }
-    html.dark-mode .ss-ci-tick{
-      background: rgba(0,0,0,.35);
-      border-color: rgba(255,255,255,.35);
-      box-shadow: none;
-    }
-    .ss-ci-ticklbl{
-      position: absolute;
-      top: -18px;
-      font-size: .72rem;
-      font-weight: 600;
-      opacity: .8;
-      transform: translateX(-50%);
-      white-space: nowrap;
-    }
-    .Badges_Div{
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .ss-ci-badges{
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-    .ss-ci-badge{
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: .82rem;
-      border: 1px solid rgba(0,0,0,.10);
-      background: rgba(255,255,255,.75);
-      color: var(--Default_Text_Colour) !important;
-      background-color: var(--BasketReceipt_Background_Colour) !important;
-    }
-    html.dark-mode .ss-ci-badge{
-      border-color: rgba(255,255,255,.14);
-      background: rgba(0,0,0,.25);
-    }
-    .ss-ci-addons{
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1%;
-    }
-    .ss-ci-card{
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 10px;
-      border-radius: 14px;
-      border: 1px solid rgba(0,0,0,.10);
-      background: rgba(255,255,255,.85);
-      background-color: var(--BasketReceipt_Background_Colour) !important;
-    }
-    .ss-ci-card,.ss-ci-card *{
-      color: rgba(0,0,0,.92);
-    }
-    html.dark-mode .ss-ci-card,
-    html.dark-mode .ss-ci-card *{
-      color: rgba(255,255,255,.92);
-    }
-    html.dark-mode .ss-ci-card{
-      border-color: rgba(255,255,255,.14);
-      background: rgba(0,0,0,.25);
-    }
-    .ss-ci-img{
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      object-fit: cover;
-      flex: 0 0 auto;
-      background: rgba(0,0,0,.05);
-    }
-    .ss-ci-name{
-      font-weight: 650;
-      font-size: .9rem;
-      line-height: 1.15;
-    }
-    .ss-ci-price{
-      font-size: .86rem;
-      opacity: .85;
-    }
-    .ss-ci-btn{
-      margin-left: auto;
-      padding: 8px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(0,0,0,.12);
-      background: rgba(0,0,0,.03);
-      cursor: pointer;
-      font-weight: 650;
-    }
-    html.dark-mode .ss-ci-btn{
-      border-color: rgba(255,255,255,.16);
-      background: rgba(255,255,255,.06);
-      color: inherit;
-    }
-    .ss-ci-btn:hover{
-      filter: brightness(1.02);
-    }
-    @media (max-width:520px){
-      .ss-cart-inc{
-        padding: 4%;
-        padding-top: 5% !important;
-      }
-      .ss-ci-addons{
-        grid-template-columns: 1fr;
-      }
-      .Badges_Div{
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 6px;
-      }
-    }
-  `;
-  document.head.appendChild(s);
+  return true;
 }
 function __ssCartSigForSmartReco() {
   try {
@@ -551,13 +363,13 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     const desired = nextTier ? Math.max(3, nextTier.min - base) : 0; const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 }; const maxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4));
     __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems }); const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
     const badges=[]; if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind:'saved', eur:Number(inc.tierDiscountEUR) || 0 }); if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind:'bundle', eur:Number(inc.bundleDiscountEUR) || 0 }); if (shipEnabled && base >= shipThr) badges.push({ kind:'text', text:'Free shipping' });
-    const addonHTML = addons.length ? `<div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = `${window.location.origin}/?product=${nameEnc}${recoQ}`; if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}"><a href="${href}"  rel="noopener noreferrer" style="display:block;"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div style="min-width:0;"><a href="${href}"  rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
+    const addonHTML = addons.length ? `<div class="ss-ci-sub ss-ci-addons-title">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = `${window.location.origin}/?product=${nameEnc}${recoQ}`; if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}"><a href="${href}" rel="noopener noreferrer" class="ss-link-block"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div class="ss-ci-card-body ss-minw0"><a href="${href}" rel="noopener noreferrer" class="ss-link-reset"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
     const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
       if (b.kind === 'saved') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="saved" data-eur="${Number(b.eur || 0).toFixed(2)}">Saved ${Number(b.eur || 0).toFixed(2)}€</span>`;
       if (b.kind === 'bundle') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="bundle" data-eur="${Number(b.eur || 0).toFixed(2)}">Bundle -${Number(b.eur || 0).toFixed(2)}€</span>`;
       return `<span class="ss-ci-badge">${__ssEscHtml(b.text || '')}</span>`;
     }).join('')}</div>` : '';
-    return `<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"><div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}<div class="Badges_Div">${badgesHtml}<div class="ss-ci-title">${tierText}</div>${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}</div>${addonHTML}</div></div>`;
+    return `<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"><div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>${shipEnabled ? `<div class="ss-ci-bar ss-ci-bar--secondary" aria-hidden="true"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}<div class="Badges_Div">${badgesHtml}<div class="ss-ci-title">${tierText}</div>${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}</div>${addonHTML}</div></div>`;
   } catch { return ''; }
 }
 function __ssBindCartIncentives(rootEl) {
