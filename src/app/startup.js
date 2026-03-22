@@ -83,6 +83,7 @@
       try { if (typeof window.initializePrices === 'function') window.initializePrices(); } catch {}
       try { if (typeof window.observeNewProducts === 'function') window.observeNewProducts(); } catch {}
       try { if (typeof window.fetchExchangeRatesFromServer === 'function') await window.fetchExchangeRatesFromServer(); } catch {}
+      try { window.__SS_CATALOG_RUNTIME__?.reconcileRememberedPrices?.(); } catch {}
       try { if (typeof window.updateAllPrices === 'function') window.updateAllPrices(); } catch {}
     } catch (err) {
       console.warn('[ss startup] pricing init failed', err);

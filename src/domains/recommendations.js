@@ -78,6 +78,8 @@ function __ssRecoEnsureStyles() {
         overflow-x:auto;
         scroll-snap-type:x mandatory;
         -webkit-overflow-scrolling:touch;
+        overscroll-behavior-x:contain;
+        touch-action:pan-x;
         padding-bottom:10px;
   
         width:100%;
@@ -89,7 +91,7 @@ function __ssRecoEnsureStyles() {
       .RecoStrip{
         --reco-cols: 3;
         --reco-gap: 12px;
-        width:100%;
+        width:max-content;
         min-width:100%;
         box-sizing:border-box;
         display:grid;
@@ -110,6 +112,7 @@ function __ssRecoEnsureStyles() {
       }
   
    
+      .RecoCard{scroll-snap-align:start}
       .RecoCard:hover{background:rgba(255,255,255,.07)}
       .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
       .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
@@ -159,6 +162,28 @@ function __ssRecoGetSessionId() {
     }
 }
 
+function __ssRecoGetLayout(device) {
+    const mobile = String(device || "").toLowerCase() === "mobile";
+    return mobile
+        ? { visibleCount: 2, batchSize: 4, maxBatches: 10, maxItems: 40, swipeSmallPx: 28, swipeBigPx: 84 }
+        : { visibleCount: 7, batchSize: 7, maxBatches: 8, maxItems: 56, swipeSmallPx: 35, swipeBigPx: 140 };
+}
+
+function __ssRecoApplyLayout(recState, strip, ui = null) {
+    const layout = __ssRecoGetLayout(recState?.device);
+    if (!recState) return layout;
+    recState.visibleCount = Math.max(1, Number(layout.visibleCount || recState.visibleCount || 1) || 1);
+    recState.batchSize = Math.max(recState.visibleCount, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1);
+    recState.maxBatches = Math.max(1, Number(ui?.maxBatches || 0) || Number(layout.maxBatches || recState.maxBatches || 1) || 1);
+    recState.maxItems = Math.max(Number(ui?.maxItems || 0) || 0, Number(layout.maxItems || recState.maxItems || 0) || 0);
+    recState.swipeSmallPx = Math.max(5, Number(ui?.swipeSmallPx || 0) || Number(layout.swipeSmallPx || recState.swipeSmallPx || 35) || 35);
+    recState.swipeBigPx = Math.max(recState.swipeSmallPx + 12, Number(ui?.swipeBigPx || 0) || Number(layout.swipeBigPx || recState.swipeBigPx || 120) || 120);
+    try {
+        if (strip?.style?.setProperty) strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+    } catch { }
+    return layout;
+}
+
 function __ssRecoMaybeAttributeAddToCart(targetProductId) {
     try {
         const pid = String(targetProductId || "").trim();
@@ -196,6 +221,7 @@ function __ssRecoMaybeAttributeAddToCart(targetProductId) {
 async function __ssRecoRenderForProduct(product) {
     try {
         if (!product) return;
+        try { await window.__SS_CATALOG_RUNTIME__?.initProducts?.(); } catch { }
         const viewer = document.getElementById("Viewer");
         const pv = document.getElementById("Product_Viewer");
         if (!viewer || !pv) return;
@@ -208,6 +234,7 @@ async function __ssRecoRenderForProduct(product) {
 
         const sid = __ssRecoGetSessionId();
         const device = (window.innerWidth <= 700) ? "mobile" : "desktop";
+        const initialLayout = __ssRecoGetLayout(device);
 
         const recState = {
             widgetId: null,
@@ -217,12 +244,12 @@ async function __ssRecoRenderForProduct(product) {
             sourceProductId: (__ssResolvePidForRecs(product) || __ssGetCurrentPidFallback() || __ssIdNorm(product.productId)),
             currentProductId: __ssIdNorm(product.productId || (__ssResolvePidForRecs(product) || __ssGetCurrentPidFallback() || '')),
             device,
-            visibleCount: 3,
-            batchSize: 3,
-            maxBatches: 6,
-            maxItems: 0,
-            swipeSmallPx: 35,
-            swipeBigPx: 120,
+            visibleCount: initialLayout.visibleCount,
+            batchSize: initialLayout.batchSize,
+            maxBatches: initialLayout.maxBatches,
+            maxItems: initialLayout.maxItems,
+            swipeSmallPx: initialLayout.swipeSmallPx,
+            swipeBigPx: initialLayout.swipeBigPx,
             offset: 0,
             batchesLoaded: 0,
             loading: false,
@@ -329,12 +356,8 @@ async function __ssRecoRenderForProduct(product) {
                 if (!recState.listToken && typeof d.listToken === 'string' && d.listToken) recState.listToken = d.listToken;
 
                 const ui = (d.ui && typeof d.ui === "object") ? d.ui : {};
-                recState.visibleCount = Math.max(1, Number(ui.visibleCount || recState.visibleCount) || recState.visibleCount);
-                recState.batchSize = Math.max(1, Number(ui.batchSize || recState.batchSize) || recState.batchSize);
-                recState.maxBatches = Math.max(1, Number(ui.maxBatches || recState.maxBatches) || recState.maxBatches);
-                recState.maxItems = Math.max(0, Number(ui.maxItems || recState.maxItems) || recState.maxItems);
-                recState.swipeSmallPx = Math.max(5, Number(ui.swipeSmallPx || recState.swipeSmallPx) || recState.swipeSmallPx);
-                recState.swipeBigPx = Math.max(20, Number(ui.swipeBigPx || recState.swipeBigPx) || recState.swipeBigPx);
+                recState.serverUi = ui;
+                __ssRecoApplyLayout(recState, null, ui);
 
                 // cap limit client-side if server doesn't
                 const maxAdd = (recState.maxItems > 0) ? Math.max(0, recState.maxItems - recState.offset) : 9999;
@@ -389,8 +412,12 @@ async function __ssRecoRenderForProduct(product) {
 
         function buildCatalogFallbackBatch() {
             try {
+                const routeRelated = Array.isArray(window.__SS_SSR_ROUTE_DATA__?.relatedProductIds)
+                    ? window.__SS_SSR_ROUTE_DATA__.relatedProductIds.map((x) => __ssIdNorm(x)).filter(Boolean)
+                    : [];
                 const sourceCats = new Set((Array.isArray(product?.categories) ? product.categories : []).map((x) => String(x || "").trim()).filter(Boolean));
                 const exSet = (recState.excludeSet instanceof Set) ? recState.excludeSet : new Set();
+                const byId = (window.productsById && typeof window.productsById === "object") ? window.productsById : {};
                 const toRecoItem = (p, idx) => ({
                     productId: __ssIdNorm(p?.productId || p?.id || ""),
                     name: String(p?.name || ""),
@@ -400,6 +427,23 @@ async function __ssRecoRenderForProduct(product) {
                     productLink: String(p?.productLink || p?.link || ""),
                     position: idx + 1
                 });
+                if (routeRelated.length) {
+                    const items = [];
+                    for (const pid of routeRelated) {
+                        if (!pid || exSet.has(pid)) continue;
+                        const hit = byId?.[pid];
+                        if (!hit || typeof hit !== "object") continue;
+                        items.push(toRecoItem(hit, items.length));
+                        if (items.length >= Math.max(1, Number(recState.batchSize || 4) || 4)) break;
+                    }
+                    if (items.length) {
+                        recState.hasMore = routeRelated.length > items.length;
+                        return {
+                            d: { ok: true, widgetId: "ssr_related_fallback", sourceProductId: recState.sourceProductId, hasMore: recState.hasMore, token: null, listToken: null },
+                            items
+                        };
+                    }
+                }
                 const pick = (sameCategoryOnly) => {
                     const out = [];
                     const flat = __ssGetCatalogFlat();
@@ -471,9 +515,10 @@ async function __ssRecoRenderForProduct(product) {
 
         const strip = document.createElement("div");
         strip.className = "RecoStrip";
-        strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+        __ssRecoApplyLayout(recState, strip, recState.serverUi);
 
         viewport.appendChild(strip);
+        let loadMoreObserver = null;
 
         __ssEnsureContributionProducts();
         const flat = (Array.isArray(window.__ssContributionCache?.items) && window.__ssContributionCache.items.length)
@@ -699,6 +744,21 @@ async function __ssRecoRenderForProduct(product) {
                     });
                 }
             } catch { }
+            try { bindLoadMoreObserver(); } catch { }
+        }
+
+        function bindLoadMoreObserver() {
+            try { loadMoreObserver?.disconnect?.(); } catch { }
+            loadMoreObserver = null;
+            const cards = strip.querySelectorAll(".RecoCard");
+            const tail = cards[cards.length - 1];
+            if (!tail || typeof IntersectionObserver !== "function") return;
+            loadMoreObserver = new IntersectionObserver((entries) => {
+                try {
+                    if (entries.some((entry) => entry.isIntersecting || entry.intersectionRatio >= 0.66)) void maybeLoadMore(true);
+                } catch { }
+            }, { root: viewport, threshold: [0.66, 0.9] });
+            try { loadMoreObserver.observe(tail); } catch { }
         }
 
         appendItems(firstResolved.items);
@@ -722,7 +782,7 @@ async function __ssRecoRenderForProduct(product) {
                     const batch = await fetchBatch();
                     if (!batch || !batch.items || !batch.items.length) break;
                     appendItems(batch.items);
-                    strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+                    __ssRecoApplyLayout(recState, strip, recState.serverUi);
                 }
                 __ssRecoUpdateNav();
             } catch { }
@@ -749,18 +809,22 @@ async function __ssRecoRenderForProduct(product) {
             return stride > 0 ? Math.round(viewport.scrollLeft / stride) : 0;
         }
 
-        async function maybeLoadMore() {
+        async function maybeLoadMore(force = false) {
             try {
-                const idx = currentIndex();
-                const total = strip.querySelectorAll(".RecoCard").length;
-                const remaining = total - (idx + recState.visibleCount);
-                const nearEnd = remaining <= Math.max(2, recState.visibleCount);
-                if (!nearEnd) return;
+                if (!force) {
+                    const cards = strip.querySelectorAll(".RecoCard");
+                    const tail = cards[cards.length - 1];
+                    if (tail) {
+                        const viewRect = viewport.getBoundingClientRect();
+                        const tailRect = tail.getBoundingClientRect();
+                        const seenLastCard = tailRect.left < (viewRect.right + 12) && tailRect.right > (viewRect.left + 12);
+                        if (!seenLastCard) return;
+                    }
+                }
                 const batch = await fetchBatch();
                 if (batch && batch.items && batch.items.length) {
                     appendItems(batch.items);
-                    // refresh cols in case config changed
-                    strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+                    __ssRecoApplyLayout(recState, strip, recState.serverUi);
                     __ssRecoUpdateNav();
                 }
             } catch { }
@@ -851,7 +915,7 @@ async function __ssRecoRenderForProduct(product) {
         viewport.addEventListener('scroll', () => { __ssRecoUpdateNav(); maybeLoadMore(); }, { passive: true });
         window.addEventListener('resize', () => {
             recState.device = (window.innerWidth <= 700) ? "mobile" : "desktop";
-            strip.style.setProperty("--reco-cols", String(recState.visibleCount));
+            __ssRecoApplyLayout(recState, strip, recState.serverUi);
             __ssRecoUpdateNav();
         });
 
