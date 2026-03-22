@@ -2,6 +2,7 @@
 let __ssSmartCartRecoCache = { sig: "", desired: 0, token: "", items: [] };
 let __ssSmartCartRecoPending = null;
 let __ssSmartRecoRerenderTimer = null;
+let __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || { settledKey: "", renderedKey: "", failedKey: "", failedAt: 0 };
 let __ssBasketRenderInProgress = false;
 let __ssBasketNeedsRerender = false;
 let __ssBasketRerenderQueued = false;
@@ -10,6 +11,7 @@ let __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] };
 window.__ssSmartCartRecoCache = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
 window.__ssSmartCartRecoPending = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
 window.__ssSmartRecoRerenderTimer = window.__ssSmartRecoRerenderTimer || __ssSmartRecoRerenderTimer;
+window.__ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
 window.__ssBasketRenderInProgress = !!window.__ssBasketRenderInProgress;
 window.__ssBasketNeedsRerender = !!window.__ssBasketNeedsRerender;
 window.__ssBasketRerenderQueued = !!window.__ssBasketRerenderQueued;
@@ -18,7 +20,9 @@ window.__ssAddonPoolSortedCache = window.__ssAddonPoolSortedCache || __ssAddonPo
 
 function __ssGetCartIncentivesConfig() {
   const cfg = window?.preloadedData?.storefrontConfig?.cartIncentives;
+  const fallbackCfg = window?.storefrontCfg?.cartIncentives;
   if (cfg && typeof cfg === "object") return cfg;
+  if (fallbackCfg && typeof fallbackCfg === "object") return fallbackCfg;
   return {
     enabled: true,
     freeShipping: { enabled: false, thresholdEUR: 0, shippingFeeEUR: 0 },
@@ -131,16 +135,226 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart) {
 function __ssEnsureCartIncentiveStyles() {
   if (document.getElementById('__ssCartIncentiveStyles')) return;
   const s = document.createElement('style'); s.id='__ssCartIncentiveStyles';
-  s.textContent = `.ss-ci-title{font-weight:700;font-size:.95rem}.ss-ci-sub{font-size:.86rem;opacity:.85}.ss-ci-ticks-title{margin-top:6px;font-size:.78rem;opacity:.75;text-align:center}.ss-ci-bar{position:relative;width:100%;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:visible;margin-top:8px}html.dark-mode .ss-ci-bar{background:rgba(255,255,255,.12)}.ss-ci-fill{position:absolute;inset:0;width:0%;background:var(--Accent,#2563eb);border-radius:999px}.ss-ci-ticks{position:absolute;inset:0;pointer-events:none}.ss-ci-tick{position:absolute;top:50%;width:8px;height:8px;border-radius:999px;transform:translate(-50%,-50%);background:rgba(255,255,255,.9);border:1px solid rgba(0,0,0,.18);box-shadow:0 1px 2px rgba(0,0,0,.12)}html.dark-mode .ss-ci-tick{background:rgba(0,0,0,.35);border-color:rgba(255,255,255,.35);box-shadow:none}.ss-ci-ticklbl{position:absolute;top:-18px;font-size:.72rem;font-weight:600;opacity:.8;transform:translateX(-50%);white-space:nowrap}.ss-ci-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ss-ci-badge{padding:6px 10px;border-radius:999px;font-size:.82rem;border:1px solid rgba(0,0,0,.10);background:rgba(255,255,255,.75)}html.dark-mode .ss-ci-badge{border-color:rgba(255,255,255,.14);background:rgba(0,0,0,.25)}@media (max-width:520px){.ss-ci-addons{grid-template-columns:1fr}}.ss-ci-card{display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;border:1px solid rgba(0,0,0,.10);background:rgba(255,255,255,.85)}.ss-ci-card,.ss-ci-card *{color:rgba(0,0,0,.92)}html.dark-mode .ss-ci-card,html.dark-mode .ss-ci-card *{color:rgba(255,255,255,.92)}html.dark-mode .ss-ci-card{border-color:rgba(255,255,255,.14);background:rgba(0,0,0,.25)}.ss-ci-img{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;background:rgba(0,0,0,.05)}.ss-ci-name{font-weight:650;font-size:.9rem;line-height:1.15}.ss-ci-price{font-size:.86rem;opacity:.85}.ss-ci-btn{margin-left:auto;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:rgba(0,0,0,.03);cursor:pointer;font-weight:650}html.dark-mode .ss-ci-btn{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:inherit}.ss-ci-btn:hover{filter:brightness(1.02)}`;
+  s.textContent = `
+    .ss-cart-inc{
+      background-color: var(--Modal_Background_Colour);
+      margin: 12px 0 8px;
+      padding: 2%;
+      border-radius: 14px;
+      font-family: 'Afacad', sans-serif;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.02);
+    }
+    .ss-ci-wrap{
+      display: block;
+    }
+    .ss-ci-title{
+      color: var(--Default_Text_Colour) !important;
+      font-weight: 700;
+      font-size: .95rem;
+      margin-left: auto;
+      font-family: 'Afacad', sans-serif;
+      height: fit-content;
+    }
+    .ss-ci-sub{
+      font-size: .86rem;
+      opacity: .85;
+      margin-top: 4%;
+      margin-bottom: 2%;
+      color: var(--Default_Text_Colour);
+      font-family: 'Afacad', sans-serif;
+    }
+    .ss-ci-ticks-title{
+      margin-top: 6px;
+      font-size: .78rem;
+      opacity: .75;
+      text-align: center;
+    }
+    .ss-ci-bar{
+      position: relative;
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.08);
+      overflow: visible;
+      margin-top: 8px;
+      color: var(--Default_Text_Colour) !important;
+      font-family: 'Afacad', sans-serif;
+    }
+    html.dark-mode .ss-ci-bar{
+      background: rgba(255,255,255,.12);
+    }
+    .ss-ci-fill{
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background: var(--Accent,#2563eb);
+      border-radius: 999px;
+    }
+    .ss-ci-ticks{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .ss-ci-tick{
+      position: absolute;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      transform: translate(-50%,-50%);
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(0,0,0,.18);
+      box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    }
+    html.dark-mode .ss-ci-tick{
+      background: rgba(0,0,0,.35);
+      border-color: rgba(255,255,255,.35);
+      box-shadow: none;
+    }
+    .ss-ci-ticklbl{
+      position: absolute;
+      top: -18px;
+      font-size: .72rem;
+      font-weight: 600;
+      opacity: .8;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .Badges_Div{
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .ss-ci-badges{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .ss-ci-badge{
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .82rem;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.75);
+      color: var(--Default_Text_Colour) !important;
+      background-color: var(--BasketReceipt_Background_Colour) !important;
+    }
+    html.dark-mode .ss-ci-badge{
+      border-color: rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+    }
+    .ss-ci-addons{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1%;
+    }
+    .ss-ci-card{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.85);
+      background-color: var(--BasketReceipt_Background_Colour) !important;
+    }
+    .ss-ci-card,.ss-ci-card *{
+      color: rgba(0,0,0,.92);
+    }
+    html.dark-mode .ss-ci-card,
+    html.dark-mode .ss-ci-card *{
+      color: rgba(255,255,255,.92);
+    }
+    html.dark-mode .ss-ci-card{
+      border-color: rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+    }
+    .ss-ci-img{
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex: 0 0 auto;
+      background: rgba(0,0,0,.05);
+    }
+    .ss-ci-name{
+      font-weight: 650;
+      font-size: .9rem;
+      line-height: 1.15;
+    }
+    .ss-ci-price{
+      font-size: .86rem;
+      opacity: .85;
+    }
+    .ss-ci-btn{
+      margin-left: auto;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.12);
+      background: rgba(0,0,0,.03);
+      cursor: pointer;
+      font-weight: 650;
+    }
+    html.dark-mode .ss-ci-btn{
+      border-color: rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color: inherit;
+    }
+    .ss-ci-btn:hover{
+      filter: brightness(1.02);
+    }
+    @media (max-width:520px){
+      .ss-cart-inc{
+        padding: 4%;
+        padding-top: 5% !important;
+      }
+      .ss-ci-addons{
+        grid-template-columns: 1fr;
+      }
+      .Badges_Div{
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+  `;
   document.head.appendChild(s);
 }
-function __ssCartSigForSmartReco() { try { const names = Object.values(basket || {}).map(i => String(i?.name || '').trim()).filter(Boolean).sort(); return btoa(unescape(encodeURIComponent(names.join('|')))).slice(0,64); } catch { return ''; } }
+function __ssCartSigForSmartReco() {
+  try {
+    const rows = Object.values(basket || {}).map((item) => ({
+      productId: String(item?.productId || item?.pid || item?.id || '').trim(),
+      name: String(item?.name || '').trim(),
+      qty: Math.max(1, parseInt(item?.quantity ?? item?.qty ?? 1, 10) || 1),
+    })).filter((item) => item.productId || item.name);
+    rows.sort((a, b) => {
+      const ak = `${a.productId}|${a.name}`;
+      const bk = `${b.productId}|${b.name}`;
+      return ak.localeCompare(bk) || (a.qty - b.qty);
+    });
+    return rows.map((item) => `${item.productId}|${item.name}|${item.qty}`).join('~').slice(0, 512);
+  } catch {
+    return '';
+  }
+}
 function __ssSmartRecoCacheTtlMs(cache) {
   const items = Array.isArray(cache?.items) ? cache.items : [];
   return items.length ? (5 * 60 * 1000) : 45 * 1000;
 }
 function __ssSmartRecoRequestKey(sig, desiredKey, limit) {
   return `${String(sig || '')}|${Number(desiredKey || 0).toFixed(2)}|${Math.max(1, Math.min(12, Number(limit || 4) || 4))}`;
+}
+function __ssSmartRecoResponseKey(requestKey, cache) {
+  const items = Array.isArray(cache?.items) ? cache.items : [];
+  const ids = items
+    .map((item) => String(item?.productId || item?.key || item?.itemKey || item?.name || '').trim())
+    .filter(Boolean)
+    .slice(0, 32)
+    .join('|');
+  return `${String(requestKey || '')}|${String(cache?.token || '')}|${cache?.disabled ? '1' : '0'}|${cache?.degraded ? '1' : '0'}|${items.length}|${ids}`;
 }
 function __ssSmartRecoCacheIsFresh(sig, desiredKey) {
   const cache = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
@@ -154,14 +368,28 @@ function __ssSmartRecoCacheIsFresh(sig, desiredKey) {
 async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
   try {
     const sig = __ssCartSigForSmartReco(); const desired = Math.max(0, Number(desiredEUR || 0) || 0); const desiredKey = Math.round(desired * 100) / 100;
-    if (__ssSmartRecoCacheIsFresh(sig, desiredKey)) return window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
     const requestKey = __ssSmartRecoRequestKey(sig, desiredKey, limit);
+    if (__ssSmartRecoCacheIsFresh(sig, desiredKey)) {
+      const cacheHit = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
+      __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
+      __ssSmartRecoFlowState.settledKey = requestKey;
+      window.__ssSmartRecoFlowState = __ssSmartRecoFlowState;
+      return cacheHit;
+    }
     const pending = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
     if (pending && pending.key === requestKey && pending.promise) return pending.promise;
     const cartItems = Object.values(basket || {}).map(i => ({ name: String(i?.name || '').trim() })).filter(x => x.name);
+    __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
     const body = { placement:'cart_topup_v1', sessionId:String(window.__ssSessionId || ''), cartItems, desiredEUR:desired, limit:Math.max(1, Math.min(12, Number(limit || 4) || 4)), context:{ lang:String(window.currentLanguage || ''), device:(window.innerWidth <= 700 ? 'mobile' : 'desktop'), page:'cart', strictMaxPrice:true, optimization:'profit_popular', profitTieEUR:0.05, enableRecoDiscounts:true } };
     const promise = window.__SS_RECOMMENDATIONS__.getSmartRecommendations(body).then((data) => {
-      if (!data || !data.ok || !Array.isArray(data.items)) return null;
+      __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
+      __ssSmartRecoFlowState.failedKey = "";
+      __ssSmartRecoFlowState.failedAt = 0;
+      __ssSmartRecoFlowState.settledKey = requestKey;
+      if (!data || !data.ok || !Array.isArray(data.items)) {
+        window.__ssSmartRecoFlowState = __ssSmartRecoFlowState;
+        return null;
+      }
       __ssSmartCartRecoCache = {
         sig,
         desired: desiredKey,
@@ -172,8 +400,15 @@ async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
         at: Date.now()
       };
       window.__ssSmartCartRecoCache = __ssSmartCartRecoCache;
+      window.__ssSmartRecoFlowState = __ssSmartRecoFlowState;
       return __ssSmartCartRecoCache;
-    }).catch(() => null).finally(() => {
+    }).catch(() => {
+      __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
+      __ssSmartRecoFlowState.failedKey = requestKey;
+      __ssSmartRecoFlowState.failedAt = Date.now();
+      window.__ssSmartRecoFlowState = __ssSmartRecoFlowState;
+      return null;
+    }).finally(() => {
       const cur = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
       if (cur && cur.key === requestKey) {
         __ssSmartCartRecoPending = null;
@@ -188,13 +423,36 @@ async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
 function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
   try {
     const sig = __ssCartSigForSmartReco(); const desired = Math.max(0, Number(desiredEUR || 0) || 0); const desiredKey = Math.round(desired * 100) / 100;
+    const requestKey = __ssSmartRecoRequestKey(sig, desiredKey, limit);
+    __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
     const cacheValid = __ssSmartRecoCacheIsFresh(sig, desiredKey);
     if (cacheValid) return;
+    if (__ssSmartRecoFlowState.settledKey === requestKey) return;
+    if (__ssSmartRecoFlowState.failedKey === requestKey && (Date.now() - Number(__ssSmartRecoFlowState.failedAt || 0)) < 60 * 1000) return;
+    const pending = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
+    if (pending && pending.key === requestKey && pending.promise) return;
     const sigBefore = sig;
     __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
-      if (!cache || !Array.isArray(cache.items) || !cache.items.length) return; const sigAfter = __ssCartSigForSmartReco(); if (sigBefore !== sigAfter) return;
+      const responseKey = __ssSmartRecoResponseKey(requestKey, cache);
+      if (!cache || !Array.isArray(cache.items) || !cache.items.length) {
+        __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
+        __ssSmartRecoFlowState.renderedKey = responseKey;
+        window.__ssSmartRecoFlowState = __ssSmartRecoFlowState;
+        return;
+      }
+      const sigAfter = __ssCartSigForSmartReco(); if (sigBefore !== sigAfter) return;
+      __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
+      if (__ssSmartRecoFlowState.renderedKey === responseKey) return;
       try { if (__ssSmartRecoRerenderTimer) clearTimeout(__ssSmartRecoRerenderTimer); } catch {}
-      __ssSmartRecoRerenderTimer = setTimeout(() => { try { if (__ssCartSigForSmartReco() !== sigBefore) return; __ssRequestBasketRerender(); } catch {} }, 180); window.__ssSmartRecoRerenderTimer = __ssSmartRecoRerenderTimer;
+      __ssSmartRecoRerenderTimer = setTimeout(() => {
+        try {
+          if (__ssCartSigForSmartReco() !== sigBefore) return;
+          __ssSmartRecoFlowState = window.__ssSmartRecoFlowState || __ssSmartRecoFlowState;
+          __ssSmartRecoFlowState.renderedKey = responseKey;
+          window.__ssSmartRecoFlowState = __ssSmartRecoFlowState;
+          __ssRequestBasketRerender();
+        } catch {}
+      }, 180); window.__ssSmartRecoRerenderTimer = __ssSmartRecoRerenderTimer;
     }).catch(() => {});
   } catch {}
 }
@@ -288,13 +546,18 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     const tierProgressGlobal = Math.max(0, Math.min(100, (base / tierScaleMax) * 100));
     const tierTicksHTML = (() => { if (!tiers.length) return ''; const parts=[]; for (const t of tiers) { const min=Math.max(0, Number(t?.minEUR || 0) || 0); const pct=Math.max(0, Number(t?.pct || 0) || 0); if (!min || !pct) continue; const left=Math.max(0, Math.min(100, (min / tierScaleMax) * 100)); parts.push(`<span class="ss-ci-tick" style="left:${left.toFixed(2)}%"></span>`); parts.push(`<span class="ss-ci-ticklbl" style="left:${left.toFixed(2)}%">${pct}%</span>`); } return parts.length ? `<div class="ss-ci-ticks">${parts.join('')}</div>` : ''; })();
     const shipCfg = cfg?.freeShipping || {}; const shipEnabled = !!shipCfg?.enabled && Number(shipCfg?.shippingFeeEUR || 0) > 0 && Number(shipCfg?.thresholdEUR || 0) > 0; const shipThr = Math.max(0, Number(shipCfg?.thresholdEUR || 0) || 0);
+    const shipProg = shipEnabled ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
     const shipText = shipEnabled ? (base >= shipThr ? 'Free shipping unlocked' : (() => { const needEUR = Math.max(0, (shipThr - base)); return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`; })()) : '';
     const desired = nextTier ? Math.max(3, nextTier.min - base) : 0; const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 }; const maxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4));
     __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems }); const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
     const badges=[]; if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind:'saved', eur:Number(inc.tierDiscountEUR) || 0 }); if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind:'bundle', eur:Number(inc.bundleDiscountEUR) || 0 }); if (shipEnabled && base >= shipThr) badges.push({ kind:'text', text:'Free shipping' });
     const addonHTML = addons.length ? `<div class="ss-ci-sub" style="margin-top:10px;">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = `${window.location.origin}/?product=${nameEnc}${recoQ}`; if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}"><a href="${href}"  rel="noopener noreferrer" style="display:block;"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div style="min-width:0;"><a href="${href}"  rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
-    const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map(b => b.kind === 'text' ? `<span class="ss-ci-badge">${__ssEscHtml(b.text || '')}</span>` : `<span class="ss-ci-badge basket-item-price" data-eur="${Number(b.eur || 0).toFixed(2)}">Saved ${Number(b.eur || 0).toFixed(2)}€</span>`).join('')}</div>` : '';
-    return `<div class="ss-ci-wrap"><div class="ss-ci-title">Boost your savings</div><div class="ss-ci-sub">${tierText}</div><div class="ss-ci-bar">${tierTicksHTML}<div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(2)}%"></div></div>${shipText ? `<div class="ss-ci-sub" style="margin-top:8px;">${shipText}</div>` : ''}${badgesHtml}${addonHTML}</div>`;
+    const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
+      if (b.kind === 'saved') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="saved" data-eur="${Number(b.eur || 0).toFixed(2)}">Saved ${Number(b.eur || 0).toFixed(2)}€</span>`;
+      if (b.kind === 'bundle') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="bundle" data-eur="${Number(b.eur || 0).toFixed(2)}">Bundle -${Number(b.eur || 0).toFixed(2)}€</span>`;
+      return `<span class="ss-ci-badge">${__ssEscHtml(b.text || '')}</span>`;
+    }).join('')}</div>` : '';
+    return `<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"><div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>${shipEnabled ? `<div class="ss-ci-bar" aria-hidden="true" style="margin-top:8px;"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}<div class="Badges_Div">${badgesHtml}<div class="ss-ci-title">${tierText}</div>${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}</div>${addonHTML}</div></div>`;
   } catch { return ''; }
 }
 function __ssBindCartIncentives(rootEl) {

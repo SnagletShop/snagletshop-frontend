@@ -147,21 +147,34 @@ function __ssRecoEnsureStyles() {
     document.head.appendChild(s);
 }
 
-function __ssRecoGetExcludeIds() {
+function __ssRecoGetExcludeIds(sourceProductId = "") {
+    const fallbackPid = (() => {
         try {
-            const b = (typeof readBasket === "function") ? readBasket() : (() => { try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; } })();
-            const ids = new Set();
-            Object.values(b || {}).forEach((it) => {
-                const pid = String(it?.productId || "").trim();
-                if (pid) ids.add(pid);
-            });
-            // Also exclude the product currently being viewed
-            if (recState.sourceProductId) ids.add(String(recState.sourceProductId));
-            return Array.from(ids);
+            return __ssIdNorm(
+                sourceProductId ||
+                window.__ssCurrentProductId ||
+                (typeof __ssGetCurrentPidFallback === "function" ? __ssGetCurrentPidFallback() : "")
+            );
         } catch {
-            return recState.sourceProductId ? [String(recState.sourceProductId)] : [];
+            return "";
         }
+    })();
+
+    try {
+        const b = (typeof readBasket === "function")
+            ? readBasket()
+            : (() => { try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; } })();
+        const ids = new Set();
+        Object.values(b || {}).forEach((it) => {
+            const pid = __ssIdNorm(it?.productId || "");
+            if (pid) ids.add(pid);
+        });
+        if (fallbackPid && !__ssIsBadId(fallbackPid)) ids.add(fallbackPid);
+        return Array.from(ids);
+    } catch {
+        return (fallbackPid && !__ssIsBadId(fallbackPid)) ? [fallbackPid] : [];
     }
+}
 
 function __ssRecoGetSessionId() {
     const k = "ss_reco_sid_v1";
