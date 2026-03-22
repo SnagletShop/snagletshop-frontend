@@ -56,6 +56,7 @@ function searchProducts(forcedQuery = null) {
     for (const input of inputs) input.value = rawQuery;
     const viewer = document.getElementById("Viewer");
     if (!viewer) return;
+    try { window.__ssPrimePriceCacheFromDom?.(viewer); } catch {}
     viewer.innerHTML = "";
     const db = window.productsDatabase || window.products || {};
     let results = [];

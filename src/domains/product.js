@@ -378,6 +378,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
         return;
     }
 
+    try { window.__ssPrimePriceCacheFromDom?.(viewer); } catch {}
     try { if (typeof window.__ssShowProductPageSkeleton === 'function') window.__ssShowProductPageSkeleton(); } catch {}
     try { if (typeof window.__ssScrollToTopForProductSkeleton === 'function') window.__ssScrollToTopForProductSkeleton(); } catch {}
     try { removeSortContainer(); } catch { }

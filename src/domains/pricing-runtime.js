@@ -71,6 +71,11 @@
     if (Number.isFinite(byId) && byId > 0) return byId;
     const byName = identity.name ? parseLoosePrice(cache.byName?.[identity.name]) : NaN;
     if (Number.isFinite(byName) && byName > 0) return byName;
+    const domPrice = findDomPriceByIdentity(identity);
+    if (Number.isFinite(domPrice) && domPrice > 0) {
+      rememberProductPrice(identity, domPrice);
+      return domPrice;
+    }
     return 0;
   }
 
@@ -117,6 +122,34 @@
     return remembered;
   }
 
+  function findDomPriceByIdentity(identity, root = document) {
+    const wantedId = normalizeIdentity(identity?.id || '');
+    const wantedName = normalizeIdentity(identity?.name || '');
+    if (!wantedId && !wantedName) return 0;
+    const scope = isRootNode(root) ? root : document;
+    try {
+      const elements = scope.querySelectorAll(PRICE_SELECTOR);
+      for (const element of elements) {
+        const current = getElementIdentity(element);
+        const idMatches = !!wantedId && !!current.id && current.id === wantedId;
+        const nameMatches = !!wantedName && !!current.name && current.name === wantedName;
+        if (!idMatches && !nameMatches) continue;
+        const direct = parseLoosePrice(element?.dataset?.eur);
+        if (Number.isFinite(direct) && direct > 0) {
+          rememberElementPrice(element, direct);
+          return direct;
+        }
+        const fromText = parseLoosePrice(String(element?.textContent || ''));
+        if (Number.isFinite(fromText) && fromText > 0) {
+          try { element.dataset.eur = String(fromText); } catch {}
+          rememberElementPrice(element, fromText);
+          return fromText;
+        }
+      }
+    } catch {}
+    return 0;
+  }
+
   function primePriceCacheFromDom(root = document) {
     const scope = isRootNode(root) ? root : document;
     try {
@@ -145,6 +178,12 @@
       try { element.dataset.eur = String(remembered); } catch {}
       return remembered;
     }
+    const textPrice = parseLoosePrice(String(element?.textContent || ''));
+    if (Number.isFinite(textPrice) && textPrice > 0) {
+      try { element.dataset.eur = String(textPrice); } catch {}
+      rememberElementPrice(element, textPrice);
+      return textPrice;
+    }
     return currentPrice;
   }
 
@@ -167,13 +206,19 @@
   }
 
   function normalizeValueArgs(firstArg, secondArg) {
-    if (isRuntimeCtx(firstArg)) return { ctx: firstArg, value: secondArg };
+    if (typeof secondArg !== 'undefined') {
+      return { ctx: isRuntimeCtx(firstArg) ? firstArg : null, value: secondArg };
+    }
+    if (isRuntimeCtx(firstArg)) return { ctx: firstArg, value: undefined };
     return { ctx: null, value: firstArg };
   }
 
   function normalizeRootArgs(firstArg, secondArg) {
+    if (typeof secondArg !== 'undefined') {
+      return { ctx: isRuntimeCtx(firstArg) ? firstArg : null, root: isRootNode(secondArg) ? secondArg : document };
+    }
     if (isRuntimeCtx(firstArg)) {
-      return { ctx: firstArg, root: isRootNode(secondArg) ? secondArg : document };
+      return { ctx: firstArg, root: document };
     }
     return { ctx: null, root: isRootNode(firstArg) ? firstArg : document };
   }
@@ -241,7 +286,8 @@
     let converted = (Number.isFinite(eur) ? eur : 0) * (Number.isFinite(rate) && rate > 0 ? rate : 1);
 
     const selectedCountry = localStorage.getItem('detectedCountry') || 'US';
-    const tariff = Number(tariffMultipliers?.[selectedCountry] ?? 0) || 0;
+    const rawTariff = Number(tariffMultipliers?.[selectedCountry] ?? 0);
+    const tariff = (Number.isFinite(rawTariff) && rawTariff >= 0) ? rawTariff : 0;
 
     if (getApplyTariffFlag()) {
       converted *= (1 + tariff);

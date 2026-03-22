@@ -1,4 +1,16 @@
 (function (window) {
+function normalizeTariffMap(raw) {
+    const input = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+    const out = {};
+    for (const [code, value] of Object.entries(input)) {
+        const key = String(code || "").trim().toUpperCase();
+        if (!key) continue;
+        const num = Number(value);
+        out[key] = (Number.isFinite(num) && num >= 0) ? num : 0;
+    }
+    return out;
+}
+
 async function fetchTariffsFromServer() {
     const svc = window.__SS_PRICING_SERVICE__;
     if (!svc?.getTariffs) throw new Error('Pricing service unavailable: getTariffs');
@@ -11,7 +23,7 @@ async function fetchTariffsFromServer() {
             : null;
 
     if (!obj) throw new Error("Invalid tariffs payload.");
-    return obj;
+    return normalizeTariffMap(obj);
 }
 
 async function fetchCountriesFromServer() {
@@ -40,6 +52,13 @@ async function fetchStorefrontConfigFromServer() {
 async function fetchExchangeRatesFromServer() {
     const data = await (window.__SS_PRICING_SERVICE__?.getExchangeRates ? window.__SS_PRICING_SERVICE__.getExchangeRates() : (async () => { let res = null; try { res = await window.__SS_API__.request('/api/proxy-rates', { cache: 'no-store' }); if (!res.ok) res = null; } catch { res = null; } if (!res) { res = await window.__SS_API__.request('/rates', { cache: 'no-store' }); } if (!res.ok) throw new Error(`Failed to fetch exchange rates (${res.status})`); return res.json().catch(() => null); })());
     if (!data || !data.rates) throw new Error('Invalid exchange rates payload.');
+    const safeRates = (data.rates && typeof data.rates === "object" && !Array.isArray(data.rates)) ? { ...data.rates } : {};
+    try { exchangeRates = safeRates; } catch {}
+    try {
+        window.preloadedData = window.preloadedData || {};
+        window.preloadedData.exchangeRates = safeRates;
+        if (data.fetchedAt != null) window.preloadedData.ratesFetchedAt = Number(data.fetchedAt || 0) || 0;
+    } catch {}
     return data;
 }
 
@@ -63,7 +82,7 @@ async function fetchTariffs() {
 
         // Last resort direct fetch
         const tariffsObj = await fetchTariffsFromServer();
-        tariffMultipliers = { ...tariffsObj };
+        tariffMultipliers = normalizeTariffMap(tariffsObj);
         window.preloadedData.tariffs = tariffMultipliers;
         window.preloadedData.countries = tariffsObjectToCountriesArray(tariffMultipliers);
         return tariffMultipliers;

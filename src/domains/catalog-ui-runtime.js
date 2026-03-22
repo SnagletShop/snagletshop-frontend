@@ -248,6 +248,7 @@
       ctx.syncCentralState?.('window-category-set', { currentCategory: category });
       const viewer = document.getElementById('Viewer');
       if (!viewer) return;
+      try { window.__ssPrimePriceCacheFromDom?.(viewer); } catch {}
       viewer.innerHTML = '';
       if (category === 'Default_Page') api.clearCategoryHighlight(ctx);
       let wrapper = document.getElementById('ProductWrapper');
