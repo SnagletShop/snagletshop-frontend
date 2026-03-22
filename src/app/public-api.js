@@ -134,6 +134,8 @@
     ['readBasket','domain.basket','readBasket'],
     ['computeExpectedClientTotalForServer','domain.checkoutHelpers','computeExpectedClientTotalForServer'],
     ['buildStripeOrderSummary','domain.checkoutHelpers','buildStripeOrderSummary'],
+    ['createPaymentIntentOnServer','domain.checkoutHelpers','createPaymentIntentOnServer'],
+    ['getOrCreatePaymentIntentRecycled','domain.checkoutHelpers','getOrCreatePaymentIntentRecycled'],
     ['_invalidatePiCache','domain.checkoutHelpers','_invalidatePiCache'],
     ['__ssEscHtml','domain.productOptions','__ssEscHtml'],
     ['__ssGetCatalogFlat','domain.productOptions','__ssGetCatalogFlat'],

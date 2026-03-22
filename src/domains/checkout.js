@@ -398,11 +398,13 @@ async function initStripePaymentUI(selectedCurrency) {
         throw err;
     }
 
+    let publishableKey = '';
     try {
         if (window.__SS_ORDERS_RUNTIME__?.ensureStripeInstance) {
             window.stripeInstance = window.__SS_ORDERS_RUNTIME__.ensureStripeInstance();
+            publishableKey = String(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || '').trim();
         } else {
-            const publishableKey = (typeof getStripePublishableKeySafe === 'function')
+            publishableKey = (typeof getStripePublishableKeySafe === 'function')
                 ? getStripePublishableKeySafe()
                 : String(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || '').trim();
             if (!publishableKey) throw new Error('Stripe publishable key is not configured.');
