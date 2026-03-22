@@ -150,7 +150,14 @@
     priceP.dataset.eur = String(resolvedPrice || 0);
     if (identity.productId) priceP.dataset.productId = identity.productId;
     if (identity.name) priceP.dataset.productName = identity.name;
-    priceP.textContent = opts.priceText || `${resolvedPrice}${opts.currencySymbol || '€'}`;
+    const fallbackPriceText = (() => {
+      try {
+        const formatted = window.__ssFormatDisplayPrice?.(resolvedPrice);
+        if (typeof formatted === 'string' && formatted.trim()) return formatted;
+      } catch {}
+      return `${resolvedPrice}${opts.currencySymbol || '€'}`;
+    })();
+    priceP.textContent = opts.priceText || fallbackPriceText;
 
     const qtyUi = getQuantityControls()?.createCatalogQuantityControls?.(product, {
       onDecrease: opts.onDecrease,

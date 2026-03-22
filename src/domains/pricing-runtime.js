@@ -3,6 +3,7 @@
 
   const PRICE_SELECTOR = '.price, .product-price, .basket-item-price, #product-page-price, .productPrice';
   const PRICE_CACHE_KEY = '__ssRememberedProductPrices';
+  const SUFFIX_CURRENCIES = new Set(['EUR', 'PLN', 'CZK', 'SEK', 'NOK', 'DKK', 'HUF', 'RON', 'BGN', 'RUB', 'UAH', 'CHF']);
 
   function parseLoosePrice(value) {
     try {
@@ -278,6 +279,17 @@
     };
   }
 
+  function shouldUseSuffixCurrency(currencyCode) {
+    return SUFFIX_CURRENCIES.has(String(currencyCode || 'EUR').toUpperCase());
+  }
+
+  function formatCurrencyDisplayValue(currencyCode, currencySymbol, amountText) {
+    const code = String(currencyCode || 'EUR').toUpperCase();
+    const symbol = String(currencySymbol || code).trim() || code;
+    const text = String(amountText == null ? '0.00' : amountText).trim() || '0.00';
+    return shouldUseSuffixCurrency(code) ? `${text} ${symbol}` : `${symbol}${text}`;
+  }
+
   function convertPriceNumber(ctxOrPrice, maybePrice) {
     const { ctx, value: priceInEur } = normalizeValueArgs(ctxOrPrice, maybePrice);
     const { selectedCurrency, exchangeRates, tariffMultipliers, getApplyTariffFlag } = getState(ctx);
@@ -301,32 +313,40 @@
     return convertPriceNumber(ctx, priceInEur).toFixed(2);
   }
 
+  function formatDisplayPrice(ctxOrPrice, maybePrice) {
+    const { ctx, value: priceInEur } = normalizeValueArgs(ctxOrPrice, maybePrice);
+    const { selectedCurrency, currencySymbols } = getState(ctx);
+    const currencyCode = String(selectedCurrency || 'EUR').toUpperCase();
+    const currencySymbol = currencySymbols[currencyCode] || currencyCode;
+    return formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, priceInEur));
+  }
+
   function updateAllPrices(ctxOrRoot, maybeRootEl) {
     const { ctx, root } = normalizeRootArgs(ctxOrRoot, maybeRootEl);
     const { selectedCurrency, currencySymbols } = getState(ctx);
+    const currencyCode = String(selectedCurrency || 'EUR').toUpperCase();
+    const currencySymbol = currencySymbols[currencyCode] || currencyCode;
 
     root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
-      const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
       const eur = recoverElementPrice(element, parseLoosePrice(element.dataset.eur));
       const eurOrig = parseLoosePrice(element.dataset.eurOriginal);
       const pct = Number(element.dataset.recoDiscountPct || element.dataset.discountPct || 0);
 
       if (!isNaN(eurOrig) && eurOrig > 0 && !isNaN(eur) && eur > 0 && eurOrig > eur) {
-        const convOrig = convertPrice(ctx, eurOrig);
-        const convDisc = convertPrice(ctx, eur);
-        const html = `<span class="ss-price-old">${currencySymbol}${convOrig}</span> <span class="ss-price-new">${currencySymbol}${convDisc}</span> `;
+        const convOrig = formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, eurOrig));
+        const convDisc = formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, eur));
+        const html = `<span class="ss-price-old">${convOrig}</span> <span class="ss-price-new">${convDisc}</span> `;
         if (element.innerHTML !== html) element.innerHTML = html;
         return;
       }
 
       if (!isNaN(eur)) {
         rememberElementPrice(element, eur);
-        element.textContent = `${currencySymbol}${convertPrice(ctx, eur)}`;
+        element.textContent = formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, eur));
       }
     });
 
     root.querySelectorAll('.ss-ci-amt[data-eur]').forEach((el) => {
-      const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
       const minEurRaw = el.dataset.ciMinEur;
       const baseEurRaw = el.dataset.ciBaseEur;
       if (minEurRaw != null && baseEurRaw != null) {
@@ -334,21 +354,20 @@
         const baseEUR = parseFloat(baseEurRaw);
         if (!isNaN(minEUR) && !isNaN(baseEUR)) {
           const need = Math.max(0, Math.round((convertPriceNumber(ctx, minEUR) - convertPriceNumber(ctx, baseEUR)) * 100) / 100);
-          el.textContent = `${currencySymbol}${need.toFixed(2)}`;
+          el.textContent = formatCurrencyDisplayValue(currencyCode, currencySymbol, need.toFixed(2));
           return;
         }
       }
       const eur = parseFloat(el.dataset.eur);
       if (isNaN(eur)) return;
-      el.textContent = `${currencySymbol}${convertPrice(ctx, eur)}`;
+      el.textContent = formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, eur));
     });
 
     root.querySelectorAll('.ss-ci-badge[data-eur]').forEach((el) => {
-      const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
       const eur = parseLoosePrice(el.dataset.eur);
       if (isNaN(eur)) return;
       const kind = String(el.dataset.badgeKind || '').toLowerCase();
-      const val = `${currencySymbol}${convertPrice(ctx, Math.abs(eur))}`;
+      const val = formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, Math.abs(eur)));
       if (kind === 'saved') el.textContent = `Saved ${val}`;
       else if (kind === 'bundle') el.textContent = `Bundle -${val}`;
       else el.textContent = val;
@@ -358,7 +377,7 @@
     if (totalElement) {
       const baseTotal = parseFloat(totalElement.dataset.eur);
       if (!isNaN(baseTotal)) {
-        totalElement.textContent = `Total: ${convertPrice(ctx, baseTotal)} ${selectedCurrency}`;
+        totalElement.textContent = `Total: ${formatCurrencyDisplayValue(currencyCode, currencySymbol, convertPrice(ctx, baseTotal))}`;
       }
     }
   }
@@ -455,7 +474,7 @@
     return observer;
   }
 
-  const api = { convertPriceNumber, convertPrice, updateAllPrices, initializePrices, observeNewProducts, primePriceCacheFromDom };
+  const api = { convertPriceNumber, convertPrice, formatDisplayPrice, updateAllPrices, initializePrices, observeNewProducts, primePriceCacheFromDom };
   try {
     primePriceCacheFromDom(document);
   } catch {}
@@ -463,6 +482,7 @@
     window.__ssPrimePriceCacheFromDom = primePriceCacheFromDom;
     window.__ssRememberProductPrice = rememberProductPrice;
     window.__ssGetRememberedProductPrice = getRememberedProductPrice;
+    window.__ssFormatDisplayPrice = formatDisplayPrice;
   } catch {}
   window.__SS_PRICING_RUNTIME__ = api;
 })(window, document);

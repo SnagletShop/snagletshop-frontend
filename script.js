@@ -898,6 +898,8 @@ function _getStripeAppearance(){
       };
 }
 async function setupWalletPaymentRequestButton(){ return window.__SS_CHECKOUT_UI__?.setupWalletPaymentRequestButton?.apply(this, arguments); }
+const PAYMENT_SUCCESS_FLAG_KEY = "payment_successful";
+const PAYMENT_SUCCESS_RELOAD_KEY = "payment_successful_reload_on_ok";
 function __clearLegacyPaymentSuccessLocalStorage(){ return window.__SS_MODAL_RUNTIME__?.clearLegacyPaymentSuccessLocalStorage?.({ flagKey:PAYMENT_SUCCESS_FLAG_KEY, reloadKey:PAYMENT_SUCCESS_RELOAD_KEY }); }
 function __paymentSuccessStore(){
     try { return window.sessionStorage; } catch { return null; }
