@@ -79,18 +79,19 @@ function searchProducts(forcedQuery = null) {
     if (uniqueResults.length > 0) {
         uniqueResults.forEach(product => {
             const resolvedImage = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim();
+            const resolvedPrice = (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price || 0);
             const productDiv = getProductCardComponent()?.createProductCard?.(product, {
                 displayName: (window.__ssABGetProductName?.(product) || product.name),
                 displayDescription: ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
-                priceValue: (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price),
+                priceValue: resolvedPrice,
                 currencySymbol: '€',
                 onOpenProduct: () => {
-                    navigate("GoToProductPage", [product.name, (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price), ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]);
+                    navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]);
                 },
                 onDecrease: (key) => window.decreaseQuantity?.(key),
                 onIncrease: (key) => window.increaseQuantity?.(key),
                 onAddToCart: () => {
-                    window.addToCart?.(product.name, product.price, resolvedImage, product.expectedPurchasePrice, product.productLink, product.description, "", window.__ssDefaultSelectedOptions?.(window.__ssExtractOptionGroups?.(product)), (product.productId || null));
+                    window.addToCart?.(product.name, resolvedPrice, resolvedImage, product.expectedPurchasePrice, product.productLink, product.description, "", window.__ssDefaultSelectedOptions?.(window.__ssExtractOptionGroups?.(product)), (product.productId || null));
                     try { window.__ssUpdateBasketHeaderIndicator?.(); } catch {}
                 }
             }) || (() => {
@@ -100,12 +101,12 @@ function searchProducts(forcedQuery = null) {
                 img.className = 'Clickable_Image';
                 img.src = resolvedImage;
                 img.alt = product.name || '';
-                img.addEventListener('click', () => navigate("GoToProductPage", [product.name, (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price), ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]));
+                img.addEventListener('click', () => navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]));
                 const title = document.createElement('a');
                 title.className = 'product-name';
                 title.textContent = (window.__ssABGetProductName?.(product) || product.name || '');
                 title.href = `${window.location.origin}/?product=${encodeURIComponent(product.name || '')}`;
-                title.addEventListener('click', (e) => { e.preventDefault(); navigate("GoToProductPage", [product.name, (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price), ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]); });
+                title.addEventListener('click', (e) => { e.preventDefault(); navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]); });
                 const price = document.createElement('p');
                 price.className = 'product-price';
                 price.textContent = `${window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price}€`;

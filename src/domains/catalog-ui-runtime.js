@@ -13,21 +13,32 @@
     if (Number.isFinite(num) && num > 0) out.push(num);
   }
 
-  function collectPositivePriceMap(out, map) {
-    if (!map || typeof map !== 'object' || Array.isArray(map)) return;
-    Object.values(map).forEach((value) => collectPositivePrice(out, value));
+  function collectNestedPriceCandidates(out, value, depth = 0, seen = null) {
+    if (depth > 6 || value == null) return;
+    if (Array.isArray(value)) {
+      value.forEach((entry) => collectNestedPriceCandidates(out, entry, depth + 1, seen));
+      return;
+    }
+    if (typeof value === 'object') {
+      if (typeof WeakSet !== 'undefined') {
+        seen = seen || new WeakSet();
+        if (seen.has(value)) return;
+        seen.add(value);
+      }
+      collectPositivePrice(out, value.price);
+      collectPositivePrice(out, value.priceEUR);
+      collectPositivePrice(out, value.basePrice);
+      collectPositivePrice(out, value.sellPrice);
+      collectPositivePrice(out, value.priceB);
+      collectPositivePrice(out, value.addPrice);
+      Object.values(value).forEach((entry) => collectNestedPriceCandidates(out, entry, depth + 1, seen));
+      return;
+    }
+    collectPositivePrice(out, value);
   }
 
   function collectPositivePriceArray(out, list) {
-    if (!Array.isArray(list)) return;
-    list.forEach((entry) => {
-      if (!entry || typeof entry !== 'object') return;
-      collectPositivePrice(out, entry.price);
-      collectPositivePrice(out, entry.priceEUR);
-      collectPositivePrice(out, entry.basePrice);
-      collectPositivePrice(out, entry.sellPrice);
-      if (Array.isArray(entry.options)) collectPositivePriceArray(out, entry.options);
-    });
+    collectNestedPriceCandidates(out, list);
   }
 
   function resolveCatalogProductPrice(product, ctx = {}) {
@@ -38,8 +49,8 @@
     collectPositivePrice(prices, product?.basePrice);
     collectPositivePrice(prices, product?.sellPrice);
     collectPositivePrice(prices, product?.priceB);
-    collectPositivePriceMap(prices, product?.variantPrices);
-    collectPositivePriceMap(prices, product?.variantPricesB);
+    collectNestedPriceCandidates(prices, product?.variantPrices);
+    collectNestedPriceCandidates(prices, product?.variantPricesB);
     collectPositivePriceArray(prices, product?.variants);
     collectPositivePriceArray(prices, product?.options);
     return prices.length ? Math.min(...prices) : 0;

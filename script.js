@@ -3,12 +3,64 @@
 function __ssParsePriceEUR(v) {
     const runtime = window.__SS_UTILS_RUNTIME__;
     if (runtime && typeof runtime.parsePriceEUR === "function") return runtime.parsePriceEUR(v);
-    return 0;
+    if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+    if (typeof v !== "string") return 0;
+    let s = v.trim();
+    if (!s) return 0;
+    s = s.replace(/[^0-9,.\-]/g, "");
+    if (!s) return 0;
+    const hasComma = s.indexOf(",") >= 0;
+    const hasDot = s.indexOf(".") >= 0;
+    if (hasComma && hasDot) {
+        if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(/,/g, ".");
+        else s = s.replace(/,/g, "");
+    } else if (hasComma && !hasDot) {
+        s = s.replace(/,/g, ".");
+    }
+    const n = Number.parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+}
+async function __ssGetStripePublicConfigSafe() {
+    const sources = [
+        async () => {
+            const api = window.__SS_CATALOG_API__;
+            if (api && typeof api.getPublicConfig === "function") return api.getPublicConfig();
+            return null;
+        },
+        async () => {
+            const svc = window.__SS_CATALOG_SERVICE__;
+            if (svc && typeof svc.getPublicConfig === "function") return svc.getPublicConfig();
+            return null;
+        },
+        async () => {
+            const pricing = window.__SS_PRICING_SERVICE__;
+            if (pricing && typeof pricing.getStorefrontConfig === "function") return pricing.getStorefrontConfig();
+            return null;
+        },
+        async () => {
+            const api = window.__SS_API__;
+            if (api && typeof api.json === "function") return api.json("/public-config", { method: "GET" });
+            return null;
+        },
+        async () => {
+            const api = window.__SS_API__;
+            if (api && typeof api.json === "function") return api.json("/storefront-config", { method: "GET", credentials: "include" });
+            return null;
+        },
+        async () => window.preloadedData?.publicConfig || window.preloadedData?.storefrontConfig || window.storefrontCfg || null
+    ];
+    for (const load of sources) {
+        try {
+            const data = await load();
+            if (data && typeof data === "object") return data;
+        } catch { }
+    }
+    return null;
 }
 async function ensureStripePublishableKey() {
     const runtime = window.__SS_STRIPE_CONFIG_RUNTIME__;
     if (runtime && typeof runtime.ensureStripePublishableKey === "function") {
-        return runtime.ensureStripePublishableKey({ getPublicConfig: () => window.__SS_CATALOG_API__.getPublicConfig(), window });
+        return runtime.ensureStripePublishableKey({ getPublicConfig: __ssGetStripePublicConfigSafe, window });
     }
     return "";
 }

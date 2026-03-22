@@ -160,15 +160,62 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
 }
 async function __ssSmartRecoEvent(type, itemKey) { return window.__SS_RECOMMENDATIONS__.__ssSmartRecoEvent.apply(this, arguments); }
 function __ssLowerBoundByPrice(arr, price) { let lo=0, hi=arr.length; while (lo < hi) { const mid=(lo+hi)>>1; if ((arr[mid]?.price || 0) < price) lo = mid + 1; else hi = mid; } return lo; }
+function __ssCollectAddonPriceCandidates(out, value, depth = 0, seen = null) {
+  if (depth > 6 || value == null) return;
+  if (Array.isArray(value)) {
+    value.forEach((entry) => __ssCollectAddonPriceCandidates(out, entry, depth + 1, seen));
+    return;
+  }
+  if (typeof value === 'object') {
+    if (typeof WeakSet !== 'undefined') {
+      seen = seen || new WeakSet();
+      if (seen.has(value)) return;
+      seen.add(value);
+    }
+    out.push(
+      __ssParsePriceEUR(value.price),
+      __ssParsePriceEUR(value.priceEUR),
+      __ssParsePriceEUR(value.basePrice),
+      __ssParsePriceEUR(value.sellPrice),
+      __ssParsePriceEUR(value.priceB),
+      __ssParsePriceEUR(value.addPrice),
+      __ssParsePriceEUR(value.discountedPrice),
+      __ssParsePriceEUR(value.eurPrice)
+    );
+    Object.values(value).forEach((entry) => __ssCollectAddonPriceCandidates(out, entry, depth + 1, seen));
+    return;
+  }
+  out.push(__ssParsePriceEUR(value));
+}
+function __ssResolveAddonPriceEUR(item) {
+  try {
+    const resolved = Number(window.__ssResolveVariantPriceEUR?.(item, [], ''));
+    if (Number.isFinite(resolved) && resolved > 0) return resolved;
+  } catch {}
+  const prices = [];
+  __ssCollectAddonPriceCandidates(prices, item);
+  const filtered = prices.filter((n) => Number.isFinite(n) && n > 0);
+  return filtered.length ? Math.min(...filtered) : 0;
+}
+function __ssNormalizeRecoItemSafe(item) {
+  try {
+    if (typeof window.__ssNormalizeRecoItem === 'function') return window.__ssNormalizeRecoItem(item) || item;
+  } catch {}
+  try {
+    const api = window.__SS_RECOMMENDATIONS__ || null;
+    if (api && typeof api.__ssNormalizeRecoItem === 'function') return api.__ssNormalizeRecoItem(item) || item;
+  } catch {}
+  return item;
+}
 function __ssGetAddonPoolSorted() {
   __ssEnsureContributionProducts();
   const useContrib = (Array.isArray(__ssContributionCache.items) && __ssContributionCache.items.length);
   const src = useContrib ? 'contrib' : 'catalog'; const ref = useContrib ? __ssContributionCache.items : null; const len = useContrib ? __ssContributionCache.items.length : 0;
   if (src === 'contrib' && __ssAddonPoolSortedCache.src === src && __ssAddonPoolSortedCache.ref === ref && __ssAddonPoolSortedCache.len === len && Array.isArray(__ssAddonPoolSortedCache.sorted) && __ssAddonPoolSortedCache.sorted.length) return __ssAddonPoolSortedCache.sorted;
   if (src === 'catalog' && __ssAddonPoolSortedCache.src === src && Array.isArray(__ssAddonPoolSortedCache.sorted) && __ssAddonPoolSortedCache.sorted.length) return __ssAddonPoolSortedCache.sorted;
-  const raw = useContrib ? __ssContributionCache.items.map(x => ({ key:String(x.itemKey || x.productId || x.id || x.productLink || x.name || '').trim(), name:String(x.name || '').trim(), price:Number(x.price || 0) || 0, image:String(x.image || x.imageUrl || (Array.isArray(x.images) ? x.images[0] : '') || '').trim(), productLink:String(x.productLink || x.url || x.link || '').trim(), description:String(x.description || x.desc || '').trim(), productId:String(x.productId || x.id || '').trim() })) : (__ssGetCatalogFlat ? __ssGetCatalogFlat() : []);
+  const raw = useContrib ? __ssContributionCache.items.map(x => ({ key:String(x.itemKey || x.productId || x.id || x.productLink || x.name || '').trim(), name:String(x.name || '').trim(), price:__ssResolveAddonPriceEUR(x), image:String(x.image || x.imageUrl || (Array.isArray(x.images) ? x.images[0] : '') || '').trim(), productLink:String(x.productLink || x.url || x.link || '').trim(), description:String(x.description || x.desc || '').trim(), productId:String(x.productId || x.id || '').trim() })) : (__ssGetCatalogFlat ? __ssGetCatalogFlat() : []);
   const seen = new Set(), cleaned=[];
-  for (const p of raw) { const k = String(p?.key || p?.productId || p?.id || p?.productLink || p?.name || '').trim(); if (!k || seen.has(k)) continue; seen.add(k); const obj = { key:k, productId:String(p?.productId || '').trim(), name:String(p?.name || '').trim(), price:Number(p?.price || 0) || 0, image:String(p?.image || '').trim(), productLink:String(p?.productLink || '').trim(), description:String(p?.description || '').trim(), discountPct:Number(p?.discountPct || 0) || 0, discountedPrice:Number(p?.discountedPrice || 0) || 0, discountToken:String(p?.discountToken || '').trim() }; if (!obj.name || !(obj.price > 0) || !obj.image) continue; cleaned.push(obj); }
+  for (const p of raw) { const k = String(p?.key || p?.productId || p?.id || p?.productLink || p?.name || '').trim(); if (!k || seen.has(k)) continue; seen.add(k); const obj = { key:k, productId:String(p?.productId || '').trim(), name:String(p?.name || '').trim(), price:__ssResolveAddonPriceEUR(p), image:String(p?.image || p?.imageUrl || (Array.isArray(p?.images) ? p.images[0] : '') || '').trim(), productLink:String(p?.productLink || '').trim(), description:String(p?.description || '').trim(), discountPct:Number(p?.discountPct || 0) || 0, discountedPrice:Number(p?.discountedPrice || 0) || 0, discountToken:String(p?.discountToken || '').trim() }; if (!obj.name || !(obj.price > 0) || !obj.image) continue; cleaned.push(obj); }
   cleaned.sort((a,b) => a.price - b.price); __ssAddonPoolSortedCache = { src, ref: src === 'contrib' ? ref : null, len: src === 'contrib' ? len : 0, sorted: cleaned }; window.__ssAddonPoolSortedCache = __ssAddonPoolSortedCache; return cleaned;
 }
 function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
@@ -178,7 +225,7 @@ function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
     const sig = __ssCartSigForSmartReco(); const desiredKey = Math.round(desired * 100) / 100;
     if (__ssSmartCartRecoCache && __ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) {
       const seenSmart = new Set();
-      smart = __ssSmartCartRecoCache.items.map(it => __ssNormalizeRecoItem(it) || it).map(x => ({ key:String(x?.key || x?.itemKey || x?.productId || x?.id || x?.productLink || x?.name || '').trim(), productId:String(x?.productId || x?.id || '').trim(), discountToken:String(x?.discountToken || '').trim(), discountPct:Number(x?.discountPct || 0) || 0, discountedPrice:Number(x?.discountedPrice || 0) || 0, name:String(x?.name || x?.title || x?.productName || '').trim(), price:Number(x?.price || x?.priceEUR || x?.eurPrice || 0) || 0, image:String(x?.image || x?.imageUrl || (Array.isArray(x?.images) ? x.images[0] : '') || '').trim(), productLink:String(x?.productLink || x?.url || x?.link || '').trim(), description:String(x?.description || x?.desc || '').trim() })).filter(x => x && x.key && x.name && (Number(x.price) > 0) && x.image && !basketNames.has(x.name)).filter(x => { if (seenSmart.has(x.key)) return false; seenSmart.add(x.key); return true; }).slice(0, maxN);
+      smart = __ssSmartCartRecoCache.items.map(it => __ssNormalizeRecoItemSafe(it)).map(x => ({ key:String(x?.key || x?.itemKey || x?.productId || x?.id || x?.productLink || x?.name || '').trim(), productId:String(x?.productId || x?.id || '').trim(), discountToken:String(x?.discountToken || '').trim(), discountPct:Number(x?.discountPct || 0) || 0, discountedPrice:Number(x?.discountedPrice || 0) || 0, name:String(x?.name || x?.title || x?.productName || '').trim(), price:__ssResolveAddonPriceEUR(x), image:String(x?.image || x?.imageUrl || (Array.isArray(x?.images) ? x.images[0] : '') || '').trim(), productLink:String(x?.productLink || x?.url || x?.link || '').trim(), description:String(x?.description || x?.desc || '').trim() })).filter(x => x && x.key && x.name && (Number(x.price) > 0) && x.image && !basketNames.has(x.name)).filter(x => { if (seenSmart.has(x.key)) return false; seenSmart.add(x.key); return true; }).slice(0, maxN);
     }
   } catch {}
   const cfg = __ssGetCartIncentivesConfig(); const top = cfg?.topup || {}; const pct = Math.max(0, Math.min(200, Number(top?.maxPriceDeltaPct || 25) || 25)); const maxPrice = desired > 0 ? desired * (1 + (pct / 100)) : Infinity;
@@ -215,14 +262,16 @@ function __ssBindCartIncentives(rootEl) {
   root.addEventListener('click', (e) => {
     const btn = e.target?.closest?.('[data-ss-quickadd]'); if (!btn) return; e.preventDefault(); const name = String(btn.getAttribute('data-ss-quickadd') || '').trim(); if (!name) return;
     const p = __ssGetCatalogFlat().find(pp => String(pp?.name || '').trim() === name); if (!p) return;
+    const livePrice = __ssResolveAddonPriceEUR(p);
     const groups = __ssExtractOptionGroups(p); const sel = __ssDefaultSelectedOptions(groups); __ssSmartRecoEvent('add_to_cart', String(p.productId || p.name || name));
     try {
       const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim(); const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0; const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0; const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
       if (tok && pct > 0 && disc > 0) {
-        __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:tok, discountPct:pct, originalPrice:(orig > 0 ? orig : Number(p.price || 0) || 0), discountedPrice:disc, productId:String(p.productId || '') });
+        __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:tok, discountPct:pct, originalPrice:(orig > 0 ? orig : livePrice || Number(p.price || 0) || 0), discountedPrice:disc, productId:String(p.productId || '') });
       }
     } catch {}
-    addToCart(p.name, Number(p.price || 0) || 0, p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null));
+    const buttonDisc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
+    addToCart(p.name, buttonDisc > 0 ? buttonDisc : (livePrice || Number(p.price || 0) || 0), p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null));
     try { updateBasket(); } catch {}
   }, { passive:false });
 }

@@ -637,7 +637,7 @@ async function __ssRecoRenderForProduct(product) {
             // Apply currency conversion + tariffs to newly injected price elements
             try {
                 window.__ssSuppressPriceObserver = true;
-                if (typeof updateAllPrices === "function") updateAllPrices(basketContainer);
+                if (typeof updateAllPrices === "function") updateAllPrices(section);
             } catch { }
             finally {
                 setTimeout(() => { try { window.__ssSuppressPriceObserver = false; } catch { } }, 250);
@@ -921,6 +921,15 @@ async function quoteRecommendations(items = []) {
     });
     return res.json().catch(() => null);
 }
+
+try {
+    const maybeProduct = document.getElementById('Product_Viewer')
+        ? (window.__ssResolveProductForPdp?.(window.__ssCurrentViewedProductName || '', window.__ssCurrentProductId || '', '') || null)
+        : null;
+    if (maybeProduct) setTimeout(() => { try { __ssRecoRenderForProduct(maybeProduct); } catch { } }, 0);
+} catch { }
+
+window.__ssRecoRenderForProduct = __ssRecoRenderForProduct;
 
 window.__SS_RECOMMENDATIONS__ = {
     __ssRecoClearRecentClick,

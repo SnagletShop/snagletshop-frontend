@@ -788,7 +788,10 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     try { requestAnimationFrame(() => { try { Product_Viewer.classList.add('is-ready'); } catch {} }); } catch {}
 
-    try { __ssRecoRenderForProduct(product); } catch { }
+    try {
+        const renderReco = window.__SS_RECOMMENDATIONS__?.__ssRecoRenderForProduct || window.__ssRecoRenderForProduct;
+        if (typeof renderReco === "function") renderReco(product);
+    } catch { }
 
     // Swipe support (non-breaking)
     try {

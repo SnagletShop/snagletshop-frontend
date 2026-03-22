@@ -123,10 +123,11 @@
           const name = String(btn.getAttribute('data-ss-lc-add') || '').trim();
           const p = ctx.getCatalogFlat?.().find((pp) => String(pp?.name || '').trim() === name);
           if (!p) return;
+          const resolvedPrice = Number(ctx.resolveVariantPriceEUR?.(p, [], '') || pick?.price || p?.price || 0) || 0;
           const groups = ctx.extractOptionGroups?.(p) || [];
           const sel = ctx.defaultSelectedOptions?.(groups) || [];
           const firstSelected = Array.isArray(sel) && sel.length ? String(sel[0]?.value || '').trim() : '';
-          ctx.addToCart?.(p.name, Number(p.price || 0) || 0, p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', firstSelected, sel, (p.productId || null));
+          ctx.addToCart?.(p.name, resolvedPrice, p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', firstSelected, sel, (p.productId || null));
           try { ctx.updateBasket?.(); } catch {}
           try { await ctx.setupCheckoutFlow?.(ctx.getSelectedCurrency?.()); } catch {}
           try { updateLastChanceOfferUI(ctx); } catch {}

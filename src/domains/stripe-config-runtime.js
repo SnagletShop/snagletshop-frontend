@@ -35,6 +35,18 @@
       return safe;
     }
 
+    const fromPreloaded = normalizePublishableKey(
+      window.preloadedData?.publicConfig?.stripePublishableKey ||
+      window.preloadedData?.storefrontConfig?.stripePublishableKey ||
+      window.storefrontCfg?.stripePublishableKey
+    );
+    if (fromPreloaded) {
+      const safe = assertPublishableKeySafe(fromPreloaded);
+      window.STRIPE_PUBLISHABLE_KEY = safe;
+      window.STRIPE_PUBLISHABLE = safe;
+      return safe;
+    }
+
     try {
       const data = await ctx.getPublicConfig?.();
       const key = normalizePublishableKey(data && data.stripePublishableKey);
