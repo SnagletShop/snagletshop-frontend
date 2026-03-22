@@ -1,17 +1,95 @@
 (function (window, document) {
   'use strict';
 
+  const PRICE_SELECTOR = '.price, .product-price, .basket-item-price, #product-page-price, .productPrice';
+
+  function isRuntimeCtx(value) {
+    return !!value && typeof value === 'object' && (
+      typeof value.getSelectedCurrency === 'function' ||
+      typeof value.getExchangeRates === 'function' ||
+      typeof value.getTariffMultipliers === 'function' ||
+      typeof value.getApplyTariffFlag === 'function' ||
+      (value.currencySymbols && typeof value.currencySymbols === 'object')
+    );
+  }
+
+  function isRootNode(value) {
+    return value === document || (!!value && typeof value === 'object' && (
+      value.nodeType === 1 ||
+      value.nodeType === 9 ||
+      typeof value.querySelectorAll === 'function'
+    ));
+  }
+
+  function normalizeValueArgs(firstArg, secondArg) {
+    if (isRuntimeCtx(firstArg)) return { ctx: firstArg, value: secondArg };
+    return { ctx: null, value: firstArg };
+  }
+
+  function normalizeRootArgs(firstArg, secondArg) {
+    if (isRuntimeCtx(firstArg)) {
+      return { ctx: firstArg, root: isRootNode(secondArg) ? secondArg : document };
+    }
+    return { ctx: null, root: isRootNode(firstArg) ? firstArg : document };
+  }
+
+  function getLegacyPricingState() {
+    const shared = window.__SS_SHARED_DATA__ || {};
+    const textCurrencies = shared.TEXTS?.CURRENCIES || {};
+
+    let selectedCurrency = 'EUR';
+    try {
+      selectedCurrency = String(window.selectedCurrency || localStorage.getItem('selectedCurrency') || 'EUR');
+    } catch {}
+
+    const exchangeRates = (window.exchangeRates && typeof window.exchangeRates === 'object')
+      ? window.exchangeRates
+      : ((window.preloadedData?.exchangeRates && typeof window.preloadedData.exchangeRates === 'object')
+        ? window.preloadedData.exchangeRates
+        : {});
+
+    const tariffMultipliers = (window.tariffMultipliers && typeof window.tariffMultipliers === 'object')
+      ? window.tariffMultipliers
+      : ((window.preloadedData?.tariffs && typeof window.preloadedData.tariffs === 'object')
+        ? window.preloadedData.tariffs
+        : {});
+
+    const currencySymbols = (window.currencySymbols && typeof window.currencySymbols === 'object')
+      ? window.currencySymbols
+      : textCurrencies;
+
+    const getApplyTariffFlag = () => {
+      try {
+        const runtime = window.__SS_CHECKOUT_RUNTIME__;
+        if (runtime && typeof runtime.getApplyTariffFlag === 'function') {
+          return !!runtime.getApplyTariffFlag({ serverApplyTariff: window.serverApplyTariff });
+        }
+      } catch {}
+      try {
+        const raw = localStorage.getItem('applyTariff');
+        if (raw == null) return true;
+        return raw === 'true';
+      } catch {
+        return true;
+      }
+    };
+
+    return { selectedCurrency, exchangeRates, tariffMultipliers, currencySymbols, getApplyTariffFlag };
+  }
+
   function getState(ctx) {
+    const legacy = getLegacyPricingState();
     return {
-      selectedCurrency: ctx?.getSelectedCurrency?.() || 'EUR',
-      exchangeRates: ctx?.getExchangeRates?.() || {},
-      tariffMultipliers: ctx?.getTariffMultipliers?.() || {},
-      currencySymbols: ctx?.currencySymbols || {},
-      getApplyTariffFlag: ctx?.getApplyTariffFlag || (() => false)
+      selectedCurrency: ctx?.getSelectedCurrency?.() || legacy.selectedCurrency,
+      exchangeRates: ctx?.getExchangeRates?.() || legacy.exchangeRates,
+      tariffMultipliers: ctx?.getTariffMultipliers?.() || legacy.tariffMultipliers,
+      currencySymbols: ctx?.currencySymbols || legacy.currencySymbols,
+      getApplyTariffFlag: ctx?.getApplyTariffFlag || legacy.getApplyTariffFlag
     };
   }
 
-  function convertPriceNumber(ctx, priceInEur) {
+  function convertPriceNumber(ctxOrPrice, maybePrice) {
+    const { ctx, value: priceInEur } = normalizeValueArgs(ctxOrPrice, maybePrice);
     const { selectedCurrency, exchangeRates, tariffMultipliers, getApplyTariffFlag } = getState(ctx);
     const eur = Number(priceInEur);
     const rate = Number(exchangeRates?.[selectedCurrency] ?? 1);
@@ -27,15 +105,16 @@
     return Math.round(converted * 100) / 100;
   }
 
-  function convertPrice(ctx, priceInEur) {
+  function convertPrice(ctxOrPrice, maybePrice) {
+    const { ctx, value: priceInEur } = normalizeValueArgs(ctxOrPrice, maybePrice);
     return convertPriceNumber(ctx, priceInEur).toFixed(2);
   }
 
-  function updateAllPrices(ctx, rootEl) {
+  function updateAllPrices(ctxOrRoot, maybeRootEl) {
+    const { ctx, root } = normalizeRootArgs(ctxOrRoot, maybeRootEl);
     const { selectedCurrency, currencySymbols } = getState(ctx);
-    const root = (rootEl || document);
 
-    root.querySelectorAll('.price, .product-price, .basket-item-price, #product-page-price').forEach((element) => {
+    root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
       const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
       const eur = parseFloat(element.dataset.eur);
       const eurOrig = parseFloat(element.dataset.eurOriginal);
@@ -92,21 +171,23 @@
     }
   }
 
-  function initializePrices(ctx) {
-    document.querySelectorAll('.price, .product-price, .basket-item-price, #product-page-price, .productPrice').forEach((element) => {
+  function initializePrices(ctxOrRoot, maybeRootEl) {
+    const { root } = normalizeRootArgs(ctxOrRoot, maybeRootEl);
+    root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
       const basePrice = parseFloat(String(element.textContent || '').replace(/[^0-9.]/g, ''));
       if (!isNaN(basePrice)) element.dataset.eur = basePrice;
     });
 
-    const totalElement = document.getElementById('basket-total');
+    const totalElement = root.getElementById ? root.getElementById('basket-total') : document.getElementById('basket-total');
     if (totalElement) {
       const baseTotal = parseFloat(String(totalElement.textContent || '').replace(/[^0-9.]/g, ''));
       if (!isNaN(baseTotal)) totalElement.dataset.eur = baseTotal;
     }
   }
 
-  function observeNewProducts(ctx) {
-    const target = document.getElementById('Viewer') || document.body;
+  function observeNewProducts(ctxOrRoot, maybeRootEl) {
+    const { ctx, root } = normalizeRootArgs(ctxOrRoot, maybeRootEl);
+    const target = (root && root !== document) ? root : (document.getElementById('Viewer') || document.body);
     let pending = false;
 
     const schedule = () => {
@@ -115,8 +196,9 @@
       setTimeout(() => {
         pending = false;
         try {
-          const root = document.getElementById('Viewer') || document.body;
-          ctx?.updateAllPrices?.(root);
+          const activeRoot = document.getElementById('Viewer') || document.body;
+          if (ctx?.updateAllPrices) ctx.updateAllPrices(activeRoot);
+          else updateAllPrices(ctx, activeRoot);
         } catch {}
       }, 80);
     };
@@ -145,7 +227,7 @@
 
       try {
         const root = document.getElementById('Viewer') || document.body;
-        root.querySelectorAll('.price, .product-price, .basket-item-price, #product-page-price, .productPrice').forEach((el) => {
+        root.querySelectorAll(PRICE_SELECTOR).forEach((el) => {
           if (!el.dataset.eur) {
             const base = parseFloat(String(el.textContent || '').replace(/[^0-9.]/g, ''));
             if (!isNaN(base)) el.dataset.eur = String(base);

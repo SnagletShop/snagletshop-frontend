@@ -5,13 +5,52 @@
     return window.__SS_APP__ || null;
   }
 
-  function resolve(name, fallback = null) {
-    try {
-      const value = app()?.resolve?.(name, fallback);
-      return value != null ? value : fallback;
-    } catch {
-      return fallback;
+  function toGlobalToken(value) {
+    return String(value || '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .replace(/[^A-Za-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toUpperCase();
+  }
+
+  function resolveLateLoadedGlobal(name) {
+    const key = String(name || '').trim();
+    if (!key) return null;
+
+    const overrides = {
+      'domain.catalog': '__SS_CATALOG_API__',
+      'screen.orderStatus': '__SS_ORDER_STATUS_SCREEN__',
+      'screens.manager': '__SS_SCREENS__',
+      'state.runtime': '__SS_RUNTIME_STORE__'
+    };
+
+    const override = overrides[key];
+    const parts = key.split('.');
+    const scope = parts.shift();
+    const suffix = parts.map(toGlobalToken).filter(Boolean).join('_');
+
+    let globalName = override || null;
+    if (!globalName && suffix) {
+      if (scope === 'service') globalName = `__SS_${suffix}_SERVICE__`;
+      else if (scope === 'screen') globalName = `__SS_${suffix}_SCREEN__`;
+      else if (scope === 'screens' && suffix === 'MANAGER') globalName = '__SS_SCREENS__';
+      else globalName = `__SS_${suffix}__`;
     }
+
+    const value = globalName ? (window[globalName] ?? null) : null;
+    if (value != null) {
+      try { app()?.register?.(key, value); } catch {}
+    }
+    return value;
+  }
+
+  function resolve(name, fallback = null) {
+    const key = String(name || '');
+    try {
+      const value = app()?.resolve?.(key, undefined);
+      if (value != null) return value;
+    } catch {}
+    return resolveLateLoadedGlobal(key) ?? fallback;
   }
 
   function bindGlobal(name, getter) {

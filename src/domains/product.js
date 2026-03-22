@@ -51,6 +51,113 @@ function __ssHideProductPageSkeleton() {
     try { document.getElementById('ProductPageSkeleton')?.remove(); } catch {}
 }
 
+function __ssGetProductOptionsApi() {
+    return window.__SS_PRODUCT_OPTIONS__ || null;
+}
+
+function __ssFallbackNormalizeSelectedOptions(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const entry of raw) {
+        const label = String(entry?.label ?? '').trim().replace(/:$/, '');
+        const value = String(entry?.value ?? '').trim();
+        if (!label || !value) continue;
+        out.push({ label, value });
+        if (out.length >= 10) break;
+    }
+    return out;
+}
+
+function __ssSafeEscHtml(input) {
+    try {
+        if (typeof window.__ssEscHtml === 'function') return window.__ssEscHtml(input);
+    } catch {}
+    try {
+        const api = __ssGetProductOptionsApi();
+        if (typeof api?.__ssEscHtml === 'function') return api.__ssEscHtml(input);
+    } catch {}
+    const s = String(input ?? '');
+    return s.replace(/[&<>"'`]/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '`': '&#96;'
+    }[ch] || ch));
+}
+
+function __ssSafeDefaultSelectedOptions(groups) {
+    try {
+        if (typeof window.__ssDefaultSelectedOptions === 'function') {
+            return __ssFallbackNormalizeSelectedOptions(window.__ssDefaultSelectedOptions(groups));
+        }
+    } catch {}
+    try {
+        const api = __ssGetProductOptionsApi();
+        if (typeof api?.__ssDefaultSelectedOptions === 'function') {
+            return __ssFallbackNormalizeSelectedOptions(api.__ssDefaultSelectedOptions(groups));
+        }
+    } catch {}
+    return __ssFallbackNormalizeSelectedOptions((groups || []).map((group) => ({
+        label: String(group?.label || 'Option').trim().replace(/:$/, ''),
+        value: String(group?.options?.[0] ?? '').trim()
+    })));
+}
+
+function __ssSafeSetSelectedOptions(selectedOptions) {
+    const normalized = __ssFallbackNormalizeSelectedOptions(selectedOptions);
+    try {
+        if (typeof window.__ssSetSelectedOptions === 'function') {
+            window.__ssSetSelectedOptions(normalized);
+            return normalized;
+        }
+    } catch {}
+    try {
+        const api = __ssGetProductOptionsApi();
+        if (typeof api?.__ssSetSelectedOptions === 'function') {
+            api.__ssSetSelectedOptions(normalized);
+            return normalized;
+        }
+    } catch {}
+    window.selectedProductOptions = normalized;
+    window.selectedProductOption = normalized?.[0]?.value || '';
+    return normalized;
+}
+
+function __ssSafeGetSelectedOptions() {
+    try {
+        if (typeof window.__ssGetSelectedOptions === 'function') {
+            return __ssFallbackNormalizeSelectedOptions(window.__ssGetSelectedOptions());
+        }
+    } catch {}
+    try {
+        const api = __ssGetProductOptionsApi();
+        if (typeof api?.__ssGetSelectedOptions === 'function') {
+            return __ssFallbackNormalizeSelectedOptions(api.__ssGetSelectedOptions());
+        }
+    } catch {}
+    return __ssFallbackNormalizeSelectedOptions(window.selectedProductOptions || []);
+}
+
+function __ssSafeResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = '') {
+    try {
+        if (typeof window.__ssResolveVariantPriceEUR === 'function') {
+            const resolved = Number(window.__ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption));
+            if (Number.isFinite(resolved) && resolved > 0) return resolved;
+        }
+    } catch {}
+    try {
+        const api = __ssGetProductOptionsApi();
+        if (typeof api?.__ssResolveVariantPriceEUR === 'function') {
+            const resolved = Number(api.__ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption));
+            if (Number.isFinite(resolved) && resolved > 0) return resolved;
+        }
+    } catch {}
+    const base = Number.parseFloat(product?.price ?? product?.priceEUR ?? 0) || 0;
+    return Math.round(base * 100) / 100;
+}
+
 function handleSwipeGesture(startX, endX, threshold = 50) {
     const diff = Number(endX || 0) - Number(startX || 0);
     if (Math.abs(diff) < threshold) return 0;
@@ -703,6 +810,11 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
   try {
     window.__ssSafeCatalogFlat = __ssSafeCatalogFlat;
+    window.__ssSafeEscHtml = __ssSafeEscHtml;
+    window.__ssSafeDefaultSelectedOptions = __ssSafeDefaultSelectedOptions;
+    window.__ssSafeSetSelectedOptions = __ssSafeSetSelectedOptions;
+    window.__ssSafeGetSelectedOptions = __ssSafeGetSelectedOptions;
+    window.__ssSafeResolveVariantPriceEUR = __ssSafeResolveVariantPriceEUR;
     window.__ssNormalizeNameKey = __ssNormalizeNameKey;
     window.__ssProductLooksRicher = __ssProductLooksRicher;
     window.__ssGetProductImageCandidates = __ssGetProductImageCandidates;
