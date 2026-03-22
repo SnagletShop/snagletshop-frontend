@@ -5444,6 +5444,49 @@
 </head>
 
 <body>
+    <div class="mobileHeaderWrapper">
+        <div class="mobileTopBar">
+            <button id="openSidebarButton" class="mobileHamburgerMenu">☰</button>
+
+            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
+                <h1>SnagletShop</h1>
+            </div>
+
+            <div class="mobileNavButtonDiv">
+                <button class="mobileBasketButton" id="BasketButtonMobile" onclick="trackedGoToCart()">
+                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
+                    </svg>
+                </button>
+
+                <button class="mobileSettingsButton" id="SettingsButtonMobile" onclick="trackedGoToSettings()">
+                    <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path fill="currentColor"
+                            d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="mobileSearchRow">
+            <input type="text" class="mobileSearch_Bar" id="Mobile_Search_Bar" placeholder="Search" />
+        </div>
+    </div>
+
+    <div id="MobileSideBar" class="mobileSideBar">
+        <div class="sidebar-header">
+            <button id="closeSidebarButton" class="mobileHamburgerMenu">☰</button>
+            <div class="mobileLogo" onclick="loadProducts('Default_Page', 'NameFirst', 'asc')">
+                <h1>SnagletShop</h1>
+            </div>
+        </div>
+
+        <div id="SidebarCategories" class="sidebar-categories"></div>
+    </div>
+
+    <div class="mobileModalDiv" id="MobileModalDiv"></div>
+
     <div class="TopBar">
         <input type="text" class="Search_Bar" id="Search_Bar" placeholder="Search">
         <div class="NavButtonDiv">
@@ -5468,7 +5511,6 @@
                 </svg>
             </button>
         </div>
-    </div>
     </div>
     <div class="SideBar" id="SideBar">
 

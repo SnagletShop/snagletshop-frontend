@@ -119,7 +119,7 @@
 
   const api = {
     categoryButtons(ctx = {}) {
-      const sidebars = document.querySelectorAll('#SideBar, #DesktopSidebar');
+      const sidebars = document.querySelectorAll('.mobileSideBar, #SideBar, #DesktopSidebar');
       const productsDatabase = ctx.getProductsDatabase?.() || {};
       if (!productsDatabase || Object.keys(productsDatabase).length === 0) {
         console.error('❌ Products database not loaded yet.');

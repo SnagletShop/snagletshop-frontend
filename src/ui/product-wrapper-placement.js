@@ -7,7 +7,9 @@
 
     function moveProductWrapper() {
       const productWrapper = document.getElementById('ProductWrapper');
-      const modalDiv = document.getElementById('ModalDiv');
+      const modalDiv = mediaQuery.matches
+        ? (document.querySelector('.mobileModalDiv') || document.getElementById('MobileModalDiv') || document.getElementById('ModalDiv'))
+        : document.getElementById('ModalDiv');
       if (!productWrapper || !modalDiv) return;
       if (mediaQuery.matches) {
         if (!placeholder && productWrapper.parentNode) {

@@ -5,7 +5,7 @@
     const modal = document.querySelector('.mobileModalDiv');
     const openBtn = document.getElementById('openSidebarButton');
     const closeBtn = document.getElementById('closeSidebarButton');
-    const sidebarLogo = document.querySelector('#SideBar .mobileLogo');
+    const sidebarLogo = document.querySelector('.mobileSideBar .mobileLogo');
     const mediaQuery = window.matchMedia('(max-width: 680px)');
     if (!sidebar || !modal) return;
 
