@@ -622,6 +622,13 @@ async function initStripePaymentUI(selectedCurrency) {
                     </div>`;
                 }
 
+                const retryHost = document.getElementById("payment-element");
+                const retryModal = document.getElementById("paymentModal");
+                if (!retryHost || !retryHost.isConnected || !retryModal || !retryModal.isConnected) {
+                    console.warn("[stripe][payment] retry skipped; payment container no longer exists", { mountId: __mountId });
+                    return;
+                }
+
                 try {
                     await initStripePaymentUI(selectedCurrency);
                 } catch (retryErr) {

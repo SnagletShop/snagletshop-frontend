@@ -1,12 +1,22 @@
 (function (window) {
   'use strict';
 
+  const LEGACY_TRUNCATED_TEST_PK = 'pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9';
+  const LEGACY_MONOLITH_TEST_PK = 'pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi';
+
   function normalizePublishableKey(raw) {
     return String(raw || '').trim();
   }
 
+  function repairLegacyPublishableKey(raw) {
+    const key = normalizePublishableKey(raw);
+    if (!key) return '';
+    if (key === LEGACY_TRUNCATED_TEST_PK) return LEGACY_MONOLITH_TEST_PK;
+    return key;
+  }
+
   function extractPublishableKey(data) {
-    return normalizePublishableKey(
+    return repairLegacyPublishableKey(
       data?.stripePublishableKey ||
       data?.publishableKey ||
       data?.config?.stripePublishableKey ||
@@ -15,7 +25,7 @@
   }
 
   function assertPublishableKeySafe(pk) {
-    const key = normalizePublishableKey(pk);
+    const key = repairLegacyPublishableKey(pk);
     if (!key || key === '__STRIPE_PUBLISHABLE_KEY__') {
       throw new Error('Stripe publishable key is not configured. Set <meta name="stripe-publishable-key" content="pk_live_..."/> or provide it from the backend public config.');
     }
@@ -29,7 +39,7 @@
   }
 
   async function ensureStripePublishableKey(ctx = {}) {
-    const fromWindow = normalizePublishableKey(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE);
+    const fromWindow = repairLegacyPublishableKey(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE);
     if (fromWindow) {
       const safe = assertPublishableKeySafe(fromWindow);
       window.STRIPE_PUBLISHABLE_KEY = safe;
@@ -37,7 +47,7 @@
       return safe;
     }
 
-    const fromMeta = normalizePublishableKey(window.document?.querySelector?.('meta[name="stripe-publishable-key"]')?.content);
+    const fromMeta = repairLegacyPublishableKey(window.document?.querySelector?.('meta[name="stripe-publishable-key"]')?.content);
     if (fromMeta) {
       const safe = assertPublishableKeySafe(fromMeta);
       window.STRIPE_PUBLISHABLE_KEY = safe;
@@ -75,6 +85,13 @@
         window.STRIPE_PUBLISHABLE = safe;
         return safe;
       } catch {}
+    }
+
+    if ((window.location.hostname || '').includes('snagletshop.com')) {
+      const safe = assertPublishableKeySafe(LEGACY_MONOLITH_TEST_PK);
+      window.STRIPE_PUBLISHABLE_KEY = safe;
+      window.STRIPE_PUBLISHABLE = safe;
+      return safe;
     }
 
     throw new Error('Stripe publishable key is not available yet.');

@@ -19,10 +19,23 @@
   }
 
   async function getStorefrontConfig() {
-    const res = await api().request('/storefront-config', { cache: 'no-store', credentials: 'include' });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(`Failed to fetch storefront config (${res.status})`);
-    return data;
+    let res = null;
+    let data = null;
+    try {
+      res = await api().request('/storefront-config', { cache: 'no-store', credentials: 'include' });
+      data = await res.json().catch(() => null);
+      if (res.ok) return data;
+    } catch {}
+
+    try {
+      const fallback = await api().request('/public-config', { cache: 'no-store' });
+      const fallbackData = await fallback.json().catch(() => null);
+      if (fallback.ok && fallbackData && typeof fallbackData === 'object') {
+        return fallbackData;
+      }
+    } catch {}
+
+    throw new Error(`Failed to fetch storefront config (${res?.status || 500})`);
   }
 
   async function getExchangeRates() {
