@@ -35,7 +35,7 @@
       return sum + unit * qty;
     }, 0);
 
-    const inc = window.__ssComputeCartIncentivesClient(baseEUR, fullCart, { countryCode: cc });
+    const inc = window.__ssComputeCartIncentivesClient(baseEUR, fullCart);
     let totalEUR = Number(inc?.totalWithShippingEUR ?? inc?.subtotalAfterDiscountsEUR ?? baseEUR) || baseEUR;
 
     if (typeof window.getApplyTariffFlag === 'function' && window.getApplyTariffFlag()) {

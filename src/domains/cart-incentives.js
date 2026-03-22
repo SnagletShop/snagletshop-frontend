@@ -68,39 +68,13 @@ function __ssParsePriceEUR(v) {
   else if (hasComma && !hasDot) s = s.replace(/,/g, ".");
   const n = parseFloat(s); return Number.isFinite(n) ? n : 0;
 }
-function __ssGetApplyTariffFlagSafe() {
-  try {
-    if (typeof window.getApplyTariffFlag === 'function') return !!window.getApplyTariffFlag();
-  } catch {}
-  try {
-    const raw = localStorage.getItem('applyTariff');
-    if (raw == null) return true;
-    return raw === 'true';
-  } catch {
-    return true;
-  }
-}
-function __ssGetTariffContext(countryCode) {
-  const cc = String(countryCode || localStorage.getItem('detectedCountry') || 'US').trim().toUpperCase();
-  const applyTariff = __ssGetApplyTariffFlagSafe();
-  const rawPct = Number(window?.tariffMultipliers?.[cc] ?? 0);
-  const tariffPct = (applyTariff && Number.isFinite(rawPct) && rawPct > 0) ? rawPct : 0;
-  const factor = 1 + tariffPct;
-  return { countryCode: cc, applyTariff, tariffPct, thresholdScale: factor > 0 ? (1 / factor) : 1 };
-}
-function __ssScaleTierMinEUR(minEUR, tariffCtx) {
-  const min = Math.max(0, Number(minEUR || 0) || 0);
-  const scale = Number(tariffCtx?.thresholdScale || 1) || 1;
-  return min * (scale > 0 ? scale : 1);
-}
 function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart, pricingCtx = {}) {
   if (window.__ssComputingIncentives) return window.__ssLastIncentives || null;
   window.__ssComputingIncentives = true;
   try {
     const cfg = __ssGetCartIncentivesConfig();
     const enabled = !!cfg?.enabled;
-    const tariffCtx = __ssGetTariffContext(pricingCtx?.countryCode);
-    const out = { enabled, applyTariff: !!tariffCtx.applyTariff, tariffPct: Number(tariffCtx.tariffPct || 0) || 0, baseTotalEUR: round2(baseTotalEUR), tierPct: 0, tierDiscountEUR: 0, bundlePct: 0, bundleDiscountEUR: 0, shippingFeeEUR: 0, freeShippingEligible: false, subtotalAfterDiscountsEUR: round2(baseTotalEUR), totalWithShippingEUR: round2(baseTotalEUR) };
+    const out = { enabled, baseTotalEUR: round2(baseTotalEUR), tierPct: 0, tierDiscountEUR: 0, bundlePct: 0, bundleDiscountEUR: 0, shippingFeeEUR: 0, freeShippingEligible: false, subtotalAfterDiscountsEUR: round2(baseTotalEUR), totalWithShippingEUR: round2(baseTotalEUR) };
     if (!enabled) return out;
     let subtotal = Number(baseTotalEUR) || 0;
     let tierEligibleSubtotal = 0;
@@ -142,7 +116,7 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart, pricingCtx = {}
     const tcfg = cfg?.tierDiscount;
     if (tcfg?.enabled && Array.isArray(tcfg?.tiers) && tcfg.tiers.length) {
       let pct = 0;
-      for (const t of tcfg.tiers) { const min = __ssScaleTierMinEUR(t?.minEUR || 0, tariffCtx); const p = Math.max(0, Math.min(80, Number(t?.pct || 0) || 0)); if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p); }
+      for (const t of tcfg.tiers) { const min = Math.max(0, Number(t?.minEUR || 0) || 0); const p = Math.max(0, Math.min(80, Number(t?.pct || 0) || 0)); if (min > 0 && p > 0 && subtotal >= min) pct = Math.max(pct, p); }
       out.tierPct = pct;
       const applyToDiscounted = (tcfg?.applyToDiscountedItems === true);
       const tierBase = applyToDiscounted ? subtotal : Math.max(0, Number(tierEligibleSubtotal) || 0);
@@ -378,12 +352,11 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     const fullCart = (opts && Array.isArray(opts.fullCart)) ? opts.fullCart : (__ssGetFullCartPreferred());
     const inc = (opts && opts.inc) ? opts.inc : __ssComputeCartIncentivesClient(totalSumEUR, fullCart);
     const cfg = __ssGetCartIncentivesConfig(); const tiers = (cfg?.tierDiscount?.enabled && Array.isArray(cfg?.tierDiscount?.tiers)) ? cfg.tierDiscount.tiers : []; const base = Number(inc.baseTotalEUR || totalSumEUR) || 0;
-    const tariffCtx = __ssGetTariffContext(opts?.countryCode || null); tariffCtx.applyTariff = !!inc.applyTariff; tariffCtx.tariffPct = Number(inc.tariffPct || 0) || 0; tariffCtx.thresholdScale = (1 + tariffCtx.tariffPct) > 0 ? (1 / (1 + tariffCtx.tariffPct)) : 1;
-    let nextTier = null; let currentTierPct = Number(inc.tierPct || 0) || 0; for (const t of tiers) { const min = __ssScaleTierMinEUR(t?.minEUR || 0, tariffCtx); const pct = Math.max(0, Number(t?.pct || 0) || 0); if (min > base && pct > 0) { nextTier = { min, pct }; break; } }
-    const tierText = nextTier ? (() => { const needEUR = Math.max(0, (nextTier.min - base)); return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${nextTier.min.toFixed(4)}" data-ci-base-eur="${base.toFixed(4)}">${needEUR.toFixed(2)}€</span> to unlock ${nextTier.pct}% OFF`; })() : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
-    const tierScaleMax = (() => { const mins = tiers.map(t => __ssScaleTierMinEUR(t?.minEUR || 0, tariffCtx)).filter(v => v > 0); const max = mins.length ? Math.max(...mins) : (nextTier ? nextTier.min : 0); return max > 0 ? max : (base > 0 ? base : 1); })();
+    let nextTier = null; let currentTierPct = Number(inc.tierPct || 0) || 0; for (const t of tiers) { const min = Math.max(0, Number(t?.minEUR || 0) || 0); const pct = Math.max(0, Number(t?.pct || 0) || 0); if (min > base && pct > 0) { nextTier = { min, pct }; break; } }
+    const tierText = nextTier ? (() => { const needEUR = Math.max(0, (nextTier.min - base)); return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${nextTier.min.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> to unlock ${nextTier.pct}% OFF`; })() : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
+    const tierScaleMax = (() => { const mins = tiers.map(t => Math.max(0, Number(t?.minEUR || 0) || 0)).filter(v => v > 0); const max = mins.length ? Math.max(...mins) : (nextTier ? nextTier.min : 0); return max > 0 ? max : (base > 0 ? base : 1); })();
     const tierProgressGlobal = Math.max(0, Math.min(100, (base / tierScaleMax) * 100));
-    const tierTicksHTML = (() => { if (!tiers.length) return ''; const parts=[]; for (const t of tiers) { const min=__ssScaleTierMinEUR(t?.minEUR || 0, tariffCtx); const pct=Math.max(0, Number(t?.pct || 0) || 0); if (!min || !pct) continue; const left=Math.max(0, Math.min(100, (min / tierScaleMax) * 100)); parts.push(`<span class="ss-ci-tick" style="left:${left.toFixed(2)}%"></span>`); parts.push(`<span class="ss-ci-ticklbl" style="left:${left.toFixed(2)}%">${pct}%</span>`); } return parts.length ? `<div class="ss-ci-ticks">${parts.join('')}</div>` : ''; })();
+    const tierTicksHTML = (() => { if (!tiers.length) return ''; const parts=[]; for (const t of tiers) { const min=Math.max(0, Number(t?.minEUR || 0) || 0); const pct=Math.max(0, Number(t?.pct || 0) || 0); if (!min || !pct) continue; const left=Math.max(0, Math.min(100, (min / tierScaleMax) * 100)); parts.push(`<span class="ss-ci-tick" style="left:${left.toFixed(2)}%"></span>`); parts.push(`<span class="ss-ci-ticklbl" style="left:${left.toFixed(2)}%">${pct}%</span>`); } return parts.length ? `<div class="ss-ci-ticks">${parts.join('')}</div>` : ''; })();
     const shipCfg = cfg?.freeShipping || {}; const shipEnabled = !!shipCfg?.enabled && Number(shipCfg?.shippingFeeEUR || 0) > 0 && Number(shipCfg?.thresholdEUR || 0) > 0; const shipThr = Math.max(0, Number(shipCfg?.thresholdEUR || 0) || 0);
     const shipProg = shipEnabled ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
     const shipText = shipEnabled ? (base >= shipThr ? 'Free shipping unlocked' : (() => { const needEUR = Math.max(0, (shipThr - base)); return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`; })()) : '';
