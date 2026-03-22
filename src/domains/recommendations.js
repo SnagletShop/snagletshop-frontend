@@ -1,6 +1,7 @@
 (function (window, document) {
 let __ssRecoUpdateNav = function(){};
 let __ssRecoRenderToken = 0;
+let __ssSmartRecoApiCache = window.__ssSmartRecoApiCache || { key: "", at: 0, data: null, pendingKey: "", pending: null };
 
 window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
     desktopVisibleCount: 7,
@@ -16,6 +17,7 @@ window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
     desktopSwipeBigPx: 140,
     mobileSwipeBigPx: 84
 };
+window.__ssSmartRecoApiCache = window.__ssSmartRecoApiCache || __ssSmartRecoApiCache;
 
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
@@ -189,6 +191,39 @@ function __ssRecoGetLayoutSettings() {
         : {};
 
     return { ...fromPreload, ...fromWindow };
+}
+
+function __ssNormalizeSmartRecoPayload(payload = {}) {
+    const cartItems = Array.isArray(payload?.cartItems)
+        ? payload.cartItems.map((item) => ({
+            name: String(item?.name || item?.productName || "").trim()
+        })).filter((item) => item.name).sort((a, b) => a.name.localeCompare(b.name))
+        : [];
+    const context = (payload?.context && typeof payload.context === "object") ? payload.context : {};
+    return {
+        placement: String(payload?.placement || "").trim(),
+        sessionId: String(payload?.sessionId || "").trim(),
+        desiredEUR: Math.round((Number(payload?.desiredEUR || 0) || 0) * 100) / 100,
+        limit: Math.max(1, Math.min(12, Number(payload?.limit || 6) || 6)),
+        cartItems,
+        context: {
+            lang: String(context?.lang || "").trim(),
+            device: String(context?.device || "").trim(),
+            page: String(context?.page || "").trim(),
+            strictMaxPrice: !!context?.strictMaxPrice,
+            optimization: String(context?.optimization || "").trim(),
+            profitTieEUR: Math.round((Number(context?.profitTieEUR || 0) || 0) * 100) / 100,
+            enableRecoDiscounts: !!context?.enableRecoDiscounts
+        }
+    };
+}
+
+function __ssGetSmartRecoPayloadKey(payload = {}) {
+    try {
+        return JSON.stringify(__ssNormalizeSmartRecoPayload(payload));
+    } catch {
+        return "";
+    }
 }
 
 function __ssRecoGetLayout(device) {
@@ -1078,13 +1113,49 @@ function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
 
 
   async function getSmartRecommendations(payload = {}) {
-    const res = await window.__SS_API__.request('/smart-reco/get', {
+    const key = __ssGetSmartRecoPayloadKey(payload);
+    const cache = window.__ssSmartRecoApiCache || __ssSmartRecoApiCache;
+    if (key && cache.key === key && Object.prototype.hasOwnProperty.call(cache || {}, 'data')) {
+        return cache.data;
+    }
+    if (key && cache.pendingKey === key && cache.pending) {
+        return cache.pending;
+    }
+
+    const pending = window.__SS_API__.request('/smart-reco/get', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload || {}),
         credentials: 'include'
-    });
-    return res.json().catch(() => null);
+    }).then((res) => res.json().catch(() => null))
+      .then((data) => {
+        __ssSmartRecoApiCache = {
+            key,
+            at: Date.now(),
+            data,
+            pendingKey: "",
+            pending: null
+        };
+        window.__ssSmartRecoApiCache = __ssSmartRecoApiCache;
+        return data;
+      })
+      .catch((err) => {
+        __ssSmartRecoApiCache = {
+            ...(__ssSmartRecoApiCache || cache || {}),
+            pendingKey: "",
+            pending: null
+        };
+        window.__ssSmartRecoApiCache = __ssSmartRecoApiCache;
+        throw err;
+      });
+
+    __ssSmartRecoApiCache = {
+        ...(cache || {}),
+        pendingKey: key,
+        pending
+    };
+    window.__ssSmartRecoApiCache = __ssSmartRecoApiCache;
+    return pending;
 }
 
 async function quoteRecommendations(items = []) {
