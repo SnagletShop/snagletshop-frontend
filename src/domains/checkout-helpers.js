@@ -42,6 +42,7 @@
       await window.preloadSettingsData();
 
       const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
+      const clientAmountCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
       const order_summary = buildStripeOrderSummary(stripeCart);
 
       const fxFetchedAt =
@@ -60,6 +61,7 @@
         products: stripeCart,
         productsFull: fullCart,
         expectedClientTotal,
+        clientAmountCents,
         applyTariff: window.getApplyTariffFlag(),
         metadata: { order_summary },
         fxFetchedAt,
