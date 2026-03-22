@@ -222,7 +222,8 @@
               }
             } catch {}
           }
-          const state = { action: 'GoToProductPage', data: [prod.name, prod.price, desc, null, pid, (recoTok ? { discountToken: recoTok } : null)] };
+          const price = (window.__ssResolveVariantPriceEUR?.(prod, [], '') || prod.price || prod.priceEUR || prod.basePrice || prod.sellPrice || 0);
+          const state = { action: 'GoToProductPage', data: [prod.name, price, desc, null, pid, (recoTok ? { discountToken: recoTok } : null)] };
           window.userHistoryStack = [state];
           window.currentIndex = 0;
           syncNavigationState('history-reset', { userHistoryStack: window.userHistoryStack, currentIndex: window.currentIndex });
@@ -243,7 +244,7 @@
         const prod = (flat || []).find((p) => String(p?.productId || '').trim() === String(pid).trim());
         if (prod) {
           const desc = ((window.__ssABGetProductDescription?.(prod) || prod.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || 'No description available.');
-          const price = (window.__ssResolveVariantPriceEUR?.(prod, [], '') || prod.price);
+          const price = (window.__ssResolveVariantPriceEUR?.(prod, [], '') || prod.price || prod.priceEUR || prod.basePrice || prod.sellPrice || 0);
           const state = { action: 'GoToProductPage', data: [prod.name, price, desc, null, pid, null] };
           window.userHistoryStack = [state];
           window.currentIndex = 0;
@@ -260,7 +261,8 @@
       const prod = typeof window.findProductByNameParam === 'function' ? window.findProductByNameParam(route.productName) : null;
       if (prod) {
         const desc = prod.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || 'No description available.';
-        const state = { action: 'GoToProductPage', data: [prod.name, prod.price, desc] };
+        const price = (window.__ssResolveVariantPriceEUR?.(prod, [], '') || prod.price || prod.priceEUR || prod.basePrice || prod.sellPrice || 0);
+        const state = { action: 'GoToProductPage', data: [prod.name, price, desc] };
         window.userHistoryStack = [state];
         window.currentIndex = 0;
         syncNavigationState('history-init', { userHistoryStack: window.userHistoryStack, currentIndex: window.currentIndex });

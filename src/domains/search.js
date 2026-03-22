@@ -79,7 +79,7 @@ function searchProducts(forcedQuery = null) {
     if (uniqueResults.length > 0) {
         uniqueResults.forEach(product => {
             const resolvedImage = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim();
-            const resolvedPrice = (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price || 0);
+      const resolvedPrice = (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price || product.priceEUR || product.basePrice || product.sellPrice || 0);
             const productDiv = getProductCardComponent()?.createProductCard?.(product, {
                 displayName: (window.__ssABGetProductName?.(product) || product.name),
                 displayDescription: ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
@@ -109,7 +109,7 @@ function searchProducts(forcedQuery = null) {
                 title.addEventListener('click', (e) => { e.preventDefault(); navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]); });
                 const price = document.createElement('p');
                 price.className = 'product-price';
-                price.textContent = `${window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price}€`;
+      price.textContent = `${window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price || product.priceEUR || product.basePrice || product.sellPrice || 0}€`;
                 fallback.append(img, title, price);
                 return fallback;
             })();

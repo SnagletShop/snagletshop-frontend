@@ -136,7 +136,7 @@
       try {
         const prod = (ctx.getAllProductsFlatSafe?.() || []).find(p => String(p?.name || '') === String(productName || '')) || null;
         const desc = (prod && ((ctx.getABDescription?.(prod) || prod.description))) || ctx.getProductDescription?.(productName);
-        const price = (prod && (ctx.resolveVariantPriceEUR?.(prod, [], '') || prod.price)) || ctx.getProductPrice?.(productName);
+        const price = (prod && (ctx.resolveVariantPriceEUR?.(prod, [], '') || prod.price || prod.priceEUR || prod.basePrice || prod.sellPrice)) || ctx.getProductPrice?.(productName);
         const pid = ctx.idNorm?.(prod?.productId || '');
         ctx.navigate?.('GoToProductPage', [productName, price, desc, null, pid || null, null]);
       } catch {
@@ -145,7 +145,8 @@
     },
     getProductPrice(ctx, productName){
       const product = getProductsFlat(ctx).find(p => p && p.name === productName);
-      return product ? product.price : 'N/A';
+      if (!product) return 'N/A';
+      return (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price || product.priceEUR || product.basePrice || product.sellPrice || 'N/A');
     }
   };
   window.__SS_PRODUCT_RUNTIME__ = api;

@@ -387,9 +387,53 @@ async function __ssRecoRenderForProduct(product) {
             }
         }
 
+        function buildCatalogFallbackBatch() {
+            try {
+                const sourceCats = new Set((Array.isArray(product?.categories) ? product.categories : []).map((x) => String(x || "").trim()).filter(Boolean));
+                const exSet = (recState.excludeSet instanceof Set) ? recState.excludeSet : new Set();
+                const toRecoItem = (p, idx) => ({
+                    productId: __ssIdNorm(p?.productId || p?.id || ""),
+                    name: String(p?.name || ""),
+                    price: Number(__ssResolveVariantPriceEUR?.(p, [], "") || p?.price || p?.priceEUR || p?.basePrice || p?.sellPrice || 0) || 0,
+                    description: String(p?.description || ""),
+                    image: String(p?.image || (Array.isArray(p?.images) ? p.images[0] : "") || (Array.isArray(p?.imagesB) ? p.imagesB[0] : "") || ""),
+                    productLink: String(p?.productLink || p?.link || ""),
+                    position: idx + 1
+                });
+                const pick = (sameCategoryOnly) => {
+                    const out = [];
+                    const flat = __ssGetCatalogFlat();
+                    for (const p of (Array.isArray(flat) ? flat : [])) {
+                        if (!p || typeof p !== "object" || !String(p?.name || "").trim()) continue;
+                        const pid = __ssIdNorm(p?.productId || p?.id || "");
+                        if (pid && exSet.has(pid)) continue;
+                        if (sameCategoryOnly && sourceCats.size) {
+                            const cats = (Array.isArray(p?.categories) ? p.categories : []).map((x) => String(x || "").trim()).filter(Boolean);
+                            if (cats.length && !cats.some((cat) => sourceCats.has(cat))) continue;
+                        }
+                        out.push(toRecoItem(p, out.length));
+                        if (out.length >= Math.max(1, Number(recState.batchSize || 3) || 3)) break;
+                    }
+                    return out;
+                };
+                const items = pick(true);
+                const resolvedItems = items.length ? items : pick(false);
+                if (!resolvedItems.length) return null;
+                recState.hasMore = false;
+                return {
+                    d: { ok: true, widgetId: "catalog_fallback", sourceProductId: recState.sourceProductId, hasMore: false, token: null, listToken: null },
+                    items: resolvedItems
+                };
+            } catch {
+                return null;
+            }
+        }
+
         const first = await fetchBatch();
-        if (!first || !first.items || first.items.length === 0) return;
-        recState.items = first.items.slice();
+        const firstResolved = (first && first.items && first.items.length) ? first : buildCatalogFallbackBatch();
+        if (!firstResolved || !firstResolved.items || firstResolved.items.length === 0) return;
+        if (!recState.widgetId && firstResolved.d?.widgetId) recState.widgetId = firstResolved.d.widgetId;
+        recState.items = [];
 
         const section = document.createElement("div");
         section.id = "RecoSection";
@@ -657,7 +701,7 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
-        appendItems(first.items);
+        appendItems(firstResolved.items);
 
         section.append(head, viewport);
 
