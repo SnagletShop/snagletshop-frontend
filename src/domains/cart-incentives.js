@@ -1,5 +1,6 @@
 (function (window, document) {
 let __ssSmartCartRecoCache = { sig: "", desired: 0, token: "", items: [] };
+let __ssSmartCartRecoPending = null;
 let __ssSmartRecoRerenderTimer = null;
 let __ssBasketRenderInProgress = false;
 let __ssBasketNeedsRerender = false;
@@ -7,6 +8,7 @@ let __ssBasketRerenderQueued = false;
 let __ssContributionCache = { at: 0, items: null };
 let __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] };
 window.__ssSmartCartRecoCache = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
+window.__ssSmartCartRecoPending = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
 window.__ssSmartRecoRerenderTimer = window.__ssSmartRecoRerenderTimer || __ssSmartRecoRerenderTimer;
 window.__ssBasketRenderInProgress = !!window.__ssBasketRenderInProgress;
 window.__ssBasketNeedsRerender = !!window.__ssBasketNeedsRerender;
@@ -133,26 +135,64 @@ function __ssEnsureCartIncentiveStyles() {
   document.head.appendChild(s);
 }
 function __ssCartSigForSmartReco() { try { const names = Object.values(basket || {}).map(i => String(i?.name || '').trim()).filter(Boolean).sort(); return btoa(unescape(encodeURIComponent(names.join('|')))).slice(0,64); } catch { return ''; } }
+function __ssSmartRecoCacheTtlMs(cache) {
+  const items = Array.isArray(cache?.items) ? cache.items : [];
+  return items.length ? (5 * 60 * 1000) : 45 * 1000;
+}
+function __ssSmartRecoRequestKey(sig, desiredKey, limit) {
+  return `${String(sig || '')}|${Number(desiredKey || 0).toFixed(2)}|${Math.max(1, Math.min(12, Number(limit || 4) || 4))}`;
+}
+function __ssSmartRecoCacheIsFresh(sig, desiredKey) {
+  const cache = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
+  if (!cache) return false;
+  if (String(cache.sig || '') !== String(sig || '')) return false;
+  if (Math.abs((Number(cache.desired || 0) || 0) - (Number(desiredKey || 0) || 0)) >= 0.01) return false;
+  const at = Number(cache.at || 0) || 0;
+  if (!at) return false;
+  return (Date.now() - at) <= __ssSmartRecoCacheTtlMs(cache);
+}
 async function __ssFetchSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
   try {
     const sig = __ssCartSigForSmartReco(); const desired = Math.max(0, Number(desiredEUR || 0) || 0); const desiredKey = Math.round(desired * 100) / 100;
-    if (__ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length) return __ssSmartCartRecoCache;
+    if (__ssSmartRecoCacheIsFresh(sig, desiredKey)) return window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
+    const requestKey = __ssSmartRecoRequestKey(sig, desiredKey, limit);
+    const pending = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
+    if (pending && pending.key === requestKey && pending.promise) return pending.promise;
     const cartItems = Object.values(basket || {}).map(i => ({ name: String(i?.name || '').trim() })).filter(x => x.name);
     const body = { placement:'cart_topup_v1', sessionId:String(window.__ssSessionId || ''), cartItems, desiredEUR:desired, limit:Math.max(1, Math.min(12, Number(limit || 4) || 4)), context:{ lang:String(window.currentLanguage || ''), device:(window.innerWidth <= 700 ? 'mobile' : 'desktop'), page:'cart', strictMaxPrice:true, optimization:'profit_popular', profitTieEUR:0.05, enableRecoDiscounts:true } };
-    const data = await window.__SS_RECOMMENDATIONS__.getSmartRecommendations(body);
-    if (!data || !data.ok || !Array.isArray(data.items)) return null;
-    __ssSmartCartRecoCache = { sig, desired: desiredKey, token: String(data.token || ''), items: data.items || [] }; window.__ssSmartCartRecoCache = __ssSmartCartRecoCache;
-    return __ssSmartCartRecoCache;
+    const promise = window.__SS_RECOMMENDATIONS__.getSmartRecommendations(body).then((data) => {
+      if (!data || !data.ok || !Array.isArray(data.items)) return null;
+      __ssSmartCartRecoCache = {
+        sig,
+        desired: desiredKey,
+        token: String(data.token || ''),
+        items: data.items || [],
+        disabled: !!data.disabled,
+        degraded: !!data.degraded,
+        at: Date.now()
+      };
+      window.__ssSmartCartRecoCache = __ssSmartCartRecoCache;
+      return __ssSmartCartRecoCache;
+    }).catch(() => null).finally(() => {
+      const cur = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
+      if (cur && cur.key === requestKey) {
+        __ssSmartCartRecoPending = null;
+        window.__ssSmartCartRecoPending = null;
+      }
+    });
+    __ssSmartCartRecoPending = { key: requestKey, promise };
+    window.__ssSmartCartRecoPending = __ssSmartCartRecoPending;
+    return promise;
   } catch { return null; }
 }
 function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
   try {
     const sig = __ssCartSigForSmartReco(); const desired = Math.max(0, Number(desiredEUR || 0) || 0); const desiredKey = Math.round(desired * 100) / 100;
-    const cacheValid = __ssSmartCartRecoCache && __ssSmartCartRecoCache.sig === sig && Math.abs((__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 && Array.isArray(__ssSmartCartRecoCache.items) && __ssSmartCartRecoCache.items.length;
+    const cacheValid = __ssSmartRecoCacheIsFresh(sig, desiredKey);
     if (cacheValid) return;
     const sigBefore = sig;
     __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
-      if (!cache) return; const sigAfter = __ssCartSigForSmartReco(); if (sigBefore !== sigAfter) return;
+      if (!cache || !Array.isArray(cache.items) || !cache.items.length) return; const sigAfter = __ssCartSigForSmartReco(); if (sigBefore !== sigAfter) return;
       try { if (__ssSmartRecoRerenderTimer) clearTimeout(__ssSmartRecoRerenderTimer); } catch {}
       __ssSmartRecoRerenderTimer = setTimeout(() => { try { if (__ssCartSigForSmartReco() !== sigBefore) return; __ssRequestBasketRerender(); } catch {} }, 180); window.__ssSmartRecoRerenderTimer = __ssSmartRecoRerenderTimer;
     }).catch(() => {});

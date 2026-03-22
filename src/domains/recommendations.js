@@ -973,14 +973,19 @@ function __ssEnsureContributionProducts() {
         if (!enabled) return;
 
         const now = Date.now();
-        if (window.__ssContributionCache?.items && (now - (window.__ssContributionCache.at || 0)) < 10 * 60 * 1000) return;
+        const cache = (window.__ssContributionCache = window.__ssContributionCache || { at: 0, items: null, pending: null, nextRetryAt: 0 });
+        if (Array.isArray(cache.items) && cache.items.length && (now - (cache.at || 0)) < 10 * 60 * 1000) return;
+        if (cache.pending) return;
+        if (Number(cache.nextRetryAt || 0) > now) return;
 
-        (window.__ssContributionCache = window.__ssContributionCache || { at: 0, items: null }).at = now;
-(window.__SS_RECOMMENDATIONS_SERVICE__?.getContributionProducts ? window.__SS_RECOMMENDATIONS_SERVICE__.getContributionProducts(40) : Promise.reject(new Error('Recommendations service unavailable: getContributionProducts')))
+        cache.pending = (window.__SS_RECOMMENDATIONS_SERVICE__?.getContributionProducts ? window.__SS_RECOMMENDATIONS_SERVICE__.getContributionProducts(40) : Promise.reject(new Error('Recommendations service unavailable: getContributionProducts')))
             .then(d => {
                 // Only accept contribution feed if it has enough renderable items.
                 // Otherwise we'd replace the local catalog pool and cart add-ons would vanish.
-                if (!(d && d.ok && Array.isArray(d.items))) return;
+                if (!(d && d.ok && Array.isArray(d.items))) {
+                    cache.nextRetryAt = Date.now() + 60 * 1000;
+                    return;
+                }
 
                 const items = d.items;
                 let okCount = 0;
@@ -993,12 +998,18 @@ function __ssEnsureContributionProducts() {
                 }
 
                 if (okCount >= 8) {
-                    (window.__ssContributionCache = window.__ssContributionCache || { at: 0, items: null }).items = items;
+                    cache.at = Date.now();
+                    cache.items = items;
+                    cache.nextRetryAt = cache.at + 10 * 60 * 1000;
                     // Invalidate pool cache so it can rebuild from contribution feed.
                     try { window.__ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] }; } catch { }
+                    return;
                 }
+
+                cache.nextRetryAt = Date.now() + 60 * 1000;
             })
-            .catch(() => { });
+            .catch(() => { cache.nextRetryAt = Date.now() + 60 * 1000; })
+            .finally(() => { cache.pending = null; });
     } catch { }
 }
 
