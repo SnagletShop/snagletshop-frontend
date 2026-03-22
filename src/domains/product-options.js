@@ -73,12 +73,52 @@
     return __ssNormalizeSelectedOptions(selectedOptions).map(o => `${o.label}=${o.value}`).join(" | ");
   }
 
+  function __ssCollectPositivePrice(out, value) {
+    const num = Number.parseFloat(value);
+    if (Number.isFinite(num) && num > 0) out.push(num);
+  }
+
+  function __ssCollectPositivePriceMap(out, map) {
+    if (!map || typeof map !== "object" || Array.isArray(map)) return;
+    Object.values(map).forEach((value) => __ssCollectPositivePrice(out, value));
+  }
+
+  function __ssCollectPositivePriceArray(out, list) {
+    if (!Array.isArray(list)) return;
+    list.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      __ssCollectPositivePrice(out, entry.price);
+      __ssCollectPositivePrice(out, entry.priceEUR);
+      __ssCollectPositivePrice(out, entry.basePrice);
+      __ssCollectPositivePrice(out, entry.sellPrice);
+      if (Array.isArray(entry.options)) __ssCollectPositivePriceArray(out, entry.options);
+    });
+  }
+
+  function __ssInferBasePriceEUR(product, preferB = false) {
+    const prices = [];
+    if (preferB) {
+      __ssCollectPositivePrice(prices, product?.priceB);
+      __ssCollectPositivePriceMap(prices, product?.variantPricesB);
+    } else {
+      __ssCollectPositivePrice(prices, product?.price);
+      __ssCollectPositivePrice(prices, product?.priceEUR);
+      __ssCollectPositivePrice(prices, product?.basePrice);
+      __ssCollectPositivePrice(prices, product?.sellPrice);
+      __ssCollectPositivePriceMap(prices, product?.variantPrices);
+    }
+    __ssCollectPositivePriceArray(prices, product?.variants);
+    __ssCollectPositivePriceArray(prices, product?.options);
+    if (!prices.length && preferB) return __ssInferBasePriceEUR(product, false);
+    return prices.length ? window.__ssRound2(Math.min(...prices)) : 0;
+  }
+
   function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = "") {
     const ex = (typeof window.__ssGetExperiments === "function") ? window.__ssGetExperiments() : null;
     const useB = ex && String(ex.pr || "").toUpperCase() === "B";
-    const baseA = Number(parseFloat(product?.price ?? 0) || 0);
-    const baseBraw = Number(parseFloat(product?.priceB ?? NaN));
-    const base = (useB && Number.isFinite(baseBraw) && baseBraw > 0) ? baseBraw : baseA;
+    const baseA = __ssInferBasePriceEUR(product, false);
+    const baseB = __ssInferBasePriceEUR(product, true);
+    const base = (useB && Number.isFinite(baseB) && baseB > 0) ? baseB : baseA;
     const mapA = (product && typeof product === "object") ? product.variantPrices : null;
     const mapB = (product && typeof product === "object") ? product.variantPricesB : null;
     const map = (useB && mapB && typeof mapB === "object" && !Array.isArray(mapB)) ? mapB : mapA;
@@ -224,6 +264,7 @@
     __ssDefaultSelectedOptions,
     __ssFormatSelectedOptionsDisplay,
     __ssFormatSelectedOptionsKey,
+    __ssInferBasePriceEUR,
     __ssResolveVariantPriceEUR,
     __ssCleanOptionLabel,
     __ssEnsureOptionChipStyles,

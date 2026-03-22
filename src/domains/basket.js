@@ -135,7 +135,11 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     // Prefer explicit productId passed by callers (PDP/recs) to avoid name/link matching failures.
     let productIdForCart = String(productIdHint || "").trim();
 
-    let pRef = findProductByNameParam(productName) || {};
+    let pRef = {};
+    try {
+        if (typeof findProductByNameParam === "function") pRef = findProductByNameParam(productName) || {};
+        else if (typeof findProductByName === "function") pRef = findProductByName(productName) || {};
+    } catch {}
     if (!productIdForCart) productIdForCart = String(pRef.productId || "").trim();
 
     if (!productIdForCart) {

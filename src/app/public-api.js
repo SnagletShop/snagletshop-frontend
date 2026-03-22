@@ -93,6 +93,28 @@
     openOrderStatusModal: bindGlobal('openOrderStatusModal', () => {
       const screen = resolve('screen.orderStatus', null);
       return screen?.open ? screen.open.bind(screen) : null;
+    }),
+    getAllProductsFlatSafe: bindGlobal('getAllProductsFlatSafe', () => {
+      const runtime = resolve('domain.productIdRuntime', window.__SS_PRODUCT_ID_RUNTIME__ || null);
+      if (runtime?.getAllProductsFlatSafe) {
+        return () => runtime.getAllProductsFlatSafe({
+          getProducts: () => window.products || window.productsDatabase || {}
+        });
+      }
+      if (typeof window.__ssGetCatalogFlat === 'function') return window.__ssGetCatalogFlat;
+      return () => [];
+    }),
+    findProductByNameParam: bindGlobal('findProductByNameParam', () => {
+      const runtime = resolve('domain.productIdRuntime', window.__SS_PRODUCT_ID_RUNTIME__ || null);
+      if (runtime?.findProductByNameParam) {
+        return (productParam) => runtime.findProductByNameParam({
+          getAllProductsFlatSafe: () => (typeof window.getAllProductsFlatSafe === 'function'
+            ? window.getAllProductsFlatSafe()
+            : (typeof window.__ssGetCatalogFlat === 'function' ? window.__ssGetCatalogFlat() : [])),
+          getProducts: () => window.products || window.productsDatabase || {}
+        }, productParam);
+      }
+      return typeof window.findProductByName === 'function' ? window.findProductByName : null;
     })
   };
 

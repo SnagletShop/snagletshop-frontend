@@ -22,6 +22,29 @@
     return addToCartBtn;
   }
 
+  function collectPositivePrice(out, value) {
+    const num = Number.parseFloat(value);
+    if (Number.isFinite(num) && num > 0) out.push(num);
+  }
+
+  function collectPositivePriceMap(out, map) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return;
+    Object.values(map).forEach((value) => collectPositivePrice(out, value));
+  }
+
+  function getResolvedPrice(product, opts = {}) {
+    const prices = [];
+    collectPositivePrice(prices, opts.priceValue);
+    collectPositivePrice(prices, product?.price);
+    collectPositivePrice(prices, product?.priceEUR);
+    collectPositivePrice(prices, product?.basePrice);
+    collectPositivePrice(prices, product?.sellPrice);
+    collectPositivePrice(prices, product?.priceB);
+    collectPositivePriceMap(prices, product?.variantPrices);
+    collectPositivePriceMap(prices, product?.variantPricesB);
+    return prices.length ? Math.min(...prices) : 0;
+  }
+
   function createProductCard(product, opts = {}) {
     const productDiv = document.createElement('div');
     productDiv.classList.add('product');
@@ -42,17 +65,18 @@
 
     const img = document.createElement('img');
     img.className = 'Clickable_Image';
+    const resolvedPrice = getResolvedPrice(product, opts);
     img.src = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
     img.alt = product?.name || '';
     img.dataset.name = product?.name || '';
-    img.dataset.price = String(product?.price ?? '');
+    img.dataset.price = String(resolvedPrice || '');
     img.dataset.imageurl = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
     img.dataset.description = opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '';
     img.addEventListener('click', () => opts.onOpenProduct?.(product));
 
     const priceP = document.createElement('p');
     priceP.className = 'product-price';
-    const resolvedPrice = Number.parseFloat(opts.priceValue ?? product?.price ?? product?.priceEUR ?? product?.basePrice ?? 0) || 0;
+    priceP.dataset.eur = String(resolvedPrice || 0);
     priceP.textContent = opts.priceText || `${resolvedPrice}${opts.currencySymbol || '€'}`;
 
     const qtyUi = getQuantityControls()?.createCatalogQuantityControls?.(product, {

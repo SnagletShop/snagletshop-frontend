@@ -470,6 +470,38 @@ function __ssResolvePidFromCatalogByName(name) {
     }
     return "";
 }
+function getAllProductsFlatSafe() {
+    const runtime = window.__SS_PRODUCT_ID_RUNTIME__;
+    if (runtime && typeof runtime.getAllProductsFlatSafe === "function") {
+        const flat = runtime.getAllProductsFlatSafe({ getProducts: () => window.products || productsDatabase || {} });
+        if (Array.isArray(flat)) return flat;
+    }
+    if (typeof window.__ssGetCatalogFlat === "function") {
+        const flat = window.__ssGetCatalogFlat();
+        if (Array.isArray(flat)) return flat;
+    }
+    try {
+        return Object.values(window.products || productsDatabase || {})
+            .flat()
+            .filter(p => p && typeof p === "object" && !Array.isArray(p) && typeof p.name === "string" && p.name.trim());
+    } catch {
+        return [];
+    }
+}
+function findProductByNameParam(productParam) {
+    const raw = String(productParam || "").trim();
+    let decoded = raw;
+    try { decoded = decodeURIComponent(raw); } catch {}
+    const runtime = window.__SS_PRODUCT_ID_RUNTIME__;
+    if (runtime && typeof runtime.findProductByNameParam === "function") {
+        const hit = runtime.findProductByNameParam({
+            getAllProductsFlatSafe: () => getAllProductsFlatSafe(),
+            getProducts: () => window.products || productsDatabase || {}
+        }, decoded);
+        if (hit) return hit;
+    }
+    return findProductByName(decoded) || ((decoded !== raw) ? findProductByName(raw) : null) || null;
+}
 function __ssResolvePidForRecs(product) {
     const runtime = window.__SS_PRODUCT_ID_RUNTIME__;
     if (runtime && typeof runtime.resolvePidForRecs === "function") {
@@ -814,7 +846,7 @@ function __ssGetCatalogUiCtx(){
   return ctx;
 }
 function renderCatalogProducts(category, sortBy = 'NameFirst', sortOrder = 'asc'){ return window.__SS_CATALOG_UI_RUNTIME__?.renderCatalogProducts?.(__ssGetCatalogUiCtx(), category, sortBy, sortOrder); }
-async function renderSettingsScreen(){ return window.__SS_SETTINGS_RUNTIME__?.goToSettings?.({ preloadSettingsData, clearCategoryHighlight, removeSortContainer, TEXTS, currencySymbols, getExchangeRates:()=>exchangeRates, getSelectedCurrency:()=>selectedCurrency, setSelectedCurrency:(v)=>{ selectedCurrency=v; }, syncCentralState:__ssSyncCentralState, countryNames, countryToCurrency, AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE, syncCurrencySelects, updateAllPrices, snagletGetTurnstileToken:snagletGetTurnstileToken }); }
+async function renderSettingsScreen(){ return window.__SS_SETTINGS_RUNTIME__?.goToSettings?.({ preloadSettingsData, clearCategoryHighlight, removeSortContainer, TEXTS, currencySymbols, getExchangeRates:()=>exchangeRates, getTariffMultipliers:()=>tariffMultipliers, getSelectedCurrency:()=>selectedCurrency, setSelectedCurrency:(v)=>{ selectedCurrency=v; }, syncCentralState:__ssSyncCentralState, countryNames, countryToCurrency, AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE, syncCurrencySelects, updateAllPrices, snagletGetTurnstileToken:snagletGetTurnstileToken }); }
 function syncSortSelects(newSort){ return window.__SS_CATALOG_UI_RUNTIME__?.syncSortSelects?.({ setupSortDropdown:(value)=>__ssSetupSortDropdown(value) }, newSort); }
 function updateSorting(){ return window.__SS_CATALOG_UI_RUNTIME__?.updateSorting?.({ handleSortChange:(value)=>handleSortChange(value) }); }
 function __ssSetupSortDropdown(currentSort){ return window.__SS_CATALOG_UI_RUNTIME__?.setupSortDropdown?.({ handleSortChange:(value)=>handleSortChange(value) }, currentSort); }
@@ -870,4 +902,6 @@ window.__SS_CATALOG_UI_CTX__ = window.__SS_CATALOG_UI_CTX__ || __ssGetCatalogUiC
 window.__ssNormalizeCatalogImages = __ssNormalizeCatalogImages;
 window.__ssGetFeatureFlags = window.__ssGetFeatureFlags || function(){ try { return (window.preloadedData && window.preloadedData.storefrontConfig && window.preloadedData.storefrontConfig.featureFlags) || {}; } catch { return {}; } };
 window.__ssFlagEnabled = window.__ssFlagEnabled || function(name, fallback=false){ try { const flags = window.__ssGetFeatureFlags(); return (name in flags) ? !!flags[name] : !!fallback; } catch { return !!fallback; } };
-window.__ssGetCatalogFlat = window.__ssGetCatalogFlat || function(){ try { return Object.values(window.productsDatabase || window.products || {}).flat().filter(Boolean).filter(x => x && typeof x === "object" && !Array.isArray(x)); } catch { return []; } };
+window.__ssGetCatalogFlat = window.__ssGetCatalogFlat || function(){ try { if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) return window.productsFlatFromServer.filter(x => x && typeof x === "object" && !Array.isArray(x)); return Object.values(window.productsDatabase || window.products || {}).flat().filter(Boolean).filter(x => x && typeof x === "object" && !Array.isArray(x)); } catch { return []; } };
+window.getAllProductsFlatSafe = window.getAllProductsFlatSafe || getAllProductsFlatSafe;
+window.findProductByNameParam = window.findProductByNameParam || findProductByNameParam;

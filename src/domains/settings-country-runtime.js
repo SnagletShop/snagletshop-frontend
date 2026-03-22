@@ -2,7 +2,10 @@
   'use strict';
 
   function isDarkModeEnabled() {
-    return document.body.classList.contains('dark') ||
+    return document.documentElement.classList.contains('dark-mode') ||
+      document.documentElement.classList.contains('dark') ||
+      document.body.classList.contains('dark-mode') ||
+      document.body.classList.contains('dark') ||
       window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
@@ -15,6 +18,10 @@
 
   function handlesTariffsDropdown(ctx = {}, countriesList = []) {
     try {
+      if (Array.isArray(ctx) && (!Array.isArray(countriesList) || countriesList.length === 0)) {
+        countriesList = ctx;
+        ctx = {};
+      }
       window.preloadedData = window.preloadedData || { exchangeRates: null, countries: null, tariffs: null };
       if (!Array.isArray(countriesList)) countriesList = [];
       window.preloadedData.countries = countriesList;
@@ -96,22 +103,25 @@
     if (detectedEl) detectedEl.textContent = detected;
     select.value = detected;
 
-    select.addEventListener('change', () => {
-      const newCountry = select.value;
-      localStorage.setItem('detectedCountry', newCountry);
+    if (!select.dataset.populateCountriesBound) {
+      select.addEventListener('change', () => {
+        const newCountry = select.value;
+        localStorage.setItem('detectedCountry', newCountry);
 
-      if (ctx.autoUpdateCurrencyOnCountryChange && !localStorage.getItem('manualCurrencyOverride')) {
-        const newCurrency = ctx.countryToCurrency?.[newCountry];
-        if (newCurrency) {
-          ctx.setSelectedCurrency?.(newCurrency);
-          localStorage.setItem('selectedCurrency', newCurrency);
-          try { ctx.syncCentralState?.('country-auto-currency', { selectedCurrency: newCurrency }); } catch {}
-          syncCurrencySelects(newCurrency);
+        if (ctx.autoUpdateCurrencyOnCountryChange && !localStorage.getItem('manualCurrencyOverride')) {
+          const newCurrency = ctx.countryToCurrency?.[newCountry];
+          if (newCurrency) {
+            ctx.setSelectedCurrency?.(newCurrency);
+            localStorage.setItem('selectedCurrency', newCurrency);
+            try { ctx.syncCentralState?.('country-auto-currency', { selectedCurrency: newCurrency }); } catch {}
+            syncCurrencySelects(newCurrency);
+          }
         }
-      }
 
-      try { ctx.updateAllPrices?.(); } catch {}
-    }, { once: true });
+        try { ctx.updateAllPrices?.(); } catch {}
+      });
+      select.dataset.populateCountriesBound = 'true';
+    }
 
     if (select.tomselect) select.tomselect.destroy();
 

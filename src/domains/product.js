@@ -149,12 +149,16 @@ function __ssSafeResolveVariantPriceEUR(product, selectedOptions, legacySelected
     } catch {}
     try {
         const api = __ssGetProductOptionsApi();
+        if (typeof api?.__ssInferBasePriceEUR === 'function') {
+            const inferred = Number(api.__ssInferBasePriceEUR(product));
+            if (Number.isFinite(inferred) && inferred > 0) return inferred;
+        }
         if (typeof api?.__ssResolveVariantPriceEUR === 'function') {
             const resolved = Number(api.__ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption));
             if (Number.isFinite(resolved) && resolved > 0) return resolved;
         }
     } catch {}
-    const base = Number.parseFloat(product?.price ?? product?.priceEUR ?? 0) || 0;
+    const base = Number.parseFloat(product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0) || 0;
     return Math.round(base * 100) / 100;
 }
 

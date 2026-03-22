@@ -3,6 +3,22 @@
 
   let initProductsPromise = null;
 
+function __ssPublishCatalogLookups(productsById, catalogLike) {
+    try {
+        const byId = (productsById && typeof productsById === "object") ? productsById : {};
+        const flat = Object.values(catalogLike || {})
+            .flat()
+            .filter(p => p && typeof p === "object" && !Array.isArray(p) && typeof p.name === "string" && p.name.trim());
+        const derivedById = {};
+        for (const product of flat) {
+            const pid = String(product?.productId || "").trim();
+            if (pid && !derivedById[pid]) derivedById[pid] = product;
+        }
+        window.productsById = Object.keys(byId).length ? { ...byId } : derivedById;
+        window.productsFlatFromServer = flat;
+    } catch {}
+}
+
 function initProducts() {
     if (initProductsPromise) return initProductsPromise;
 
@@ -44,6 +60,7 @@ function initProducts() {
                 }
 
                 window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(resolvedCatalog) : (window.productsDatabase = resolvedCatalog, window.products = resolvedCatalog);
+                __ssPublishCatalogLookups(productsById, resolvedCatalog);
                 (window.__ssNormalizeCatalogImages || window.__SS_CATALOG_IMAGE_RUNTIME__?.normalizeCatalogImages || (()=>{}))(window.productsDatabase || window.products || {});
 
                 const cfg = productsPayload.config || {};
@@ -75,6 +92,7 @@ function initProducts() {
             }
 
             window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(deduped) : (window.productsDatabase = deduped, window.products = deduped);
+            __ssPublishCatalogLookups(null, deduped);
             (window.__ssNormalizeCatalogImages || window.__SS_CATALOG_IMAGE_RUNTIME__?.normalizeCatalogImages || (()=>{}))(window.productsDatabase || window.products || {});
 
             if (typeof cfg.applyTariff === "boolean") {
@@ -86,6 +104,7 @@ function initProducts() {
         } catch (err) {
             console.error("❌ Failed to load products from server, falling back to window.products:", err);
             window.__ssSetProductsDatabase ? window.__ssSetProductsDatabase(window.products || window.productsDatabase || {}) : (window.productsDatabase = window.products || {}, window.products = window.products || {});
+            __ssPublishCatalogLookups(null, window.products || window.productsDatabase || {});
         }
 
         return window.products;

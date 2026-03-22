@@ -35,8 +35,8 @@
           const fallbackCategory = getFirstRenderableCategory();
           console.warn('⚠️ initializeHistory failed on boot, falling back to first renderable category:', e, fallbackCategory);
           ctx.loadProducts?.(fallbackCategory, localStorage.getItem('defaultSort') || 'NameFirst', 'asc');
-          ctx.categoryButtons?.();
         }
+        try { ctx.categoryButtons?.(); } catch {}
         try { ctx.updateBasketHeaderIndicator?.(); } catch {}
         requestAnimationFrame(() => setTimeout(hide, 0));
       } catch (e) {

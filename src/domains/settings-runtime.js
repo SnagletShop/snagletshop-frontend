@@ -105,6 +105,51 @@
     }
   }
 
+  function addUniqueCode(out, seen, value) {
+    const code = String(value || '').trim().toUpperCase();
+    if (!code || seen.has(code)) return;
+    seen.add(code);
+    out.push(code);
+  }
+
+  function normalizeCountryEntry(entry) {
+    if (!entry) return null;
+    if (typeof entry === 'string') {
+      const code = String(entry || '').trim().toUpperCase();
+      return code ? { code } : null;
+    }
+    const code = String(entry.code || entry.countryCode || entry.id || '').trim().toUpperCase();
+    if (!code) return null;
+    return { ...entry, code };
+  }
+
+  function buildCurrencyCodeList(ctx = {}) {
+    const codes = [];
+    const seen = new Set();
+    Object.keys(ctx.getExchangeRates?.() || {}).forEach((code) => addUniqueCode(codes, seen, code));
+    Object.keys(ctx.currencySymbols || {}).forEach((code) => addUniqueCode(codes, seen, code));
+    Object.values(ctx.countryToCurrency || {}).forEach((code) => addUniqueCode(codes, seen, code));
+    addUniqueCode(codes, seen, localStorage.getItem('selectedCurrency') || ctx.getSelectedCurrency?.() || 'EUR');
+    addUniqueCode(codes, seen, 'EUR');
+    return codes.sort();
+  }
+
+  function buildCountriesList(ctx = {}) {
+    const countries = [];
+    const seen = new Set();
+    const addCountry = (entry) => {
+      const normalized = normalizeCountryEntry(entry);
+      if (!normalized?.code || seen.has(normalized.code)) return;
+      seen.add(normalized.code);
+      countries.push(normalized);
+    };
+    (window.preloadedData?.countries || []).forEach(addCountry);
+    Object.keys(ctx.getTariffMultipliers?.() || {}).forEach((code) => addCountry({ code, tariff: Number((ctx.getTariffMultipliers?.() || {})[code] || 0) || 0 }));
+    Object.keys(ctx.countryNames || {}).forEach((code) => addCountry({ code }));
+    addCountry({ code: localStorage.getItem('detectedCountry') || 'US' });
+    return countries.sort((a, b) => String(a.code || '').localeCompare(String(b.code || '')));
+  }
+
   async function goToSettings(ctx = {}) {
     await ctx.preloadSettingsData?.();
     ctx.clearCategoryHighlight?.();
@@ -233,10 +278,15 @@
     const detectedCountry = (localStorage.getItem('detectedCountry') || 'US').toUpperCase();
     const detectedSpan = document.getElementById('detected-country');
     if (detectedSpan) detectedSpan.textContent = detectedCountry;
+    const countriesList = buildCountriesList(ctx);
+    if (countriesList.length) {
+      window.preloadedData = window.preloadedData || {};
+      window.preloadedData.countries = countriesList;
+    }
 
     if (currencySelect) {
       currencySelect.innerHTML = '';
-      const codes = Object.keys(ctx.getExchangeRates?.() || {}).sort();
+      const codes = buildCurrencyCodeList(ctx);
       for (const code of codes) {
         const opt = document.createElement('option');
         opt.value = code;
@@ -252,7 +302,7 @@
 
     if (countrySelect) {
       countrySelect.innerHTML = '';
-      (window.preloadedData?.countries || []).slice().sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''))).forEach((c) => {
+      countriesList.forEach((c) => {
         const code = String(c.code || '').toUpperCase();
         if (!code) return;
         const opt = document.createElement('option');

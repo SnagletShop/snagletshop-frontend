@@ -8,10 +8,53 @@
       'Default_Page';
   }
 
-  function sortProducts(productList, sortBy, sortOrder) {
+  function collectPositivePrice(out, value) {
+    const num = Number.parseFloat(value);
+    if (Number.isFinite(num) && num > 0) out.push(num);
+  }
+
+  function collectPositivePriceMap(out, map) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return;
+    Object.values(map).forEach((value) => collectPositivePrice(out, value));
+  }
+
+  function collectPositivePriceArray(out, list) {
+    if (!Array.isArray(list)) return;
+    list.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      collectPositivePrice(out, entry.price);
+      collectPositivePrice(out, entry.priceEUR);
+      collectPositivePrice(out, entry.basePrice);
+      collectPositivePrice(out, entry.sellPrice);
+      if (Array.isArray(entry.options)) collectPositivePriceArray(out, entry.options);
+    });
+  }
+
+  function resolveCatalogProductPrice(product, ctx = {}) {
+    const prices = [];
+    try { collectPositivePrice(prices, ctx.resolveVariantPriceEUR?.(product, [], '')); } catch {}
+    collectPositivePrice(prices, product?.price);
+    collectPositivePrice(prices, product?.priceEUR);
+    collectPositivePrice(prices, product?.basePrice);
+    collectPositivePrice(prices, product?.sellPrice);
+    collectPositivePrice(prices, product?.priceB);
+    collectPositivePriceMap(prices, product?.variantPrices);
+    collectPositivePriceMap(prices, product?.variantPricesB);
+    collectPositivePriceArray(prices, product?.variants);
+    collectPositivePriceArray(prices, product?.options);
+    return prices.length ? Math.min(...prices) : 0;
+  }
+
+  function sortProducts(productList, sortBy, sortOrder, resolvePrice = null) {
+    const getPrice = (product) => {
+      const resolved = (typeof resolvePrice === 'function') ? Number(resolvePrice(product)) : Number(product?.price);
+      return Number.isFinite(resolved) ? resolved : 0;
+    };
     productList.sort((a, b) => {
-      if (sortBy === 'Cheapest') return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
-      if (sortBy === 'Priciest') return sortOrder === 'asc' ? b.price - a.price : a.price - b.price;
+      const priceA = getPrice(a);
+      const priceB = getPrice(b);
+      if (sortBy === 'Cheapest') return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+      if (sortBy === 'Priciest') return sortOrder === 'asc' ? priceB - priceA : priceA - priceB;
       if (sortBy === 'NameFirst') return sortOrder === 'asc' ? String(a?.name || '').localeCompare(String(b?.name || '')) : String(b?.name || '').localeCompare(String(a?.name || ''));
       if (sortBy === 'NameLast') return sortOrder === 'asc' ? String(b?.name || '').localeCompare(String(a?.name || '')) : String(a?.name || '').localeCompare(String(b?.name || ''));
       return 0;
@@ -172,7 +215,8 @@
         console.warn(`⚠️ Category '${category}' is invalid or does not contain a valid product list.`);
         return;
       }
-      const productList = sortProducts([...(products[category] || [])], sortBy, sortOrder);
+      const resolvePrice = (product) => resolveCatalogProductPrice(product, ctx);
+      const productList = sortProducts([...(products[category] || [])], sortBy, sortOrder, resolvePrice);
       ctx.removeSortContainer?.();
       let sortContainer = document.getElementById('SortContainer');
       if (!sortContainer && wrapper) {
@@ -200,15 +244,16 @@
       productList.forEach(product => {
         if (!product?.name) return;
         ctx.setCartItemQty?.(product.name, 1);
+        const resolvedPrice = resolvePrice(product);
         const productDiv = ctx.createProductCard?.(product, {
           displayName: (ctx.getABProductName?.(product) || product.name),
           displayDescription: ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
-          priceValue: (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price),
+          priceValue: resolvedPrice,
           currencySymbol: ctx.TEXTS?.CURRENCIES?.EUR || '€',
-          onOpenProduct: () => { const __img = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(); return ctx.navigate?.('GoToProductPage', [product.name, (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price), ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), __img, (product.productId || null), null]); },
+          onOpenProduct: () => { const __img = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(); return ctx.navigate?.('GoToProductPage', [product.name, resolvedPrice, ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), __img, (product.productId || null), null]); },
           onDecrease: (key) => ctx.decreaseQuantity?.(key),
           onIncrease: (key) => ctx.increaseQuantity?.(key),
-          onAddToCart: () => { const __img = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(); const __price = (ctx.resolveVariantPriceEUR?.(product, [], '') || product.price || product.priceEUR || product.basePrice || 0); const __ret = ctx.addToCart?.(product.name, __price, __img, product.expectedPurchasePrice, product.productLink, (ctx.getABProductDescription?.(product) || product.description), '', ctx.defaultSelectedOptions?.(ctx.extractOptionGroups?.(product)), (product.productId || null)); try { ctx.updateBasketHeaderIndicator?.(); } catch {} return __ret; }
+          onAddToCart: () => { const __img = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(); const __price = resolvePrice(product); const __ret = ctx.addToCart?.(product.name, __price, __img, product.expectedPurchasePrice, product.productLink, (ctx.getABProductDescription?.(product) || product.description), '', ctx.defaultSelectedOptions?.(ctx.extractOptionGroups?.(product)), (product.productId || null)); try { ctx.updateBasketHeaderIndicator?.(); } catch {} return __ret; }
         }) || document.createElement('div');
         viewer.appendChild(productDiv);
       });
