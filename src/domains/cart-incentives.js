@@ -390,7 +390,7 @@ function __ssBindCartIncentives(rootEl) {
     try { updateBasket(); } catch {}
   }, { passive:false });
 }
-async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
+  async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
   try {
     const toks=[]; const byTok = new Map();
     for (const [k, it] of (entries || [])) { const tok = String(it?.recoDiscountToken || '').trim(); if (!tok) continue; const pid = String(it?.productId || '').trim(); toks.push({ token:tok, productId:pid }); byTok.set(tok, { key:k, item:it }); }
@@ -400,8 +400,32 @@ async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
     let changed = false;
     for (const q of data.quotes) {
       const tok = String(q?.token || '').trim(); if (!tok) continue; const ref = byTok.get(tok); if (!ref) continue;
-      if (!q.valid) { const it=ref.item; const orig=Number(it?.unitPriceOriginalEUR || 0) || 0; if (orig > 0 && Number(it?.price || 0) > 0 && Number(it?.price || 0) < orig) { it.price=orig; delete it.recoDiscountToken; delete it.recoDiscountPct; delete it.unitPriceOriginalEUR; changed = true; } continue; }
-      if (q.valid && Number(q.discountedPrice || 0) > 0) { const it=ref.item; const nextDisc=Number(q.discountedPrice || 0) || 0; const nextPct=Number(q.discountPct || it?.recoDiscountPct || 0) || 0; if (nextDisc > 0 && Number(it?.price || 0) !== nextDisc) { if (!(Number(it?.unitPriceOriginalEUR || 0) > 0)) it.unitPriceOriginalEUR = Number(it?.price || 0) || 0; it.price = nextDisc; if (nextPct > 0) it.recoDiscountPct = nextPct; changed = true; } }
+      if (!q.valid) {
+        const it=ref.item; const orig=Number(it?.unitPriceOriginalEUR || 0) || 0;
+        if (orig > 0 && ((Number(it?.price || 0) > 0 && Number(it?.price || 0) < orig) || (Number(it?.unitPriceEUR || 0) > 0 && Number(it?.unitPriceEUR || 0) < orig))) {
+          it.price = orig;
+          it.unitPriceEUR = orig;
+          delete it.recoDiscountToken;
+          delete it.recoDiscountPct;
+          delete it.unitPriceOriginalEUR;
+          changed = true;
+        }
+        continue;
+      }
+      if (q.valid && Number(q.discountedPrice || 0) > 0) {
+        const it=ref.item; const nextDisc=Number(q.discountedPrice || 0) || 0; const nextPct=Number(q.discountPct || it?.recoDiscountPct || 0) || 0;
+        if (nextDisc > 0) {
+          const currentPrice = Number(it?.price || 0) || 0;
+          const currentUnit = Number(it?.unitPriceEUR || 0) || 0;
+          if (!(Number(it?.unitPriceOriginalEUR || 0) > 0)) it.unitPriceOriginalEUR = Math.max(currentPrice, currentUnit, nextDisc);
+          if (currentPrice !== nextDisc || currentUnit !== nextDisc || Number(it?.recoDiscountPct || 0) !== nextPct) {
+            it.price = nextDisc;
+            it.unitPriceEUR = nextDisc;
+            if (nextPct > 0) it.recoDiscountPct = nextPct;
+            changed = true;
+          }
+        }
+      }
     }
     if (changed) { try { persistBasket('reco_quote_revalidated'); } catch {} try { updateBasket(); } catch {} }
   } catch {}

@@ -27,14 +27,68 @@
     return (typeof apiBase !== 'undefined' && apiBase) ? apiBase : '';
   }
 
+  function parseCheckoutPriceEUR(v) {
+    try {
+      if (typeof window.__ssParsePriceEUR === 'function') {
+        return Number(window.__ssParsePriceEUR(v) || 0) || 0;
+      }
+    } catch {}
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    if (typeof v === 'string') {
+      const cleaned = v.replace(/[^0-9,.-]/g, '').replace(',', '.');
+      const num = Number.parseFloat(cleaned);
+      return Number.isFinite(num) ? num : 0;
+    }
+    return 0;
+  }
+
+  function resolveCheckoutUnitPriceEUR(item) {
+    const it = item || {};
+    const token = String(it?.recoDiscountToken || it?.discountToken || '').trim();
+    const pid = String(it?.productId || it?.pid || it?.id || '').trim();
+    const priceNow = parseCheckoutPriceEUR(it?.price);
+    const unitStored = parseCheckoutPriceEUR(it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price);
+    const orig = parseCheckoutPriceEUR(
+      it?.unitPriceOriginalEUR ??
+      it?.originalUnitPriceEUR ??
+      it?.compareAtPriceEUR ??
+      it?.originalPriceEUR ??
+      it?.originalPriceEur
+    );
+    const pct = Number(it?.recoDiscountPct || it?.discountPct || 0) || 0;
+
+    if (token) {
+      try {
+        const storeGet = window.__SS_RECOMMENDATIONS__?.__ssRecoDiscountStoreGet;
+        const entry = (typeof storeGet === 'function') ? storeGet(token) : null;
+        const entryPid = String(entry?.productId || '').trim();
+        const entryMatches = !pid || !entryPid || entryPid === pid;
+        const discountedStored = parseCheckoutPriceEUR(entry?.discountedPrice);
+        if (entryMatches && discountedStored > 0) return round2(discountedStored);
+      } catch {}
+
+      if (orig > 0 && priceNow > 0 && priceNow < (orig - 1e-9)) return round2(priceNow);
+      if (orig > 0 && unitStored > 0 && unitStored < (orig - 1e-9)) return round2(unitStored);
+
+      const base = orig > 0 ? orig : Math.max(unitStored, priceNow, 0);
+      if (pct > 0 && base > 0) {
+        const discounted = round2(base * (1 - (pct / 100)));
+        if (discounted > 0) return discounted;
+      }
+    }
+
+    return round2(priceNow || unitStored || 0);
+  }
+
   function buildStripeSafeCart(ctx = {}, fullCart) {
     const normalizeSelectedOptions = ctx.normalizeSelectedOptions || ((v) => Array.isArray(v) ? v : []);
+    const resolveUnitPrice = ctx.resolveCheckoutUnitPriceEUR || resolveCheckoutUnitPriceEUR;
     return (fullCart || []).map((i) => {
       const out = {
         name: i.name,
         quantity: i.quantity,
         productId: i.productId || '',
-        price: Number(i.unitPriceEUR || i.price || 0),
+        price: resolveUnitPrice(i),
         selectedOption: i.selectedOption || '',
         selectedOptions: normalizeSelectedOptions(i.selectedOptions || []),
         recoDiscountToken: i.recoDiscountToken || ''
@@ -47,13 +101,18 @@
 
   function buildFullCartFromBasketObject(basketObj) {
     try {
+      const resolveUnitPrice = resolveCheckoutUnitPriceEUR;
       const items = Object.values(basketObj || {});
       return items.map(it => {
         const out = { ...it };
         out.productId = it?.productId || it?.id || it?.pid || '';
         out.quantity = it?.quantity ?? it?.qty ?? 1;
-        if (out.unitPriceEUR == null) out.unitPriceEUR = it?.unitPriceEUR ?? it?.priceEUR ?? it?.priceEur ?? it?.unitPrice ?? it?.price ?? 0;
-        if (out.originalUnitPriceEUR == null) out.originalUnitPriceEUR = it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? it?.originalPriceEUR ?? it?.originalPriceEur ?? 0;
+        if (out.unitPriceOriginalEUR == null) {
+          out.unitPriceOriginalEUR = it?.unitPriceOriginalEUR ?? it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? it?.originalPriceEUR ?? it?.originalPriceEur ?? 0;
+        }
+        if (out.originalUnitPriceEUR == null) out.originalUnitPriceEUR = out.unitPriceOriginalEUR ?? 0;
+        out.unitPriceEUR = resolveUnitPrice(out);
+        out.price = out.unitPriceEUR;
         return out;
       });
     } catch {
@@ -96,6 +155,7 @@
     const normalizeSelectedOptions = ctx.normalizeSelectedOptions || ((v) => Array.isArray(v) ? v : []);
     const resolveVariantPriceEUR = ctx.resolveVariantPriceEUR || (() => 0);
     const canonicalizeProductLink = ctx.canonicalizeProductLink || ((v) => String(v || ''));
+    const resolveUnitPrice = ctx.resolveCheckoutUnitPriceEUR || resolveCheckoutUnitPriceEUR;
 
     return items
       .map((item) => {
@@ -110,8 +170,8 @@
           (item?.name ? flat.find(p => String(p?.name || '').trim() === String(item.name).trim()) : null) ||
           null;
 
-        const unitEURFromBasket = Number(parseFloat(item?.unitPriceEUR ?? item?.price ?? 0) || 0);
-        const unitEUR = Number((resolveVariantPriceEUR(prod || {}, sel, legacySel) || unitEURFromBasket || 0).toFixed(2));
+        const unitEURFromBasket = resolveUnitPrice(item);
+        const unitEUR = Number((unitEURFromBasket || resolveVariantPriceEUR(prod || {}, sel, legacySel) || 0).toFixed(2));
         const expectedFromBasket = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
         const expectedFromProd = Number(parseFloat(prod?.expectedPurchasePrice ?? 0) || 0);
         const expected = Number(((expectedFromProd || expectedFromBasket || unitEUR) || 0).toFixed(2));
@@ -193,6 +253,7 @@
     buildStripeSafeCart,
     buildFullCartFromBasket,
     buildFullCartFromBasketObject,
+    resolveCheckoutUnitPriceEUR,
     getFullCartPreferred,
     getSelectedCountryCode,
     getApplyTariffFlag,

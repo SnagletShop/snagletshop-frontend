@@ -252,6 +252,17 @@ async function initStripePaymentUI(selectedCurrency) {
     try { window.basket = __b; } catch { }
     try { basket = __b; } catch { }
 
+    try {
+        const basketEntries = Object.entries(__b || {});
+        if (basketEntries.length && typeof window.__ssValidateRecoDiscountsInBasketBestEffort === "function") {
+            await window.__ssValidateRecoDiscountsInBasketBestEffort(basketEntries);
+        }
+    } catch { }
+
+    const __checkoutBasket = (typeof readBasket === "function") ? (readBasket() || __b || {}) : (__b || window.basket || {});
+    try { window.basket = __checkoutBasket; } catch { }
+    try { basket = __checkoutBasket; } catch { }
+
     // IMPORTANT: use 'let' so fallbacks can rebuild carts safely
     let fullCart = [];
     try {
@@ -270,18 +281,25 @@ async function initStripePaymentUI(selectedCurrency) {
         const normSel = (typeof __ssNormalizeSelectedOptions === 'function')
             ? __ssNormalizeSelectedOptions
             : (arr) => Array.isArray(arr) ? arr : [];
+        const resolveUnitPrice = window.__SS_CHECKOUT_RUNTIME__?.resolveCheckoutUnitPriceEUR;
 
-        const items = Object.values(__ssBasketAny || {});
+        const items = Object.values(__checkoutBasket || __ssBasketAny || {});
         const fc = items.map((it) => ({
             name: String(it?.name || it?.title || ''),
             quantity: Number(it?.quantity ?? it?.qty ?? 1) || 1,
             productId: String(it?.productId || it?.pid || it?.id || ''),
-            unitPriceEUR: Number(it?.unitPriceEUR ?? it?.price ?? 0),
-            price: Number(it?.unitPriceEUR ?? it?.price ?? 0),
+            unitPriceEUR: (typeof resolveUnitPrice === 'function')
+                ? Number(resolveUnitPrice(it) || 0)
+                : Number(it?.price ?? it?.unitPriceEUR ?? 0),
+            price: (typeof resolveUnitPrice === 'function')
+                ? Number(resolveUnitPrice(it) || 0)
+                : Number(it?.price ?? it?.unitPriceEUR ?? 0),
             productLink: String(it?.productLink || ''),
             selectedOption: String(it?.selectedOption || ''),
             selectedOptions: normSel(it?.selectedOptions || []),
-            recoDiscountToken: String(it?.recoDiscountToken || it?.discountToken || '')
+            recoDiscountToken: String(it?.recoDiscountToken || it?.discountToken || ''),
+            recoDiscountPct: Number(it?.recoDiscountPct || 0) || 0,
+            unitPriceOriginalEUR: Number(it?.unitPriceOriginalEUR || 0) || 0
         }));
 
         fullCart = fc;

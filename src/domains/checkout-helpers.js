@@ -38,10 +38,13 @@
   function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
     const cur = String(currency || "EUR").toUpperCase();
     const cc = String(countryCode || "").toUpperCase();
+    const resolveUnitPrice = window.__SS_CHECKOUT_RUNTIME__?.resolveCheckoutUnitPriceEUR;
 
     const baseEUR = (fullCart || []).reduce((sum, i) => {
       const qty = Math.max(1, parseInt(i?.quantity ?? 1, 10) || 1);
-      const unit = window.__ssParsePriceEUR(i?.unitPriceEUR ?? i?.price ?? 0);
+      const unit = (typeof resolveUnitPrice === 'function')
+        ? Number(resolveUnitPrice(i) || 0)
+        : window.__ssParsePriceEUR(i?.unitPriceEUR ?? i?.price ?? 0);
       return sum + unit * qty;
     }, 0);
 
