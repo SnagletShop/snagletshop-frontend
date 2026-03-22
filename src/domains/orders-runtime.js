@@ -68,9 +68,10 @@
       const fromMeta = document.querySelector('meta[name="stripe-publishable-key"]')?.content?.trim() || '';
       const pk = (window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || fromMeta || '').trim();
       if (!pk || pk === '__STRIPE_PUBLISHABLE_KEY__') throw new Error('Stripe publishable key is not configured. Set <meta name="stripe-publishable-key" content="pk_live_..."/> or define window.STRIPE_PUBLISHABLE_KEY before script.js.');
-      const host = String(location.hostname || '').toLowerCase();
-      const isLocal = (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local'));
-      if (!isLocal && pk.startsWith('pk_test_')) throw new Error('Refusing to run checkout with a Stripe TEST publishable key on a non-localhost domain. Use a pk_live_... key.');
+      if (pk.startsWith('sk_')) throw new Error('Stripe secret key was supplied to the storefront. Use a Stripe publishable key (pk_...) instead.');
+      if (pk.startsWith('pk_test_')) {
+        try { console.warn('[stripe][config] Using a Stripe TEST publishable key on this domain.'); } catch {}
+      }
       return pk;
     },
     ensureStripeInstance(){
