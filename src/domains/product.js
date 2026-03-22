@@ -1,4 +1,62 @@
 (function (window, document) {
+function __ssBuildProductPageSkeletonHtml() {
+    return `
+<div id="ProductPageSkeleton" class="pps" aria-hidden="true">
+  <div class="pps-inner">
+    <div class="pps-top">
+      <div class="pps-left">
+        <div class="pps-arrow pps-arrow-left"></div>
+        <div class="pps-main-image sk"></div>
+        <div class="pps-arrow pps-arrow-right"></div>
+        <div class="pps-thumbs">
+          <div class="sk pps-thumb"></div><div class="sk pps-thumb"></div><div class="sk pps-thumb"></div><div class="sk pps-thumb"></div><div class="sk pps-thumb"></div>
+        </div>
+      </div>
+      <div class="pps-right">
+        <div class="sk pps-title-line pps-title-line-1"></div>
+        <div class="sk pps-title-line pps-title-line-2"></div>
+        <div class="pps-desc"><div class="sk pps-text"></div><div class="sk pps-text"></div><div class="sk pps-text short"></div></div>
+        <div class="pps-bullets">
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+          <div class="pps-bullet-row"><div class="sk pps-icon"></div><div class="sk pps-bullet-text"></div></div>
+        </div>
+        <div class="sk pps-shipping"></div>
+        <div class="sk pps-price"></div>
+        <div class="pps-buy-row"><div class="pps-qty"><div class="sk pps-qty-btn"></div><div class="sk pps-qty-num"></div><div class="sk pps-qty-btn"></div></div><div class="sk pps-cart-btn"></div></div>
+        <div class="sk pps-buy-btn"></div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function __ssEnsureProductPageSkeletonStyles() {
+    if (document.getElementById('__ssProductPageSkeletonStyles')) return;
+    const s = document.createElement('style');
+    s.id = '__ssProductPageSkeletonStyles';
+    s.textContent = `.pps{padding:18px 0}.pps-inner{display:grid;gap:18px}.pps-top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:18px}.pps-left,.pps-right{display:grid;gap:12px}.pps-main-image{width:100%;aspect-ratio:1/1;border-radius:18px}.pps-thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.pps-thumb{aspect-ratio:1/1;border-radius:12px}.pps-title-line{height:18px;border-radius:999px}.pps-title-line-1{width:88%}.pps-title-line-2{width:62%}.pps-desc,.pps-bullets{display:grid;gap:10px}.pps-text{height:12px;border-radius:999px}.pps-text.short{width:56%}.pps-bullet-row{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:center}.pps-icon{width:18px;height:18px;border-radius:999px}.pps-bullet-text{height:12px;border-radius:999px}.pps-shipping{height:14px;width:42%;border-radius:999px}.pps-price{height:24px;width:34%;border-radius:999px}.pps-buy-row{display:grid;grid-template-columns:140px 1fr;gap:12px}.pps-qty{display:grid;grid-template-columns:40px 1fr 40px;gap:10px}.pps-qty-btn,.pps-cart-btn,.pps-buy-btn{height:46px;border-radius:14px}.sk{position:relative;overflow:hidden;background:rgba(127,127,127,.16)}.sk::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);animation:ssSk 1.3s infinite}.dark-mode .sk::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent)}@keyframes ssSk{100%{transform:translateX(100%)}}@media (max-width:780px){.pps-top{grid-template-columns:1fr}.pps-buy-row{grid-template-columns:1fr}.pps-thumbs{grid-template-columns:repeat(4,1fr)}}`;
+    document.head.appendChild(s);
+}
+
+function __ssShowProductPageSkeleton() {
+    const viewer = document.getElementById('Viewer');
+    if (!viewer) return;
+    __ssEnsureProductPageSkeletonStyles();
+    try { viewer.innerHTML = __ssBuildProductPageSkeletonHtml(); } catch {}
+}
+
+function __ssHideProductPageSkeleton() {
+    try { document.getElementById('ProductPageSkeleton')?.remove(); } catch {}
+}
+
+function handleSwipeGesture(startX, endX, threshold = 50) {
+    const diff = Number(endX || 0) - Number(startX || 0);
+    if (Math.abs(diff) < threshold) return 0;
+    return diff > 0 ? -1 : 1;
+}
+
 function __ssSafeCatalogFlat() {
     try {
         if (typeof window.__ssGetCatalogFlat === 'function') {
@@ -50,6 +108,7 @@ function __ssGetProductImageCandidates(product, imageHint = '') {
     try { (product?.imagesB || []).forEach(push); } catch {}
     push(product?.mainImage);
     push(product?.thumbnail);
+    if (!out.length) push('/favicon.png');
     return out;
 }
 
@@ -249,7 +308,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
         if (validImages.length === 0) {
             console.error("❌ No valid images loaded for:", productName);
             const safeImages = __ssGetProductImageCandidates(product, __imgArg);
-            renderProductPage(product, safeImages, productName, productPrice, productDescription);
+            renderProductPage(product, safeImages.length ? safeImages : ['/favicon.png'], productName, productPrice, productDescription);
             return;
         }
         renderProductPage(product, validImages, productName, productPrice, productDescription);
@@ -640,6 +699,10 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     window.__ssProductLooksRicher = __ssProductLooksRicher;
     window.__ssGetProductImageCandidates = __ssGetProductImageCandidates;
     window.__ssResolveProductForPdp = __ssResolveProductForPdp;
+    window.__ssBuildProductPageSkeletonHtml = __ssBuildProductPageSkeletonHtml;
+    window.__ssShowProductPageSkeleton = __ssShowProductPageSkeleton;
+    window.__ssHideProductPageSkeleton = __ssHideProductPageSkeleton;
+    window.handleSwipeGesture = handleSwipeGesture;
   } catch {}
 
   window.__SS_PRODUCT__ = {
@@ -647,6 +710,10 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     updateImage,
     GoToProductPage,
     renderProductPage,
-    __ssResolveProductForPdp
+    __ssResolveProductForPdp,
+    __ssBuildProductPageSkeletonHtml,
+    __ssShowProductPageSkeleton,
+    __ssHideProductPageSkeleton,
+    handleSwipeGesture
   };
 })(window, document);

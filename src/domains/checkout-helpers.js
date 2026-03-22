@@ -210,6 +210,16 @@
     _setPiCacheStore(store);
   }
 
+  function _invalidatePiCache(sig) {
+    const store = _getPiCacheStore();
+    if (sig && store[sig]) {
+      delete store[sig];
+      _setPiCacheStore(store);
+      return;
+    }
+    if (!sig) _setPiCacheStore({});
+  }
+
   async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, country, fullCart, stripeCart }) {
     await window.preloadSettingsData();
     const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
@@ -242,6 +252,7 @@
     computeExpectedClientTotalForServer,
     buildStripeOrderSummary,
     createPaymentIntentOnServer,
-    getOrCreatePaymentIntentRecycled
+    getOrCreatePaymentIntentRecycled,
+    _invalidatePiCache
   };
 })(window);

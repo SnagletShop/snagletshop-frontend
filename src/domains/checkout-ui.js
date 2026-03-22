@@ -214,7 +214,7 @@ async function setupWalletPaymentRequestButton({
                 const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret: cs });
 
                 if (resolvedOrderId && checkoutToken) {
-                    const statusUrl = `${window.location.origin}/?orderId=${encodeURIComponent(resolvedOrderId)}&token=${encodeURIComponent(checkoutToken)}`;
+                    const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
                     window.latestOrderId = resolvedOrderId;
                     window.latestOrderPublicToken = checkoutToken;
                     window.latestOrderStatusUrl = statusUrl;
@@ -244,7 +244,7 @@ async function setupWalletPaymentRequestButton({
                     const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret: cs });
 
                     if (resolvedOrderId && checkoutToken) {
-                        const statusUrl = `${window.location.origin}/?orderId=${encodeURIComponent(resolvedOrderId)}&token=${encodeURIComponent(checkoutToken)}`;
+                        const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
                         window.latestOrderId = resolvedOrderId;
                         window.latestOrderPublicToken = checkoutToken;
                         window.latestOrderStatusUrl = statusUrl;

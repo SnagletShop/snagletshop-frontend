@@ -895,37 +895,9 @@ function __ssEnsureContributionProducts() {
 }
 
 function __ssEnsureSmartCartRecs({ desiredEUR = 0, limit = 4 } = {}) {
-    // Avoid infinite updateBasket() loops:
-    // updateBasket() -> incentives render -> __ssEnsureSmartCartRecs() -> (cache-hit) updateBasket() ...
     try {
-        const sig = __ssCartSigForSmartReco();
-        const desired = Math.max(0, Number(desiredEUR || 0) || 0);
-        const desiredKey = Math.round(desired * 100) / 100;
-
-        const cacheValid =
-            __ssSmartCartRecoCache &&
-            window.__ssSmartCartRecoCache.sig === sig &&
-            Math.abs((window.__ssSmartCartRecoCache.desired || 0) - desiredKey) < 0.01 &&
-            Array.isArray(window.__ssSmartCartRecoCache.items) &&
-            window.__ssSmartCartRecoCache.items.length;
-
-        if (cacheValid) return;
-
-        const sigBefore = sig;
-        __ssFetchSmartCartRecs({ desiredEUR, limit }).then((cache) => {
-            if (!cache) return;
-            const sigAfter = __ssCartSigForSmartReco();
-            if (sigBefore !== sigAfter) return;
-
-            try { if (window.__ssSmartRecoRerenderTimer) clearTimeout(window.__ssSmartRecoRerenderTimer); } catch { }
-            window.__ssSmartRecoRerenderTimer = setTimeout(() => {
-                try {
-                    const sigNow = __ssCartSigForSmartReco();
-                    if (sigNow !== sigBefore) return;
-                    (window.__ssRequestBasketRerender || __ssRequestBasketRerender)?.("smart-reco");
-                } catch { }
-            }, 180);
-        }).catch(() => { });
+        const impl = window.__SS_CART_INCENTIVES__?.__ssEnsureSmartCartRecs || window.__ssEnsureSmartCartRecs;
+        if (typeof impl === 'function' && impl !== __ssEnsureSmartCartRecs) return impl({ desiredEUR, limit });
     } catch { }
 }
 

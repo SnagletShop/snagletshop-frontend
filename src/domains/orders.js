@@ -141,7 +141,61 @@ function openOrderStatusModal(prefill = {}) {
     oidInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
     tokInput.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
 
-    // Recent-orders UI removed intentionally.
+    const recent = document.createElement("div");
+    recent.style.cssText = "margin-top:12px;";
+
+    const recentTitle = document.createElement("div");
+    recentTitle.textContent = "Recent orders on this device";
+    recentTitle.style.cssText = "font-weight:800;margin-bottom:8px;font-size:13px;opacity:0.9;";
+
+    const recentList = document.createElement("div");
+    recentList.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+
+    function renderRecent() {
+        recentList.innerHTML = "";
+        const items = getRecentOrders();
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.textContent = "No recent orders stored yet.";
+            empty.style.cssText = "font-size:12px;opacity:0.75;";
+            recentList.appendChild(empty);
+            return;
+        }
+        for (const it of items) {
+            const row = document.createElement("div");
+            row.style.cssText = "display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:10px 12px;background:rgba(0,0,0,0.02);";
+            const left = document.createElement("div");
+            left.style.cssText = "display:flex;flex-direction:column;gap:2px;min-width:0;";
+            const a = document.createElement("div");
+            a.textContent = String(it.orderId);
+            a.style.cssText = "font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+            const b = document.createElement("div");
+            b.textContent = _formatDateMaybe(it.ts);
+            b.style.cssText = "font-size:11px;opacity:0.72;";
+            left.appendChild(a);
+            left.appendChild(b);
+            const actions = document.createElement("div");
+            actions.style.cssText = "display:flex;gap:8px;align-items:center;";
+            const view = document.createElement("button");
+            view.type = "button";
+            view.textContent = "View";
+            view.style.cssText = "padding:8px 10px;border-radius:12px;border:none;background:#59a3f2;color:#fff;cursor:pointer;font-weight:700;";
+            view.onclick = () => {
+                oidInput.value = String(it.orderId);
+                tokInput.value = String(it.token || "");
+                run();
+            };
+            actions.appendChild(view);
+            row.appendChild(left);
+            row.appendChild(actions);
+            recentList.appendChild(row);
+        }
+    }
+
+    recent.appendChild(recentTitle);
+    recent.appendChild(recentList);
+    card.appendChild(recent);
+    renderRecent();
 
     overlay.appendChild(card);
 
@@ -264,5 +318,27 @@ async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, ch
     return null;
 }
 
-window.__SS_ORDERS__ = { openOrderStatusModal, fetchOrderStatus, pollPendingPaymentUntilFinal, resolveOrderIdByPaymentIntent };
+const RECENT_ORDERS_KEY = 'recentOrders_v1';
+function _safeJsonParse(raw) { try { return JSON.parse(raw); } catch { return null; } }
+function getRecentOrders() {
+    const raw = localStorage.getItem(RECENT_ORDERS_KEY);
+    const arr = Array.isArray(_safeJsonParse(raw)) ? _safeJsonParse(raw) : [];
+    return (arr || [])
+        .filter(o => o && typeof o === 'object' && o.orderId && o.token)
+        .sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0))
+        .slice(0, 25);
+}
+function addRecentOrder({ orderId, token, orderStatusUrl = null, paymentIntentId = null } = {}) {
+    if (!orderId || !token) return;
+    const entry = {
+        ts: Date.now(),
+        orderId: String(orderId),
+        token: String(token),
+        orderStatusUrl: orderStatusUrl ? String(orderStatusUrl) : null,
+        paymentIntentId: paymentIntentId ? String(paymentIntentId) : null
+    };
+    const next = [entry, ...getRecentOrders().filter(o => String(o.orderId) !== String(orderId))].slice(0, 25);
+    try { localStorage.setItem(RECENT_ORDERS_KEY, JSON.stringify(next)); } catch {}
+}
+window.__SS_ORDERS__ = { openOrderStatusModal, fetchOrderStatus, pollPendingPaymentUntilFinal, resolveOrderIdByPaymentIntent, getRecentOrders, addRecentOrder };
 })(window, document);

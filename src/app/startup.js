@@ -20,13 +20,24 @@
     try { if (typeof window.setupSearchInputs === 'function') window.setupSearchInputs(); } catch {}
   }
 
-  function initRouteStatusAndReturn() {
+  async function warmStripeConfig() {
+    try { if (typeof window.ensureStripePublishableKey === 'function') await window.ensureStripePublishableKey(); } catch {}
+  }
+
+  async function initRouteStatusAndReturn() {
     try { if (typeof window.installApiHealthIndicator === 'function') window.installApiHealthIndicator(); } catch {}
     try { if (typeof window.installOrderTrackingButton === 'function') window.installOrderTrackingButton(); } catch {}
     try { window.__SS_RESOLVE__?.resolve?.('screen.orderStatus', window.__SS_ORDER_STATUS_SCREEN__ || null)?.openFromLocation?.(); } catch {}
-    try { if (typeof window.handleStripeRedirectReturnOnLoad === 'function') window.handleStripeRedirectReturnOnLoad(); } catch {}
-    try { if (typeof window.checkAndHandlePendingPaymentOnLoad === 'function') window.checkAndHandlePendingPaymentOnLoad(); } catch {}
-    try { if (typeof window.checkAndShowPaymentSuccess === 'function') window.checkAndShowPaymentSuccess(); } catch {}
+    try {
+      if (typeof window.handleStripeRedirectReturnOnLoad === 'function') {
+        await window.handleStripeRedirectReturnOnLoad();
+      }
+    } catch (err) {
+      try { console.warn('handleStripeRedirectReturnOnLoad failed:', err); } catch {}
+    } finally {
+      try { if (typeof window.checkAndShowPaymentSuccess === 'function') window.checkAndShowPaymentSuccess(); } catch {}
+      try { if (typeof window.checkAndHandlePendingPaymentOnLoad === 'function') window.checkAndHandlePendingPaymentOnLoad(); } catch {}
+    }
   }
 
   function normalizeRefreshHistory() {
@@ -36,7 +47,8 @@
       const params = new URLSearchParams(window.location.search);
       const path = String(window.location.pathname || '/');
       const isProductDeepLink = path.startsWith('/p/') || params.has('product') || params.has('p') || params.has('pid') || params.has('productId');
-      if (isPageRefresh && !isProductDeepLink && typeof currentIndex !== 'undefined' && currentIndex >= 0 && typeof buildUrlForState === 'function') {
+      const isOrderStatusDeepLink = path.startsWith('/order-status/') || (params.has('orderId') && params.has('token'));
+      if (isPageRefresh && !isProductDeepLink && !isOrderStatusDeepLink && typeof currentIndex !== 'undefined' && currentIndex >= 0 && typeof buildUrlForState === 'function') {
         const fallbackState = {
           action: 'loadProducts',
           data: [(typeof currentCategory !== 'undefined' ? currentCategory : null) || (typeof lastCategory !== 'undefined' ? lastCategory : null) || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || 'Default_Page', localStorage.getItem('defaultSort') || 'NameFirst', (typeof currentSortOrder !== 'undefined' ? currentSortOrder : null) || 'asc']

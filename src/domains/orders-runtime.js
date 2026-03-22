@@ -55,7 +55,7 @@
         const checkoutToken = pending.checkoutToken || null;
         const resolvedOrderId = await api.resolveOrderIdByPaymentIntent(ctx, { paymentIntentId: pending.paymentIntentId, clientSecret: pending.clientSecret });
         if (resolvedOrderId && checkoutToken) {
-          const statusUrl = `${window.location.origin}/?orderId=${encodeURIComponent(resolvedOrderId)}&token=${encodeURIComponent(checkoutToken)}`;
+          const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
           window.latestOrderId = resolvedOrderId; window.latestOrderPublicToken = checkoutToken; window.latestOrderStatusUrl = statusUrl;
         }
         if (!resolvedOrderId) { alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update."); return; }

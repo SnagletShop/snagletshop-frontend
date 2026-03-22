@@ -26,13 +26,14 @@
     const params = url.searchParams;
     const path = String(url.pathname || '/');
     const productFromPath = path.startsWith('/p/') ? decodeURIComponent(path.slice(3)) : '';
+    const orderFromPath = path.startsWith('/order-status/') ? decodeURIComponent(path.slice('/order-status/'.length).split('/')[0] || '') : '';
     return {
       path,
       params,
       productId: params.get('p') || params.get('pid') || params.get('productId') || productFromPath || '',
       productName: params.get('product') || '',
       query: params.get('q') || '',
-      orderId: params.get('orderId') || '',
+      orderId: orderFromPath || params.get('orderId') || '',
       token: params.get('token') || '',
       recoToken: params.get('reco') || ''
     };

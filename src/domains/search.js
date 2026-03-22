@@ -3,6 +3,15 @@ function getProductCardComponent() {
     return window.__SS_RESOLVE__?.resolve?.('component.productCard', window.__SS_PRODUCT_CARD__ || null) || window.__SS_PRODUCT_CARD__ || null;
 }
 
+function debounce(fn, delay) {
+    let timeoutId = null;
+    return function (...args) {
+        clearTimeout(timeoutId);
+        const ctx = this;
+        timeoutId = setTimeout(() => fn.apply(ctx, args), delay);
+    };
+}
+
 function getSearchInputs() {
     return [document.getElementById("Search_Bar"), document.getElementById("Mobile_Search_Bar")].filter(Boolean);
 }
@@ -24,9 +33,11 @@ function setupSearchInputs() {
         navigate("loadProducts", [window.currentCategory || window.lastCategory || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
     };
     for (const input of inputs) {
-        const debounced = debounce(() => handleSearch(input.value), 250);
+        if (input.dataset.ssSearchBound === '1') continue;
+        input.dataset.ssSearchBound = '1';
+        const debounced = debounce(() => handleSearch(input.value), 300);
         input.addEventListener("input", debounced);
-        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(input.value); } });
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); } });
     }
 }
 
@@ -41,6 +52,7 @@ function searchProducts(forcedQuery = null) {
     const rawQuery = typeof forcedQuery === "string" ? forcedQuery : String(inputs[0]?.value || "");
     const query = rawQuery.toLowerCase().replace(/\s+/g, "").trim();
     if (!query) return;
+    window.currentSearchQuery = rawQuery;
     for (const input of inputs) input.value = rawQuery;
     const viewer = document.getElementById("Viewer");
     if (!viewer) return;
@@ -81,7 +93,25 @@ function searchProducts(forcedQuery = null) {
                     window.addToCart?.(product.name, product.price, resolvedImage, product.expectedPurchasePrice, product.productLink, product.description, "", window.__ssDefaultSelectedOptions?.(window.__ssExtractOptionGroups?.(product)), (product.productId || null));
                     try { window.__ssUpdateBasketHeaderIndicator?.(); } catch {}
                 }
-            }) || document.createElement("div");
+            }) || (() => {
+                const fallback = document.createElement('div');
+                fallback.className = 'product';
+                const img = document.createElement('img');
+                img.className = 'Clickable_Image';
+                img.src = resolvedImage;
+                img.alt = product.name || '';
+                img.addEventListener('click', () => navigate("GoToProductPage", [product.name, (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price), ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]));
+                const title = document.createElement('a');
+                title.className = 'product-name';
+                title.textContent = (window.__ssABGetProductName?.(product) || product.name || '');
+                title.href = `${window.location.origin}/?product=${encodeURIComponent(product.name || '')}`;
+                title.addEventListener('click', (e) => { e.preventDefault(); navigate("GoToProductPage", [product.name, (window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price), ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]); });
+                const price = document.createElement('p');
+                price.className = 'product-price';
+                price.textContent = `${window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price}€`;
+                fallback.append(img, title, price);
+                return fallback;
+            })();
             viewer.appendChild(productDiv);
         });
     } else {

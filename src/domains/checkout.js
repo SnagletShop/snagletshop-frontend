@@ -389,15 +389,29 @@ async function initStripePaymentUI(selectedCurrency) {
     } catch { }
     const country = getSelectedCountryCode();
 
-    const fallbackPk =
-        "pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi";
+    try {
+        if (typeof ensureStripePublishableKey === 'function') {
+            await ensureStripePublishableKey();
+        }
+    } catch (err) {
+        showStripeConfigError(err?.message || err || 'Stripe publishable key is not configured.');
+        throw err;
+    }
 
-    const publishableKey =
-        window.STRIPE_PUBLISHABLE_KEY ||
-        window.STRIPE_PUBLISHABLE ||
-        fallbackPk;
-
-    if (!window.stripeInstance) window.stripeInstance = Stripe(publishableKey);
+    try {
+        if (window.__SS_ORDERS_RUNTIME__?.ensureStripeInstance) {
+            window.stripeInstance = window.__SS_ORDERS_RUNTIME__.ensureStripeInstance();
+        } else {
+            const publishableKey = (typeof getStripePublishableKeySafe === 'function')
+                ? getStripePublishableKeySafe()
+                : String(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || '').trim();
+            if (!publishableKey) throw new Error('Stripe publishable key is not configured.');
+            if (!window.stripeInstance) window.stripeInstance = Stripe(publishableKey);
+        }
+    } catch (err) {
+        showStripeConfigError(err?.message || err || 'Unable to initialize Stripe.');
+        throw err;
+    }
 
     const websiteOrigin = window.location.origin;
 
@@ -612,6 +626,275 @@ async function setupCheckoutFlow(selectedCurrency) {
     }
 }
 
+function attachPayButtonHandlerOnce() {
+    if (window.__payButtonHandlerAttached) return;
+    window.__payButtonHandlerAttached = true;
+    document.addEventListener('click', async (event) => {
+        const btn = event?.target?.closest?.('.PayButton');
+        if (!btn) return;
+        event.preventDefault();
+        const wasDisabled = !!btn.disabled;
+        btn.disabled = true;
+        try { await openModal(); }
+        catch (e) {
+            console.error('openModal() failed:', e);
+            alert('Could not initialize checkout. Please try again.');
+        } finally {
+            btn.disabled = wasDisabled;
+        }
+    });
+}
+
+function _replaceWithClone(el) {
+    if (!el || !el.parentNode) return el;
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    return clone;
+}
+
+function _getDetectedCountry() {
+    return String(localStorage.getItem("detectedCountry") || "US").toUpperCase();
+}
+
+function _syncSelectedCurrencyFromCountry(countryCode) {
+    if (localStorage.getItem("manualCurrencyOverride")) return;
+    const cc = String(countryCode || "").toUpperCase();
+    const next = (window.countryToCurrency || {})?.[cc];
+    if (next) {
+        selectedCurrency = next;
+        localStorage.setItem("selectedCurrency", selectedCurrency);
+        if (typeof syncCurrencySelects === "function") syncCurrencySelects(selectedCurrency);
+    }
+}
+
+function _fillCountrySelectOptions(selectEl) {
+    const arr =
+        (window.preloadedData?.countries?.length && window.preloadedData.countries) ||
+        (typeof tariffsObjectToCountriesArray === "function"
+            ? tariffsObjectToCountriesArray(window.tariffMultipliers || {})
+            : []);
+
+    selectEl.innerHTML = "";
+    for (const c of arr) {
+        const code = String(c.code || "").toUpperCase();
+        if (!code) continue;
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = (window.countryNames?.[code]) ? window.countryNames[code] : code;
+        selectEl.appendChild(opt);
+    }
+}
+
+function _setupTomSelectCountry(selectEl) {
+    try { if (selectEl.tomselect) selectEl.tomselect.destroy(); } catch { }
+    if (typeof TomSelect !== "function") return;
+
+    new TomSelect(selectEl, {
+        maxOptions: 1000,
+        sortField: { field: "text", direction: "asc" },
+        closeAfterSelect: true,
+        placeholder: "Select a country…"
+    });
+}
+
+function attachConfirmHandlerOnce() {
+    const btn = document.getElementById("confirm-payment-button");
+    if (!btn || btn.dataset.listenerAttached === "true") return;
+
+    btn.dataset.listenerAttached = "true";
+    btn.addEventListener("click", async () => {
+        const form = document.getElementById("paymentForm");
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Processing…";
+
+        try {
+            const userDetails = (typeof readCheckoutForm === 'function') ? (readCheckoutForm() || {}) : {};
+            if (window.latestPaymentIntentId || window.latestOrderId) {
+                await window.__SS_CHECKOUT_API__?.storeUserDetails?.({
+                    checkoutId: window.latestCheckoutId || null,
+                    token: window.latestCheckoutPublicToken || null,
+                    paymentIntentId: window.latestPaymentIntentId || null,
+                    clientSecret: window.latestClientSecret || null,
+                    userDetails
+                }).catch(() => {});
+            }
+
+            const clientSecret = window.latestClientSecret || null;
+            const orderId = window.latestOrderId || null;
+            const paymentIntentId = window.latestPaymentIntentId || null;
+
+            if (clientSecret && window.stripeInstance?.retrievePaymentIntent) {
+                try {
+                    const piRes = await window.stripeInstance.retrievePaymentIntent(clientSecret);
+                    const pi = piRes?.paymentIntent;
+                    if (pi?.status === "succeeded") {
+                        const checkoutToken = window.latestCheckoutPublicToken || null;
+                        const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+                        if (resolvedOrderId && checkoutToken) {
+                            const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                            window.latestOrderId = resolvedOrderId;
+                            window.latestOrderPublicToken = checkoutToken;
+                            window.latestOrderStatusUrl = statusUrl;
+                            addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                        }
+                        if (!resolvedOrderId) {
+                            alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                            return;
+                        }
+                        clearPaymentPendingFlag();
+                        clearBasketCompletely();
+                        try { clearCheckoutDraft(); } catch {}
+                        setPaymentSuccessFlag({ reloadOnOk: true });
+                        window.location.replace(window.location.origin);
+                        return;
+                    }
+                    if (pi?.status === "processing") {
+                        setPaymentPendingFlag({ paymentIntentId: pi.id, orderId: orderId || null, clientSecret, checkoutId: window.latestCheckoutId || null, checkoutToken: window.latestCheckoutPublicToken || null });
+                        const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: pi.id });
+                        if (status === "succeeded") {
+                            const checkoutToken = window.latestCheckoutPublicToken || null;
+                            const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+                            if (resolvedOrderId && checkoutToken) {
+                                const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                                window.latestOrderId = resolvedOrderId;
+                                window.latestOrderPublicToken = checkoutToken;
+                                window.latestOrderStatusUrl = statusUrl;
+                                addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                            }
+                            if (!resolvedOrderId) {
+                                alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                                return;
+                            }
+                            clearPaymentPendingFlag();
+                            clearBasketCompletely();
+                            try { clearCheckoutDraft(); } catch {}
+                            setPaymentSuccessFlag({ reloadOnOk: true });
+                            window.location.replace(window.location.origin);
+                            return;
+                        }
+                        if (status === "requires_payment_method" || status === "canceled") {
+                            clearPaymentPendingFlag();
+                            alert("Payment did not complete. Your cart is still saved—please try again.");
+                            return;
+                        }
+                        alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+                        return;
+                    }
+                    if (pi?.status === "canceled") {
+                        clearPaymentPendingFlag();
+                        alert("This payment attempt was canceled. Please try again.");
+                        return;
+                    }
+                } catch {}
+            }
+
+            setPaymentPendingFlag({ paymentIntentId, orderId, clientSecret, checkoutId: window.latestCheckoutId || null, checkoutToken: window.latestCheckoutPublicToken || null });
+
+            const returnUrl = new URL(window.location.href);
+            stripStripeReturnParamsFromUrl(returnUrl);
+            returnUrl.searchParams.set("stripe_return", "1");
+
+            const { error, paymentIntent } = await window.stripeInstance.confirmPayment({
+                elements: window.elementsInstance,
+                confirmParams: { return_url: returnUrl.toString() },
+                redirect: "if_required"
+            });
+
+            if (error) {
+                clearPaymentPendingFlag();
+                throw error;
+            }
+
+            if (paymentIntent?.status === "succeeded") {
+                const checkoutToken = window.latestCheckoutPublicToken || null;
+                const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: paymentIntent.id, clientSecret });
+                if (resolvedOrderId && checkoutToken) {
+                    const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                    window.latestOrderId = resolvedOrderId;
+                    window.latestOrderPublicToken = checkoutToken;
+                    window.latestOrderStatusUrl = statusUrl;
+                    addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
+                }
+                if (!resolvedOrderId) {
+                    alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                    return;
+                }
+                clearPaymentPendingFlag();
+                clearBasketCompletely();
+                try { clearCheckoutDraft(); } catch {}
+                setPaymentSuccessFlag({ reloadOnOk: true });
+                window.location.replace(window.location.origin);
+                return;
+            }
+
+            if (paymentIntent?.id) {
+                setPaymentPendingFlag({ paymentIntentId: paymentIntent.id, orderId: orderId || null, clientSecret, checkoutId: window.latestCheckoutId || null, checkoutToken: window.latestCheckoutPublicToken || null });
+                const { status } = await pollPendingPaymentUntilFinal({ paymentIntentId: paymentIntent.id });
+                if (status === "succeeded") {
+                    const checkoutToken = window.latestCheckoutPublicToken || null;
+                    const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: paymentIntent.id, clientSecret });
+                    if (resolvedOrderId && checkoutToken) {
+                        const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                        window.latestOrderId = resolvedOrderId;
+                        window.latestOrderPublicToken = checkoutToken;
+                        window.latestOrderStatusUrl = statusUrl;
+                        addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: paymentIntent.id });
+                    }
+                    if (!resolvedOrderId) {
+                        alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
+                        return;
+                    }
+                    clearPaymentPendingFlag();
+                    clearBasketCompletely();
+                    try { clearCheckoutDraft(); } catch {}
+                    setPaymentSuccessFlag({ reloadOnOk: true });
+                    window.location.replace(window.location.origin);
+                    return;
+                }
+                if (status === "requires_payment_method" || status === "canceled") {
+                    clearPaymentPendingFlag();
+                    alert("Payment did not complete. Your cart is still saved—please try again.");
+                    return;
+                }
+                alert("Payment is still processing. Your cart is unchanged. Check again in a moment.");
+                return;
+            }
+        } catch (e) {
+            try {
+                const pi = e?.payment_intent || e?.paymentIntent || null;
+                if (pi && pi.id && pi.status === "succeeded" && String(e?.code || "").includes("payment_intent_")) {
+                    const clientSecret = window.latestClientSecret || null;
+                    const checkoutToken = window.latestCheckoutPublicToken || null;
+                    const resolvedOrderId = await resolveOrderIdByPaymentIntent({ paymentIntentId: pi.id, clientSecret });
+                    if (resolvedOrderId && checkoutToken) {
+                        const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
+                        window.latestOrderId = resolvedOrderId;
+                        window.latestOrderPublicToken = checkoutToken;
+                        window.latestOrderStatusUrl = statusUrl;
+                        addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
+                        clearBasketCompletely();
+                        try { clearCheckoutDraft(); } catch {}
+                        setPaymentSuccessFlag({ reloadOnOk: true });
+                        window.location.replace(window.location.origin);
+                        return;
+                    }
+                }
+            } catch {}
+            console.error("confirmPayment failed:", e);
+            alert(e?.message || "Payment could not be completed.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+}
+
 async function initPaymentModalLogic() {
     // Ensure tariffs + rates exist (from your earlier preloadSettingsData rewrite)
     if (typeof window.preloadSettingsData === "function") {
@@ -719,7 +1002,7 @@ async function handleStripeRedirectReturnOnLoad() {
         });
 
         if (resolvedOrderId && checkoutToken) {
-            const statusUrl = `${window.location.origin}/?orderId=${encodeURIComponent(resolvedOrderId)}&token=${encodeURIComponent(checkoutToken)}`;
+            const statusUrl = `${window.location.origin}/order-status/${encodeURIComponent(resolvedOrderId)}?token=${encodeURIComponent(checkoutToken)}`;
             window.latestOrderId = resolvedOrderId;
             window.latestOrderPublicToken = checkoutToken;
             window.latestOrderStatusUrl = statusUrl;
@@ -760,7 +1043,10 @@ async function handleStripeRedirectReturnOnLoad() {
     return true;
 }
 
+  attachPayButtonHandlerOnce();
+
   window.__SS_CHECKOUT__ = {
+    attachPayButtonHandlerOnce,
     saveCheckoutDraftFromModal,
     restoreCheckoutDraftToModal,
     clearCheckoutDraft,

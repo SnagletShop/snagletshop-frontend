@@ -14,9 +14,14 @@
   function openFromLocation() {
     try {
       const sp = new URLSearchParams(window.location.search || '');
-      const orderId = sp.get('orderId') || '';
+      const path = String(window.location.pathname || '');
+      let orderIdFromPath = '';
+      if (path.startsWith('/order-status/')) {
+        orderIdFromPath = decodeURIComponent(path.slice('/order-status/'.length).split('/')[0] || '');
+      }
+      const orderId = orderIdFromPath || (sp.get('orderId') || '');
       const token = sp.get('token') || '';
-      if (orderId && token && sp.has('orderId')) {
+      if (orderId && token && (orderIdFromPath || sp.has('orderId'))) {
         open({ orderId, token });
         return true;
       }
