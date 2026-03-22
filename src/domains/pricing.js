@@ -58,11 +58,19 @@ async function fetchExchangeRatesFromServer() {
     const data = await (window.__SS_PRICING_SERVICE__?.getExchangeRates ? window.__SS_PRICING_SERVICE__.getExchangeRates() : (async () => { let res = null; try { res = await window.__SS_API__.request('/api/proxy-rates', { cache: 'no-store' }); if (!res.ok) res = null; } catch { res = null; } if (!res) { res = await window.__SS_API__.request('/rates', { cache: 'no-store' }); } if (!res.ok) throw new Error(`Failed to fetch exchange rates (${res.status})`); return res.json().catch(() => null); })());
     if (!data || !data.rates) throw new Error('Invalid exchange rates payload.');
     const safeRates = (data.rates && typeof data.rates === "object" && !Array.isArray(data.rates)) ? { ...data.rates } : {};
+    const safeFetchedAt = Number(data.fetchedAt || 0) || 0;
     try { exchangeRates = safeRates; } catch {}
+    try { exchangeRatesFetchedAt = safeFetchedAt; } catch {}
     try {
+        window.exchangeRatesFetchedAt = safeFetchedAt;
         window.preloadedData = window.preloadedData || {};
         window.preloadedData.exchangeRates = safeRates;
-        if (data.fetchedAt != null) window.preloadedData.ratesFetchedAt = Number(data.fetchedAt || 0) || 0;
+        window.preloadedData.ratesFetchedAt = safeFetchedAt;
+    } catch {}
+    try {
+        if (typeof window.__ssSetExchangeRatesFetchedAt === "function") {
+            window.__ssSetExchangeRatesFetchedAt(safeFetchedAt);
+        }
     } catch {}
     return data;
 }

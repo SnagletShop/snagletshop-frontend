@@ -1,4 +1,30 @@
 (function (window) {
+  async function refreshFxSnapshotForCheckoutRetry() {
+    try {
+      if (typeof window.__ssResetSettingsPreloadState === 'function') {
+        window.__ssResetSettingsPreloadState({ clearSettingsCache: true, clearRates: true });
+      } else if (window.__SS_SETTINGS_RUNTIME__?.clearSettingsCache) {
+        window.__SS_SETTINGS_RUNTIME__.clearSettingsCache({
+          SETTINGS_CACHE_KEY: window.SETTINGS_CACHE_KEY || 'preloadedSettings'
+        });
+      } else {
+        try { localStorage.removeItem(window.SETTINGS_CACHE_KEY || 'preloadedSettings'); } catch {}
+        try { window.exchangeRatesFetchedAt = 0; } catch {}
+      }
+
+      try {
+        if (typeof window.fetchExchangeRatesFromServer === 'function') {
+          const ratesData = await window.fetchExchangeRatesFromServer();
+          const safeTs = Number(ratesData?.fetchedAt || window.preloadedData?.ratesFetchedAt || 0) || 0;
+          if (safeTs > 0) {
+            try { window.exchangeRatesFetchedAt = safeTs; } catch {}
+            try { if (typeof window.__ssSetExchangeRatesFetchedAt === 'function') window.__ssSetExchangeRatesFetchedAt(safeTs); } catch {}
+          }
+        }
+      } catch {}
+    } catch {}
+  }
+
   function computeExpectedClientTotalForServer(fullCart, currency, countryCode) {
     const cur = String(currency || "EUR").toUpperCase();
     const cc = String(countryCode || "").toUpperCase();
@@ -111,9 +137,7 @@
       }
 
       if (status === 409 && attempt === 1 && (code === "FX_SNAPSHOT_NOT_FOUND" || code === "TOTAL_MISMATCH")) {
-        try { localStorage.removeItem(window.SETTINGS_CACHE_KEY || 'snaglet_settings_cache'); } catch {}
-        window.exchangeRatesFetchedAt = 0;
-        try { window._preloadSettingsPromise = null; } catch {}
+        await refreshFxSnapshotForCheckoutRetry();
         continue;
       }
 

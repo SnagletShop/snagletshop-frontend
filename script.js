@@ -631,7 +631,9 @@ if (basketBC) {
 async function preloadSettingsData() {
     const runtime = window.__SS_SETTINGS_RUNTIME__;
     if (runtime && typeof runtime.preloadSettingsData === "function") {
+        const options = (arguments && arguments[0] && typeof arguments[0] === "object") ? arguments[0] : {};
         return runtime.preloadSettingsData({
+            forceRefresh: options.forceRefresh === true,
             getPreloadPromise: () => _preloadSettingsPromise,
             setPreloadPromise: (value) => { _preloadSettingsPromise = value; },
             setExchangeRatesFetchedAt: (value) => { exchangeRatesFetchedAt = value; },
@@ -654,6 +656,43 @@ async function preloadSettingsData() {
         });
     }
     return Promise.resolve();
+}
+
+function __ssSetExchangeRatesFetchedAt(value) {
+    const safeValue = Number(value || 0) || 0;
+    exchangeRatesFetchedAt = safeValue;
+    try { window.exchangeRatesFetchedAt = safeValue; } catch {}
+    try {
+        window.preloadedData = window.preloadedData || {};
+        window.preloadedData.ratesFetchedAt = safeValue;
+    } catch {}
+    return safeValue;
+}
+
+function __ssResetSettingsPreloadState(options = {}) {
+    const runtime = window.__SS_SETTINGS_RUNTIME__;
+    if (runtime && typeof runtime.clearSettingsCache === "function") {
+        runtime.clearSettingsCache({
+            setPreloadPromise: (value) => { _preloadSettingsPromise = value; },
+            setExchangeRatesFetchedAt: __ssSetExchangeRatesFetchedAt,
+            SETTINGS_CACHE_KEY,
+            lsRemove: (key) => {
+                try { localStorage.removeItem(key); } catch {}
+            }
+        });
+    } else {
+        _preloadSettingsPromise = null;
+        if (options.clearSettingsCache !== false) {
+            try { localStorage.removeItem(SETTINGS_CACHE_KEY); } catch {}
+        }
+        if (options.clearRates !== false) {
+            __ssSetExchangeRatesFetchedAt(0);
+            try {
+                window.preloadedData = window.preloadedData || {};
+                window.preloadedData.exchangeRates = null;
+            } catch {}
+        }
+    }
 }
 
 
@@ -994,6 +1033,9 @@ function round2(n){ return window.__SS_CHECKOUT_RUNTIME__?.round2?.(n) ?? (Numbe
 
 
 window.preloadSettingsData = preloadSettingsData;
+window.SETTINGS_CACHE_KEY = SETTINGS_CACHE_KEY;
+window.__ssSetExchangeRatesFetchedAt = __ssSetExchangeRatesFetchedAt;
+window.__ssResetSettingsPreloadState = __ssResetSettingsPreloadState;
 window.__SS_CATALOG_UI_CTX__ = window.__SS_CATALOG_UI_CTX__ || __ssGetCatalogUiCtx();
 window.__ssNormalizeCatalogImages = __ssNormalizeCatalogImages;
 window.__ssGetFeatureFlags = window.__ssGetFeatureFlags || function(){ try { return (window.preloadedData && window.preloadedData.storefrontConfig && window.preloadedData.storefrontConfig.featureFlags) || {}; } catch { return {}; } };

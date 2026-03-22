@@ -2,7 +2,8 @@
   'use strict';
 
   async function preloadSettingsData(ctx = {}) {
-    if (ctx.getPreloadPromise?.()) return ctx.getPreloadPromise();
+    const forceRefresh = ctx.forceRefresh === true;
+    if (!forceRefresh && ctx.getPreloadPromise?.()) return ctx.getPreloadPromise();
 
     const setRatesFetchedAt = (ts) => {
       const safeTs = Number(ts || 0) || 0;
@@ -31,7 +32,7 @@
           }
         };
 
-        const cached = ctx.safeJsonParse?.(ctx.lsGet?.(ctx.SETTINGS_CACHE_KEY));
+        const cached = forceRefresh ? null : ctx.safeJsonParse?.(ctx.lsGet?.(ctx.SETTINGS_CACHE_KEY));
         if (cached && ctx.isSettingsCacheValid?.(cached.timestamp)) {
           const safeTariffs = (cached.tariffs && typeof cached.tariffs === 'object') ? cached.tariffs : {};
           const safeRates = (cached.rates && typeof cached.rates === 'object') ? cached.rates : {};
@@ -124,6 +125,24 @@
     } finally {
       ctx.setPreloadPromise?.(null);
     }
+  }
+
+  function clearSettingsCache(ctx = {}) {
+    try { ctx.setPreloadPromise?.(null); } catch {}
+    try {
+      const key = String(ctx.SETTINGS_CACHE_KEY || window.SETTINGS_CACHE_KEY || 'preloadedSettings').trim() || 'preloadedSettings';
+      if (typeof ctx.lsRemove === 'function') ctx.lsRemove(key);
+      else localStorage.removeItem(key);
+    } catch {}
+    try {
+      if (typeof ctx.setExchangeRatesFetchedAt === 'function') ctx.setExchangeRatesFetchedAt(0);
+    } catch {}
+    try { window.exchangeRatesFetchedAt = 0; } catch {}
+    try {
+      window.preloadedData = window.preloadedData || {};
+      window.preloadedData.exchangeRates = null;
+      window.preloadedData.ratesFetchedAt = 0;
+    } catch {}
   }
 
   function addUniqueCode(out, seen, value) {
@@ -417,5 +436,5 @@
     if (currencySelect) ctx.syncCurrencySelects?.(currencySelect.value || ctx.getSelectedCurrency?.() || 'EUR');
   }
 
-  window.__SS_SETTINGS_RUNTIME__ = { preloadSettingsData, goToSettings };
+  window.__SS_SETTINGS_RUNTIME__ = { preloadSettingsData, clearSettingsCache, goToSettings };
 })(window, document);
