@@ -158,7 +158,14 @@ function __ssSafeResolveVariantPriceEUR(product, selectedOptions, legacySelected
             if (Number.isFinite(resolved) && resolved > 0) return resolved;
         }
     } catch {}
-    const base = Number.parseFloat(product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0) || 0;
+    const parseLoose = (value) => {
+        try {
+            if (typeof window.__ssParsePriceEUR === "function") return window.__ssParsePriceEUR(value);
+        } catch {}
+        const num = Number.parseFloat(String(value ?? '').replace(/[^0-9,.\-]/g, '').replace(',', '.'));
+        return Number.isFinite(num) ? num : 0;
+    };
+    const base = parseLoose(product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0) || 0;
     return Math.round(base * 100) / 100;
 }
 

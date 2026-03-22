@@ -47,16 +47,28 @@
       return safe;
     }
 
-    try {
-      const data = await ctx.getPublicConfig?.();
-      const key = normalizePublishableKey(data && data.stripePublishableKey);
-      if (key) {
+    const loaders = [
+      () => ctx.getPublicConfig?.(),
+      () => window.__SS_CATALOG_API__?.getPublicConfig?.(),
+      () => window.__SS_CATALOG_SERVICE__?.getPublicConfig?.(),
+      () => window.__SS_PRICING_SERVICE__?.getStorefrontConfig?.(),
+      () => window.__SS_API__?.json?.('/public-config', { method: 'GET' }),
+      () => window.__SS_API__?.json?.('/storefront-config', { method: 'GET', credentials: 'include' })
+    ];
+    for (const load of loaders) {
+      try {
+        const data = await load?.();
+        const key = normalizePublishableKey(
+          data?.stripePublishableKey ||
+          data?.config?.stripePublishableKey
+        );
+        if (!key) continue;
         const safe = assertPublishableKeySafe(key);
         window.STRIPE_PUBLISHABLE_KEY = safe;
         window.STRIPE_PUBLISHABLE = safe;
         return safe;
-      }
-    } catch {}
+      } catch {}
+    }
 
     throw new Error('Stripe publishable key is not available yet.');
   }

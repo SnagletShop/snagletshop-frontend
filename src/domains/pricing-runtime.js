@@ -3,6 +3,28 @@
 
   const PRICE_SELECTOR = '.price, .product-price, .basket-item-price, #product-page-price, .productPrice';
 
+  function parseLoosePrice(value) {
+    try {
+      if (typeof window.__ssParsePriceEUR === 'function') return window.__ssParsePriceEUR(value);
+    } catch {}
+    if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+    if (typeof value !== 'string') return NaN;
+    let s = value.trim();
+    if (!s) return NaN;
+    s = s.replace(/[^0-9,.\-]/g, '');
+    if (!s) return NaN;
+    const hasComma = s.includes(',');
+    const hasDot = s.includes('.');
+    if (hasComma && hasDot) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(/,/g, '.');
+      else s = s.replace(/,/g, '');
+    } else if (hasComma) {
+      s = s.replace(/,/g, '.');
+    }
+    const n = Number.parseFloat(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
   function isRuntimeCtx(value) {
     return !!value && typeof value === 'object' && (
       typeof value.getSelectedCurrency === 'function' ||
@@ -116,8 +138,8 @@
 
     root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
       const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
-      const eur = parseFloat(element.dataset.eur);
-      const eurOrig = parseFloat(element.dataset.eurOriginal);
+      const eur = parseLoosePrice(element.dataset.eur);
+      const eurOrig = parseLoosePrice(element.dataset.eurOriginal);
       const pct = Number(element.dataset.recoDiscountPct || element.dataset.discountPct || 0);
 
       if (!isNaN(eurOrig) && eurOrig > 0 && !isNaN(eur) && eur > 0 && eurOrig > eur) {
@@ -153,7 +175,7 @@
 
     root.querySelectorAll('.ss-ci-badge[data-eur]').forEach((el) => {
       const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
-      const eur = parseFloat(el.dataset.eur);
+      const eur = parseLoosePrice(el.dataset.eur);
       if (isNaN(eur)) return;
       const kind = String(el.dataset.badgeKind || '').toLowerCase();
       const val = `${currencySymbol}${convertPrice(ctx, Math.abs(eur))}`;
@@ -174,13 +196,13 @@
   function initializePrices(ctxOrRoot, maybeRootEl) {
     const { root } = normalizeRootArgs(ctxOrRoot, maybeRootEl);
     root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
-      const basePrice = parseFloat(String(element.textContent || '').replace(/[^0-9.]/g, ''));
+      const basePrice = parseLoosePrice(String(element.textContent || ''));
       if (!isNaN(basePrice)) element.dataset.eur = basePrice;
     });
 
     const totalElement = root.getElementById ? root.getElementById('basket-total') : document.getElementById('basket-total');
     if (totalElement) {
-      const baseTotal = parseFloat(String(totalElement.textContent || '').replace(/[^0-9.]/g, ''));
+      const baseTotal = parseLoosePrice(String(totalElement.textContent || ''));
       if (!isNaN(baseTotal)) totalElement.dataset.eur = baseTotal;
     }
   }
@@ -229,7 +251,7 @@
         const root = document.getElementById('Viewer') || document.body;
         root.querySelectorAll(PRICE_SELECTOR).forEach((el) => {
           if (!el.dataset.eur) {
-            const base = parseFloat(String(el.textContent || '').replace(/[^0-9.]/g, ''));
+            const base = parseLoosePrice(String(el.textContent || ''));
             if (!isNaN(base)) el.dataset.eur = String(base);
           }
         });

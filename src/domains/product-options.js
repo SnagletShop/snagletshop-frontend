@@ -11,6 +11,36 @@
     }[ch] || ch));
   }
 
+  function __ssParseMaybeJson(value) {
+    if (typeof value !== "string") return value;
+    const s = value.trim();
+    if (!s) return value;
+    if (!(s.startsWith("{") || s.startsWith("["))) return value;
+    try { return JSON.parse(s); } catch { return value; }
+  }
+
+  function __ssParseLoosePrice(value) {
+    try {
+      if (typeof window.__ssParsePriceEUR === "function") return window.__ssParsePriceEUR(value);
+    } catch {}
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value !== "string") return 0;
+    let s = value.trim();
+    if (!s) return 0;
+    s = s.replace(/[^0-9,.\-]/g, "");
+    if (!s) return 0;
+    const hasComma = s.includes(",");
+    const hasDot = s.includes(".");
+    if (hasComma && hasDot) {
+      if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(/,/g, ".");
+      else s = s.replace(/,/g, "");
+    } else if (hasComma) {
+      s = s.replace(/,/g, ".");
+    }
+    const n = Number.parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
   function __ssGetCatalogFlat() {
     try {
       if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) return window.productsFlatFromServer;
@@ -24,11 +54,13 @@
 
   function __ssExtractOptionGroups(product) {
     const p = product || {};
-    if (Array.isArray(p.optionGroups) && p.optionGroups.length) {
-      return p.optionGroups.map((g, idx) => {
+    const optionGroups = __ssParseMaybeJson(p.optionGroups);
+    if (Array.isArray(optionGroups) && optionGroups.length) {
+      return optionGroups.map((g, idx) => {
         const label = String(g?.label ?? g?.name ?? `Option ${idx + 1}`).trim().replace(/:$/, "");
         const options = Array.isArray(g?.options) ? g.options.map(x => String(x).trim()).filter(Boolean) : [];
-        const imageByOption = (g && typeof g.imageByOption === "object" && g.imageByOption) ? g.imageByOption : null;
+        const imageByOptionRaw = __ssParseMaybeJson(g?.imageByOption);
+        const imageByOption = (imageByOptionRaw && typeof imageByOptionRaw === "object" && !Array.isArray(imageByOptionRaw)) ? imageByOptionRaw : null;
         const key = String(g?.key ?? label.toLowerCase().replace(/\s+/g, "_") ?? `opt${idx + 1}`);
         return { key, label, options, imageByOption };
       }).filter(g => g.options.length > 0);
@@ -36,14 +68,15 @@
     const groups = [];
     for (let i = 1; i <= 10; i++) {
       const k = (i === 1) ? "productOptions" : `productOptions${i}`;
-      const arr = p[k];
+      const arr = __ssParseMaybeJson(p[k]);
       if (!Array.isArray(arr) || arr.length < 2) continue;
       const [labelRaw, ...optsRaw] = arr;
       const label = String(labelRaw ?? `Option ${i}`).trim().replace(/:$/, "");
       const options = optsRaw.map(x => String(x).trim()).filter(Boolean);
       if (!options.length) continue;
-      const map = (i === 1) ? (p.productOptionImageMap || p.productOptionImageMap1 || null) : (p[`productOptionImageMap${i}`] || null);
-      groups.push({ key: label.toLowerCase().replace(/\s+/g, "_") || `opt${i}`, label, options, imageByOption: (map && typeof map === "object") ? map : null });
+      const mapRaw = (i === 1) ? (p.productOptionImageMap || p.productOptionImageMap1 || null) : (p[`productOptionImageMap${i}`] || null);
+      const map = __ssParseMaybeJson(mapRaw);
+      groups.push({ key: label.toLowerCase().replace(/\s+/g, "_") || `opt${i}`, label, options, imageByOption: (map && typeof map === "object" && !Array.isArray(map)) ? map : null });
     }
     return groups;
   }
@@ -74,12 +107,13 @@
   }
 
   function __ssCollectPositivePrice(out, value) {
-    const num = Number.parseFloat(value);
+    const num = __ssParseLoosePrice(value);
     if (Number.isFinite(num) && num > 0) out.push(num);
   }
 
   function __ssCollectNestedPriceCandidates(out, value, depth = 0, seen = null) {
     if (depth > 6 || value == null) return;
+    value = __ssParseMaybeJson(value);
     if (Array.isArray(value)) {
       value.forEach((entry) => __ssCollectNestedPriceCandidates(out, entry, depth + 1, seen));
       return;
@@ -118,18 +152,20 @@
 
   function __ssInferBasePriceEUR(product, preferB = false) {
     const prices = [];
+    const variantPrices = __ssParseMaybeJson(product?.variantPrices);
+    const variantPricesB = __ssParseMaybeJson(product?.variantPricesB);
     if (preferB) {
       __ssCollectPositivePrice(prices, product?.priceB);
-      __ssCollectPositivePriceMap(prices, product?.variantPricesB);
+      __ssCollectPositivePriceMap(prices, variantPricesB);
     } else {
       __ssCollectPositivePrice(prices, product?.price);
       __ssCollectPositivePrice(prices, product?.priceEUR);
       __ssCollectPositivePrice(prices, product?.basePrice);
       __ssCollectPositivePrice(prices, product?.sellPrice);
-      __ssCollectPositivePriceMap(prices, product?.variantPrices);
+      __ssCollectPositivePriceMap(prices, variantPrices);
     }
-    __ssCollectPositivePriceArray(prices, product?.variants);
-    __ssCollectPositivePriceArray(prices, product?.options);
+    __ssCollectPositivePriceArray(prices, __ssParseMaybeJson(product?.variants));
+    __ssCollectPositivePriceArray(prices, __ssParseMaybeJson(product?.options));
     if (!prices.length && preferB) return __ssInferBasePriceEUR(product, false);
     return prices.length ? window.__ssRound2(Math.min(...prices)) : 0;
   }
@@ -140,8 +176,8 @@
     const baseA = __ssInferBasePriceEUR(product, false);
     const baseB = __ssInferBasePriceEUR(product, true);
     const base = (useB && Number.isFinite(baseB) && baseB > 0) ? baseB : baseA;
-    const mapA = (product && typeof product === "object") ? product.variantPrices : null;
-    const mapB = (product && typeof product === "object") ? product.variantPricesB : null;
+    const mapA = (product && typeof product === "object") ? __ssParseMaybeJson(product.variantPrices) : null;
+    const mapB = (product && typeof product === "object") ? __ssParseMaybeJson(product.variantPricesB) : null;
     const map = (useB && mapB && typeof mapB === "object" && !Array.isArray(mapB)) ? mapB : mapA;
     if (!map || typeof map !== "object" || Array.isArray(map)) return window.__ssRound2(base);
     const sel = __ssNormalizeSelectedOptions(selectedOptions || []);
@@ -237,7 +273,8 @@
   }
 
   function __ssApplyOptionImageMapping(group, optionValue, validImages) {
-    const map = (group && typeof group.imageByOption === "object" && group.imageByOption) ? group.imageByOption : null;
+    const rawMap = __ssParseMaybeJson(group?.imageByOption);
+    const map = (rawMap && typeof rawMap === "object" && !Array.isArray(rawMap)) ? rawMap : null;
     if (!map) return false;
     const mapped = map[optionValue];
     if (mapped === undefined || mapped === null || mapped === "") return false;

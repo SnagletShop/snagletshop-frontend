@@ -5,6 +5,34 @@
   function getQuantityControls() {
     return getResolver()?.resolve?.('component.quantityControls', window.__SS_QUANTITY_CONTROLS__ || null) || null;
   }
+  function parseMaybeJson(value) {
+    if (typeof value !== 'string') return value;
+    const s = value.trim();
+    if (!s) return value;
+    if (!(s.startsWith('{') || s.startsWith('['))) return value;
+    try { return JSON.parse(s); } catch { return value; }
+  }
+  function parseLoosePrice(value) {
+    try {
+      if (typeof window.__ssParsePriceEUR === 'function') return window.__ssParsePriceEUR(value);
+    } catch {}
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value !== 'string') return 0;
+    let s = value.trim();
+    if (!s) return 0;
+    s = s.replace(/[^0-9,.\-]/g, '');
+    if (!s) return 0;
+    const hasComma = s.includes(',');
+    const hasDot = s.includes('.');
+    if (hasComma && hasDot) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(/,/g, '.');
+      else s = s.replace(/,/g, '');
+    } else if (hasComma) {
+      s = s.replace(/,/g, '.');
+    }
+    const n = Number.parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  }
 
   function createCartButton(label, onClick) {
     const addToCartBtn = document.createElement('button');
@@ -23,12 +51,13 @@
   }
 
   function collectPositivePrice(out, value) {
-    const num = Number.parseFloat(value);
+    const num = parseLoosePrice(value);
     if (Number.isFinite(num) && num > 0) out.push(num);
   }
 
   function collectNestedPriceCandidates(out, value, depth = 0, seen = null) {
     if (depth > 6 || value == null) return;
+    value = parseMaybeJson(value);
     if (Array.isArray(value)) {
       value.forEach((entry) => collectNestedPriceCandidates(out, entry, depth + 1, seen));
       return;
