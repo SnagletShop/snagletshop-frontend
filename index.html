@@ -3913,13 +3913,9 @@
             }
 
             .RecoStrip {
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                scroll-behavior: smooth;
-                /* makes programmatic snap smooth too */
-                -webkit-overflow-scrolling: touch;
-                width: auto !important;
-                min-width: fit-content !important;
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: none !important;
             }
 
             .settings-section input {

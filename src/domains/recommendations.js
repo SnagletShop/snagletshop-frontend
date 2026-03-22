@@ -110,9 +110,9 @@ function __ssRecoEnsureStyles() {
       .RecoStrip{
         --reco-cols: 3;
         --reco-gap: 12px;
-        width:100%;
-        min-width:100%;
-        max-width:100%;
+        width:100% !important;
+        min-width:100% !important;
+        max-width:none !important;
         box-sizing:border-box;
         display:grid;
         grid-auto-flow:column;
@@ -132,7 +132,7 @@ function __ssRecoEnsureStyles() {
       }
   
    
-      .RecoCard{scroll-snap-align:start;min-width:0;width:100%}
+      .RecoCard{scroll-snap-align:start;min-width:0;width:100%;display:flex;flex-direction:column}
       .RecoCard:hover{background:rgba(255,255,255,.07)}
       .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
       .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
