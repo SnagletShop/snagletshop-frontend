@@ -855,7 +855,48 @@ function getStripeAppearanceForModal(){ return window.__SS_CHECKOUT_UI__?.getStr
 function resetWalletPaymentRequestButton(){ const host = document.getElementById('walletPaymentRequestButton'); if (host) { host.innerHTML = ''; host.style.display = 'none'; } }
 function _isIso2Country(value){ return /^[A-Z]{2}$/.test(String(value || '').trim().toUpperCase()); }
 function _getWalletButtonTheme(){ return document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light'; }
-function _getStripeAppearance(){ const isDark=document.documentElement.classList.contains('dark-mode') || localStorage.getItem('themeMode')==='dark'; return !isDark ? { theme:'flat', variables:{ fontFamily:'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif', fontSizeBase:'14px', colorBackground:'#ffffff', colorText:'#111827', colorTextSecondary:'#4b5563', colorPrimary:'#2563eb', colorBorder:'rgba(17,24,39,.15)', borderRadius:'14px', spacingUnit:'6px' } } : { theme:'night', variables:{ fontFamily:'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif', fontSizeBase:'14px', colorBackground:'#0b1220', colorText:'rgba(255,255,255,.92)', colorTextSecondary:'rgba(229,231,235,.70)', colorPrimary:'#3b82f6', colorDanger:'#ef4444', colorSuccess:'#22c55e', colorBorder:'rgba(255,255,255,.14)', borderRadius:'14px', spacingUnit:'6px', focusBoxShadow:'0 0 0 3px rgba(59,130,246,.20)' }, rules:{ '.Block':{ backgroundColor:'transparent', borderColor:'rgba(255,255,255,.10)' }, '.Input':{ backgroundColor:'rgba(255,255,255,.06)', borderColor:'rgba(255,255,255,.14)', color:'rgba(255,255,255,.92)', boxShadow:'none' }, '.Input:focus':{ borderColor:'rgba(59,130,246,.55)', boxShadow:'0 0 0 3px rgba(59,130,246,.20)' }, '.Label':{ color:'rgba(229,231,235,.85)' }, '.Tab':{ backgroundColor:'rgba(255,255,255,.06)', borderColor:'rgba(255,255,255,.12)', color:'rgba(229,231,235,.90)' }, '.Tab--selected':{ backgroundColor:'rgba(255,255,255,.10)', borderColor:'rgba(59,130,246,.45)' } } }; }
+function _getStripeAppearance(){
+  try {
+    const appearance = window.__SS_CHECKOUT_UI__?.getStripeAppearanceForModal?.();
+    if (appearance && typeof appearance === 'object') return appearance;
+  } catch {}
+  const isDark = document.documentElement.classList.contains('dark-mode') || localStorage.getItem('themeMode') === 'dark';
+  return !isDark
+    ? {
+        theme: 'flat',
+        variables: {
+          fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif',
+          fontSizeBase: '14px',
+          colorBackground: '#ffffff',
+          colorText: '#111827',
+          colorPrimary: '#2563eb',
+          colorDanger: '#ef4444',
+          borderRadius: '14px',
+          spacingUnit: '6px'
+        }
+      }
+    : {
+        theme: 'night',
+        variables: {
+          fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif',
+          fontSizeBase: '14px',
+          colorBackground: '#0b1220',
+          colorText: 'rgba(255,255,255,.92)',
+          colorPrimary: '#3b82f6',
+          colorDanger: '#ef4444',
+          borderRadius: '14px',
+          spacingUnit: '6px'
+        },
+        rules: {
+          '.Block': { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,.10)' },
+          '.Input': { backgroundColor: 'rgba(255,255,255,.06)', borderColor: 'rgba(255,255,255,.14)', color: 'rgba(255,255,255,.92)', boxShadow: 'none' },
+          '.Input:focus': { borderColor: 'rgba(59,130,246,.55)', boxShadow: '0 0 0 3px rgba(59,130,246,.20)' },
+          '.Label': { color: 'rgba(229,231,235,.85)' },
+          '.Tab': { backgroundColor: 'rgba(255,255,255,.06)', borderColor: 'rgba(255,255,255,.12)', color: 'rgba(229,231,235,.90)' },
+          '.Tab--selected': { backgroundColor: 'rgba(255,255,255,.10)', borderColor: 'rgba(59,130,246,.45)' }
+        }
+      };
+}
 async function setupWalletPaymentRequestButton(){ return window.__SS_CHECKOUT_UI__?.setupWalletPaymentRequestButton?.apply(this, arguments); }
 function __clearLegacyPaymentSuccessLocalStorage(){ return window.__SS_MODAL_RUNTIME__?.clearLegacyPaymentSuccessLocalStorage?.({ flagKey:PAYMENT_SUCCESS_FLAG_KEY, reloadKey:PAYMENT_SUCCESS_RELOAD_KEY }); }
 function __paymentSuccessStore(){

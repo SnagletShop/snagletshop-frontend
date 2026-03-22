@@ -4,18 +4,18 @@ let __ssRecoRenderToken = 0;
 let __ssSmartRecoApiCache = window.__ssSmartRecoApiCache || { key: "", at: 0, data: null, pendingKey: "", pending: null };
 
 window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
-    desktopVisibleCount: 7,
+    desktopVisibleCount: 3,
     mobileVisibleCount: 2,
-    desktopBatchSize: 7,
-    mobileBatchSize: 4,
-    desktopMaxBatches: 8,
-    mobileMaxBatches: 10,
-    desktopMaxItems: 56,
-    mobileMaxItems: 40,
+    desktopBatchSize: 3,
+    mobileBatchSize: 2,
+    desktopMaxBatches: 6,
+    mobileMaxBatches: 6,
+    desktopMaxItems: 0,
+    mobileMaxItems: 0,
     desktopSwipeSmallPx: 35,
-    mobileSwipeSmallPx: 28,
-    desktopSwipeBigPx: 140,
-    mobileSwipeBigPx: 84
+    mobileSwipeSmallPx: 35,
+    desktopSwipeBigPx: 120,
+    mobileSwipeBigPx: 120
 };
 window.__ssSmartRecoApiCache = window.__ssSmartRecoApiCache || __ssSmartRecoApiCache;
 
@@ -110,9 +110,8 @@ function __ssRecoEnsureStyles() {
       .RecoStrip{
         --reco-cols: 3;
         --reco-gap: 12px;
-        width:100% !important;
-        min-width:100% !important;
-        max-width:none !important;
+        width:100%;
+        min-width:100%;
         box-sizing:border-box;
         display:grid;
         grid-auto-flow:column;
@@ -120,13 +119,13 @@ function __ssRecoEnsureStyles() {
         gap:var(--reco-gap);
         align-content:start;
         align-items:start;
-        padding-right:0;
-        /* exact-fit N cards in the viewport; JS sets --reco-cols */
-        grid-auto-columns:minmax(0, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+        padding-right:6px;
+        /* monolith sizing: keep a usable minimum so cards never collapse into tiny tiles */
+        grid-auto-columns:minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
       }
       @media (max-width: 460px){
         .RecoStrip{
-          grid-auto-columns:minmax(0, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+          grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
         }
         .RecoNav{width:34px;height:34px;border-radius:11px;}
       }
@@ -244,22 +243,22 @@ function __ssRecoGetLayout(device) {
     const cfg = __ssRecoGetLayoutSettings();
     const visibleCount = mobile
         ? Math.max(1, Number(cfg.mobileVisibleCount || 2) || 2)
-        : Math.max(1, Number(cfg.desktopVisibleCount || 7) || 7);
+        : Math.max(1, Number(cfg.desktopVisibleCount || 3) || 3);
     const batchSize = mobile
-        ? Math.max(visibleCount, Number(cfg.mobileBatchSize || 4) || 4)
-        : Math.max(visibleCount, Number(cfg.desktopBatchSize || 7) || 7);
+        ? Math.max(1, Number(cfg.mobileBatchSize || 2) || 2)
+        : Math.max(1, Number(cfg.desktopBatchSize || 3) || 3);
     const maxBatches = mobile
-        ? Math.max(1, Number(cfg.mobileMaxBatches || 10) || 10)
-        : Math.max(1, Number(cfg.desktopMaxBatches || 8) || 8);
+        ? Math.max(1, Number(cfg.mobileMaxBatches || 6) || 6)
+        : Math.max(1, Number(cfg.desktopMaxBatches || 6) || 6);
     const maxItems = mobile
-        ? Math.max(batchSize, Number(cfg.mobileMaxItems || 40) || 40)
-        : Math.max(batchSize, Number(cfg.desktopMaxItems || 56) || 56);
+        ? Math.max(0, Number(cfg.mobileMaxItems || 0) || 0)
+        : Math.max(0, Number(cfg.desktopMaxItems || 0) || 0);
     const swipeSmallPx = mobile
-        ? Math.max(5, Number(cfg.mobileSwipeSmallPx || 28) || 28)
+        ? Math.max(5, Number(cfg.mobileSwipeSmallPx || 35) || 35)
         : Math.max(5, Number(cfg.desktopSwipeSmallPx || 35) || 35);
     const swipeBigPx = mobile
-        ? Math.max(swipeSmallPx + 12, Number(cfg.mobileSwipeBigPx || 84) || 84)
-        : Math.max(swipeSmallPx + 12, Number(cfg.desktopSwipeBigPx || 140) || 140);
+        ? Math.max(swipeSmallPx + 12, Number(cfg.mobileSwipeBigPx || 120) || 120)
+        : Math.max(swipeSmallPx + 12, Number(cfg.desktopSwipeBigPx || 120) || 120);
     return mobile
         ? { visibleCount, batchSize, maxBatches, maxItems, swipeSmallPx, swipeBigPx }
         : { visibleCount, batchSize, maxBatches, maxItems, swipeSmallPx, swipeBigPx };
@@ -268,10 +267,10 @@ function __ssRecoGetLayout(device) {
 function __ssRecoApplyLayout(recState, strip, ui = null) {
     const layout = __ssRecoGetLayout(recState?.device);
     if (!recState) return layout;
-    recState.visibleCount = Math.max(1, Number(layout.visibleCount || recState.visibleCount || 1) || 1);
-    recState.batchSize = Math.max(recState.visibleCount, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1);
+    recState.visibleCount = Math.max(1, Number(ui?.visibleCount || 0) || Number(layout.visibleCount || recState.visibleCount || 1) || 1);
+    recState.batchSize = Math.max(1, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1);
     recState.maxBatches = Math.max(1, Number(ui?.maxBatches || 0) || Number(layout.maxBatches || recState.maxBatches || 1) || 1);
-    recState.maxItems = Math.max(Number(ui?.maxItems || 0) || 0, Number(layout.maxItems || recState.maxItems || 0) || 0);
+    recState.maxItems = Math.max(0, Number(ui?.maxItems || 0) || Number(layout.maxItems || recState.maxItems || 0) || 0);
     recState.swipeSmallPx = Math.max(5, Number(ui?.swipeSmallPx || 0) || Number(layout.swipeSmallPx || recState.swipeSmallPx || 35) || 35);
     recState.swipeBigPx = Math.max(recState.swipeSmallPx + 12, Number(ui?.swipeBigPx || 0) || Number(layout.swipeBigPx || recState.swipeBigPx || 120) || 120);
     try {
@@ -621,8 +620,6 @@ async function __ssRecoRenderForProduct(product) {
         __ssRecoApplyLayout(recState, strip, recState.serverUi);
 
         viewport.appendChild(strip);
-        let loadMoreObserver = null;
-
         __ssEnsureContributionProducts();
         const flat = (Array.isArray(window.__ssContributionCache?.items) && window.__ssContributionCache.items.length)
             ? window.__ssContributionCache.items.map(x => ({ name: x.name, price: x.price, images: x.images || [], productLink: x.productLink || "", productId: x.productId }))
@@ -847,21 +844,6 @@ async function __ssRecoRenderForProduct(product) {
                     });
                 }
             } catch { }
-            try { bindLoadMoreObserver(); } catch { }
-        }
-
-        function bindLoadMoreObserver() {
-            try { loadMoreObserver?.disconnect?.(); } catch { }
-            loadMoreObserver = null;
-            const cards = strip.querySelectorAll(".RecoCard");
-            const tail = cards[cards.length - 1];
-            if (!tail || typeof IntersectionObserver !== "function") return;
-            loadMoreObserver = new IntersectionObserver((entries) => {
-                try {
-                    if (entries.some((entry) => entry.isIntersecting || entry.intersectionRatio >= 0.66)) void maybeLoadMore(true);
-                } catch { }
-            }, { root: viewport, threshold: [0.66, 0.9] });
-            try { loadMoreObserver.observe(tail); } catch { }
         }
 
         appendItems(firstResolved.items);
@@ -913,18 +895,13 @@ async function __ssRecoRenderForProduct(product) {
             return stride > 0 ? Math.round(viewport.scrollLeft / stride) : 0;
         }
 
-        async function maybeLoadMore(force = false) {
+        async function maybeLoadMore() {
             try {
-                if (!force) {
-                    const cards = strip.querySelectorAll(".RecoCard");
-                    const tail = cards[cards.length - 1];
-                    if (tail) {
-                        const viewRect = viewport.getBoundingClientRect();
-                        const tailRect = tail.getBoundingClientRect();
-                        const seenLastCard = tailRect.left < (viewRect.right + 12) && tailRect.right > (viewRect.left + 12);
-                        if (!seenLastCard) return;
-                    }
-                }
+                const idx = currentIndex();
+                const total = strip.querySelectorAll(".RecoCard").length;
+                const remaining = total - (idx + recState.visibleCount);
+                const nearEnd = remaining <= Math.max(2, recState.visibleCount);
+                if (!nearEnd) return;
                 const batch = await fetchBatch();
                 if (batch && batch.items && batch.items.length) {
                     appendItems(batch.items);

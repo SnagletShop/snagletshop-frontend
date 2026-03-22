@@ -3,26 +3,21 @@
 
 function getStripeAppearanceForModal() {
     const dark = document.documentElement.classList.contains("dark-mode");
+    const baseVariables = {
+        fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+        fontSizeBase: "14px",
+        colorBackground: dark ? "#0b1220" : "#ffffff",
+        colorText: dark ? "rgba(255,255,255,.92)" : "#111827",
+        colorPrimary: dark ? "#3b82f6" : "#2563eb",
+        colorDanger: "#ef4444",
+        borderRadius: "14px",
+        spacingUnit: "6px"
+    };
 
     if (dark) {
         return {
             theme: "night",
-            variables: {
-                fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-                fontSizeBase: "14px",
-
-                colorBackground: "#0b1220",
-                colorText: "rgba(255,255,255,.92)",
-                colorTextSecondary: "rgba(229,231,235,.70)",
-                colorPrimary: "#3b82f6",
-                colorDanger: "#ef4444",
-                colorSuccess: "#22c55e",
-                colorBorder: "rgba(255,255,255,.14)",
-
-                borderRadius: "14px",
-                spacingUnit: "6px",
-                focusBoxShadow: "0 0 0 3px rgba(59,130,246,.20)"
-            },
+            variables: baseVariables,
             rules: {
                 ".Block": {
                     backgroundColor: "transparent",
@@ -59,16 +54,26 @@ function getStripeAppearanceForModal() {
     // Light mode (optional: match your light UI too)
     return {
         theme: "flat",
-        variables: {
-            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-            fontSizeBase: "14px",
-            colorBackground: "#ffffff",
-            colorText: "#111827",
-            colorTextSecondary: "#4b5563",
-            colorPrimary: "#2563eb",
-            colorBorder: "rgba(17,24,39,.15)",
-            borderRadius: "14px",
-            spacingUnit: "6px"
+        variables: baseVariables,
+        rules: {
+            ".Block": {
+                backgroundColor: "#ffffff",
+                borderColor: "rgba(17,24,39,.10)"
+            },
+            ".Input": {
+                borderColor: "rgba(17,24,39,.15)",
+                boxShadow: "none"
+            },
+            ".Input:focus": {
+                borderColor: "rgba(37,99,235,.45)",
+                boxShadow: "0 0 0 3px rgba(37,99,235,.14)"
+            },
+            ".Label": {
+                color: "#4b5563"
+            },
+            ".Tab": {
+                borderColor: "rgba(17,24,39,.12)"
+            }
         }
     };
 }
@@ -122,7 +127,7 @@ async function setupWalletPaymentRequestButton({
 
     // Use a separate Elements instance for the wallet button
     const prElements = stripe.elements({
-        appearance: _getStripeAppearance()
+        appearance: getStripeAppearanceForModal()
     });
 
     const prButton = prElements.create("paymentRequestButton", {

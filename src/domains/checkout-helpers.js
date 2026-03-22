@@ -144,6 +144,12 @@
     return ("00000000" + h.toString(16)).slice(-8);
   }
 
+  function _getStripePublishableKeyFingerprint() {
+    const raw = String(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE || "").trim();
+    if (!raw) return "";
+    return _fnv1a32(raw);
+  }
+
   function _stableCartForSig(stripeCart) {
     const items = Array.isArray(stripeCart) ? stripeCart : [];
     const norm = items.map(it => {
@@ -161,10 +167,10 @@
     return norm;
   }
 
-  function _buildPiSig({ currency, country, stripeCart, expectedTotalCents }) {
+  function _buildPiSig({ currency, country, stripeCart, expectedTotalCents, publishableKeyFingerprint = "" }) {
     const cur = String(currency || "").toUpperCase();
     const cty = String(country || "").toUpperCase();
-    const payload = { cur, cty, amt: (Number(expectedTotalCents || 0) || 0), items: _stableCartForSig(stripeCart) };
+    const payload = { cur, cty, amt: (Number(expectedTotalCents || 0) || 0), pk: String(publishableKeyFingerprint || ""), items: _stableCartForSig(stripeCart) };
     return `pi_${_fnv1a32(JSON.stringify(payload))}`;
   }
 
@@ -194,6 +200,8 @@
     const ttlMs = Math.max(60_000, Number(window.STRIPE_PI_CACHE_TTL_MS || 30 * 60 * 1000) || (30 * 60 * 1000));
     if (!createdAt || (Date.now() - createdAt) > ttlMs) return null;
     if (!row.clientSecret || !row.paymentIntentId) return null;
+    const currentPkFingerprint = _getStripePublishableKeyFingerprint();
+    if (currentPkFingerprint && String(row.publishableKeyFingerprint || "") !== currentPkFingerprint) return null;
     const cid = row.checkoutId || null;
     const tok = row.checkoutPublicToken || row.checkoutToken || null;
     if (!cid || !tok) return null;
@@ -226,7 +234,8 @@
     await window.preloadSettingsData();
     const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
     const expectedTotalCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
-    const sig = _buildPiSig({ currency, country, stripeCart, expectedTotalCents });
+    const publishableKeyFingerprint = _getStripePublishableKeyFingerprint();
+    const sig = _buildPiSig({ currency, country, stripeCart, expectedTotalCents, publishableKeyFingerprint });
 
     const cached = _getCachedPI(sig);
     if (cached) {
@@ -243,7 +252,8 @@
         amountCents: data?.amountCents ?? null,
         currency: data?.currency ?? currency,
         checkoutId: data?.checkoutId ?? null,
-        checkoutPublicToken: data?.checkoutPublicToken ?? null
+        checkoutPublicToken: data?.checkoutPublicToken ?? null,
+        publishableKeyFingerprint
       });
     } catch {}
 

@@ -75,9 +75,12 @@
       return pk;
     },
     ensureStripeInstance(){
-      if (!window.stripeInstance) {
+      const pk = api.getStripePublishableKeySafe();
+      const loadedPk = String(window.__ssStripeLoadedPublishableKey || '').trim();
+      if (!window.stripeInstance || loadedPk !== pk) {
         if (typeof Stripe !== 'function') throw new Error('Stripe.js not loaded');
-        window.stripeInstance = Stripe(api.getStripePublishableKeySafe());
+        window.stripeInstance = Stripe(pk);
+        window.__ssStripeLoadedPublishableKey = pk;
       }
       return window.stripeInstance;
     },

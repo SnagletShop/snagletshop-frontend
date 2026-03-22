@@ -68,6 +68,38 @@ function clearCheckoutDraft() {
     } catch { }
 }
 
+function resolveStripeAppearanceSafe() {
+    try {
+        const appearance = window.__SS_CHECKOUT_UI__?.getStripeAppearanceForModal?.();
+        if (appearance && typeof appearance === "object") return appearance;
+    } catch { }
+    try {
+        if (typeof getStripeAppearanceForModal === "function") {
+            const appearance = getStripeAppearanceForModal();
+            if (appearance && typeof appearance === "object") return appearance;
+        }
+    } catch { }
+    try {
+        if (typeof _getStripeAppearance === "function") {
+            const appearance = _getStripeAppearance();
+            if (appearance && typeof appearance === "object") return appearance;
+        }
+    } catch { }
+    return {
+        theme: "flat",
+        variables: {
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+            fontSizeBase: "14px",
+            colorBackground: "#ffffff",
+            colorText: "#111827",
+            colorPrimary: "#2563eb",
+            colorDanger: "#ef4444",
+            borderRadius: "14px",
+            spacingUnit: "6px"
+        }
+    };
+}
+
 function readCheckoutForm() {
     const get = (...ids) => {
         for (const id of ids) {
@@ -493,7 +525,7 @@ async function initStripePaymentUI(selectedCurrency) {
 
     window.elementsInstance = window.stripeInstance.elements({
         clientSecret,
-        appearance: _getStripeAppearance()
+        appearance: resolveStripeAppearanceSafe()
     });
 
 
@@ -506,6 +538,7 @@ async function initStripePaymentUI(selectedCurrency) {
         });
     } catch { }
     window.paymentElementInstance = window.elementsInstance.create("payment");
+    let stripeMountRetried = false;
     window.paymentElementInstance.mount("#payment-element");
 
 
@@ -549,6 +582,54 @@ async function initStripePaymentUI(selectedCurrency) {
             });
         } catch (e) {
             console.warn("[stripe][payment] on(change) failed:", e?.message || e);
+        }
+
+        try {
+            window.paymentElementInstance.on("loaderror", async (e) => {
+                if (window.__ssStripeMountId !== __mountId) return;
+                console.error("[stripe][payment] loaderror", {
+                    mountId: __mountId,
+                    message: e?.error?.message || e?.message || null,
+                    code: e?.error?.code || e?.code || null,
+                    type: e?.error?.type || e?.type || null
+                });
+
+                if (stripeMountRetried) return;
+                stripeMountRetried = true;
+
+                try { window.__SS_CHECKOUT_HELPERS__?._invalidatePiCache?.(data?._sig || null); } catch { }
+                try {
+                    window.latestCheckoutId = null;
+                    window.latestCheckoutPublicToken = null;
+                    window.latestPaymentIntentId = null;
+                    window.latestClientSecret = null;
+                } catch { }
+                try {
+                    window.paymentElementInstance?.unmount?.();
+                    window.paymentElementInstance?.destroy?.();
+                } catch { }
+                try {
+                    window.elementsInstance = null;
+                    window.paymentElementInstance = null;
+                    window.stripeInstance = null;
+                    window.__ssStripeLoadedPublishableKey = "";
+                } catch { }
+
+                if (paymentElContainer) {
+                    paymentElContainer.innerHTML = `
+                    <div style="padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px">
+                      Refreshing payment session...
+                    </div>`;
+                }
+
+                try {
+                    await initStripePaymentUI(selectedCurrency);
+                } catch (retryErr) {
+                    console.error("[stripe][payment] retry failed", retryErr);
+                }
+            });
+        } catch (e) {
+            console.warn("[stripe][payment] on(loaderror) failed:", e?.message || e);
         }
 
         // Post-mount DOM health checks (iframe existence, sizing)
