@@ -140,6 +140,8 @@
     try { window.exchangeRatesFetchedAt = 0; } catch {}
     try {
       window.preloadedData = window.preloadedData || {};
+      window.preloadedData.tariffs = null;
+      window.preloadedData.countries = null;
       window.preloadedData.exchangeRates = null;
       window.preloadedData.ratesFetchedAt = 0;
     } catch {}

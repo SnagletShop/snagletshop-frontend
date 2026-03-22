@@ -689,6 +689,8 @@ function __ssResetSettingsPreloadState(options = {}) {
             __ssSetExchangeRatesFetchedAt(0);
             try {
                 window.preloadedData = window.preloadedData || {};
+                window.preloadedData.tariffs = null;
+                window.preloadedData.countries = null;
                 window.preloadedData.exchangeRates = null;
             } catch {}
         }

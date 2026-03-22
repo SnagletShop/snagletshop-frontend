@@ -242,6 +242,7 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
         if (basket && basket[key]) {
             basket[key].quantity += qty;
             basket[key].price = price;
+            basket[key].unitPriceEUR = price;
             basket[key].displayName = displayName;
             basket[key].displayDescription = displayDescription;
             if (!basket[key].productId && productIdForCart) basket[key].productId = productIdForCart;
@@ -259,6 +260,7 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
                 displayName,
                 displayDescription,
                 price,
+                unitPriceEUR: price,
                 image: imageUrl,
                 quantity: qty,
                 productId: productIdForCart,

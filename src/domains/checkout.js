@@ -253,7 +253,15 @@ async function initStripePaymentUI(selectedCurrency) {
     try { basket = __b; } catch { }
 
     // IMPORTANT: use 'let' so fallbacks can rebuild carts safely
-    let fullCart = buildFullCartFromBasket();
+    let fullCart = [];
+    try {
+        fullCart = (typeof __ssGetFullCartPreferred === "function")
+            ? (__ssGetFullCartPreferred() || [])
+            : [];
+    } catch { fullCart = []; }
+    if (!Array.isArray(fullCart) || !fullCart.length) {
+        fullCart = buildFullCartFromBasket();
+    }
     let stripeCart = buildStripeSafeCart(fullCart);
 
     if (!stripeCart.length) {

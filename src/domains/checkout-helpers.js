@@ -22,6 +22,16 @@
           }
         }
       } catch {}
+      try {
+        if (typeof window.fetchTariffs === 'function') {
+          await window.fetchTariffs();
+        }
+      } catch {}
+      try {
+        if (typeof window.preloadSettingsData === 'function') {
+          await window.preloadSettingsData({ forceRefresh: true });
+        }
+      } catch {}
     } catch {}
   }
 

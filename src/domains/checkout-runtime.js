@@ -69,10 +69,12 @@
     const items = Object.values(basketObj || {});
     ctx.ensureContributionProducts?.();
     const contributionCache = ctx.getContributionCache?.() || {};
-    const flat = (Array.isArray(contributionCache.items) && contributionCache.items.length)
+    const catalogFlat = Array.isArray(ctx.getCatalogFlat?.()) ? ctx.getCatalogFlat() : [];
+    const contributionFlat = Array.isArray(contributionCache.items) && contributionCache.items.length
       ? contributionCache.items.map(x => ({
           name: x.name,
           price: x.price,
+          unitPriceEUR: x.unitPriceEUR ?? x.price,
           images: x.images || [],
           productLink: x.productLink || '',
           productId: x.productId || x.id || '',
@@ -80,7 +82,16 @@
           description: x.description || '',
           image: x.image || (Array.isArray(x.images) ? (x.images[0] || '') : '')
         }))
-      : (ctx.getCatalogFlat?.() || []);
+      : [];
+    const flat = catalogFlat.length
+      ? catalogFlat.concat(contributionFlat.filter((item) => {
+          const pid = String(item?.productId || '').trim();
+          if (pid && catalogFlat.some((prod) => String(prod?.productId || '').trim() === pid)) return false;
+          const link = String(item?.productLink || '').trim();
+          if (link && catalogFlat.some((prod) => String(prod?.productLink || '').trim() === link)) return false;
+          return true;
+        }))
+      : contributionFlat;
 
     const normalizeSelectedOptions = ctx.normalizeSelectedOptions || ((v) => Array.isArray(v) ? v : []);
     const resolveVariantPriceEUR = ctx.resolveVariantPriceEUR || (() => 0);
@@ -99,7 +110,7 @@
           (item?.name ? flat.find(p => String(p?.name || '').trim() === String(item.name).trim()) : null) ||
           null;
 
-        const unitEURFromBasket = Number(parseFloat(item?.price ?? item?.unitPriceEUR ?? 0) || 0);
+        const unitEURFromBasket = Number(parseFloat(item?.unitPriceEUR ?? item?.price ?? 0) || 0);
         const unitEUR = Number((resolveVariantPriceEUR(prod || {}, sel, legacySel) || unitEURFromBasket || 0).toFixed(2));
         const expectedFromBasket = Number(parseFloat(item?.expectedPurchasePrice ?? 0) || 0);
         const expectedFromProd = Number(parseFloat(prod?.expectedPurchasePrice ?? 0) || 0);
