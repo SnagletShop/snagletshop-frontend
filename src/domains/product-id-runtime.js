@@ -4,6 +4,11 @@
       return String(s || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
     },
     getAllProductsFlatSafe(ctx = {}) {
+      if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) {
+        return window.productsFlatFromServer.filter(p => p && typeof p === 'object' && !Array.isArray(p) && typeof p.name === 'string' && p.name.trim());
+      }
+      const byIdValues = Object.values(window.productsById || {}).filter(p => p && typeof p === 'object' && !Array.isArray(p) && typeof p.name === 'string' && p.name.trim());
+      if (byIdValues.length) return byIdValues;
       const db = (window.products && typeof window.products === 'object' && window.products) ||
         (typeof ctx.getProducts === 'function' && ctx.getProducts()) || {};
       const out = [];

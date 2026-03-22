@@ -2,6 +2,7 @@
   'use strict';
 
   const PRICE_SELECTOR = '.price, .product-price, .basket-item-price, #product-page-price, .productPrice';
+  const PRICE_CACHE_KEY = '__ssRememberedProductPrices';
 
   function parseLoosePrice(value) {
     try {
@@ -23,6 +24,128 @@
     }
     const n = Number.parseFloat(s);
     return Number.isFinite(n) ? n : NaN;
+  }
+
+  function normalizeIdentity(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function getPriceCache() {
+    try {
+      const existing = window[PRICE_CACHE_KEY];
+      if (existing && typeof existing === 'object') {
+        if (!existing.byId || typeof existing.byId !== 'object') existing.byId = {};
+        if (!existing.byName || typeof existing.byName !== 'object') existing.byName = {};
+        return existing;
+      }
+    } catch {}
+    const fresh = { byId: {}, byName: {} };
+    try { window[PRICE_CACHE_KEY] = fresh; } catch {}
+    return fresh;
+  }
+
+  function getIdentityFromProduct(productOrIdentity) {
+    if (productOrIdentity && typeof productOrIdentity === 'object' && !Array.isArray(productOrIdentity)) {
+      return {
+        id: normalizeIdentity(productOrIdentity.productId || productOrIdentity.id || ''),
+        name: normalizeIdentity(productOrIdentity.name || productOrIdentity.title || '')
+      };
+    }
+    return { id: '', name: normalizeIdentity(productOrIdentity) };
+  }
+
+  function rememberProductPrice(productOrIdentity, rawPrice) {
+    const price = parseLoosePrice(rawPrice);
+    if (!Number.isFinite(price) || price <= 0) return 0;
+    const cache = getPriceCache();
+    const identity = getIdentityFromProduct(productOrIdentity);
+    if (identity.id) cache.byId[identity.id] = price;
+    if (identity.name) cache.byName[identity.name] = price;
+    return price;
+  }
+
+  function getRememberedProductPrice(productOrIdentity) {
+    const cache = getPriceCache();
+    const identity = getIdentityFromProduct(productOrIdentity);
+    const byId = identity.id ? parseLoosePrice(cache.byId?.[identity.id]) : NaN;
+    if (Number.isFinite(byId) && byId > 0) return byId;
+    const byName = identity.name ? parseLoosePrice(cache.byName?.[identity.name]) : NaN;
+    if (Number.isFinite(byName) && byName > 0) return byName;
+    return 0;
+  }
+
+  function getElementIdentity(element) {
+    try {
+      const directId = normalizeIdentity(element?.dataset?.productId || element?.dataset?.pid || '');
+      const directName = normalizeIdentity(element?.dataset?.productName || element?.dataset?.productKey || '');
+      if (directId || directName) return { id: directId, name: directName };
+
+      const scoped = element?.closest?.('[data-product-id], [data-product-name], .product, .product-card, #Product_Viewer, .Product_Detail_Page');
+      const scopedId = normalizeIdentity(scoped?.dataset?.productId || scoped?.dataset?.pid || '');
+      let scopedName = normalizeIdentity(scoped?.dataset?.productName || scoped?.dataset?.productKey || '');
+      if (!scopedName) {
+        scopedName = normalizeIdentity(
+          scoped?.querySelector?.('[data-name]')?.dataset?.name ||
+          scoped?.querySelector?.('.product-name')?.textContent ||
+          scoped?.querySelector?.('.Product_Name_Heading')?.dataset?.canonicalName ||
+          scoped?.querySelector?.('.Product_Name_Heading')?.textContent ||
+          ''
+        );
+      }
+      if (scopedId || scopedName) return { id: scopedId, name: scopedName };
+
+      if (element?.id === 'product-page-price') {
+        const heading = document.querySelector('.Product_Name_Heading');
+        return {
+          id: normalizeIdentity(window.__ssCurrentProductId || ''),
+          name: normalizeIdentity(heading?.dataset?.canonicalName || heading?.textContent || window.__ssCurrentViewedProductName || '')
+        };
+      }
+    } catch {}
+    return { id: '', name: '' };
+  }
+
+  function rememberElementPrice(element, rawPrice) {
+    const identity = getElementIdentity(element);
+    const remembered = rememberProductPrice(identity, rawPrice);
+    if (remembered > 0 && element?.dataset) {
+      try {
+        if (identity.id && !element.dataset.productId) element.dataset.productId = identity.id;
+        if (identity.name && !element.dataset.productName) element.dataset.productName = identity.name;
+      } catch {}
+    }
+    return remembered;
+  }
+
+  function primePriceCacheFromDom(root = document) {
+    const scope = isRootNode(root) ? root : document;
+    try {
+      scope.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
+        const existing = parseLoosePrice(element?.dataset?.eur);
+        if (Number.isFinite(existing) && existing > 0) {
+          rememberElementPrice(element, existing);
+          return;
+        }
+        const textPrice = parseLoosePrice(String(element?.textContent || ''));
+        if (Number.isFinite(textPrice) && textPrice > 0) {
+          try { element.dataset.eur = String(textPrice); } catch {}
+          rememberElementPrice(element, textPrice);
+        }
+      });
+    } catch {}
+  }
+
+  function recoverElementPrice(element, currentPrice) {
+    if (Number.isFinite(currentPrice) && currentPrice > 0) {
+      rememberElementPrice(element, currentPrice);
+      return currentPrice;
+    }
+    const remembered = getRememberedProductPrice(getElementIdentity(element));
+    if (remembered > 0) {
+      try { element.dataset.eur = String(remembered); } catch {}
+      return remembered;
+    }
+    return currentPrice;
   }
 
   function isRuntimeCtx(value) {
@@ -138,7 +261,7 @@
 
     root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
       const currencySymbol = currencySymbols[selectedCurrency] || selectedCurrency;
-      const eur = parseLoosePrice(element.dataset.eur);
+      const eur = recoverElementPrice(element, parseLoosePrice(element.dataset.eur));
       const eurOrig = parseLoosePrice(element.dataset.eurOriginal);
       const pct = Number(element.dataset.recoDiscountPct || element.dataset.discountPct || 0);
 
@@ -151,6 +274,7 @@
       }
 
       if (!isNaN(eur)) {
+        rememberElementPrice(element, eur);
         element.textContent = `${currencySymbol}${convertPrice(ctx, eur)}`;
       }
     });
@@ -196,8 +320,19 @@
   function initializePrices(ctxOrRoot, maybeRootEl) {
     const { root } = normalizeRootArgs(ctxOrRoot, maybeRootEl);
     root.querySelectorAll(PRICE_SELECTOR).forEach((element) => {
+      const existing = parseLoosePrice(element.dataset.eur);
+      if (Number.isFinite(existing) && existing > 0) {
+        rememberElementPrice(element, existing);
+        return;
+      }
       const basePrice = parseLoosePrice(String(element.textContent || ''));
-      if (!isNaN(basePrice)) element.dataset.eur = basePrice;
+      if (Number.isFinite(basePrice) && basePrice > 0) {
+        element.dataset.eur = String(basePrice);
+        rememberElementPrice(element, basePrice);
+        return;
+      }
+      const remembered = getRememberedProductPrice(getElementIdentity(element));
+      if (remembered > 0) element.dataset.eur = String(remembered);
     });
 
     const totalElement = root.getElementById ? root.getElementById('basket-total') : document.getElementById('basket-total');
@@ -250,10 +385,19 @@
       try {
         const root = document.getElementById('Viewer') || document.body;
         root.querySelectorAll(PRICE_SELECTOR).forEach((el) => {
-          if (!el.dataset.eur) {
-            const base = parseLoosePrice(String(el.textContent || ''));
-            if (!isNaN(base)) el.dataset.eur = String(base);
+          const existing = parseLoosePrice(el.dataset.eur);
+          if (Number.isFinite(existing) && existing > 0) {
+            rememberElementPrice(el, existing);
+            return;
           }
+          const base = parseLoosePrice(String(el.textContent || ''));
+          if (Number.isFinite(base) && base > 0) {
+            el.dataset.eur = String(base);
+            rememberElementPrice(el, base);
+            return;
+          }
+          const remembered = getRememberedProductPrice(getElementIdentity(el));
+          if (remembered > 0) el.dataset.eur = String(remembered);
         });
       } catch {}
 
@@ -265,6 +409,14 @@
     return observer;
   }
 
-  const api = { convertPriceNumber, convertPrice, updateAllPrices, initializePrices, observeNewProducts };
+  const api = { convertPriceNumber, convertPrice, updateAllPrices, initializePrices, observeNewProducts, primePriceCacheFromDom };
+  try {
+    primePriceCacheFromDom(document);
+  } catch {}
+  try {
+    window.__ssPrimePriceCacheFromDom = primePriceCacheFromDom;
+    window.__ssRememberProductPrice = rememberProductPrice;
+    window.__ssGetRememberedProductPrice = getRememberedProductPrice;
+  } catch {}
   window.__SS_PRICING_RUNTIME__ = api;
 })(window, document);

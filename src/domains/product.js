@@ -166,7 +166,15 @@ function __ssSafeResolveVariantPriceEUR(product, selectedOptions, legacySelected
         return Number.isFinite(num) ? num : 0;
     };
     const base = parseLoose(product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0) || 0;
-    return Math.round(base * 100) / 100;
+    if (base > 0) {
+        try { window.__ssRememberProductPrice?.(product, base); } catch {}
+        return Math.round(base * 100) / 100;
+    }
+    try {
+        const remembered = Number(window.__ssGetRememberedProductPrice?.(product) || 0);
+        if (Number.isFinite(remembered) && remembered > 0) return Math.round(remembered * 100) / 100;
+    } catch {}
+    return 0;
 }
 
 function handleSwipeGesture(startX, endX, threshold = 50) {
@@ -636,7 +644,11 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const _selInit = __ssSafeGetSelectedOptions();
     const _eurInit = __ssSafeResolveVariantPriceEUR(product, _selInit, _selInit?.[0]?.value || "") || (Number.parseFloat(productPrice) || Number.parseFloat(product?.price) || 0);
     pSpan.dataset.eur = String(_eurInit ?? "");
+    if (String(product?.productId || '').trim()) pSpan.dataset.productId = String(product.productId).trim();
+    if (String(productName || '').trim()) pSpan.dataset.productName = String(productName).trim();
     pSpan.textContent = `${_eurInit} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
+
+    try { if (_eurInit > 0) window.__ssRememberProductPrice?.(product, _eurInit); } catch {}
 
     // If user arrived from a discounted recommendation, show discount on PDP and avoid double-discounting.
     try {
@@ -795,10 +807,24 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     try { requestAnimationFrame(() => { try { Product_Viewer.classList.add('is-ready'); } catch {} }); } catch {}
 
+    const __ssRetryRecoRender = (delayMs) => {
+        try {
+            setTimeout(() => {
+                try {
+                    if (document.getElementById("RecoSection")) return;
+                    const renderReco = window.__SS_RECOMMENDATIONS__?.__ssRecoRenderForProduct || window.__ssRecoRenderForProduct;
+                    if (typeof renderReco === "function") renderReco(product);
+                } catch { }
+            }, delayMs);
+        } catch { }
+    };
     try {
         const renderReco = window.__SS_RECOMMENDATIONS__?.__ssRecoRenderForProduct || window.__ssRecoRenderForProduct;
         if (typeof renderReco === "function") renderReco(product);
     } catch { }
+    __ssRetryRecoRender(180);
+    __ssRetryRecoRender(900);
+    __ssRetryRecoRender(1600);
 
     // Swipe support (non-breaking)
     try {

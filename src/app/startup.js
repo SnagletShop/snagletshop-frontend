@@ -20,6 +20,16 @@
     try { if (typeof window.setupSearchInputs === 'function') window.setupSearchInputs(); } catch {}
   }
 
+  function primeInitialPriceCache() {
+    try {
+      if (typeof window.__ssPrimePriceCacheFromDom === 'function') {
+        window.__ssPrimePriceCacheFromDom(document);
+        return;
+      }
+    } catch {}
+    try { if (typeof window.initializePrices === 'function') window.initializePrices(document); } catch {}
+  }
+
   async function warmStripeConfig() {
     try { if (typeof window.ensureStripePublishableKey === 'function') await window.ensureStripePublishableKey(); } catch {}
   }
@@ -146,6 +156,7 @@
     if (!app || typeof app.addStartupTask !== 'function') return false;
     app.addStartupTask('startup.bindRouterLifecycle', async () => { bindRouterLifecycle(); }, { required: false });
     app.addStartupTask('startup.initTurnstile', async () => { initTurnstile(); }, { required: false });
+    app.addStartupTask('startup.primeInitialPriceCache', async () => { primeInitialPriceCache(); }, { required: false });
     app.addStartupTask('startup.boot', async () => { await runBootApp(); });
     app.addStartupTask('startup.initSearch', async () => { initSearch(); }, { required: false });
     app.addStartupTask('startup.routeStatusAndReturn', async () => { initRouteStatusAndReturn(); }, { required: false });
@@ -165,6 +176,7 @@
   } else {
     onReady(bindRouterLifecycle);
     onReady(initTurnstile);
+    onReady(primeInitialPriceCache);
     onReady(runBootApp);
     onReady(initSearch);
     onReady(initRouteStatusAndReturn);

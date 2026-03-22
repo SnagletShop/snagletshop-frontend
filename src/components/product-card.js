@@ -50,6 +50,13 @@
     return addToCartBtn;
   }
 
+  function getProductIdentity(product, opts = {}) {
+    return {
+      productId: String(product?.productId || product?.id || opts.productId || '').trim(),
+      name: String(product?.name || opts.displayName || opts.productName || '').trim()
+    };
+  }
+
   function collectPositivePrice(out, value) {
     const num = parseLoosePrice(value);
     if (Number.isFinite(num) && num > 0) out.push(num);
@@ -82,6 +89,7 @@
 
   function getResolvedPrice(product, opts = {}) {
     const prices = [];
+    const identity = getProductIdentity(product, opts);
     collectPositivePrice(prices, opts.priceValue);
     collectPositivePrice(prices, product?.price);
     collectPositivePrice(prices, product?.priceEUR);
@@ -92,15 +100,29 @@
     collectNestedPriceCandidates(prices, product?.variantPricesB);
     collectNestedPriceCandidates(prices, product?.variants);
     collectNestedPriceCandidates(prices, product?.options);
-    return prices.length ? Math.min(...prices) : 0;
+    const resolved = prices.length ? Math.min(...prices) : 0;
+    if (resolved > 0) {
+      try { window.__ssRememberProductPrice?.(identity, resolved); } catch {}
+      return resolved;
+    }
+    try {
+      const remembered = Number(window.__ssGetRememberedProductPrice?.(identity) || 0);
+      if (Number.isFinite(remembered) && remembered > 0) return remembered;
+    } catch {}
+    return 0;
   }
 
   function createProductCard(product, opts = {}) {
     const productDiv = document.createElement('div');
     productDiv.classList.add('product');
+    const identity = getProductIdentity(product, opts);
+    if (identity.productId) productDiv.dataset.productId = identity.productId;
+    if (identity.name) productDiv.dataset.productName = identity.name;
 
     const card = document.createElement('div');
     card.className = 'product-card';
+    if (identity.productId) card.dataset.productId = identity.productId;
+    if (identity.name) card.dataset.productName = identity.name;
 
     const nameLink = document.createElement('a');
     nameLink.className = 'product-name';
@@ -127,6 +149,8 @@
     const priceP = document.createElement('p');
     priceP.className = 'product-price';
     priceP.dataset.eur = String(resolvedPrice || 0);
+    if (identity.productId) priceP.dataset.productId = identity.productId;
+    if (identity.name) priceP.dataset.productName = identity.name;
     priceP.textContent = opts.priceText || `${resolvedPrice}${opts.currencySymbol || '€'}`;
 
     const qtyUi = getQuantityControls()?.createCatalogQuantityControls?.(product, {

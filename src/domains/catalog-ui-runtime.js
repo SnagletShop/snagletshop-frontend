@@ -74,6 +74,10 @@
 
   function resolveCatalogProductPrice(product, ctx = {}) {
     const prices = [];
+    const identity = {
+      productId: String(product?.productId || product?.id || '').trim(),
+      name: String(product?.name || '').trim()
+    };
     try { collectPositivePrice(prices, ctx.resolveVariantPriceEUR?.(product, [], '')); } catch {}
     collectPositivePrice(prices, product?.price);
     collectPositivePrice(prices, product?.priceEUR);
@@ -84,7 +88,16 @@
     collectNestedPriceCandidates(prices, product?.variantPricesB);
     collectPositivePriceArray(prices, product?.variants);
     collectPositivePriceArray(prices, product?.options);
-    return prices.length ? Math.min(...prices) : 0;
+    const resolved = prices.length ? Math.min(...prices) : 0;
+    if (resolved > 0) {
+      try { window.__ssRememberProductPrice?.(identity, resolved); } catch {}
+      return resolved;
+    }
+    try {
+      const remembered = Number(window.__ssGetRememberedProductPrice?.(identity) || 0);
+      if (Number.isFinite(remembered) && remembered > 0) return remembered;
+    } catch {}
+    return 0;
   }
 
   function sortProducts(productList, sortBy, sortOrder, resolvePrice = null) {

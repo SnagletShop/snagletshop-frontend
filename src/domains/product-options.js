@@ -44,6 +44,8 @@
   function __ssGetCatalogFlat() {
     try {
       if (Array.isArray(window.productsFlatFromServer) && window.productsFlatFromServer.length) return window.productsFlatFromServer;
+      const byIdValues = Object.values(window.productsById || {}).filter(p => p && typeof p === "object" && !Array.isArray(p));
+      if (byIdValues.length) return byIdValues;
       const base = (typeof window.products !== 'undefined' && window.products) ? window.products :
         ((typeof window.productsDatabase !== 'undefined' && window.productsDatabase) ? window.productsDatabase : (window.products || {}));
       return Object.values(base || {}).flat();
@@ -167,7 +169,16 @@
     __ssCollectPositivePriceArray(prices, __ssParseMaybeJson(product?.variants));
     __ssCollectPositivePriceArray(prices, __ssParseMaybeJson(product?.options));
     if (!prices.length && preferB) return __ssInferBasePriceEUR(product, false);
-    return prices.length ? window.__ssRound2(Math.min(...prices)) : 0;
+    if (prices.length) {
+      const resolved = window.__ssRound2(Math.min(...prices));
+      try { window.__ssRememberProductPrice?.(product, resolved); } catch {}
+      return resolved;
+    }
+    try {
+      const remembered = Number(window.__ssGetRememberedProductPrice?.(product) || 0);
+      if (Number.isFinite(remembered) && remembered > 0) return window.__ssRound2(remembered);
+    } catch {}
+    return 0;
   }
 
   function __ssResolveVariantPriceEUR(product, selectedOptions, legacySelectedOption = "") {
@@ -200,7 +211,15 @@
       const num = __ssResolvePositivePriceCandidate(map[String(k || "").trim()]);
       if (Number.isFinite(num) && num > 0) return window.__ssRound2(num);
     }
-    return window.__ssRound2(base);
+    if (Number.isFinite(base) && base > 0) {
+      try { window.__ssRememberProductPrice?.(product, base); } catch {}
+      return window.__ssRound2(base);
+    }
+    try {
+      const remembered = Number(window.__ssGetRememberedProductPrice?.(product) || 0);
+      if (Number.isFinite(remembered) && remembered > 0) return window.__ssRound2(remembered);
+    } catch {}
+    return 0;
   }
 
   function __ssCleanOptionLabel(label) {
