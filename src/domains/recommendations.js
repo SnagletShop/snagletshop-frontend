@@ -1,5 +1,21 @@
 (function (window, document) {
 let __ssRecoUpdateNav = function(){};
+let __ssRecoRenderToken = 0;
+
+window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
+    desktopVisibleCount: 7,
+    mobileVisibleCount: 2,
+    desktopBatchSize: 7,
+    mobileBatchSize: 4,
+    desktopMaxBatches: 8,
+    mobileMaxBatches: 10,
+    desktopMaxItems: 56,
+    mobileMaxItems: 40,
+    desktopSwipeSmallPx: 35,
+    mobileSwipeSmallPx: 28,
+    desktopSwipeBigPx: 140,
+    mobileSwipeBigPx: 84
+};
 
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
@@ -76,6 +92,7 @@ function __ssRecoEnsureStyles() {
       /* single-row AliExpress-like strip */
       .RecoViewport{
         overflow-x:auto;
+        overflow-y:hidden;
         scroll-snap-type:x mandatory;
         -webkit-overflow-scrolling:touch;
         overscroll-behavior-x:contain;
@@ -91,28 +108,29 @@ function __ssRecoEnsureStyles() {
       .RecoStrip{
         --reco-cols: 3;
         --reco-gap: 12px;
-        width:max-content;
+        width:100%;
         min-width:100%;
+        max-width:100%;
         box-sizing:border-box;
         display:grid;
         grid-auto-flow:column;
         grid-template-rows:1fr;
         gap:var(--reco-gap);
         align-content:start;
-        padding-right:6px;
-        /* auto-fit N cards in the viewport; JS sets --reco-cols */
-        grid-auto-columns:minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+        align-items:start;
+        padding-right:0;
+        /* exact-fit N cards in the viewport; JS sets --reco-cols */
+        grid-auto-columns:minmax(0, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
       }
       @media (max-width: 460px){
         .RecoStrip{
-        
-          grid-auto-columns:minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+          grid-auto-columns:minmax(0, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
         }
         .RecoNav{width:34px;height:34px;border-radius:11px;}
       }
   
    
-      .RecoCard{scroll-snap-align:start}
+      .RecoCard{scroll-snap-align:start;min-width:0;width:100%}
       .RecoCard:hover{background:rgba(255,255,255,.07)}
       .RecoImg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
       .RecoName{font-size:13px;line-height:1.25;max-height:3.8em;overflow:hidden;}
@@ -162,11 +180,41 @@ function __ssRecoGetSessionId() {
     }
 }
 
+function __ssRecoGetLayoutSettings() {
+    const fromPreload = (window?.preloadedData?.storefrontConfig?.productPageRecommendations && typeof window.preloadedData.storefrontConfig.productPageRecommendations === "object")
+        ? window.preloadedData.storefrontConfig.productPageRecommendations
+        : {};
+    const fromWindow = (window.__SS_RECO_LAYOUT__ && typeof window.__SS_RECO_LAYOUT__ === "object")
+        ? window.__SS_RECO_LAYOUT__
+        : {};
+
+    return { ...fromPreload, ...fromWindow };
+}
+
 function __ssRecoGetLayout(device) {
     const mobile = String(device || "").toLowerCase() === "mobile";
+    const cfg = __ssRecoGetLayoutSettings();
+    const visibleCount = mobile
+        ? Math.max(1, Number(cfg.mobileVisibleCount || 2) || 2)
+        : Math.max(1, Number(cfg.desktopVisibleCount || 7) || 7);
+    const batchSize = mobile
+        ? Math.max(visibleCount, Number(cfg.mobileBatchSize || 4) || 4)
+        : Math.max(visibleCount, Number(cfg.desktopBatchSize || 7) || 7);
+    const maxBatches = mobile
+        ? Math.max(1, Number(cfg.mobileMaxBatches || 10) || 10)
+        : Math.max(1, Number(cfg.desktopMaxBatches || 8) || 8);
+    const maxItems = mobile
+        ? Math.max(batchSize, Number(cfg.mobileMaxItems || 40) || 40)
+        : Math.max(batchSize, Number(cfg.desktopMaxItems || 56) || 56);
+    const swipeSmallPx = mobile
+        ? Math.max(5, Number(cfg.mobileSwipeSmallPx || 28) || 28)
+        : Math.max(5, Number(cfg.desktopSwipeSmallPx || 35) || 35);
+    const swipeBigPx = mobile
+        ? Math.max(swipeSmallPx + 12, Number(cfg.mobileSwipeBigPx || 84) || 84)
+        : Math.max(swipeSmallPx + 12, Number(cfg.desktopSwipeBigPx || 140) || 140);
     return mobile
-        ? { visibleCount: 2, batchSize: 4, maxBatches: 10, maxItems: 40, swipeSmallPx: 28, swipeBigPx: 84 }
-        : { visibleCount: 7, batchSize: 7, maxBatches: 8, maxItems: 56, swipeSmallPx: 35, swipeBigPx: 140 };
+        ? { visibleCount, batchSize, maxBatches, maxItems, swipeSmallPx, swipeBigPx }
+        : { visibleCount, batchSize, maxBatches, maxItems, swipeSmallPx, swipeBigPx };
 }
 
 function __ssRecoApplyLayout(recState, strip, ui = null) {
@@ -221,6 +269,8 @@ function __ssRecoMaybeAttributeAddToCart(targetProductId) {
 async function __ssRecoRenderForProduct(product) {
     try {
         if (!product) return;
+        const renderToken = ++__ssRecoRenderToken;
+        window.__ssRecoRenderToken = renderToken;
         try { await window.__SS_CATALOG_RUNTIME__?.initProducts?.(); } catch { }
         const viewer = document.getElementById("Viewer");
         const pv = document.getElementById("Product_Viewer");
@@ -228,9 +278,10 @@ async function __ssRecoRenderForProduct(product) {
 
         __ssRecoEnsureStyles();
 
-        // Remove old
-        const old = document.getElementById("RecoSection");
-        if (old) old.remove();
+        // Remove any previous sections so races cannot leave duplicate rows behind.
+        try {
+            document.querySelectorAll('[data-ss-reco-section="1"], #RecoSection').forEach((node) => node.remove());
+        } catch {}
 
         const sid = __ssRecoGetSessionId();
         const device = (window.innerWidth <= 700) ? "mobile" : "desktop";
@@ -476,12 +527,16 @@ async function __ssRecoRenderForProduct(product) {
         const first = await fetchBatch();
         const firstResolved = (first && first.items && first.items.length) ? first : buildCatalogFallbackBatch();
         if (!firstResolved || !firstResolved.items || firstResolved.items.length === 0) return;
+        if ((window.__ssRecoRenderToken || 0) !== renderToken) return;
         if (!recState.widgetId && firstResolved.d?.widgetId) recState.widgetId = firstResolved.d.widgetId;
         recState.items = [];
 
         const section = document.createElement("div");
         section.id = "RecoSection";
         section.className = "RecoSection";
+        section.dataset.ssRecoSection = "1";
+        section.dataset.sourceProductId = String(recState.sourceProductId || "");
+        section.dataset.renderToken = String(renderToken);
 
         const head = document.createElement("div");
         head.className = "RecoHead";
@@ -767,6 +822,7 @@ async function __ssRecoRenderForProduct(product) {
 
         const pdp = document.querySelector('.Product_Detail_Page');
         const anchor = pdp || pv;
+        if ((window.__ssRecoRenderToken || 0) !== renderToken) return;
         anchor.insertAdjacentElement('afterend', section);
 
         async function ensureScrollableAfterPaint() {
@@ -842,7 +898,7 @@ async function __ssRecoRenderForProduct(product) {
 
         // Nav buttons: support mobile tap reliably + step one item on mobile
         function navStepItems() {
-            return (recState.device === "mobile") ? 1 : recState.visibleCount;
+            return 1;
         }
 
         async function handleNav(dir) {
