@@ -22,6 +22,15 @@
           ratesFetchedAt: 0
         };
 
+        const safeCall = (fn, fallback = null) => {
+          try {
+            if (typeof fn !== 'function') return Promise.resolve(fallback);
+            return Promise.resolve(fn()).catch(() => fallback);
+          } catch {
+            return Promise.resolve(fallback);
+          }
+        };
+
         const cached = ctx.safeJsonParse?.(ctx.lsGet?.(ctx.SETTINGS_CACHE_KEY));
         if (cached && ctx.isSettingsCacheValid?.(cached.timestamp)) {
           const safeTariffs = (cached.tariffs && typeof cached.tariffs === 'object') ? cached.tariffs : {};
@@ -34,20 +43,29 @@
           ctx.syncCentralState?.('preload-fetch-success', { exchangeRates: safeRates, tariffMultipliers: safeTariffs });
           ctx.syncCentralState?.('preload-cache-hit', { exchangeRates: safeRates, tariffMultipliers: safeTariffs });
           window.preloadedData.countries = cached.countries || ctx.tariffsObjectToCountriesArray?.(safeTariffs);
-          window.preloadedData.storefrontConfig = cached.storefrontConfig || cached.storefront || null;
+          const cachedStorefrontConfig = cached.storefrontConfig || cached.storefront || window.storefrontCfg || null;
+          window.preloadedData.storefrontConfig = cachedStorefrontConfig;
+          if (cachedStorefrontConfig && typeof cachedStorefrontConfig === 'object') window.storefrontCfg = cachedStorefrontConfig;
+          if (!cachedStorefrontConfig) {
+            const storefrontCfg = await safeCall(ctx.fetchStorefrontConfigFromServer, null);
+            if (storefrontCfg && typeof storefrontCfg === 'object') {
+              window.storefrontCfg = storefrontCfg;
+              window.preloadedData.storefrontConfig = storefrontCfg;
+              ctx.lsSet?.(ctx.SETTINGS_CACHE_KEY, JSON.stringify({
+                ...cached,
+                tariffs: safeTariffs,
+                rates: safeRates,
+                ratesFetchedAt: Number(window.exchangeRatesFetchedAt || 0) || 0,
+                countries: window.preloadedData.countries,
+                storefrontConfig: storefrontCfg,
+                timestamp: Date.now()
+              }));
+            }
+          }
           ctx.handlesTariffsDropdown?.(window.preloadedData.countries || []);
           console.log('⚡ Using cached settings data.');
           return;
         }
-
-        const safeCall = (fn, fallback = null) => {
-          try {
-            if (typeof fn !== 'function') return Promise.resolve(fallback);
-            return Promise.resolve(fn()).catch(() => fallback);
-          } catch {
-            return Promise.resolve(fallback);
-          }
-        };
         const [tariffsObj, ratesData, countriesArr, storefrontCfg] = await Promise.all([
           safeCall(ctx.fetchTariffsFromServer, {}),
           safeCall(ctx.fetchExchangeRatesFromServer, {}),
@@ -76,6 +94,9 @@
         window.preloadedData.exchangeRates = currentRates;
         window.preloadedData.countries = countriesList;
         window.preloadedData.storefrontConfig = (typeof storefrontCfg !== 'undefined' ? storefrontCfg : (window.storefrontCfg || null));
+        if (window.preloadedData.storefrontConfig && typeof window.preloadedData.storefrontConfig === 'object') {
+          window.storefrontCfg = window.preloadedData.storefrontConfig;
+        }
 
         ctx.lsSet?.(ctx.SETTINGS_CACHE_KEY, JSON.stringify({
           tariffs: currentTariffs,

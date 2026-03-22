@@ -1,6 +1,8 @@
 (function (window, document) {
   'use strict';
 
+  let categoryRetryTimer = null;
+
   function getFirstRenderableCategory(productsDatabase = {}, products = {}) {
     const source = (products && typeof products === 'object' && Object.keys(products).length) ? products : productsDatabase;
     return Object.keys(source || {}).find(k => k !== 'Default_Page' && Array.isArray(source[k]) && source[k].length) ||
@@ -117,14 +119,38 @@
     return productList;
   }
 
+  function resolveUiCtx(ctx = {}) {
+    if (ctx && typeof ctx === 'object' && Object.keys(ctx).length) return ctx;
+    try {
+      const fallback = window.__SS_CATALOG_UI_CTX__ || null;
+      if (fallback && typeof fallback === 'object') return fallback;
+    } catch {}
+    return ctx || {};
+  }
+
+  function scheduleCategoryButtonsRetry(ctx = {}) {
+    if (categoryRetryTimer) return;
+    categoryRetryTimer = window.setTimeout(() => {
+      categoryRetryTimer = null;
+      try { api.categoryButtons(resolveUiCtx(ctx)); } catch {}
+    }, 180);
+  }
+
   const api = {
     categoryButtons(ctx = {}) {
+      ctx = resolveUiCtx(ctx);
       const sidebars = document.querySelectorAll('.mobileSideBar, #SideBar, #DesktopSidebar');
       const productsDatabase = ctx.getProductsDatabase?.() || {};
-      if (!productsDatabase || Object.keys(productsDatabase).length === 0) {
-        console.error('❌ Products database not loaded yet.');
+      if (!sidebars.length) {
+        scheduleCategoryButtonsRetry(ctx);
         return;
       }
+      if (!productsDatabase || Object.keys(productsDatabase).length === 0) {
+        console.error('❌ Products database not loaded yet.');
+        scheduleCategoryButtonsRetry(ctx);
+        return;
+      }
+      let renderedButtons = 0;
       sidebars.forEach(sidebar => {
         if (!sidebar) return;
         const categoryContainer = sidebar.querySelector('.sidebar-categories') || sidebar;
@@ -175,10 +201,13 @@
           }
           button.appendChild(heading);
           categoryContainer.appendChild(button);
+          renderedButtons += 1;
         });
       });
+      if (!renderedButtons) scheduleCategoryButtonsRetry(ctx);
     },
     clearCategoryHighlight(ctx = {}) {
+      ctx = resolveUiCtx(ctx);
       document.querySelectorAll('.Category_Button').forEach(button => button.classList.remove('Active'));
       ctx.setCurrentCategory?.(null);
       ctx.syncCentralState?.('category-cleared', { currentCategory: null });
@@ -320,4 +349,10 @@
     ,ClearCategoryHighlight(ctx = {}) { return api.clearCategoryHighlight(ctx); }
   };
   window.__SS_CATALOG_UI_RUNTIME__ = api;
+  window.CategoryButtons = function CategoryButtonsBridge() {
+    return api.categoryButtons(resolveUiCtx(window.__SS_CATALOG_UI_CTX__ || {}));
+  };
+  window.ClearCategoryHighlight = function ClearCategoryHighlightBridge() {
+    return api.clearCategoryHighlight(resolveUiCtx(window.__SS_CATALOG_UI_CTX__ || {}));
+  };
 })(window, document);

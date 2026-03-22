@@ -46,6 +46,11 @@ async function fetchStorefrontConfigFromServer() {
     if (!svc?.getStorefrontConfig) throw new Error('Pricing service unavailable: getStorefrontConfig');
     const data = await svc.getStorefrontConfig();
     if (!data || typeof data !== "object") throw new Error("Invalid storefront config payload.");
+    try {
+        window.storefrontCfg = data;
+        window.preloadedData = window.preloadedData || {};
+        window.preloadedData.storefrontConfig = data;
+    } catch {}
     return data;
 }
 
