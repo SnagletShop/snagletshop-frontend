@@ -52,7 +52,8 @@
 
     const priceP = document.createElement('p');
     priceP.className = 'product-price';
-    priceP.textContent = opts.priceText || `${opts.priceValue ?? product?.price ?? 0}${opts.currencySymbol || '€'}`;
+    const resolvedPrice = Number.parseFloat(opts.priceValue ?? product?.price ?? product?.priceEUR ?? product?.basePrice ?? 0) || 0;
+    priceP.textContent = opts.priceText || `${resolvedPrice}${opts.currencySymbol || '€'}`;
 
     const qtyUi = getQuantityControls()?.createCatalogQuantityControls?.(product, {
       onDecrease: opts.onDecrease,

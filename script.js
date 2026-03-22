@@ -832,6 +832,9 @@ function __ssGetQtyValue(productKey){ return window.__SS_PRODUCT_RUNTIME__?.getQ
 function __ssSetQtyValue(productKey, qty){ return window.__SS_PRODUCT_RUNTIME__?.setQtyValue?.(productKey, qty) ?? qty; }
 function increaseQuantity(productKey){ return window.__SS_PRODUCT_RUNTIME__?.increaseQuantity?.(productKey); }
 function decreaseQuantity(productKey){ return window.__SS_PRODUCT_RUNTIME__?.decreaseQuantity?.(productKey); }
+function updateImage(direction){ return window.__SS_PRODUCT__?.updateImage?.(direction); }
+function addToCart(){ return window.__SS_BASKET__?.addToCart?.apply(window.__SS_BASKET__, arguments); }
+function buyNow(){ return window.__SS_PRODUCT__?.buyNow?.apply(window.__SS_PRODUCT__, arguments); }
 function changeQuantity(itemKey, amount){ return window.__SS_CART_RUNTIME__?.changeQuantity?.({ basket, persistBasket, updateBasket }, itemKey, amount); }
 function filterProducts(searchTerm){ return window.__SS_PRODUCT_RUNTIME__?.filterProducts?.({ getProducts:()=>typeof products!=='undefined'?products:null }, searchTerm) || []; }
 function slugifyName(name){ return window.__SS_PRODUCT_RUNTIME__?.slugifyName?.(name) ?? String(name || ''); }

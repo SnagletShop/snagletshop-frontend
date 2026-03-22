@@ -349,7 +349,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const prevBtn = document.createElement("button");
     prevBtn.className = "ImageControlButtonPrevious";
     prevBtn.type = "button";
-    prevBtn.addEventListener("click", (e) => { e.preventDefault(); try { prevImage(); } catch { } });
+    prevBtn.addEventListener("click", (e) => { e.preventDefault(); try { const imgs = window.currentProductImages || []; if (!imgs.length) return; window.currentIndex = (Number(window.currentIndex || 0) - 1 + imgs.length) % imgs.length; updateImage("right"); } catch { } });
 
     const prevTxt = document.createElement("div");
     prevTxt.className = "ImageControlButtonText";
@@ -369,7 +369,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const nextBtn = document.createElement("button");
     nextBtn.className = "ImageControlButtonNext";
     nextBtn.type = "button";
-    nextBtn.addEventListener("click", (e) => { e.preventDefault(); try { nextImage(); } catch { } });
+    nextBtn.addEventListener("click", (e) => { e.preventDefault(); try { const imgs = window.currentProductImages || []; if (!imgs.length) return; window.currentIndex = (Number(window.currentIndex || 0) + 1) % imgs.length; updateImage("left"); } catch { } });
 
     const nextTxt = document.createElement("div");
     nextTxt.className = "ImageControlButtonText";
@@ -429,15 +429,9 @@ function renderProductPage(product, validImages, productName, productPrice, prod
         : (Array.isArray(window.__SS_PRODUCT_OPTIONS__?.__ssExtractOptionGroups?.(product))
             ? window.__SS_PRODUCT_OPTIONS__.__ssExtractOptionGroups(product)
             : []);
-    const defaultSel = Array.isArray(window.__ssDefaultSelectedOptions?.(groups))
-        ? window.__ssDefaultSelectedOptions(groups)
-        : (Array.isArray(window.__SS_PRODUCT_OPTIONS__?.__ssDefaultSelectedOptions?.(groups))
-            ? window.__SS_PRODUCT_OPTIONS__.__ssDefaultSelectedOptions(groups)
-            : []);
+    const defaultSel = __ssSafeDefaultSelectedOptions(groups);
     try {
-        if (typeof window.__ssSetSelectedOptions === 'function') window.__ssSetSelectedOptions(defaultSel);
-        else if (typeof window.__SS_PRODUCT_OPTIONS__?.__ssSetSelectedOptions === 'function') window.__SS_PRODUCT_OPTIONS__.__ssSetSelectedOptions(defaultSel);
-        else window.selectedProductOptions = Array.isArray(defaultSel) ? defaultSel : [];
+        __ssSafeSetSelectedOptions(defaultSel);
     } catch {
         window.selectedProductOptions = Array.isArray(defaultSel) ? defaultSel : [];
     }
@@ -473,19 +467,19 @@ function renderProductPage(product, validImages, productName, productPrice, prod
                     btnWrap.querySelectorAll(".Product_Option_Button").forEach(x => x.classList.remove("selected"));
                     b.classList.add("selected");
 
-                    const current = __ssGetSelectedOptions();
+                    const current = __ssSafeGetSelectedOptions();
                     while (current.length < groups.length) {
                         const gg = groups[current.length];
                         current.push({ label: gg.label, value: gg.options[0] });
                     }
                     current[gIdx] = { label: g.label, value: opt };
-                    __ssSetSelectedOptions(current);
+                    __ssSafeSetSelectedOptions(current);
 
                     // Update price for current variant (if configured)
                     try {
                         const priceEl = document.getElementById("product-page-price");
                         if (priceEl) {
-                            const eur = __ssResolveVariantPriceEUR(product, current, current?.[0]?.value || "");
+                            const eur = __ssSafeResolveVariantPriceEUR(product, current, current?.[0]?.value || "");
                             priceEl.dataset.eur = String(eur ?? "");
                             // Base EUR text; updateAllPrices() will convert if needed
                             priceEl.textContent = `${eur} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
@@ -506,7 +500,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
         // Apply mapping for default selections (first group that has a mapping hit)
         for (let i = 0; i < groups.length; i++) {
-            const sel = __ssGetSelectedOptions();
+            const sel = __ssSafeGetSelectedOptions();
             const v = sel?.[i]?.value;
             if (__ssApplyOptionImageMapping(groups[i], v, window.currentProductImages)) break;
         }
@@ -521,8 +515,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const pSpan = document.createElement("span");
     pSpan.id = "product-page-price";
     pSpan.className = "productPrice";
-    const _selInit = __ssGetSelectedOptions();
-    const _eurInit = __ssResolveVariantPriceEUR(product, _selInit, _selInit?.[0]?.value || "");
+    const _selInit = __ssSafeGetSelectedOptions();
+    const _eurInit = __ssSafeResolveVariantPriceEUR(product, _selInit, _selInit?.[0]?.value || "") || (Number.parseFloat(productPrice) || Number.parseFloat(product?.price) || 0);
     pSpan.dataset.eur = String(_eurInit ?? "");
     pSpan.textContent = `${_eurInit} ${TEXTS?.CURRENCIES?.EUR || "€"}`;
 
@@ -613,7 +607,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     addBtn.type = "button";
     addBtn.innerHTML = `
       <span style="display:flex;align-items:center;gap:6px;">
-        ${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
+        ${__ssSafeEscHtml(TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || "Add to cart")}
         <svg class="cart-icon-product" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
           <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -624,7 +618,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     addBtn.addEventListener("click", (e) => {
         e.preventDefault();
         const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
-        const sel = __ssGetSelectedOptions();
+        const sel = __ssSafeGetSelectedOptions();
         const legacy = sel?.[0]?.value || "";
         addToCart(
             productName,
@@ -649,7 +643,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     buyBtn.addEventListener("click", (e) => {
         e.preventDefault();
         const mainSrc = document.getElementById("mainImage")?.src || window.currentProductImages?.[0] || "";
-        const sel = __ssGetSelectedOptions();
+        const sel = __ssSafeGetSelectedOptions();
         const legacy = sel?.[0]?.value || "";
         buyNow(
             productName,
