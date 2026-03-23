@@ -99,6 +99,108 @@ function clearCheckoutDraft() {
     } catch { }
 }
 
+function __ssGetCheckoutSuccessFirstCategory() {
+    try {
+        const db = (window.productsDatabase && typeof window.productsDatabase === "object")
+            ? window.productsDatabase
+            : ((window.products && typeof window.products === "object") ? window.products : {});
+        return Object.keys(db || {}).find((k) => k !== "Default_Page" && Array.isArray(db[k]) && db[k].length) || "Default_Page";
+    } catch { }
+    return "Default_Page";
+}
+
+function __ssGetCheckoutSuccessDefaultSort() {
+    try { return localStorage.getItem("defaultSort") || "NameFirst"; } catch { }
+    return "NameFirst";
+}
+
+function __ssGetCheckoutSuccessDefaultSortOrder() {
+    return String(window.currentSortOrder || "asc").trim().toLowerCase() === "desc" ? "desc" : "asc";
+}
+
+function __ssClearCheckoutModalHistoryMarker() {
+    try {
+        const currentState = (history.state && typeof history.state === "object") ? history.state : null;
+        if (!currentState || currentState.modalOpen !== true) return;
+        const idx = Number.isInteger(currentState.index)
+            ? currentState.index
+            : (Number.isInteger(window.currentIndex) ? window.currentIndex : -1);
+        const routeState = currentState.route
+            || (Array.isArray(window.userHistoryStack) && idx >= 0 ? window.userHistoryStack[idx] : null)
+            || null;
+        const snapshot = window.__SS_ROUTER__?.buildHistoryState?.(routeState, idx, {}) || { ...currentState };
+        try { delete snapshot.modalOpen; } catch { }
+        history.replaceState(snapshot, "", window.location.href);
+    } catch { }
+}
+
+function __ssNavigateHomeAfterPaymentSuccess() {
+    const data = [
+        __ssGetCheckoutSuccessFirstCategory(),
+        __ssGetCheckoutSuccessDefaultSort(),
+        __ssGetCheckoutSuccessDefaultSortOrder()
+    ];
+
+    try {
+        const router = window.__SS_ROUTER__ || null;
+        if (router && typeof router.navigate === "function") {
+            router.navigate("loadProducts", data, { replaceCurrent: false });
+            return true;
+        }
+    } catch { }
+
+    try {
+        if (typeof window.loadProducts === "function") {
+            window.loadProducts(...data);
+            return true;
+        }
+    } catch { }
+
+    return false;
+}
+
+function __ssHandleSuccessfulCheckoutUi() {
+    const orderSnapshot = {
+        orderId: window.latestOrderId || null,
+        orderPublicToken: window.latestOrderPublicToken || null,
+        orderStatusUrl: window.latestOrderStatusUrl || null
+    };
+
+    try { clearPaymentPendingFlag(); } catch { }
+    try { clearBasketCompletely(); } catch { }
+    try { clearCheckoutDraft(); } catch { }
+    try { __ssClearCheckoutModalHistoryMarker(); } catch { }
+    try { closeModal({ fromHistory: true, clearDraft: true, preserveDraft: false, reason: "payment_success" }); } catch { }
+    try {
+        if (orderSnapshot.orderId) window.latestOrderId = orderSnapshot.orderId;
+        if (orderSnapshot.orderPublicToken) window.latestOrderPublicToken = orderSnapshot.orderPublicToken;
+        if (orderSnapshot.orderStatusUrl) window.latestOrderStatusUrl = orderSnapshot.orderStatusUrl;
+    } catch { }
+
+    const navigated = __ssNavigateHomeAfterPaymentSuccess();
+
+    try { setPaymentSuccessFlag({ reloadOnOk: false }); } catch { }
+
+    try {
+        if (typeof window.checkAndShowPaymentSuccess === "function") {
+            requestAnimationFrame(() => {
+                try { window.checkAndShowPaymentSuccess(); } catch { }
+            });
+        } else if (typeof showPaymentSuccessOverlay === "function") {
+            const msg = (typeof TEXTS !== "undefined" && TEXTS?.CHECKOUT_SUCCESS)
+                ? TEXTS.CHECKOUT_SUCCESS
+                : "Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!";
+            requestAnimationFrame(() => {
+                try { showPaymentSuccessOverlay(msg); } catch { }
+            });
+        }
+    } catch { }
+
+    if (!navigated) {
+        try { window.location.replace(window.location.origin + "/"); } catch { }
+    }
+}
+
 function resolveStripeAppearanceSafe() {
     try {
         const appearance = window.__SS_CHECKOUT_UI__?.getStripeAppearanceForModal?.();
@@ -415,9 +517,13 @@ async function initStripePaymentUI(selectedCurrency) {
                 draftId: data.draftId || data.checkoutId || null,
                 token: data.checkoutPublicToken || data.token || checkoutPublicToken || null
             });
-            try { clearBasketStorage("free_checkout"); } catch { }
-            try { closeModal({ reason: "free_checkout" }); } catch { }
-            try { showPaymentSuccessOverlay(`Order confirmed (${fin.orderId || "FREE"}).`); } catch { }
+            try {
+                if (fin?.orderId) window.latestOrderId = fin.orderId;
+                if (data?.checkoutPublicToken || data?.token || checkoutPublicToken) {
+                    window.latestOrderPublicToken = data.checkoutPublicToken || data.token || checkoutPublicToken || null;
+                }
+            } catch { }
+            __ssHandleSuccessfulCheckoutUi();
             // Stop further Stripe mounting
             return;
         } catch (e) {
@@ -781,11 +887,7 @@ function attachConfirmHandlerOnce() {
                             alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
                             return;
                         }
-                        clearPaymentPendingFlag();
-                        clearBasketCompletely();
-                        try { clearCheckoutDraft(); } catch {}
-                        setPaymentSuccessFlag({ reloadOnOk: true });
-                        window.location.replace(window.location.origin);
+                        __ssHandleSuccessfulCheckoutUi();
                         return;
                     }
                     if (pi?.status === "processing") {
@@ -805,11 +907,7 @@ function attachConfirmHandlerOnce() {
                                 alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
                                 return;
                             }
-                            clearPaymentPendingFlag();
-                            clearBasketCompletely();
-                            try { clearCheckoutDraft(); } catch {}
-                            setPaymentSuccessFlag({ reloadOnOk: true });
-                            window.location.replace(window.location.origin);
+                            __ssHandleSuccessfulCheckoutUi();
                             return;
                         }
                         if (status === "requires_payment_method" || status === "canceled") {
@@ -859,11 +957,7 @@ function attachConfirmHandlerOnce() {
                     alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
                     return;
                 }
-                clearPaymentPendingFlag();
-                clearBasketCompletely();
-                try { clearCheckoutDraft(); } catch {}
-                setPaymentSuccessFlag({ reloadOnOk: true });
-                window.location.replace(window.location.origin);
+                __ssHandleSuccessfulCheckoutUi();
                 return;
             }
 
@@ -884,11 +978,7 @@ function attachConfirmHandlerOnce() {
                         alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
                         return;
                     }
-                    clearPaymentPendingFlag();
-                    clearBasketCompletely();
-                    try { clearCheckoutDraft(); } catch {}
-                    setPaymentSuccessFlag({ reloadOnOk: true });
-                    window.location.replace(window.location.origin);
+                    __ssHandleSuccessfulCheckoutUi();
                     return;
                 }
                 if (status === "requires_payment_method" || status === "canceled") {
@@ -912,10 +1002,7 @@ function attachConfirmHandlerOnce() {
                         window.latestOrderPublicToken = checkoutToken;
                         window.latestOrderStatusUrl = statusUrl;
                         addRecentOrder({ orderId: resolvedOrderId, token: checkoutToken, orderStatusUrl: statusUrl, paymentIntentId: pi.id });
-                        clearBasketCompletely();
-                        try { clearCheckoutDraft(); } catch {}
-                        setPaymentSuccessFlag({ reloadOnOk: true });
-                        window.location.replace(window.location.origin);
+                        __ssHandleSuccessfulCheckoutUi();
                         return;
                     }
                 }
@@ -1046,10 +1133,8 @@ async function handleStripeRedirectReturnOnLoad() {
             return;
         }
 
-        clearPaymentPendingFlag();
-        clearBasketCompletely();
-        try { clearCheckoutDraft(); } catch { }
-        setPaymentSuccessFlag({ reloadOnOk: true });
+        __ssHandleSuccessfulCheckoutUi();
+        return true;
     } else if (finalStatus === "requires_payment_method" || finalStatus === "canceled") {
         clearPaymentPendingFlag();
         alert("Payment did not complete. Your cart is still saved—please try again.");

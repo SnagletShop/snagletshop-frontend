@@ -1,4 +1,62 @@
 (function(){
+  function getFirstRenderableCategory() {
+    try {
+      const db = (window.productsDatabase && typeof window.productsDatabase === 'object')
+        ? window.productsDatabase
+        : ((window.products && typeof window.products === 'object') ? window.products : {});
+      return Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
+    } catch {}
+    return 'Default_Page';
+  }
+
+  function getDefaultSort() {
+    try { return localStorage.getItem('defaultSort') || 'NameFirst'; } catch {}
+    return 'NameFirst';
+  }
+
+  function getDefaultSortOrder() {
+    return String(window.currentSortOrder || 'asc').trim().toLowerCase() === 'desc' ? 'desc' : 'asc';
+  }
+
+  function navigateHomeAfterPaymentSuccess(ctx, replaceCurrent = true) {
+    const data = [getFirstRenderableCategory(), getDefaultSort(), getDefaultSortOrder()];
+    try {
+      if (typeof ctx.navigate === 'function') {
+        ctx.navigate('loadProducts', data, { replaceCurrent });
+        return true;
+      }
+    } catch {}
+    try {
+      if (typeof window.__SS_ROUTER__?.navigate === 'function') {
+        window.__SS_ROUTER__.navigate('loadProducts', data, { replaceCurrent });
+        return true;
+      }
+    } catch {}
+    return false;
+  }
+
+  function handleSuccessfulPaymentUi(ctx, replaceCurrent = true) {
+    const orderSnapshot = {
+      orderId: window.latestOrderId || null,
+      orderPublicToken: window.latestOrderPublicToken || null,
+      orderStatusUrl: window.latestOrderStatusUrl || null
+    };
+    api.clearPaymentPendingFlag(ctx);
+    try { ctx.clearBasketCompletely?.(); } catch {}
+    try { ctx.clearCheckoutDraft?.(); } catch {}
+    try {
+      if (orderSnapshot.orderId) window.latestOrderId = orderSnapshot.orderId;
+      if (orderSnapshot.orderPublicToken) window.latestOrderPublicToken = orderSnapshot.orderPublicToken;
+      if (orderSnapshot.orderStatusUrl) window.latestOrderStatusUrl = orderSnapshot.orderStatusUrl;
+    } catch {}
+    try { ctx.setPaymentSuccessFlag?.({ reloadOnOk: false }); } catch {}
+    const navigated = navigateHomeAfterPaymentSuccess(ctx, replaceCurrent);
+    try { ctx.checkAndShowPaymentSuccess?.(); } catch {}
+    if (!navigated) {
+      try { window.location.replace(window.location.origin + '/'); } catch {}
+    }
+  }
+
   const api = {
     async fetchOrderStatus(ctx, { orderId, token } = {}){
       const oid = String(orderId || '').trim();
@@ -59,7 +117,7 @@
           window.latestOrderId = resolvedOrderId; window.latestOrderPublicToken = checkoutToken; window.latestOrderStatusUrl = statusUrl;
         }
         if (!resolvedOrderId) { alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update."); return; }
-        api.clearPaymentPendingFlag(ctx); ctx.clearBasketCompletely?.(); try { ctx.clearCheckoutDraft?.(); } catch {} ctx.setPaymentSuccessFlag?.({ reloadOnOk: true }); window.location.replace(window.location.origin); return;
+        handleSuccessfulPaymentUi(ctx, true); return;
       }
       if (status === 'requires_payment_method' || status === 'canceled') { api.clearPaymentPendingFlag(ctx); alert('Payment did not complete. Your cart is still saved—please try again.'); return; }
       console.warn('Payment is still processing (or status check failed). Cart is unchanged. You can try again in a moment.');

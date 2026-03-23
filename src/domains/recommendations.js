@@ -4,9 +4,9 @@ let __ssRecoRenderToken = 0;
 let __ssSmartRecoApiCache = window.__ssSmartRecoApiCache || { key: "", at: 0, data: null, pendingKey: "", pending: null };
 
 window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
-    desktopVisibleCount: 3,
+    desktopVisibleCount: 5,
     mobileVisibleCount: 2,
-    desktopBatchSize: 3,
+    desktopBatchSize: 5,
     mobileBatchSize: 2,
     desktopMaxBatches: 6,
     mobileMaxBatches: 6,

@@ -135,7 +135,7 @@
       if (params.get('redirect_status') === 'succeeded') {
         try { if (typeof window.clearBasketCompletely === 'function') window.clearBasketCompletely(); } catch {}
         try { if (typeof window.clearCheckoutDraft === 'function') window.clearCheckoutDraft(); } catch {}
-        try { if (typeof window.setPaymentSuccessFlag === 'function') window.setPaymentSuccessFlag({ reloadOnOk: true }); } catch {}
+        try { if (typeof window.setPaymentSuccessFlag === 'function') window.setPaymentSuccessFlag({ reloadOnOk: false }); } catch {}
         params.delete('redirect_status');
         params.delete('payment_intent');
         params.delete('payment_intent_client_secret');
@@ -146,6 +146,15 @@
         const routeState = currentState.route || (Array.isArray(userHistoryStack) ? userHistoryStack[idx] : null) || null;
         const snapshot = window.__SS_ROUTER__?.buildHistoryState?.(routeState, idx, { modalOpen: currentState.modalOpen === true }) || { ...currentState, index: idx, route: routeState };
         history.replaceState(snapshot, '', cleanUrl);
+        try {
+          const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+          const firstCategory = Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
+          const defaultSort = (() => { try { return localStorage.getItem('defaultSort') || 'NameFirst'; } catch {} return 'NameFirst'; })();
+          const defaultOrder = String(window.currentSortOrder || 'asc').trim().toLowerCase() === 'desc' ? 'desc' : 'asc';
+          if (typeof window.__SS_ROUTER__?.navigate === 'function') {
+            window.__SS_ROUTER__.navigate('loadProducts', [firstCategory, defaultSort, defaultOrder], { replaceCurrent: true });
+          }
+        } catch {}
         try { if (typeof window.checkAndShowPaymentSuccess === 'function') window.checkAndShowPaymentSuccess(); } catch {}
       }
     } catch {}
