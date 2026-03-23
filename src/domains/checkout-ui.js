@@ -312,28 +312,11 @@ function showPaymentSuccessOverlay(message) {
     const actions = document.createElement("div");
     actions.className = "payment-success__actions";
 
-    const track = document.createElement("button");
-    track.type = "button";
-    track.textContent = "Track order";
-    track.className = "payment-success__track";
-
-    track.onclick = () => {
-        try {
-            openOrderStatusModal({
-                orderId: window.latestOrderId || "",
-                token: window.latestOrderPublicToken || ""
-            });
-        } catch { }
-    };
-
     const ok = document.createElement("button");
     ok.type = "button";
     ok.textContent = "OK";
     ok.className = "payment-success__ok";
 
-    if (window.latestOrderId && window.latestOrderPublicToken) {
-        actions.appendChild(track);
-    }
     actions.appendChild(ok);
     card.appendChild(title);
     card.appendChild(body);
