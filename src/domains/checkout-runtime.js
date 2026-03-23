@@ -1,5 +1,18 @@
 (function (window, document) {
   'use strict';
+  const COUNTRY_OVERRIDE_STORAGE_KEY = 'selectedCountryOverride';
+
+  function normalizeCountryCode(value, fallback = '') {
+    const code = String(value || '').trim().toUpperCase();
+    return code || fallback;
+  }
+
+  function readStoredCountry(key, fallback = '') {
+    try {
+      return normalizeCountryCode(localStorage.getItem(key), fallback);
+    } catch {}
+    return fallback;
+  }
 
   function valById(id) {
     const el = document.getElementById(id);
@@ -227,8 +240,10 @@
 
   function getSelectedCountryCode() {
     const v =
+      document.getElementById('Country')?.value ||
       document.getElementById('countrySelect')?.value ||
-      localStorage.getItem('detectedCountry') ||
+      readStoredCountry(COUNTRY_OVERRIDE_STORAGE_KEY) ||
+      readStoredCountry('detectedCountry') ||
       'US';
     return String(v).trim().toUpperCase();
   }

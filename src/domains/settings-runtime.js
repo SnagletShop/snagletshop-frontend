@@ -1,5 +1,29 @@
 (function (window, document) {
   'use strict';
+  const COUNTRY_OVERRIDE_STORAGE_KEY = 'selectedCountryOverride';
+
+  function normalizeCountryCode(value, fallback = '') {
+    const code = String(value || '').trim().toUpperCase();
+    return code || fallback;
+  }
+
+  function getPreferredCountryCode() {
+    try {
+      return normalizeCountryCode(localStorage.getItem(COUNTRY_OVERRIDE_STORAGE_KEY)) ||
+        normalizeCountryCode(localStorage.getItem('detectedCountry'), 'US');
+    } catch {}
+    return 'US';
+  }
+
+  function setPreferredCountryCode(value) {
+    const code = normalizeCountryCode(value);
+    if (!code) return '';
+    try {
+      localStorage.setItem(COUNTRY_OVERRIDE_STORAGE_KEY, code);
+      localStorage.setItem('detectedCountry', code);
+    } catch {}
+    return code;
+  }
 
   async function preloadSettingsData(ctx = {}) {
     const forceRefresh = ctx.forceRefresh === true;
@@ -188,7 +212,7 @@
     (window.preloadedData?.countries || []).forEach(addCountry);
     Object.keys(ctx.getTariffMultipliers?.() || {}).forEach((code) => addCountry({ code, tariff: Number((ctx.getTariffMultipliers?.() || {})[code] || 0) || 0 }));
     Object.keys(ctx.countryNames || {}).forEach((code) => addCountry({ code }));
-    addCountry({ code: localStorage.getItem('detectedCountry') || 'US' });
+    addCountry({ code: getPreferredCountryCode() });
     return countries.sort((a, b) => String(a.code || '').localeCompare(String(b.code || '')));
   }
 
@@ -315,7 +339,7 @@
 
     const currencySelect = document.getElementById('currencySelect');
     const countrySelect = document.getElementById('countrySelect');
-    const detectedCountry = (localStorage.getItem('detectedCountry') || 'US').toUpperCase();
+    const detectedCountry = getPreferredCountryCode();
     const detectedSpan = document.getElementById('detected-country');
     if (detectedSpan) detectedSpan.textContent = detectedCountry;
     const countriesList = buildCountriesList(ctx);
@@ -387,7 +411,7 @@
           onChange: (val) => {
             if (!val) return;
             const newCountry = String(val).toUpperCase();
-            localStorage.setItem('detectedCountry', newCountry);
+            setPreferredCountryCode(newCountry);
             if (detectedSpan) detectedSpan.textContent = newCountry;
             if (ctx.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem('manualCurrencyOverride')) {
               const newCurrency = ctx.countryToCurrency?.[newCountry];

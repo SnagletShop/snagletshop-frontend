@@ -3,7 +3,18 @@
 
   const PRICE_SELECTOR = '.price, .product-price, .basket-item-price, #product-page-price, .productPrice';
   const PRICE_CACHE_KEY = '__ssRememberedProductPrices';
+  const COUNTRY_OVERRIDE_STORAGE_KEY = 'selectedCountryOverride';
   const SUFFIX_CURRENCIES = new Set(['EUR', 'PLN', 'CZK', 'SEK', 'NOK', 'DKK', 'HUF', 'RON', 'BGN', 'RUB', 'UAH', 'CHF']);
+
+  function getPreferredCountryCode() {
+    try {
+      const manual = String(localStorage.getItem(COUNTRY_OVERRIDE_STORAGE_KEY) || '').trim().toUpperCase();
+      if (manual) return manual;
+      const detected = String(localStorage.getItem('detectedCountry') || 'US').trim().toUpperCase();
+      return detected || 'US';
+    } catch {}
+    return 'US';
+  }
 
   function parseLoosePrice(value) {
     try {
@@ -297,7 +308,7 @@
     const rate = Number(exchangeRates?.[selectedCurrency] ?? 1);
     let converted = (Number.isFinite(eur) ? eur : 0) * (Number.isFinite(rate) && rate > 0 ? rate : 1);
 
-    const selectedCountry = localStorage.getItem('detectedCountry') || 'US';
+    const selectedCountry = getPreferredCountryCode();
     const rawTariff = Number(tariffMultipliers?.[selectedCountry] ?? 0);
     const tariff = (Number.isFinite(rawTariff) && rawTariff >= 0) ? rawTariff : 0;
 

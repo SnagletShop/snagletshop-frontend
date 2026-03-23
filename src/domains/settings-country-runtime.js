@@ -1,5 +1,29 @@
 (function (window, document) {
   'use strict';
+  const COUNTRY_OVERRIDE_STORAGE_KEY = 'selectedCountryOverride';
+
+  function normalizeCountryCode(value, fallback = '') {
+    const code = String(value || '').trim().toUpperCase();
+    return code || fallback;
+  }
+
+  function getPreferredCountryCode() {
+    try {
+      return normalizeCountryCode(localStorage.getItem(COUNTRY_OVERRIDE_STORAGE_KEY)) ||
+        normalizeCountryCode(localStorage.getItem('detectedCountry'), 'US');
+    } catch {}
+    return 'US';
+  }
+
+  function setPreferredCountryCode(value) {
+    const code = normalizeCountryCode(value);
+    if (!code) return '';
+    try {
+      localStorage.setItem(COUNTRY_OVERRIDE_STORAGE_KEY, code);
+      localStorage.setItem('detectedCountry', code);
+    } catch {}
+    return code;
+  }
 
   function isDarkModeEnabled() {
     return document.documentElement.classList.contains('dark-mode') ||
@@ -41,16 +65,16 @@
         select.appendChild(opt);
       }
 
-      let detected = 'US';
-      try { detected = localStorage.getItem('detectedCountry') || 'US'; } catch {}
+      let detected = getPreferredCountryCode();
       const detectedEl = document.getElementById('detected-country');
       if (detectedEl) detectedEl.textContent = detected;
       select.value = detected;
 
       if (!select.dataset.listenerAttached) {
         select.addEventListener('change', () => {
-          const newCountry = select.value;
-          try { localStorage.setItem('detectedCountry', newCountry); } catch {}
+          const newCountry = setPreferredCountryCode(select.value) || select.value;
+          const detectedEl = document.getElementById('detected-country');
+          if (detectedEl) detectedEl.textContent = newCountry;
 
           if (ctx.autoUpdateCurrencyOnCountryChange && !localStorage.getItem('manualCurrencyOverride')) {
             const newCurrency = ctx.countryToCurrency?.[newCountry];
@@ -98,15 +122,15 @@
       select.appendChild(opt);
     }
 
-    const detected = localStorage.getItem('detectedCountry') || 'US';
+    const detected = getPreferredCountryCode();
     const detectedEl = document.getElementById('detected-country');
     if (detectedEl) detectedEl.textContent = detected;
     select.value = detected;
 
     if (!select.dataset.populateCountriesBound) {
       select.addEventListener('change', () => {
-        const newCountry = select.value;
-        localStorage.setItem('detectedCountry', newCountry);
+        const newCountry = setPreferredCountryCode(select.value) || select.value;
+        if (detectedEl) detectedEl.textContent = newCountry;
 
         if (ctx.autoUpdateCurrencyOnCountryChange && !localStorage.getItem('manualCurrencyOverride')) {
           const newCurrency = ctx.countryToCurrency?.[newCountry];

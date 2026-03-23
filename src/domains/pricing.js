@@ -1,4 +1,21 @@
 (function (window) {
+const COUNTRY_OVERRIDE_STORAGE_KEY = "selectedCountryOverride";
+
+function getStorageGet() {
+    return window.__SS_STORAGE_SERVICE__?.get || localStorage.getItem.bind(localStorage);
+}
+
+function getStorageSet() {
+    return window.__SS_STORAGE_SERVICE__?.set || localStorage.setItem.bind(localStorage);
+}
+
+function getManualCountryOverride() {
+    try {
+        return String(getStorageGet()(COUNTRY_OVERRIDE_STORAGE_KEY) || "").trim().toUpperCase();
+    } catch { }
+    return "";
+}
+
 function normalizeTariffMap(raw) {
     const input = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
     const out = {};
@@ -122,24 +139,26 @@ function detectUserCurrency() {
     //  2) server default (if provided)
     //  3) cached geo-detected currency (30d)
     //  4) one-shot geo detection (ipapi), with backoff on failure
+    const storageGet = getStorageGet();
+    const storageSet = getStorageSet();
     try {
-        const saved = (window.__SS_STORAGE_SERVICE__?.get || localStorage.getItem.bind(localStorage))("selectedCurrency");
+        const saved = storageGet("selectedCurrency");
         if (saved) {
             selectedCurrency = saved;
             return Promise.resolve();
         }
     } catch { }
     try {
-        const disabledUntil = Number((window.__SS_STORAGE_SERVICE__?.get || localStorage.getItem.bind(localStorage))("geoCurrencyDisabledUntil") || 0);
+        const disabledUntil = Number(storageGet("geoCurrencyDisabledUntil") || 0);
         if (disabledUntil && Date.now() < disabledUntil) return Promise.resolve();
 
-        const detectedAt = Number((window.__SS_STORAGE_SERVICE__?.get || localStorage.getItem.bind(localStorage))("geoCurrencyDetectedAt") || 0);
-        const cachedCountry = String((window.__SS_STORAGE_SERVICE__?.get || localStorage.getItem.bind(localStorage))("detectedCountry") || "").toUpperCase();
-        const cachedCurrency = String((window.__SS_STORAGE_SERVICE__?.get || localStorage.getItem.bind(localStorage))("geoDetectedCurrency") || "");
+        const detectedAt = Number(storageGet("geoCurrencyDetectedAt") || 0);
+        const cachedCountry = String(storageGet("detectedCountry") || "").toUpperCase();
+        const cachedCurrency = String(storageGet("geoDetectedCurrency") || "");
         if (detectedAt && (Date.now() - detectedAt) < (30 * 24 * 60 * 60 * 1000) && cachedCurrency) {
             selectedCurrency = cachedCurrency;
-            if (cachedCountry) localStorage.setItem("detectedCountry", cachedCountry);
-        (window.__SS_STORAGE_SERVICE__?.set || localStorage.setItem.bind(localStorage))("selectedCurrency", selectedCurrency);
+            if (!getManualCountryOverride() && cachedCountry) storageSet("detectedCountry", cachedCountry);
+            storageSet("selectedCurrency", selectedCurrency);
             updateAllPrices();
             return Promise.resolve();
         }
@@ -156,10 +175,10 @@ function detectUserCurrency() {
             selectedCurrency = countryToCurrency[userCountry] || "EUR";
 
             try {
-            (window.__SS_STORAGE_SERVICE__?.set || localStorage.setItem.bind(localStorage))("selectedCurrency", selectedCurrency);
-                localStorage.setItem("detectedCountry", userCountry);
-                localStorage.setItem("geoDetectedCurrency", selectedCurrency);
-                localStorage.setItem("geoCurrencyDetectedAt", String(Date.now()));
+                storageSet("selectedCurrency", selectedCurrency);
+                if (!getManualCountryOverride()) storageSet("detectedCountry", userCountry);
+                storageSet("geoDetectedCurrency", selectedCurrency);
+                storageSet("geoCurrencyDetectedAt", String(Date.now()));
             } catch { }
 
             const currencySelect = document.getElementById("currency-select");
@@ -171,7 +190,7 @@ function detectUserCurrency() {
             console.warn("Currency detect blocked/failed; keeping saved currency.", err);
             try {
                 // backoff for 7 days to avoid repeated failing calls
-                (window.__SS_STORAGE_SERVICE__?.set || localStorage.setItem.bind(localStorage))("geoCurrencyDisabledUntil", String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+                storageSet("geoCurrencyDisabledUntil", String(Date.now() + 7 * 24 * 60 * 60 * 1000));
             } catch { }
         });
 }

@@ -1,4 +1,35 @@
 (function (window, document) {
+const COUNTRY_OVERRIDE_STORAGE_KEY = "selectedCountryOverride";
+
+function _normalizeCountryCode(value, fallback = "") {
+    const code = String(value || "").trim().toUpperCase();
+    return code || fallback;
+}
+
+function _getManualCountryOverride() {
+    try {
+        return _normalizeCountryCode(localStorage.getItem(COUNTRY_OVERRIDE_STORAGE_KEY));
+    } catch { }
+    return "";
+}
+
+function _getPreferredCountry() {
+    try {
+        return _getManualCountryOverride() || _normalizeCountryCode(localStorage.getItem("detectedCountry"), "US");
+    } catch { }
+    return "US";
+}
+
+function _setManualCountryOverride(countryCode) {
+    const code = _normalizeCountryCode(countryCode);
+    if (!code) return "";
+    try {
+        localStorage.setItem(COUNTRY_OVERRIDE_STORAGE_KEY, code);
+        localStorage.setItem("detectedCountry", code);
+    } catch { }
+    return code;
+}
+
 function saveCheckoutDraftFromModal() {
     try {
         const modal = document.getElementById("paymentModal");
@@ -656,7 +687,7 @@ function _replaceWithClone(el) {
 }
 
 function _getDetectedCountry() {
-    return String(localStorage.getItem("detectedCountry") || "US").toUpperCase();
+    return _getPreferredCountry();
 }
 
 function _syncSelectedCurrencyFromCountry(countryCode) {
@@ -918,15 +949,14 @@ async function initPaymentModalLogic() {
     if (countrySelect) {
         _fillCountrySelectOptions(countrySelect);
 
-        const detected = _getDetectedCountry();
+        const detected = _getPreferredCountry();
         countrySelect.value = detected;
-        localStorage.setItem("detectedCountry", detected);
 
         _setupTomSelectCountry(countrySelect);
 
         countrySelect.addEventListener("change", async () => {
             const cc = String(countrySelect.value || "").toUpperCase();
-            localStorage.setItem("detectedCountry", cc);
+            _setManualCountryOverride(cc);
 
             _syncSelectedCurrencyFromCountry(cc);
 
