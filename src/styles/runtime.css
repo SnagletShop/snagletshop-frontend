@@ -322,6 +322,7 @@ html.dark-mode .ss-ci-btn {
     .ss-cart-inc {
         padding: 4%;
         padding-top: 5% !important;
+        margin-bottom: 7.5%;
     }
 
     .ss-ci-addons {
@@ -335,7 +336,7 @@ html.dark-mode .ss-ci-btn {
     }
 
     .ss-ci-badge {
-        padding-top: 5%;
+        padding-top: 0%;
         padding-bottom: 10%;
         padding-left: 10%;
         padding-right: 10%;
