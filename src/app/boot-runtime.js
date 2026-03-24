@@ -3,6 +3,12 @@
     const db = (typeof window !== 'undefined' && window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
     return Object.keys(db || {}).find(k => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
   }
+
+  function getDefaultLandingCategory() {
+    const db = (typeof window !== 'undefined' && window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+    if (Array.isArray(db?.Default_Page) && db.Default_Page.length) return 'Default_Page';
+    return getFirstRenderableCategory();
+  }
   let started = false;
   const api = {
     async boot(ctx = {}) {
@@ -28,13 +34,13 @@
           ctx.syncCentralState?.('basket-storage-empty', { basket: empty });
           try { localStorage.setItem('basket', JSON.stringify(empty)); } catch {}
         }
-        if (typeof window.currentCategory === 'undefined' || !window.currentCategory || window.currentCategory === 'Default_Page') window.currentCategory = getFirstRenderableCategory();
+        if (typeof window.currentCategory === 'undefined' || !window.currentCategory) window.currentCategory = getDefaultLandingCategory();
         if (typeof window.currentSortOrder === 'undefined') window.currentSortOrder = 'asc';
         try {
           await ctx.initializeHistory?.();
         } catch (e) {
-          const fallbackCategory = getFirstRenderableCategory();
-          console.warn('⚠️ initializeHistory failed on boot, falling back to first renderable category:', e, fallbackCategory);
+          const fallbackCategory = getDefaultLandingCategory();
+          console.warn('⚠️ initializeHistory failed on boot, falling back to default landing category:', e, fallbackCategory);
           ctx.loadProducts?.(fallbackCategory, localStorage.getItem('defaultSort') || 'NameFirst', 'asc');
         }
         try { ctx.categoryButtons?.(); } catch {}

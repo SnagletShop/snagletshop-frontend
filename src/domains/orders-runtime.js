@@ -9,6 +9,17 @@
     return 'Default_Page';
   }
 
+  function getDefaultLandingCategory() {
+    try {
+      const db = (window.productsDatabase && typeof window.productsDatabase === 'object')
+        ? window.productsDatabase
+        : ((window.products && typeof window.products === 'object') ? window.products : {});
+      if (Array.isArray(db?.Default_Page) && db.Default_Page.length) return 'Default_Page';
+      return getFirstRenderableCategory();
+    } catch {}
+    return 'Default_Page';
+  }
+
   function getDefaultSort() {
     try { return localStorage.getItem('defaultSort') || 'NameFirst'; } catch {}
     return 'NameFirst';
@@ -19,7 +30,7 @@
   }
 
   function navigateHomeAfterPaymentSuccess(ctx, replaceCurrent = true) {
-    const data = [getFirstRenderableCategory(), getDefaultSort(), getDefaultSortOrder()];
+    const data = [getDefaultLandingCategory(), getDefaultSort(), getDefaultSortOrder()];
     try {
       if (typeof ctx.navigate === 'function') {
         ctx.navigate('loadProducts', data, { replaceCurrent });

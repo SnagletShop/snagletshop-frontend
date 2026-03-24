@@ -10,6 +10,17 @@
       'Default_Page';
   }
 
+  function getDefaultLandingCategory(productsDatabase = {}, products = {}) {
+    const source = (products && typeof products === 'object' && Object.keys(products).length) ? products : productsDatabase;
+    if (Array.isArray(source?.Default_Page) && source.Default_Page.length) return 'Default_Page';
+    if (Array.isArray(productsDatabase?.Default_Page) && productsDatabase.Default_Page.length) return 'Default_Page';
+    return getFirstRenderableCategory(productsDatabase, products);
+  }
+
+  function hasRenderableCategory(products = {}, category) {
+    return !!(category && products && Object.prototype.hasOwnProperty.call(products, category) && Array.isArray(products[category]));
+  }
+
   function parseMaybeJson(value) {
     if (typeof value !== 'string') return value;
     const s = value.trim();
@@ -268,9 +279,10 @@
       sortBy = sortBy || 'NameFirst';
       sortOrder = sortOrder || 'asc';
       const productsDatabase = ctx.getProductsDatabase?.() || {};
-      category = category || getFirstRenderableCategory(productsDatabase, ctx.getProducts?.() || {});
-      if (category === 'Default_Page' || !Array.isArray((ctx.getProducts?.() || {})[category])) {
-        category = getFirstRenderableCategory(productsDatabase, ctx.getProducts?.() || {});
+      const catalogProducts = ctx.getProducts?.() || {};
+      category = category || getDefaultLandingCategory(productsDatabase, catalogProducts);
+      if (!hasRenderableCategory(catalogProducts, category)) {
+        category = getDefaultLandingCategory(productsDatabase, catalogProducts);
       }
       ctx.setWindowCurrentSortOrder?.(sortOrder);
       ctx.setWindowCurrentCategory?.(category);
@@ -290,18 +302,17 @@
       viewer.innerHTML = '';
       ctx.setCart?.({});
       ctx.syncCentralState?.('cart-cleared', { cart: ctx.getCart?.() || {} });
-      const products = ctx.getProducts?.() || {};
-      if ((category === 'Default_Page' || !products.hasOwnProperty(category) || !Array.isArray(products[category])) && getFirstRenderableCategory(productsDatabase, products) !== 'Default_Page') {
-        category = getFirstRenderableCategory(productsDatabase, products);
+      if (!hasRenderableCategory(catalogProducts, category) && getDefaultLandingCategory(productsDatabase, catalogProducts) !== category) {
+        category = getDefaultLandingCategory(productsDatabase, catalogProducts);
         ctx.setWindowCurrentCategory?.(category);
         ctx.setCurrentCategory?.(category);
       }
-      if (!products.hasOwnProperty(category) || !Array.isArray(products[category])) {
+      if (!hasRenderableCategory(catalogProducts, category)) {
         console.warn(`⚠️ Category '${category}' is invalid or does not contain a valid product list.`);
         return;
       }
       const resolvePrice = (product) => resolveCatalogProductPrice(product, ctx);
-      const productList = sortProducts([...(products[category] || [])], sortBy, sortOrder, resolvePrice);
+      const productList = sortProducts([...(catalogProducts[category] || [])], sortBy, sortOrder, resolvePrice);
       ctx.removeSortContainer?.();
       let sortContainer = document.getElementById('SortContainer');
       if (!sortContainer && wrapper) {

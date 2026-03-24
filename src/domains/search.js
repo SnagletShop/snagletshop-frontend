@@ -30,7 +30,7 @@ function setupSearchInputs() {
             searchProducts(trimmed);
             return;
         }
-        navigate("loadProducts", [window.currentCategory || window.lastCategory || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || "Default_Page", localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
+        navigate("loadProducts", [window.currentCategory || window.lastCategory || ((Array.isArray((window.productsDatabase || window.products || {}).Default_Page) && (window.productsDatabase || window.products || {}).Default_Page.length) ? "Default_Page" : (Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || "Default_Page")), localStorage.getItem("defaultSort") || "NameFirst", window.currentSortOrder || "asc"]);
     };
     for (const input of inputs) {
         if (input.dataset.ssSearchBound === '1') continue;

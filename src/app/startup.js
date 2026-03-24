@@ -61,7 +61,7 @@
       if (isPageRefresh && !isProductDeepLink && !isOrderStatusDeepLink && typeof currentIndex !== 'undefined' && currentIndex >= 0 && typeof buildUrlForState === 'function') {
         const fallbackState = {
           action: 'loadProducts',
-          data: [(typeof currentCategory !== 'undefined' ? currentCategory : null) || (typeof lastCategory !== 'undefined' ? lastCategory : null) || Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || 'Default_Page', localStorage.getItem('defaultSort') || 'NameFirst', (typeof currentSortOrder !== 'undefined' ? currentSortOrder : null) || 'asc']
+          data: [(typeof currentCategory !== 'undefined' ? currentCategory : null) || (typeof lastCategory !== 'undefined' ? lastCategory : null) || (Array.isArray((window.productsDatabase || window.products || {}).Default_Page) && (window.productsDatabase || window.products || {}).Default_Page.length ? 'Default_Page' : Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || 'Default_Page'), localStorage.getItem('defaultSort') || 'NameFirst', (typeof currentSortOrder !== 'undefined' ? currentSortOrder : null) || 'asc']
         };
         const historyStack = (typeof userHistoryStack !== 'undefined' && Array.isArray(userHistoryStack)) ? userHistoryStack : [];
         const state = historyStack[currentIndex] || fallbackState;
@@ -148,7 +148,7 @@
         history.replaceState(snapshot, '', cleanUrl);
         try {
           const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
-          const firstCategory = Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
+          const firstCategory = (Array.isArray(db?.Default_Page) && db.Default_Page.length) ? 'Default_Page' : (Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page');
           const defaultSort = (() => { try { return localStorage.getItem('defaultSort') || 'NameFirst'; } catch {} return 'NameFirst'; })();
           const defaultOrder = String(window.currentSortOrder || 'asc').trim().toLowerCase() === 'desc' ? 'desc' : 'asc';
           if (typeof window.__SS_ROUTER__?.navigate === 'function') {

@@ -6,6 +6,12 @@
     return Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page';
   }
 
+  function getDefaultLandingCategory() {
+    const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+    if (Array.isArray(db?.Default_Page) && db.Default_Page.length) return 'Default_Page';
+    return getFirstRenderableCategory();
+  }
+
   const actionHandlers = new Map();
   let popstateBound = false;
   let popstateHandler = null;
@@ -52,7 +58,7 @@
   }
 
   function buildCatalogState(category, sortBy, sortOrder) {
-    const fallbackCategory = getFirstRenderableCategory();
+    const fallbackCategory = getDefaultLandingCategory();
     const safeCategory = String(category || '').trim() || fallbackCategory;
     return {
       action: 'loadProducts',
@@ -163,7 +169,7 @@
     }
 
     if (route.orderId) {
-      return buildCatalogState(route.category || window.currentCategory || getFirstRenderableCategory(), route.sortBy || getDefaultSort(), route.sortOrder || getDefaultSortOrder());
+      return buildCatalogState(route.category || window.currentCategory || getDefaultLandingCategory(), route.sortBy || getDefaultSort(), route.sortOrder || getDefaultSortOrder());
     }
 
     if (route.query) {
@@ -183,7 +189,7 @@
     }
 
     if (allowDefaultCatalog) {
-      return buildCatalogState(window.currentCategory || getFirstRenderableCategory(), route.sortBy || getDefaultSort(), route.sortOrder || getDefaultSortOrder());
+      return buildCatalogState(window.currentCategory || getDefaultLandingCategory(), route.sortBy || getDefaultSort(), route.sortOrder || getDefaultSortOrder());
     }
 
     return null;
@@ -225,7 +231,7 @@
       }
 
       if (state?.action === 'loadProducts') {
-        const category = String(state?.data?.[0] || '').trim() || getFirstRenderableCategory();
+        const category = String(state?.data?.[0] || '').trim() || getDefaultLandingCategory();
         const sortBy = String(state?.data?.[1] || getDefaultSort()).trim() || getDefaultSort();
         const sortOrder = normalizeSortOrder(state?.data?.[2] || getDefaultSortOrder());
         const params = new URLSearchParams();
@@ -420,7 +426,7 @@
     const browserState = (window.history.state && typeof window.history.state === 'object') ? window.history.state : null;
 
     if (route.orderId) {
-      const fallbackState = resolveStateFromRoute(route, { allowDefaultCatalog: true }) || buildCatalogState(getFirstRenderableCategory(), getDefaultSort(), getDefaultSortOrder());
+      const fallbackState = resolveStateFromRoute(route, { allowDefaultCatalog: true }) || buildCatalogState(getDefaultLandingCategory(), getDefaultSort(), getDefaultSortOrder());
       setHistoryCache([fallbackState], 0, 'history-init-order-status');
       replaceBrowserState(fallbackState, 0, { modalOpen: browserState?.modalOpen === true }, window.location.href);
       dispatchState(fallbackState);
@@ -435,7 +441,7 @@
         dispatchState(explicitState);
         return;
       }
-      const fallbackState = buildCatalogState(getFirstRenderableCategory(), getDefaultSort(), getDefaultSortOrder());
+      const fallbackState = buildCatalogState(getDefaultLandingCategory(), getDefaultSort(), getDefaultSortOrder());
       setHistoryCache([fallbackState], 0, 'history-init-explicit-fallback');
       replaceBrowserState(fallbackState, 0);
       dispatchState(fallbackState);
@@ -460,7 +466,7 @@
       }
     }
 
-    const defaultState = buildCatalogState(getFirstRenderableCategory(), getDefaultSort(), getDefaultSortOrder());
+    const defaultState = buildCatalogState(getDefaultLandingCategory(), getDefaultSort(), getDefaultSortOrder());
     setHistoryCache([defaultState], 0, 'history-init-default');
     replaceBrowserState(defaultState, 0);
     dispatchState(defaultState);
