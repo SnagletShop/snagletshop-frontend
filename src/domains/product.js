@@ -340,7 +340,17 @@ function updateImage(direction = "none") {
     const idx = Number(window.currentProductImageIndex || 0);
 
     if (imageElement && imgs[idx]) {
+        const ensureAnimatedBaseline = () => {
+            try {
+                const currentTransition = String(imageElement.style.transition || getComputedStyle(imageElement).transition || "").trim().toLowerCase();
+                if (!currentTransition || currentTransition === "none" || currentTransition === "all 0s ease 0s") {
+                    imageElement.style.transition = "transform 0.4s ease";
+                }
+                imageElement.style.willChange = "transform";
+            } catch { }
+        };
         if (direction === "right") {
+            ensureAnimatedBaseline();
             imageElement.style.transform = "translateX(100vw)";
             setTimeout(() => {
                 imageElement.src = imgs[idx];
@@ -351,6 +361,7 @@ function updateImage(direction = "none") {
                 imageElement.style.transform = "translateX(0)";
             }, 100);
         } else if (direction === "left") {
+            ensureAnimatedBaseline();
             imageElement.style.transform = "translateX(-100vw)";
             setTimeout(() => {
                 imageElement.src = imgs[idx];
@@ -504,6 +515,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     mainImg.className = "mainImage slide-image";
     mainImg.src = window.currentProductImages[0] || "";
     mainImg.alt = productName || "";
+    mainImg.style.transition = "transform 0.4s ease";
+    mainImg.style.willChange = "transform";
     wrapper.appendChild(mainImg);
 
     const nextBtn = document.createElement("button");
