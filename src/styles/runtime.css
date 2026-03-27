@@ -1262,16 +1262,28 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
         padding-top: 16px;
     }
 
+    .RecoNavs {
+        display: none;
+    }
+
     .RecoViewport {
-        padding-bottom: 8px;
+        overflow: visible;
+        padding-bottom: 0;
+        scroll-snap-type: none;
     }
 
     .RecoStrip {
         --reco-gap: 8px;
-        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
+        min-width: 0;
+        width: 100%;
+        grid-auto-flow: row;
+        grid-auto-columns: unset;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .RecoCard {
+        scroll-snap-align: unset;
+        scroll-snap-stop: normal;
         border-radius: 12px;
         padding: 6px;
         gap: 7px;
@@ -1333,7 +1345,7 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
 @media (max-width: 460px) {
     .RecoStrip {
         --reco-gap: 8px;
-        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .RecoNav {

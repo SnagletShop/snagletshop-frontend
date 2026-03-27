@@ -911,10 +911,15 @@ async function __ssRecoRenderForProduct(product) {
                 // if the strip isn't scrollable yet, preload more until it is (bounded)
                 let safety = 0;
                 while (safety++ < 6) {
+                    const mobile = String(recState.device || "").toLowerCase() === "mobile";
                     const totalCards = strip.querySelectorAll(".RecoCard").length;
                     const visibleWindow = getVisibleWindowCount();
                     const canScroll = viewport.scrollWidth > (viewport.clientWidth + 8);
-                    if (canScroll && totalCards > visibleWindow) break;
+                    if (mobile) {
+                        if (totalCards >= Math.max(4, visibleWindow * 2)) break;
+                    } else if (canScroll && totalCards > visibleWindow) {
+                        break;
+                    }
                     const batch = await fetchBatch();
                     if (!batch || !batch.items || !batch.items.length) break;
                     const appended = appendItems(batch.items);
@@ -993,9 +998,9 @@ async function __ssRecoRenderForProduct(product) {
                         }
                     } catch { }
                 }, {
-                    root: viewport,
+                    root: String(recState.device || "").toLowerCase() === "mobile" ? null : viewport,
                     rootMargin: String(recState.device || "").toLowerCase() === "mobile"
-                        ? "0px 55% 0px 0px"
+                        ? "0px 0px 280px 0px"
                         : "0px 35% 0px 0px",
                     threshold: String(recState.device || "").toLowerCase() === "mobile" ? 0.01 : 0.35
                 });
@@ -1032,8 +1037,11 @@ async function __ssRecoRenderForProduct(product) {
                 const nearEndByIndex = (currentIndex() + visibleWindow) >= Math.max(0, totalCards - 1);
                 const nearEndByPixels = distanceToEndPx() <= Math.max(getStride() * 2, 28);
                 const remaining = totalCards - (currentIndex() + visibleWindow);
+                const lastCard = strip.querySelector(".RecoCard:last-child");
+                const lastCardRect = lastCard?.getBoundingClientRect?.() || null;
+                const nearEndByPage = !!lastCardRect && (lastCardRect.top <= ((window.innerHeight || document.documentElement?.clientHeight || 0) + 240));
                 const nearEnd = mobile
-                    ? (force || remaining <= Math.max(2, visibleWindow))
+                    ? (force || nearEndByPage || totalCards < Math.max(4, visibleWindow * 2))
                     : (force || nearEndByIndex || nearEndByPixels);
                 if (!nearEnd) return;
                 let safety = 0;
@@ -1135,6 +1143,11 @@ async function __ssRecoRenderForProduct(product) {
         bindNav(btnL, -1);
         bindNav(btnR, +1);
 
+        if (String(recState.device || "").toLowerCase() === "mobile") {
+            head.classList.add("RecoHead--mobile");
+            navs.setAttribute("aria-hidden", "true");
+        }
+
         // Swipe gestures
         let tStartX = 0, tStartY = 0, tDidMove = false;
         viewport.addEventListener("touchstart", (e) => {
@@ -1191,9 +1204,30 @@ async function __ssRecoRenderForProduct(product) {
             }, { passive: true });
         }
 
+        if (String(recState.device || "").toLowerCase() === "mobile") {
+            try {
+                if (typeof window.__ssRecoMobilePageLoadHandler === 'function') {
+                    window.removeEventListener('scroll', window.__ssRecoMobilePageLoadHandler);
+                    window.removeEventListener('resize', window.__ssRecoMobilePageLoadHandler);
+                }
+            } catch { }
+            const mobilePageLoadHandler = () => {
+                try { maybeLoadMore(); } catch { }
+            };
+            window.__ssRecoMobilePageLoadHandler = mobilePageLoadHandler;
+            window.addEventListener('scroll', mobilePageLoadHandler, { passive: true });
+            window.addEventListener('resize', mobilePageLoadHandler, { passive: true });
+            setTimeout(mobilePageLoadHandler, 180);
+        }
+
         try {
             if (typeof window.__ssRecoResizeHandler === 'function') {
                 window.removeEventListener('resize', window.__ssRecoResizeHandler);
+            }
+            if (typeof window.__ssRecoMobilePageLoadHandler === 'function') {
+                window.removeEventListener('scroll', window.__ssRecoMobilePageLoadHandler);
+                window.removeEventListener('resize', window.__ssRecoMobilePageLoadHandler);
+                window.__ssRecoMobilePageLoadHandler = null;
             }
         } catch {}
         window.__ssRecoResizeHandler = () => {
