@@ -948,10 +948,8 @@ async function __ssRecoRenderForProduct(product) {
             const total = strip.querySelectorAll(".RecoCard").length;
             const maxIndex = Math.max(0, total - getVisibleWindowCount());
             const target = Math.max(0, Math.min(maxIndex, Math.round(i))) * stride;
-            const mobile = String(recState.device || "").toLowerCase() === "mobile";
-            const effectiveBehavior = mobile ? "auto" : behavior;
             try {
-                if (typeof viewport.scrollTo === "function") viewport.scrollTo({ left: target, behavior: effectiveBehavior });
+                if (typeof viewport.scrollTo === "function") viewport.scrollTo({ left: target, behavior });
                 else viewport.scrollLeft = target;
             } catch {
                 viewport.scrollLeft = target;
@@ -1056,55 +1054,43 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
-        // Nav buttons: support mobile tap reliably + step one item on mobile
+        // Nav buttons: use the old monolith-style one-card movement with touch-safe pointer binding
         function navStepItems() {
-            const mobile = String(recState.device || "").toLowerCase() === "mobile";
-            return mobile ? getVisibleWindowCount() : 1;
+            return 1;
         }
 
         async function handleNav(dir) {
             try {
                 await ensureAdvanceCapacity(dir);
-                const nextIndex = currentIndex() + (dir * navStepItems());
+                const idx = currentIndex();
+                const nextIndex = Math.max(0, idx + (dir * navStepItems()));
                 scrollToIndex(nextIndex, "smooth");
-                setTimeout(() => {
-                    try {
-                        __ssRecoUpdateNav();
-                        if (dir > 0) maybeLoadMore();
-                    } catch { }
-                }, 220);
+                if (dir > 0) await maybeLoadMore(true);
+                setTimeout(() => { try { __ssRecoUpdateNav(); } catch { } }, 220);
             } catch { }
         }
 
+        let lastNavGestureAt = 0;
         function bindNav(btn, dir) {
             if (!btn || btn.dataset.ssRecoNavBound === '1') return;
             btn.dataset.ssRecoNavBound = '1';
-            const invokeNav = (e) => {
+            const triggerNav = (e, source) => {
                 try { e.preventDefault(); e.stopPropagation(); } catch { }
+                if (btn.disabled) return;
                 const now = Date.now();
-                const last = Number(btn.dataset.ssRecoNavTs || 0) || 0;
-                if ((now - last) < 220) return;
-                btn.dataset.ssRecoNavTs = String(now);
+                if (source === 'click' && (now - lastNavGestureAt) < 450) return;
+                if (source !== 'click') lastNavGestureAt = now;
                 handleNav(dir);
             };
-            btn.addEventListener('click', (e) => {
-                const suppressUntil = Number(btn.dataset.ssRecoSuppressClickUntil || 0) || 0;
-                if (Date.now() < suppressUntil) {
-                    try { e.preventDefault(); e.stopPropagation(); } catch { }
-                    return;
-                }
-                invokeNav(e);
-            });
-            btn.addEventListener('mousedown', invokeNav);
-            btn.addEventListener('touchstart', (e) => {
-                btn.dataset.ssRecoSuppressClickUntil = String(Date.now() + 450);
-                invokeNav(e);
-            }, { passive: false });
+
+            btn.addEventListener('click', (e) => triggerNav(e, 'click'));
             btn.addEventListener('pointerdown', (e) => {
-                if (e.pointerType !== 'touch') return;
-                btn.dataset.ssRecoSuppressClickUntil = String(Date.now() + 450);
-                invokeNav(e);
-            });
+                if (e.pointerType && e.pointerType !== 'touch') return;
+                triggerNav(e, 'pointerdown');
+            }, { passive: false });
+            if (!window.PointerEvent) {
+                btn.addEventListener('touchstart', (e) => triggerNav(e, 'touchstart'), { passive: false });
+            }
         }
 
         bindNav(btnL, -1);
