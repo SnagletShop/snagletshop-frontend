@@ -317,7 +317,8 @@ async function __ssRecoRenderForProduct(product) {
             offset: 0,
             batchesLoaded: 0,
             loading: false,
-            hasMore: true
+            hasMore: true,
+            endProbeUsed: false
         };
 
         // Stable exclusion set for paging (prevents repeats + self-recommendation)
@@ -330,9 +331,9 @@ async function __ssRecoRenderForProduct(product) {
         } catch { }
 
 
-        async function fetchBatch() {
+        async function fetchBatch(forceProbe = false) {
             if (recState.loading) return null;
-            if (!recState.hasMore) return null;
+            if (!recState.hasMore && !(forceProbe && !recState.endProbeUsed)) return null;
             if (recState.batchesLoaded >= recState.maxBatches) return null;
             if (recState.maxItems > 0 && recState.offset >= recState.maxItems) return null;
 
@@ -452,6 +453,7 @@ async function __ssRecoRenderForProduct(product) {
                     recState.offset += serverReturned;
                     recState.batchesLoaded += 1;
                     recState.hasMore = !!d.hasMore && serverReturned > 0;
+                    recState.endProbeUsed = !recState.hasMore;
                     try {
                         const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
                         const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
@@ -803,7 +805,7 @@ async function __ssRecoRenderForProduct(product) {
         }
 
         function appendItems(items) {
-            if (!Array.isArray(items) || items.length === 0) return;
+            if (!Array.isArray(items) || items.length === 0) return 0;
             if (!Array.isArray(recState.items)) recState.items = [];
 
             // Track what has been shown to avoid repeats. Allow sparse repeats only for best performers.
@@ -838,7 +840,7 @@ async function __ssRecoRenderForProduct(product) {
                 recState.shownCounter += 1;
             }
 
-            if (toAppend.length === 0) return;
+            if (toAppend.length === 0) return 0;
 
             toAppend.forEach((it) => {
                 recState.items.push(it);
@@ -866,6 +868,8 @@ async function __ssRecoRenderForProduct(product) {
                     });
                 }
             } catch { }
+
+            return toAppend.length;
         }
 
         appendItems(firstResolved.items);
@@ -889,8 +893,9 @@ async function __ssRecoRenderForProduct(product) {
                     if (canScroll) break;
                     const batch = await fetchBatch();
                     if (!batch || !batch.items || !batch.items.length) break;
-                    appendItems(batch.items);
+                    const appended = appendItems(batch.items);
                     __ssRecoApplyLayout(recState, strip, recState.serverUi);
+                    if (appended <= 0 && !recState.hasMore) break;
                 }
                 __ssRecoUpdateNav();
             } catch { }
@@ -941,11 +946,15 @@ async function __ssRecoRenderForProduct(product) {
                 const nearEndByPixels = distanceToEndPx() <= Math.max(getStride() * 2, 28);
                 const nearEnd = force || nearEndByIndex || nearEndByPixels;
                 if (!nearEnd) return;
-                const batch = await fetchBatch();
-                if (batch && batch.items && batch.items.length) {
-                    appendItems(batch.items);
+                let safety = 0;
+                while (safety++ < 4) {
+                    const shouldProbe = force || (!recState.hasMore && !recState.endProbeUsed);
+                    const batch = await fetchBatch(shouldProbe);
+                    if (!batch || !batch.items || !batch.items.length) break;
+                    const appended = appendItems(batch.items);
                     __ssRecoApplyLayout(recState, strip, recState.serverUi);
                     __ssRecoUpdateNav();
+                    if (appended > 0 || !recState.hasMore) break;
                 }
             } catch { }
         }
@@ -956,7 +965,7 @@ async function __ssRecoRenderForProduct(product) {
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
                 const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
                 btnL.disabled = viewport.scrollLeft <= 2;
-                btnR.disabled = (viewport.scrollLeft >= (maxScroll - 2)) && !recState.hasMore;
+                btnR.disabled = (viewport.scrollLeft >= (maxScroll - 2)) && !recState.hasMore && !!recState.endProbeUsed;
             } catch { }
         }
 
