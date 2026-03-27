@@ -911,8 +911,10 @@ async function __ssRecoRenderForProduct(product) {
                 // if the strip isn't scrollable yet, preload more until it is (bounded)
                 let safety = 0;
                 while (safety++ < 6) {
+                    const totalCards = strip.querySelectorAll(".RecoCard").length;
+                    const visibleWindow = getVisibleWindowCount();
                     const canScroll = viewport.scrollWidth > (viewport.clientWidth + 8);
-                    if (canScroll) break;
+                    if (canScroll && totalCards > visibleWindow) break;
                     const batch = await fetchBatch();
                     if (!batch || !batch.items || !batch.items.length) break;
                     const appended = appendItems(batch.items);
@@ -992,8 +994,10 @@ async function __ssRecoRenderForProduct(product) {
                     } catch { }
                 }, {
                     root: viewport,
-                    rootMargin: "0px 35% 0px 0px",
-                    threshold: 0.35
+                    rootMargin: String(recState.device || "").toLowerCase() === "mobile"
+                        ? "0px 55% 0px 0px"
+                        : "0px 35% 0px 0px",
+                    threshold: String(recState.device || "").toLowerCase() === "mobile" ? 0.01 : 0.35
                 });
                 loadObserver.observe(lastCard);
             } catch { }
@@ -1022,11 +1026,15 @@ async function __ssRecoRenderForProduct(product) {
 
         async function maybeLoadMore(force = false) {
             try {
+                const mobile = String(recState.device || "").toLowerCase() === "mobile";
                 const visibleWindow = getVisibleWindowCount();
                 const totalCards = strip.querySelectorAll(".RecoCard").length;
                 const nearEndByIndex = (currentIndex() + visibleWindow) >= Math.max(0, totalCards - 1);
                 const nearEndByPixels = distanceToEndPx() <= Math.max(getStride() * 2, 28);
-                const nearEnd = force || nearEndByIndex || nearEndByPixels;
+                const remaining = totalCards - (currentIndex() + visibleWindow);
+                const nearEnd = mobile
+                    ? (force || remaining <= Math.max(2, visibleWindow))
+                    : (force || nearEndByIndex || nearEndByPixels);
                 if (!nearEnd) return;
                 let safety = 0;
                 while (safety++ < 4) {
@@ -1063,11 +1071,22 @@ async function __ssRecoRenderForProduct(product) {
             try {
                 const mobile = String(recState.device || "").toLowerCase() === "mobile";
                 if (mobile) {
-                    const idx = currentIndex();
-                    const nextIndex = Math.max(0, idx + (dir * navStepItems()));
-                    scrollToIndex(nextIndex, "smooth");
-                    if (dir > 0) await maybeLoadMore();
-                    setTimeout(() => { try { __ssRecoUpdateNav(); } catch { } }, 220);
+                    const beforeIdx = currentIndex();
+                    const visibleWindow = getVisibleWindowCount();
+                    const totalCards = strip.querySelectorAll(".RecoCard").length;
+                    const nearLoadedEnd = dir > 0 && ((beforeIdx + visibleWindow + navStepItems()) >= totalCards || distanceToEndPx() <= Math.max(2, getStride() * 0.35));
+                    if (nearLoadedEnd) {
+                        await maybeLoadMore(true);
+                        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                    }
+                    const nextIndex = Math.max(0, currentIndex() + (dir * navStepItems()));
+                    scrollToIndex(nextIndex, "auto");
+                    if (dir > 0) {
+                        setTimeout(() => {
+                            try { maybeLoadMore(); } catch { }
+                        }, 90);
+                    }
+                    setTimeout(() => { try { __ssRecoUpdateNav(); } catch { } }, 140);
                     return;
                 }
                 await ensureAdvanceCapacity(dir);
@@ -1094,12 +1113,23 @@ async function __ssRecoRenderForProduct(product) {
 
             btn.addEventListener('click', (e) => triggerNav(e, 'click'));
             btn.addEventListener('pointerdown', (e) => {
-                if (e.pointerType && e.pointerType !== 'touch') return;
+                const mobile = String(recState.device || "").toLowerCase() === "mobile";
+                if (!mobile && e.pointerType && e.pointerType !== 'touch') return;
                 triggerNav(e, 'pointerdown');
+            }, { passive: false });
+            btn.addEventListener('pointerup', (e) => {
+                const mobile = String(recState.device || "").toLowerCase() === "mobile";
+                if (!mobile && e.pointerType && e.pointerType !== 'touch') return;
+                triggerNav(e, 'pointerup');
+            }, { passive: false });
+            btn.addEventListener('mousedown', (e) => {
+                if (String(recState.device || "").toLowerCase() !== "mobile") return;
+                triggerNav(e, 'mousedown');
             }, { passive: false });
             if (!window.PointerEvent) {
                 btn.addEventListener('touchstart', (e) => triggerNav(e, 'touchstart'), { passive: false });
             }
+            btn.addEventListener('touchend', (e) => triggerNav(e, 'touchend'), { passive: false });
         }
 
         bindNav(btnL, -1);
