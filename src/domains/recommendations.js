@@ -929,13 +929,13 @@ async function __ssRecoRenderForProduct(product) {
             return stride > 0 ? Math.round(viewport.scrollLeft / stride) : 0;
         }
 
-        async function maybeLoadMore() {
+        function distanceToEndPx() {
+            return Math.max(0, viewport.scrollWidth - (viewport.scrollLeft + viewport.clientWidth));
+        }
+
+        async function maybeLoadMore(force = false) {
             try {
-                const idx = currentIndex();
-                const total = strip.querySelectorAll(".RecoCard").length;
-                const visibleWindow = getVisibleWindowCount();
-                const remaining = total - (idx + visibleWindow);
-                const nearEnd = remaining <= Math.max(2, visibleWindow);
+                const nearEnd = force || distanceToEndPx() <= Math.max(getStride() * 2, 28);
                 if (!nearEnd) return;
                 const batch = await fetchBatch();
                 if (batch && batch.items && batch.items.length) {
@@ -963,11 +963,9 @@ async function __ssRecoRenderForProduct(product) {
 
         async function handleNav(dir) {
             try {
-                const step = navStepItems();
-                const idx = currentIndex();
-                const next = Math.max(0, idx + (dir * step));
-                if (dir > 0) await maybeLoadMore();
-                scrollToIndex(next);
+                if (dir > 0) await maybeLoadMore(true);
+                const stride = getStride();
+                viewport.scrollBy({ left: dir * stride, behavior: "smooth" });
             } catch { }
         }
 
@@ -1012,11 +1010,12 @@ async function __ssRecoRenderForProduct(product) {
                 const dir = dx < 0 ? 1 : -1;
                 const idx = currentIndex();
                 const visibleWindow = getVisibleWindowCount();
+                const stride = getStride();
 
                 if (adx >= recState.swipeBigPx) {
-                    scrollToIndex(idx + dir * visibleWindow);
+                    viewport.scrollBy({ left: dir * stride * visibleWindow, behavior: "smooth" });
                 } else {
-                    scrollToIndex(idx + dir * 1);
+                    viewport.scrollBy({ left: dir * stride, behavior: "smooth" });
                 }
                 await maybeLoadMore();
             } catch { }
