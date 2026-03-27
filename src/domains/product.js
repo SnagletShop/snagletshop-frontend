@@ -855,7 +855,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     try {
         const __isPhoneAfterRender = !!(window.matchMedia && window.matchMedia("(max-width: 680px)").matches);
-        if (!__isPhoneAfterRender) window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: __isPhoneAfterRender ? "auto" : "smooth" });
     } catch { }
     try { updateAllPrices(); } catch { }
     try { updateImage(); } catch { }
