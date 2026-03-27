@@ -641,32 +641,60 @@ async function __ssRecoRenderForProduct(product) {
             const badge = document.createElement("span");
             badge.className = "RecoBadge";
             const pos = Number(it.position || (idx + 1));
-            if (pos <= 2) {
-                badge.textContent = "Bestseller";
+            if (hasRealDiscount) {
+                badge.textContent = "Deal";
+                badge.classList.add("RecoBadge--deal");
+            } else if (pos <= 2) {
+                badge.textContent = "Hot";
                 badge.classList.add("RecoBadge--best");
             } else {
-                badge.textContent = "Picked for you";
+                badge.textContent = "Pick";
                 badge.classList.add("RecoBadge--soft");
             }
 
             media.appendChild(badge);
 
-            if (hasRealDiscount) {
-                const discountBadge = document.createElement("span");
-                discountBadge.className = "RecoDiscountBadge";
-                discountBadge.textContent = `-${Math.round(discPct)}%`;
-                media.appendChild(discountBadge);
-            }
-
             const body = document.createElement("div");
             body.className = "RecoBody";
+
+            const promo = document.createElement("div");
+            promo.className = "RecoPromo";
+
+            const promoTag = document.createElement("span");
+            promoTag.className = "RecoPromoTag";
+            if (hasRealDiscount) promoTag.classList.add("RecoPromoTag--deal");
+            else if (pos <= 2) promoTag.classList.add("RecoPromoTag--hot");
+            else promoTag.classList.add("RecoPromoTag--soft");
+            promoTag.textContent = hasRealDiscount ? "DEAL" : (pos <= 2 ? "HOT" : "PICK");
+
+            const promoText = document.createElement("span");
+            promoText.className = "RecoPromoText";
+            promoText.textContent = hasRealDiscount ? "Recommended offer" : (pos <= 2 ? "Popular related item" : "Picked for you");
+
+            promo.append(promoTag, promoText);
 
             const meta = document.createElement("div");
             meta.className = "RecoMeta";
 
-            meta.append(price);
+            const priceRow = document.createElement("div");
+            priceRow.className = "RecoPriceRow";
+            priceRow.append(price);
 
-            body.append(nm, meta);
+            if (hasRealDiscount) {
+                const priceOff = document.createElement("span");
+                priceOff.className = "RecoPriceOff";
+                priceOff.textContent = `-${Math.round(discPct)}%`;
+                priceRow.append(priceOff);
+            }
+
+            const hint = document.createElement("div");
+            hint.className = "RecoHint";
+            if (hasRealDiscount) hint.classList.add("RecoHint--deal");
+            hint.textContent = hasRealDiscount ? "Special recommendation deal" : (pos <= 2 ? "Popular with similar shoppers" : "Matched to this product");
+
+            meta.append(priceRow, hint);
+
+            body.append(promo, nm, meta);
             card.append(media, body);
 
             const openRecoProduct = (e) => {
