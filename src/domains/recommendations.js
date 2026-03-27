@@ -555,7 +555,7 @@ async function __ssRecoRenderForProduct(product) {
         head.className = "RecoHead";
 
         const h = document.createElement("h3");
-        h.textContent = "Other products";
+        h.textContent = "Related items";
 
         const navs = document.createElement("div");
         navs.className = "RecoNavs";
@@ -564,12 +564,14 @@ async function __ssRecoRenderForProduct(product) {
         btnL.type = "button";
         btnL.className = "RecoNav";
         btnL.setAttribute("aria-label", "Scroll left");
+        btnL.innerHTML = "&lsaquo;";
         btnL.textContent = "‹";
 
         const btnR = document.createElement("button");
         btnR.type = "button";
         btnR.className = "RecoNav";
         btnR.setAttribute("aria-label", "Scroll right");
+        btnR.innerHTML = "&rsaquo;";
         btnR.textContent = "›";
 
         navs.appendChild(btnL);
@@ -906,7 +908,9 @@ async function __ssRecoRenderForProduct(product) {
 
         function scrollToIndex(i, behavior = "smooth") {
             const stride = getStride();
-            const target = Math.max(0, Math.round(i) * stride);
+            const total = strip.querySelectorAll(".RecoCard").length;
+            const maxIndex = Math.max(0, total - Math.max(1, Number(recState.visibleCount || 1)));
+            const target = Math.max(0, Math.min(maxIndex, Math.round(i))) * stride;
             viewport.scrollTo({ left: target, behavior });
         }
 
@@ -951,36 +955,18 @@ async function __ssRecoRenderForProduct(product) {
                 const step = navStepItems();
                 const idx = currentIndex();
                 const next = Math.max(0, idx + (dir * step));
-                scrollToIndex(next);
                 if (dir > 0) await maybeLoadMore();
+                scrollToIndex(next);
             } catch { }
         }
 
-        let lastNavGestureAt = 0;
         function bindNav(btn, dir) {
             if (!btn || btn.dataset.ssRecoNavBound === '1') return;
             btn.dataset.ssRecoNavBound = '1';
-
-            const triggerNav = (e, source) => {
+            btn.addEventListener('click', (e) => {
                 try { e.preventDefault(); e.stopPropagation(); } catch { }
-                const now = Date.now();
-                if (source === 'click' && (now - lastNavGestureAt) < 450) return;
-                if (source !== 'click') lastNavGestureAt = now;
                 handleNav(dir);
-            };
-
-            // Click for desktop and keyboard activation.
-            btn.addEventListener('click', (e) => triggerNav(e, 'click'));
-
-            // Use pointer/touch only for touch pointers to avoid double-firing on hybrid devices.
-            btn.addEventListener('pointerdown', (e) => {
-                if (e.pointerType && e.pointerType !== 'touch') return;
-                triggerNav(e, 'pointerdown');
-            }, { passive: false });
-
-            if (!window.PointerEvent) {
-                btn.addEventListener('touchstart', (e) => triggerNav(e, 'touchstart'), { passive: false });
-            }
+            });
         }
 
         bindNav(btnL, -1);
