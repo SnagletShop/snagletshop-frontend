@@ -22,7 +22,7 @@
       const orderId = orderIdFromPath || (sp.get('orderId') || '');
       const token = sp.get('token') || '';
       if (orderId && token && (orderIdFromPath || sp.has('orderId'))) {
-        open({ orderId, token });
+        open({ orderId, token, fromLocation: true, autoRun: true });
         return true;
       }
     } catch {}

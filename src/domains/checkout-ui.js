@@ -84,6 +84,85 @@ function getStripeAppearanceForModal() {
 // ----------------------------------------------------------------------------
 const CHECKOUT_DRAFT_STORAGE_KEY = "snaglet_checkout_draft_v1";
 
+function __ssGetCheckoutSuccessRouteData() {
+    try {
+        const db = (window.productsDatabase && typeof window.productsDatabase === "object") ? window.productsDatabase : (window.products || {});
+        const firstCategory = (Array.isArray(db?.Default_Page) && db.Default_Page.length)
+            ? "Default_Page"
+            : (Object.keys(db || {}).find((k) => k !== "Default_Page" && Array.isArray(db[k]) && db[k].length) || "Default_Page");
+        const defaultSort = (() => { try { return localStorage.getItem("defaultSort") || "NameFirst"; } catch {} return "NameFirst"; })();
+        const defaultOrder = String(window.currentSortOrder || "asc").trim().toLowerCase() === "desc" ? "desc" : "asc";
+        return [firstCategory, defaultSort, defaultOrder];
+    } catch {}
+    return ["Default_Page", "NameFirst", "asc"];
+}
+
+function __ssNavigateHomeAfterPaymentSuccess() {
+    const data = __ssGetCheckoutSuccessRouteData();
+    try {
+        const router = window.__SS_ROUTER__ || null;
+        if (router && typeof router.navigate === "function") {
+            router.navigate("loadProducts", data, { replaceCurrent: true });
+            return true;
+        }
+    } catch {}
+    try {
+        if (typeof window.navigate === "function") {
+            window.navigate("loadProducts", data, { replaceCurrent: true });
+            return true;
+        }
+    } catch {}
+    try {
+        if (typeof window.loadProducts === "function") {
+            window.loadProducts(...data);
+            return true;
+        }
+    } catch {}
+    return false;
+}
+
+function __ssHandleWalletSuccessfulCheckoutUi() {
+    const orderSnapshot = {
+        orderId: window.latestOrderId || null,
+        orderPublicToken: window.latestOrderPublicToken || null,
+        orderStatusUrl: window.latestOrderStatusUrl || null
+    };
+
+    try { clearPaymentPendingFlag(); } catch {}
+    try { clearBasketCompletely(); } catch {}
+    try { if (typeof window.clearCheckoutDraft === "function") window.clearCheckoutDraft(); } catch {}
+    try { if (typeof window.__ssClearCheckoutModalHistoryMarker === "function") window.__ssClearCheckoutModalHistoryMarker(); } catch {}
+    try {
+        if (typeof window.closeModal === "function") {
+            window.closeModal({ fromHistory: true, clearDraft: true, preserveDraft: false, reason: "wallet_payment_success" });
+        }
+    } catch {}
+    try {
+        if (orderSnapshot.orderId) window.latestOrderId = orderSnapshot.orderId;
+        if (orderSnapshot.orderPublicToken) window.latestOrderPublicToken = orderSnapshot.orderPublicToken;
+        if (orderSnapshot.orderStatusUrl) window.latestOrderStatusUrl = orderSnapshot.orderStatusUrl;
+    } catch {}
+
+    const navigated = __ssNavigateHomeAfterPaymentSuccess();
+
+    try { setPaymentSuccessFlag({ reloadOnOk: false }); } catch {}
+    try {
+        if (typeof window.checkAndShowPaymentSuccess === "function") {
+            requestAnimationFrame(() => {
+                try { window.checkAndShowPaymentSuccess(); } catch {}
+            });
+        } else if (typeof window.showPaymentSuccessOverlay === "function") {
+            requestAnimationFrame(() => {
+                try { window.showPaymentSuccessOverlay("Thank you for shopping with us! Your payment was successful and we are hard at work to get you your order as soon as possible!"); } catch {}
+            });
+        }
+    } catch {}
+
+    if (!navigated) {
+        try { window.location.replace(window.location.origin + "/"); } catch {}
+    }
+}
+
 async function setupWalletPaymentRequestButton({
     stripe,
     clientSecret,
@@ -230,11 +309,7 @@ async function setupWalletPaymentRequestButton({
                     return;
                 }
 
-                clearPaymentPendingFlag();
-                clearBasketCompletely();
-                try { clearCheckoutDraft(); } catch { }
-                setPaymentSuccessFlag({ reloadOnOk: true });
-                window.location.href = window.location.origin;
+                __ssHandleWalletSuccessfulCheckoutUi();
                 return;
             }
 
@@ -260,11 +335,7 @@ async function setupWalletPaymentRequestButton({
                         return;
                     }
 
-                    clearPaymentPendingFlag();
-                    clearBasketCompletely();
-                    try { clearCheckoutDraft(); } catch { }
-                    setPaymentSuccessFlag({ reloadOnOk: true });
-                    window.location.href = window.location.origin;
+                    __ssHandleWalletSuccessfulCheckoutUi();
                     return;
                 }
 

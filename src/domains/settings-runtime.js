@@ -278,7 +278,7 @@
       <textarea id="contact-message" name="message" class="MessageTextArea" required></textarea>
       <div aria-hidden="true" class="ss-hidden-honeypot">
         <label for="contact-website">Website</label>
-        <input type="text" id="contact-website" name="contact_website_do_not_fill" autocomplete="new-password" tabindex="-1" inputmode="none" value="" readonly>
+        <input type="text" id="contact-website" name="contact_website_do_not_fill" autocomplete="off" tabindex="-1" inputmode="none" value="" aria-hidden="true" spellcheck="false">
       </div>
       <button type="submit">${TEXTS?.CONTACT_FORM?.SEND_BUTTON || 'Send!'}</button>
     </form>
@@ -324,6 +324,11 @@
       localStorage.clear();
       sessionStorage.clear();
       alert('All data cleared. Reloading page...');
+      try {
+        window.location.replace(window.location.pathname + window.location.search);
+      } catch {
+        window.location.reload();
+      }
     });
 
     const themeToggle = document.getElementById('themeToggle');
@@ -436,9 +441,14 @@
         event.preventDefault();
         const email = document.getElementById('contact-email')?.value?.trim() || '';
         const message = document.getElementById('contact-message')?.value?.trim() || '';
-        const website = '';
+        const website = document.getElementById('contact-website')?.value?.trim() || '';
         if (!isValidEmailClient(email)) return alert('Please enter a valid email address (e.g., name@example.com).');
         if (message.length < 5) return alert('Please enter a message (at least 5 characters).');
+        if (website) {
+          try { cf.reset(); } catch {}
+          alert('Message sent.');
+          return;
+        }
 
         let turnstileToken = '';
         try {

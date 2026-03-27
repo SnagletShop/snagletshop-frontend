@@ -346,6 +346,25 @@ function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
   while (out.length < maxN && (l >= 0 || r < pool.length)) { const left = (l >= 0) ? pool[l] : null; const right = (r < pool.length) ? pool[r] : null; const dl = left ? Math.abs((left.price || 0) - desired) : Infinity; const dr = right ? Math.abs((right.price || 0) - desired) : Infinity; const takeLeft = dl <= dr; const cand = takeLeft ? left : right; if (takeLeft) l--; else r++; if (!cand || !cand.key || seen.has(cand.key) || basketNames.has(cand.name)) continue; if (cand.price > Math.max(30, maxPrice)) continue; seen.add(cand.key); out.push(cand); }
   return out;
 }
+function __ssBuildProductHref(product, discount = null) {
+  try {
+    const data = [
+      product?.name || '',
+      product?.price ?? product?.discountedPrice ?? 0,
+      product?.description || product?.desc || '',
+      product?.image || product?.imageUrl || (Array.isArray(product?.images) ? product.images[0] : '') || '',
+      String(product?.productId || product?.id || '').trim() || null,
+      discount && typeof discount === 'object' ? discount : null
+    ];
+    const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data });
+    if (typeof href === 'string' && href.trim()) return href;
+  } catch {}
+  const nameEnc = encodeURIComponent(String(product?.name || ''));
+  const tok = String(discount?.discountToken || '').trim();
+  const recoQ = tok ? `&reco=${encodeURIComponent(tok)}` : '';
+  return `${window.location.origin}/?product=${nameEnc}${recoQ}`;
+}
+
 function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
   try {
     const cfg0 = __ssGetCartIncentivesConfig(); if (!cfg0?.enabled) return ''; __ssEnsureCartIncentiveStyles();
@@ -363,7 +382,7 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     const desired = nextTier ? Math.max(3, nextTier.min - base) : 0; const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 }; const configuredMaxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4)); const maxItems = (window.innerWidth <= 700) ? Math.min(configuredMaxItems || 4, 4) : configuredMaxItems;
     __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems }); const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
     const badges=[]; if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind:'saved', eur:Number(inc.tierDiscountEUR) || 0 }); if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind:'bundle', eur:Number(inc.bundleDiscountEUR) || 0 }); if (shipEnabled && base >= shipThr) badges.push({ kind:'text', text:'Free shipping' });
-    const addonHTML = addons.length ? `<div class="ss-ci-sub ss-ci-addons-title">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = `${window.location.origin}/?product=${nameEnc}${recoQ}`; if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}"><a href="${href}" rel="noopener noreferrer" class="ss-link-block"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div class="ss-ci-card-body ss-minw0"><a href="${href}" rel="noopener noreferrer" class="ss-link-reset"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
+    const addonHTML = addons.length ? `<div class="ss-ci-sub ss-ci-addons-title">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = __ssBuildProductHref(p, hasDisc ? { discountToken: String(p.discountToken || ''), discountPct: pct, discountedPrice: eur } : null); if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-name="${__ssEscHtml(String(p?.name || ''))}" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-addon-pct="${__ssEscHtml(String(pct))}" data-ss-addon-price="${__ssEscHtml(String(eur))}" data-ss-addon-orig="${__ssEscHtml(String(price))}"><a href="${href}" rel="noopener noreferrer" class="ss-link-block"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div class="ss-ci-card-body ss-minw0"><a href="${href}" rel="noopener noreferrer" class="ss-link-reset"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
     const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
       if (b.kind === 'saved') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="saved" data-eur="${Number(b.eur || 0).toFixed(2)}">Saved ${Number(b.eur || 0).toFixed(2)}€</span>`;
       if (b.kind === 'bundle') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="bundle" data-eur="${Number(b.eur || 0).toFixed(2)}">Bundle -${Number(b.eur || 0).toFixed(2)}€</span>`;
@@ -372,22 +391,58 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     return `<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"><div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>${shipEnabled ? `<div class="ss-ci-bar ss-ci-bar--secondary" aria-hidden="true"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}<div class="Badges_Div">${badgesHtml}<div class="ss-ci-title">${tierText}</div>${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}</div>${addonHTML}</div></div>`;
   } catch { return ''; }
 }
+function __ssShouldHandleInAppNavigation(event) {
+  return !(event?.defaultPrevented || event?.button !== 0 || event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey);
+}
 function __ssBindCartIncentives(rootEl) {
   const root = rootEl || document; if (!root || root.__ssCartIncBound) return; root.__ssCartIncBound = true;
   root.addEventListener('click', (e) => {
-    const btn = e.target?.closest?.('[data-ss-quickadd]'); if (!btn) return; e.preventDefault(); const name = String(btn.getAttribute('data-ss-quickadd') || '').trim(); if (!name) return;
-    const p = __ssGetCatalogFlat().find(pp => String(pp?.name || '').trim() === name); if (!p) return;
-    const livePrice = __ssResolveAddonPriceEUR(p);
-    const groups = __ssExtractOptionGroups(p); const sel = __ssDefaultSelectedOptions(groups); __ssSmartRecoEvent('add_to_cart', String(p.productId || p.name || name));
+    const btn = e.target?.closest?.('[data-ss-quickadd]');
+    if (btn) {
+      e.preventDefault();
+      const pid = String(btn.getAttribute('data-ss-quickadd-pid') || '').trim();
+      const name = String(btn.getAttribute('data-ss-quickadd') || '').trim();
+      if (!pid && !name) return;
+      const p = __ssGetCatalogFlat().find(pp => (pid && String(pp?.productId || '').trim() === pid) || (!pid && name && String(pp?.name || '').trim() === name));
+      if (!p) return;
+      const livePrice = __ssResolveAddonPriceEUR(p);
+      const groups = __ssExtractOptionGroups(p); const sel = __ssDefaultSelectedOptions(groups); __ssSmartRecoEvent('add_to_cart', String(p.productId || p.name || name));
+      try {
+        const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim(); const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0; const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0; const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
+        if (tok && pct > 0 && disc > 0) {
+          __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:tok, discountPct:pct, originalPrice:(orig > 0 ? orig : livePrice || Number(p.price || 0) || 0), discountedPrice:disc, productId:String(p.productId || '') });
+        }
+      } catch {}
+      const buttonDisc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
+      addToCart(p.name, buttonDisc > 0 ? buttonDisc : (livePrice || Number(p.price || 0) || 0), p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null));
+      try { updateBasket(); } catch {}
+      return;
+    }
+
+    const link = e.target?.closest?.('.ss-cart-inc a.ss-link-block, .ss-cart-inc a.ss-link-reset');
+    if (!link) return;
+    const card = link.closest?.('.ss-ci-card');
+    const pid = String(card?.getAttribute('data-ss-addon-pid') || '').trim();
+    const name = String(card?.getAttribute('data-ss-addon-name') || '').trim();
+    const token = String(card?.getAttribute('data-ss-addon-token') || '').trim();
+    const pct = Number(card?.getAttribute('data-ss-addon-pct') || 0) || 0;
+    const disc = Number(card?.getAttribute('data-ss-addon-price') || 0) || 0;
+    const orig = Number(card?.getAttribute('data-ss-addon-orig') || 0) || 0;
+    const p = __ssGetCatalogFlat().find(pp => (pid && String(pp?.productId || '').trim() === pid) || (!pid && name && String(pp?.name || '').trim() === name));
+    if (!p) return;
+    if (!__ssShouldHandleInAppNavigation(e)) return;
+    if (typeof window.navigate !== 'function' && typeof window.GoToProductPage !== 'function') return;
+    e.preventDefault();
+    const discount = (token && pct > 0 && disc > 0) ? { discountToken: token, discountPct: pct, discountedPrice: disc, originalPrice: (orig > 0 ? orig : Number(p?.price || 0) || disc) } : null;
     try {
-      const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim(); const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0; const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0; const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
-      if (tok && pct > 0 && disc > 0) {
-        __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:tok, discountPct:pct, originalPrice:(orig > 0 ? orig : livePrice || Number(p.price || 0) || 0), discountedPrice:disc, productId:String(p.productId || '') });
+      if (discount) {
+        __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:token, discountPct:pct, originalPrice:(orig > 0 ? orig : Number(p?.price || 0) || disc), discountedPrice:disc, productId:String(p.productId || '') });
       }
     } catch {}
-    const buttonDisc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
-    addToCart(p.name, buttonDisc > 0 ? buttonDisc : (livePrice || Number(p.price || 0) || 0), p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null));
-    try { updateBasket(); } catch {}
+    const openPrice = (discount?.discountedPrice ?? __ssResolveAddonPriceEUR(p) ?? Number(p?.price || 0) ?? 0);
+    const data = [String(p?.name || name || ''), openPrice, String(p?.description || ''), String(p?.image || ''), String(p?.productId || pid || '').trim() || null, discount];
+    if (typeof window.navigate === 'function') return window.navigate('GoToProductPage', data);
+    return window.GoToProductPage(...data);
   }, { passive:false });
 }
   async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {

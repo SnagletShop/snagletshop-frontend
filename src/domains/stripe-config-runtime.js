@@ -3,6 +3,7 @@
 
   const LEGACY_TRUNCATED_TEST_PK = 'pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9';
   const LEGACY_MONOLITH_TEST_PK = 'pk_test_51QvljKCvmsp7wkrwLSpmOlOkbs1QzlXX2noHpkmqTzB27Qb4ggzYi75F7rIyEPDGf5cuH28ogLDSQOdwlbvrZ9oC00J6B9lZLi';
+  const PRODUCTION_HOST_RE = /(^|\.)snagletshop\.com$/i;
 
   function normalizePublishableKey(raw) {
     return String(raw || '').trim();
@@ -33,6 +34,9 @@
       throw new Error('Stripe secret key was supplied to the storefront. Use a Stripe publishable key (pk_...) instead.');
     }
     if (key.startsWith('pk_test_')) {
+      if (PRODUCTION_HOST_RE.test(String(window.location?.hostname || ''))) {
+        throw new Error('A Stripe TEST publishable key was supplied on a production host. Fix the backend/public config before enabling checkout.');
+      }
       try { console.warn('[stripe][config] Using a Stripe TEST publishable key on this domain.'); } catch {}
     }
     return key;
@@ -85,13 +89,6 @@
         window.STRIPE_PUBLISHABLE = safe;
         return safe;
       } catch {}
-    }
-
-    if ((window.location.hostname || '').includes('snagletshop.com')) {
-      const safe = assertPublishableKeySafe(LEGACY_MONOLITH_TEST_PK);
-      window.STRIPE_PUBLISHABLE_KEY = safe;
-      window.STRIPE_PUBLISHABLE = safe;
-      return safe;
     }
 
     throw new Error('Stripe publishable key is not available yet.');

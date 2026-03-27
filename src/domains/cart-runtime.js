@@ -111,7 +111,7 @@
             <div class="ss-lc-name">${ctx.escHtml?.(pick?.name || '') || ''}</div>
             <div class="ss-lc-sub">${price.toFixed(2)}€</div>
           </div>
-          <button class="ss-lc-btn" type="button" data-ss-lc-add="${ctx.escHtml?.(pick?.name || '') || ''}">Add</button>
+          <button class="ss-lc-btn" type="button" data-ss-lc-add="${ctx.escHtml?.(pick?.name || '') || ''}" data-ss-lc-pid="${ctx.escHtml?.(String(pick?.productId || '')) || ''}">Add</button>
         </div>`;
 
       if (!el.dataset.bound) {
@@ -120,8 +120,9 @@
           const btn = e.target?.closest?.('[data-ss-lc-add]');
           if (!btn) return;
           e.preventDefault();
+          const pid = String(btn.getAttribute('data-ss-lc-pid') || '').trim();
           const name = String(btn.getAttribute('data-ss-lc-add') || '').trim();
-          const p = ctx.getCatalogFlat?.().find((pp) => String(pp?.name || '').trim() === name);
+          const p = ctx.getCatalogFlat?.().find((pp) => (pid && String(pp?.productId || '').trim() === pid) || (!pid && name && String(pp?.name || '').trim() === name));
           if (!p) return;
           const resolvedPrice = Number(ctx.resolveVariantPriceEUR?.(p, [], '') || pick?.price || p?.price || 0) || 0;
           const groups = ctx.extractOptionGroups?.(p) || [];

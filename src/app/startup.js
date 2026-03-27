@@ -45,8 +45,12 @@
     } catch (err) {
       try { console.warn('handleStripeRedirectReturnOnLoad failed:', err); } catch {}
     } finally {
+      try {
+        if (typeof window.checkAndHandlePendingPaymentOnLoad === 'function') {
+          await window.checkAndHandlePendingPaymentOnLoad();
+        }
+      } catch {}
       try { if (typeof window.checkAndShowPaymentSuccess === 'function') window.checkAndShowPaymentSuccess(); } catch {}
-      try { if (typeof window.checkAndHandlePendingPaymentOnLoad === 'function') window.checkAndHandlePendingPaymentOnLoad(); } catch {}
     }
   }
 
@@ -56,9 +60,10 @@
       const isPageRefresh = navEntry?.type === 'reload';
       const params = new URLSearchParams(window.location.search);
       const path = String(window.location.pathname || '/');
-      const isProductDeepLink = path.startsWith('/p/') || params.has('product') || params.has('p') || params.has('pid') || params.has('productId');
+      const isProductDeepLink = path.startsWith('/p/') || path.startsWith('/product/') || params.has('product') || params.has('p') || params.has('pid') || params.has('productId');
+      const isCategoryDeepLink = path.startsWith('/category/') || params.has('category') || params.has('c');
       const isOrderStatusDeepLink = path.startsWith('/order-status/') || (params.has('orderId') && params.has('token'));
-      if (isPageRefresh && !isProductDeepLink && !isOrderStatusDeepLink && typeof currentIndex !== 'undefined' && currentIndex >= 0 && typeof buildUrlForState === 'function') {
+      if (isPageRefresh && !isProductDeepLink && !isCategoryDeepLink && !isOrderStatusDeepLink && typeof currentIndex !== 'undefined' && currentIndex >= 0 && typeof buildUrlForState === 'function') {
         const fallbackState = {
           action: 'loadProducts',
           data: [(typeof currentCategory !== 'undefined' ? currentCategory : null) || (typeof lastCategory !== 'undefined' ? lastCategory : null) || (Array.isArray((window.productsDatabase || window.products || {}).Default_Page) && (window.productsDatabase || window.products || {}).Default_Page.length ? 'Default_Page' : Object.keys(window.productsDatabase || window.products || {}).find(k => k !== 'Default_Page' && Array.isArray((window.productsDatabase || window.products || {})[k]) && (window.productsDatabase || window.products || {})[k].length) || 'Default_Page'), localStorage.getItem('defaultSort') || 'NameFirst', (typeof currentSortOrder !== 'undefined' ? currentSortOrder : null) || 'asc']
@@ -81,6 +86,26 @@
         return;
       }
       try { currencySelect.value = (typeof selectedCurrency !== 'undefined' ? selectedCurrency : (window.selectedCurrency || 'EUR')); } catch {}
+      if (!currencySelect.dataset.listenerAttached) {
+        currencySelect.addEventListener('change', (event) => {
+          try {
+            const nextCurrency = String(event?.target?.value || '').trim().toUpperCase();
+            if (!nextCurrency) return;
+            try { localStorage.setItem('manualCurrencyOverride', 'true'); } catch {}
+            try { localStorage.setItem('selectedCurrency', nextCurrency); } catch {}
+            try { if (typeof window.syncCurrencySelects === 'function') window.syncCurrencySelects(nextCurrency); } catch {}
+            if (typeof window.handleCurrencyChange === 'function') {
+              window.handleCurrencyChange(nextCurrency);
+            } else if (typeof window.updateAllPrices === 'function') {
+              try { window.selectedCurrency = nextCurrency; } catch {}
+              window.updateAllPrices();
+            }
+          } catch (err) {
+            console.warn('[ss startup] currency selector change failed', err);
+          }
+        });
+        currencySelect.dataset.listenerAttached = 'true';
+      }
       try { if (typeof window.detectUserCurrency === 'function') window.detectUserCurrency(); } catch {}
       try { if (typeof window.initializePrices === 'function') window.initializePrices(); } catch {}
       try { if (typeof window.observeNewProducts === 'function') window.observeNewProducts(); } catch {}
@@ -175,11 +200,11 @@
     app.addStartupTask('startup.primeInitialPriceCache', async () => { primeInitialPriceCache(); }, { required: false });
     app.addStartupTask('startup.boot', async () => { await runBootApp(); });
     app.addStartupTask('startup.initSearch', async () => { initSearch(); }, { required: false });
-    app.addStartupTask('startup.routeStatusAndReturn', async () => { initRouteStatusAndReturn(); }, { required: false });
+    app.addStartupTask('startup.routeStatusAndReturn', async () => { await initRouteStatusAndReturn(); }, { required: false });
     app.addStartupTask('startup.normalizeRefreshHistory', async () => { normalizeRefreshHistory(); }, { required: false });
     app.addStartupTask('startup.pricingAndCurrency', async () => { await initPricingAndCurrency(); }, { required: false });
     app.addStartupTask('startup.themeAndCatalogSync', async () => { initThemeAndCatalogSync(); }, { required: false });
-    app.addStartupTask('startup.stripeSuccessQuery', async () => { handleStripeSuccessQuery(); }, { required: false });
+    app.addStartupTask('startup.stripeSuccessQuery', async () => { await handleStripeSuccessQuery(); }, { required: false });
     app.addStartupTask('startup.diagnostics', async () => { runDiagnostics(); }, { required: false });
     return true;
   }

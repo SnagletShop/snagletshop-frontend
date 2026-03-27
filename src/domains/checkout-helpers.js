@@ -76,6 +76,30 @@
       .slice(0, 499);
   }
 
+  function isCheckoutDebugEnabled() {
+    try {
+      return String(localStorage.getItem("ss_checkout_debug") || "") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function persistCheckoutDebugSnapshot(key, value) {
+    try {
+      if (!isCheckoutDebugEnabled()) {
+        sessionStorage.removeItem(key);
+        return;
+      }
+      sessionStorage.setItem(key, JSON.stringify(value || {}));
+    } catch {}
+  }
+
+  function redactPiRequestForDebug(payload) {
+    const clone = { ...(payload || {}) };
+    if (clone.turnstileToken) clone.turnstileToken = "[redacted]";
+    return clone;
+  }
+
   async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
     for (let attempt = 1; attempt <= 2; attempt++) {
       await window.preloadSettingsData();
@@ -110,7 +134,7 @@
 
       try {
         window.__LAST_PI_REQUEST__ = payload;
-        localStorage.setItem("__LAST_PI_REQUEST__", JSON.stringify(payload));
+        persistCheckoutDebugSnapshot("__LAST_PI_REQUEST__", redactPiRequestForDebug(payload));
       } catch {}
 
       let data;
@@ -119,7 +143,7 @@
         data = await window.__SS_CHECKOUT_API__.createPaymentIntent(payload);
         try {
           window.__LAST_PI_RESPONSE__ = { status: 200, ok: true, data };
-          localStorage.setItem("__LAST_PI_RESPONSE__", JSON.stringify(window.__LAST_PI_RESPONSE__));
+          persistCheckoutDebugSnapshot("__LAST_PI_RESPONSE__", window.__LAST_PI_RESPONSE__);
         } catch {}
         return data;
       } catch (err) {
@@ -127,7 +151,7 @@
         status = Number(err?.status || 500) || 500;
         try {
           window.__LAST_PI_RESPONSE__ = { status, ok: false, data };
-          localStorage.setItem("__LAST_PI_RESPONSE__", JSON.stringify(window.__LAST_PI_RESPONSE__));
+          persistCheckoutDebugSnapshot("__LAST_PI_RESPONSE__", window.__LAST_PI_RESPONSE__);
         } catch {}
       }
 

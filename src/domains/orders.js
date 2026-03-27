@@ -3,6 +3,35 @@ function openOrderStatusModal(prefill = {}) {
     // Avoid duplicates
     if (document.getElementById("orderStatusModal")) return;
 
+    function normalizeUrlAfterClose() {
+        if (!prefill || prefill.fromLocation !== true) return;
+        try {
+            const url = new URL(window.location.href);
+            const path = String(url.pathname || '/');
+            const hasOrderQuery = url.searchParams.has('orderId') || url.searchParams.has('token');
+            if (!path.startsWith('/order-status/') && !hasOrderQuery) return;
+        } catch { return; }
+        try {
+            const router = window.__SS_ROUTER__ || null;
+            const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+            const firstCategory = (Array.isArray(db?.Default_Page) && db.Default_Page.length)
+                ? 'Default_Page'
+                : (Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page');
+            const defaultSort = (() => { try { return localStorage.getItem('defaultSort') || 'NameFirst'; } catch {} return 'NameFirst'; })();
+            const defaultOrder = String(window.currentSortOrder || 'asc').trim().toLowerCase() === 'desc' ? 'desc' : 'asc';
+            if (router && typeof router.navigate === 'function') {
+                router.navigate('loadProducts', [firstCategory, defaultSort, defaultOrder], { replaceCurrent: true });
+                return;
+            }
+            if (typeof history.replaceState === 'function') history.replaceState(history.state || {}, '', '/');
+        } catch {}
+    }
+
+    function closeOverlay() {
+        try { overlay.remove(); } catch {}
+        try { normalizeUrlAfterClose(); } catch {}
+    }
+
     const overlay = document.createElement("div");
     overlay.id = "orderStatusModal";
 
@@ -20,7 +49,7 @@ function openOrderStatusModal(prefill = {}) {
     close.type = "button";
     close.textContent = "×";
     close.className = "order-status-modal__close";
-    close.onclick = () => overlay.remove();
+    close.onclick = () => closeOverlay();
 
     header.appendChild(h);
     header.appendChild(close);
@@ -179,10 +208,14 @@ function openOrderStatusModal(prefill = {}) {
     overlay.appendChild(card);
 
     overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) overlay.remove();
+        if (e.target === overlay) closeOverlay();
     });
 
     document.body.appendChild(overlay);
+
+    if (prefill.orderId && prefill.token && prefill.autoRun !== false) {
+        Promise.resolve().then(run).catch(() => {});
+    }
 }
 
 window.__SS_BOOT__?.onReady(async () => {
@@ -218,9 +251,24 @@ async function fetchOrderStatus({ orderId, token } = {}) {
     const oid = String(orderId || '').trim();
     const t = String(token || '').trim();
     if (!oid || !t) throw new Error('Missing orderId or token.');
+
+    let turnstileToken = '';
+    try {
+        turnstileToken = await window.__SS_TURNSTILE__?.snagletGetTurnstileToken?.({ forceFresh: false, timeoutMs: 6000 }) || '';
+    } catch {
+        turnstileToken = '';
+    }
+
     const svc = window.__SS_ORDERS_SERVICE__;
-    if (svc?.getOrderStatus) return svc.getOrderStatus(oid, t);
-    const res = await window.__SS_API__.request(`/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}`, { cache: 'no-store' });
+    if (svc?.getOrderStatus) return svc.getOrderStatus(oid, t, { turnstileToken });
+
+    const path = turnstileToken
+        ? `/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}&turnstileToken=${encodeURIComponent(turnstileToken)}`
+        : `/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}`;
+    const res = await window.__SS_API__.request(path, {
+        cache: 'no-store',
+        headers: turnstileToken ? { 'x-turnstile-token': turnstileToken } : undefined
+    });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
         const msg = data?.error || data?.message || `Order status failed (${res.status})`;

@@ -361,8 +361,12 @@ function __ssInstallLegacyGlobalBridges() {
         window.countryNames = countryNames;
         window.products = productsDatabase;
         window.productsDatabase = productsDatabase;
+        window.__SS_USE_PATH_ROUTES__ = __SS_USE_PATH_ROUTES__;
+        window.MAX_HISTORY_LENGTH = MAX_HISTORY_LENGTH;
     } catch {}
 
+    __ssDefineWindowBridge('__SS_USE_PATH_ROUTES__', () => !!__SS_USE_PATH_ROUTES__, () => {});
+    __ssDefineWindowBridge('MAX_HISTORY_LENGTH', () => MAX_HISTORY_LENGTH, () => {});
     __ssDefineWindowBridge('selectedCurrency', () => selectedCurrency, (v) => { selectedCurrency = String(v || 'EUR'); });
     __ssDefineWindowBridge('exchangeRates', () => exchangeRates, (v) => { exchangeRates = (v && typeof v === 'object') ? v : {}; });
     __ssDefineWindowBridge('tariffMultipliers', () => tariffMultipliers, (v) => { tariffMultipliers = (v && typeof v === 'object') ? v : {}; });
@@ -372,6 +376,7 @@ function __ssInstallLegacyGlobalBridges() {
     __ssDefineWindowBridge('basket', () => basket, (v) => { basket = (v && typeof v === 'object') ? v : {}; });
     __ssDefineWindowBridge('currentCategory', () => currentCategory, (v) => { currentCategory = v == null ? null : String(v); });
     __ssDefineWindowBridge('lastCategory', () => lastCategory, (v) => { lastCategory = v == null ? 'Default_Page' : String(v); });
+    __ssDefineWindowBridge('currentLanguage', () => String(document.documentElement?.lang || 'en').trim() || 'en', () => {});
     __ssDefineWindowBridge('userHistoryStack', () => userHistoryStack, (v) => { userHistoryStack = Array.isArray(v) ? v : []; });
     __ssDefineWindowBridge('currentIndex', () => currentIndex, (v) => { currentIndex = Number.isFinite(Number(v)) ? Number(v) : -1; });
     __ssDefineWindowBridge('clientSecret', () => clientSecret, (v) => { clientSecret = v == null ? null : String(v); });
@@ -749,6 +754,19 @@ function trackedGoToCart() {
     navigate('GoToCart');
 }
 
+function trackedGoHome() {
+    try {
+        const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+        const firstCategory = (Array.isArray(db?.Default_Page) && db.Default_Page.length)
+            ? 'Default_Page'
+            : (Object.keys(db || {}).find((k) => k !== 'Default_Page' && Array.isArray(db[k]) && db[k].length) || 'Default_Page');
+        const defaultSort = (() => { try { return localStorage.getItem('defaultSort') || 'NameFirst'; } catch {} return 'NameFirst'; })();
+        const defaultOrder = String(window.currentSortOrder || 'asc').trim().toLowerCase() === 'desc' ? 'desc' : 'asc';
+        return navigate('loadProducts', [firstCategory, defaultSort, defaultOrder]);
+    } catch {}
+    return navigate('loadProducts', ['Default_Page', 'NameFirst', 'asc']);
+}
+
 function trackSearch(query) {
     const trimmed = String(query || "").trim();
     const currentState = userHistoryStack[currentIndex] || null;
@@ -990,7 +1008,7 @@ function __ssSetupSortDropdown(currentSort){ return window.__SS_CATALOG_UI_RUNTI
 function getProductDescription(productName){ return window.__SS_PRODUCT_RUNTIME__?.getProductDescription?.({ getProducts:()=>typeof products!=='undefined'?products:null }, productName) ?? 'N/A'; }
 window.__alreadyRetriedBrokenProduct = false; window.lastProductName = null; window.lastProductPrice = null; window.lastProductDescription = null;
 function preloadProductImages(category){ return window.__SS_MEDIA_RUNTIME__?.preloadProductImages?.({ getProducts:()=>typeof products!=='undefined'?products:null, getLastCategory:()=>typeof lastCategory!=='undefined'?lastCategory:null, preloadedImages, getPrimaryImageUrl:__ssABGetPrimaryImageUrl }, category); }
-function attachSwipeListeners(){ return window.__SS_PRODUCT_RUNTIME__?.attachSwipeListeners?.({ getCurrentIndex:()=>window.currentProductImageIndex, setCurrentIndex:(v)=>{ window.currentProductImageIndex=v; }, getCurrentProductImages:()=>window.currentProductImages || [], updateMainImage:(dir)=>updateMainImage(dir) }); }
+function attachSwipeListeners(){ return window.__SS_PRODUCT_RUNTIME__?.attachSwipeListeners?.({ getCurrentIndex:()=>window.currentProductImageIndex, setCurrentIndex:(v)=>{ window.currentProductImageIndex=v; }, getCurrentProductImages:()=>window.currentProductImages || [], updateImage:(dir)=>updateImage(dir), updateMainImage:(dir)=>updateMainImage(dir) }); }
 window.__ssCarouselTouchState = window.__ssCarouselTouchState || { currentImageIndex: 0, startX: 0, bound: false };
 function selectProductOption(button, optionValue){ return window.__SS_PRODUCT_RUNTIME__?.selectProductOption?.({ getBasket:()=>basket, persistBasket:(reason)=>persistBasket(reason) }, button, optionValue); }
 function prevImage(){ return window.__SS_PRODUCT_RUNTIME__?.prevImage?.({ getCurrentIndex:()=>window.currentProductImageIndex, setCurrentIndex:(v)=>{ window.currentProductImageIndex=v; }, getCurrentProductImages:()=>window.currentProductImages || [], updateImage:(dir)=>updateImage(dir) }); }
@@ -1002,6 +1020,7 @@ function __ssSetQtyValue(productKey, qty){ return window.__SS_PRODUCT_RUNTIME__?
 function increaseQuantity(productKey){ return window.__SS_PRODUCT_RUNTIME__?.increaseQuantity?.(productKey); }
 function decreaseQuantity(productKey){ return window.__SS_PRODUCT_RUNTIME__?.decreaseQuantity?.(productKey); }
 function updateImage(direction){ return window.__SS_PRODUCT__?.updateImage?.(direction); }
+function updateMainImage(direction){ return updateImage(direction); }
 function addToCart(){ return window.__SS_BASKET__?.addToCart?.apply(window.__SS_BASKET__, arguments); }
 function buyNow(){ return window.__SS_PRODUCT__?.buyNow?.apply(window.__SS_PRODUCT__, arguments); }
 function changeQuantity(itemKey, amount){ return window.__SS_CART_RUNTIME__?.changeQuantity?.({ basket, persistBasket, updateBasket }, itemKey, amount); }

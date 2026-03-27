@@ -11,6 +11,14 @@
     attachSwipeListeners(ctx){
       const image = document.getElementById('mainImage');
       if (!image) return;
+      if (image.dataset?.ssSwipeBound === '1') return;
+      if (image.dataset) image.dataset.ssSwipeBound = '1';
+      const applyImageUpdate = (direction) => {
+        try {
+          if (typeof ctx.updateImage === 'function') return ctx.updateImage(direction);
+          return ctx.updateMainImage?.(direction);
+        } catch { return undefined; }
+      };
       let touchStartX = 0, touchEndX = 0;
       image.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
       image.addEventListener('touchend', (e) => {
@@ -20,9 +28,9 @@
         const currentIndex = Number(ctx.getCurrentIndex?.() || 0);
         const images = ctx.getCurrentProductImages?.() || [];
         if (diff > 0) {
-          if (currentIndex > 0) { ctx.setCurrentIndex?.(currentIndex - 1); ctx.updateMainImage?.('left'); }
+          if (currentIndex > 0) { ctx.setCurrentIndex?.(currentIndex - 1); applyImageUpdate('left'); }
         } else if (currentIndex < images.length - 1) {
-          ctx.setCurrentIndex?.(currentIndex + 1); ctx.updateMainImage?.('right');
+          ctx.setCurrentIndex?.(currentIndex + 1); applyImageUpdate('right');
         }
       });
     },
@@ -121,7 +129,8 @@
       const pname = sp.get('product') || '';
       const path = String(locationLike?.pathname || '');
       if (path.startsWith('/p/')) return { type: 'id', value: decodeURIComponent(path.slice(3).split('/')[0] || '') };
-      if (path && path !== '/' && !path.includes('.')) {
+      if (path.startsWith('/product/')) return { type: 'slug', value: decodeURIComponent(path.slice('/product/'.length).split('/')[0] || '') };
+      if (path && path !== '/' && !path.includes('.') && !path.startsWith('/category/') && !path.startsWith('/order-status/')) {
         const slug = decodeURIComponent(path.slice(1).split('/')[0] || '');
         if (slug) return { type: 'slug', value: slug };
       }

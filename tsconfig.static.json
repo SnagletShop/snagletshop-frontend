@@ -1,0 +1,1 @@
+{"compilerOptions": {"allowJs": true, "checkJs": true, "noEmit": true, "target": "ES2020", "module": "None", "lib": ["ES2020", "DOM"], "skipLibCheck": true, "noImplicitAny": false, "strict": false}, "include": ["script.js", "src/**/*.js"]}

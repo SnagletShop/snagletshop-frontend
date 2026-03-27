@@ -121,6 +121,38 @@ function __ssRecoGetSessionId() {
     }
 }
 
+function getOrCreateRecoSessionId() {
+    return __ssRecoGetSessionId();
+}
+
+async function trackRecoImpressions(payload) {
+    try {
+        const widgetId = String(payload?.widgetId || "").trim();
+        const sourceProductId = __ssIdNorm(payload?.sourceProductId || "");
+        const sessionId = String(payload?.sessionId || __ssRecoGetSessionId()).trim();
+        if (!sourceProductId) return;
+
+        const shown = Array.isArray(payload?.extra?.shown) ? payload.extra.shown : [];
+        const items = shown
+            .map((item) => ({
+                targetProductId: __ssIdNorm(item?.productId || ""),
+                position: Number(item?.position || 0) || null
+            }))
+            .filter((item) => item.targetProductId);
+
+        if (!items.length) return;
+
+        await Promise.allSettled(items.map((item) => __ssRecoSendEvent("impression", {
+            widgetId,
+            sourceProductId,
+            targetProductId: item.targetProductId,
+            position: item.position,
+            sessionId,
+            extra: payload?.extra || null
+        })));
+    } catch { }
+}
+
 function __ssRecoGetLayoutSettings() {
     const fromPreload = (window?.preloadedData?.storefrontConfig?.productPageRecommendations && typeof window.preloadedData.storefrontConfig.productPageRecommendations === "object")
         ? window.preloadedData.storefrontConfig.productPageRecommendations
@@ -863,20 +895,31 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
+        let lastNavGestureAt = 0;
         function bindNav(btn, dir) {
-            // Click (desktop + many mobiles)
-            btn.addEventListener('click', (e) => {
-                try { e.preventDefault(); e.stopPropagation(); } catch { }
-                handleNav(dir);
-            });
+            if (!btn || btn.dataset.ssRecoNavBound === '1') return;
+            btn.dataset.ssRecoNavBound = '1';
 
-            // Pointer/touch (some mobile browsers delay or miss click on small buttons near scroll areas)
-            const onDown = (e) => {
+            const triggerNav = (e, source) => {
                 try { e.preventDefault(); e.stopPropagation(); } catch { }
+                const now = Date.now();
+                if (source === 'click' && (now - lastNavGestureAt) < 450) return;
+                if (source !== 'click') lastNavGestureAt = now;
                 handleNav(dir);
             };
-            btn.addEventListener('pointerdown', onDown, { passive: false });
-            btn.addEventListener('touchstart', onDown, { passive: false });
+
+            // Click for desktop and keyboard activation.
+            btn.addEventListener('click', (e) => triggerNav(e, 'click'));
+
+            // Use pointer/touch only for touch pointers to avoid double-firing on hybrid devices.
+            btn.addEventListener('pointerdown', (e) => {
+                if (e.pointerType && e.pointerType !== 'touch') return;
+                triggerNav(e, 'pointerdown');
+            }, { passive: false });
+
+            if (!window.PointerEvent) {
+                btn.addEventListener('touchstart', (e) => triggerNav(e, 'touchstart'), { passive: false });
+            }
         }
 
         bindNav(btnL, -1);
@@ -920,12 +963,22 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }, { passive: true });
 
-        viewport.addEventListener('scroll', () => { __ssRecoUpdateNav(); maybeLoadMore(); }, { passive: true });
-        window.addEventListener('resize', () => {
+        if (viewport && viewport.dataset.ssRecoScrollBound !== '1') {
+            viewport.dataset.ssRecoScrollBound = '1';
+            viewport.addEventListener('scroll', () => { __ssRecoUpdateNav(); maybeLoadMore(); }, { passive: true });
+        }
+
+        try {
+            if (typeof window.__ssRecoResizeHandler === 'function') {
+                window.removeEventListener('resize', window.__ssRecoResizeHandler);
+            }
+        } catch {}
+        window.__ssRecoResizeHandler = () => {
             recState.device = (window.innerWidth <= 700) ? "mobile" : "desktop";
             __ssRecoApplyLayout(recState, strip, recState.serverUi);
             __ssRecoUpdateNav();
-        });
+        };
+        window.addEventListener('resize', window.__ssRecoResizeHandler);
 
         __ssRecoUpdateNav();
     } catch { }
@@ -1093,6 +1146,8 @@ try {
 } catch { }
 
 window.__ssRecoRenderForProduct = __ssRecoRenderForProduct;
+window.getOrCreateRecoSessionId = window.getOrCreateRecoSessionId || getOrCreateRecoSessionId;
+window.trackRecoImpressions = window.trackRecoImpressions || trackRecoImpressions;
 
 window.__SS_RECOMMENDATIONS__ = {
     __ssRecoClearRecentClick,
@@ -1102,6 +1157,8 @@ window.__SS_RECOMMENDATIONS__ = {
     __ssRecoEnsureStyles,
     __ssRecoGetExcludeIds,
     __ssRecoGetSessionId,
+    getOrCreateRecoSessionId,
+    trackRecoImpressions,
     __ssRecoMaybeAttributeAddToCart,
     __ssRecoRenderForProduct,
     __ssRecoSaveRecentClick,

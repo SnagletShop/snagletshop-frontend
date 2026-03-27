@@ -3,11 +3,18 @@
 
   const api = () => window.__SS_API__;
 
-  async function getOrderStatus(orderId, token) {
+  async function getOrderStatus(orderId, token, options = {}) {
     const oid = String(orderId || '').trim();
     const t = String(token || '').trim();
     if (!oid || !t) throw new Error('Missing orderId or token.');
-    return api().json(`/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}`, { cache: 'no-store' });
+    const turnstileToken = String(options?.turnstileToken || '').trim();
+    const path = turnstileToken
+      ? `/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}&turnstileToken=${encodeURIComponent(turnstileToken)}`
+      : `/order-status/${encodeURIComponent(oid)}?token=${encodeURIComponent(t)}`;
+    return api().json(path, {
+      cache: 'no-store',
+      headers: turnstileToken ? { 'x-turnstile-token': turnstileToken } : undefined
+    });
   }
 
   async function getPaymentIntentStatus(paymentIntentId, clientSecret) {

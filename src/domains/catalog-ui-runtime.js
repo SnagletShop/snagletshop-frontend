@@ -265,12 +265,38 @@
         root.dataset.value = btn.dataset.value;
       }
       if (currentSort) setSelectedByValue(currentSort);
+      try {
+        window.__ssSortDropdownActiveMenu = menu;
+        window.__ssSortDropdownRoot = root;
+      } catch {}
       if (!root.dataset.bound) {
         root.dataset.bound = '1';
         trigger.addEventListener('click', (e) => { e.preventDefault(); toggleMenu(); });
         items.forEach(btn => btn.addEventListener('click', () => { const val = btn.dataset.value; setSelectedByValue(val); api.handleSortChange(ctx, val); closeMenu(); }));
-        document.addEventListener('click', (e) => { if (!menu.hidden && !e.target.closest('#SortContainer')) closeMenu(); });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) closeMenu(); });
+      }
+      if (!window.__ssSortDropdownDocumentBound) {
+        window.__ssSortDropdownDocumentBound = true;
+        document.addEventListener('click', (e) => {
+          try {
+            const activeMenu = window.__ssSortDropdownActiveMenu;
+            if (!activeMenu || activeMenu.hidden) return;
+            if (!e.target.closest('#SortContainer')) activeMenu.hidden = true;
+            const activeRoot = window.__ssSortDropdownRoot;
+            const activeTrigger = activeRoot?.querySelector?.('#SSSortTrigger');
+            if (activeTrigger) activeTrigger.setAttribute('aria-expanded', activeMenu.hidden ? 'false' : 'true');
+          } catch {}
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') return;
+          try {
+            const activeMenu = window.__ssSortDropdownActiveMenu;
+            if (!activeMenu || activeMenu.hidden) return;
+            activeMenu.hidden = true;
+            const activeRoot = window.__ssSortDropdownRoot;
+            const activeTrigger = activeRoot?.querySelector?.('#SSSortTrigger');
+            if (activeTrigger) activeTrigger.setAttribute('aria-expanded', 'false');
+          } catch {}
+        });
       }
     },
     renderCatalogProducts(ctx = {}, category, sortBy = 'NameFirst', sortOrder = 'asc') {

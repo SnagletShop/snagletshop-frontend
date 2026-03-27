@@ -1,4 +1,7 @@
 (function (window, document) {
+function shouldHandleInAppNavigation(event) {
+    return !(event?.defaultPrevented || event?.button !== 0 || event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey);
+}
 function getProductCardComponent() {
     return window.__SS_RESOLVE__?.resolve?.('component.productCard', window.__SS_PRODUCT_CARD__ || null) || window.__SS_PRODUCT_CARD__ || null;
 }
@@ -15,6 +18,15 @@ function debounce(fn, delay) {
 function getSearchInputs() {
     return [document.getElementById("Search_Bar"), document.getElementById("Mobile_Search_Bar")].filter(Boolean);
 }
+function buildProductHref(product, resolvedPrice, resolvedImage) {
+    try {
+        const data = [product?.name || '', resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product?.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || ''), resolvedImage || '', (product?.productId || null), null];
+        const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data });
+        if (typeof href === 'string' && href.trim()) return href;
+    } catch {}
+    return `${window.location.origin}/?product=${encodeURIComponent(product?.name || '')}`;
+}
+
 
 function setupSearchInputs() {
     const inputs = getSearchInputs();
@@ -70,12 +82,18 @@ function searchProducts(forcedQuery = null) {
         }));
     });
     const uniqueResults = [];
-    const seenNames = new Set();
-    results.forEach(product => {
-        if (!seenNames.has(product.name)) {
-            seenNames.add(product.name);
-            uniqueResults.push(product);
-        }
+    const seenProducts = new Set();
+    results.forEach((product, index) => {
+        const dedupeKey = String(
+            product?.productId ||
+            product?.pid ||
+            product?.sku ||
+            product?.id ||
+            `${product?.name || ''}::${product?.productLink || product?.link || ''}::${index}`
+        );
+        if (seenProducts.has(dedupeKey)) return;
+        seenProducts.add(dedupeKey);
+        uniqueResults.push(product);
     });
     if (uniqueResults.length > 0) {
         uniqueResults.forEach(product => {
@@ -106,8 +124,8 @@ function searchProducts(forcedQuery = null) {
                 const title = document.createElement('a');
                 title.className = 'product-name';
                 title.textContent = (window.__ssABGetProductName?.(product) || product.name || '');
-                title.href = `${window.location.origin}/?product=${encodeURIComponent(product.name || '')}`;
-                title.addEventListener('click', (e) => { e.preventDefault(); navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]); });
+                title.href = buildProductHref(product, resolvedPrice, resolvedImage);
+                title.addEventListener('click', (e) => { if (!shouldHandleInAppNavigation(e)) return; e.preventDefault(); navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]); });
                 const price = document.createElement('p');
                 price.className = 'product-price';
       price.textContent = `${window.__ssResolveVariantPriceEUR?.(product, [], "") || product.price || product.priceEUR || product.basePrice || product.sellPrice || 0}€`;

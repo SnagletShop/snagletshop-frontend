@@ -112,6 +112,27 @@
     return 0;
   }
 
+  function buildProductHref(product, opts = {}) {
+    try {
+      const productId = String(opts.productId || product?.productId || product?.id || '').trim();
+      const data = [
+        opts.displayName || product?.name || '',
+        opts.priceValue ?? product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0,
+        opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '',
+        String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || ''),
+        productId || null,
+        null
+      ];
+      const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data });
+      if (typeof href === 'string' && href.trim()) return href;
+    } catch {}
+    return `${window.location.origin}/?product=${encodeURIComponent(product?.name || '')}`;
+  }
+
+  function shouldHandleInAppNavigation(event) {
+    return !(event?.defaultPrevented || event?.button !== 0 || event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey);
+  }
+
   function createProductCard(product, opts = {}) {
     const productDiv = document.createElement('div');
     productDiv.classList.add('product');
@@ -127,10 +148,11 @@
     const nameLink = document.createElement('a');
     nameLink.className = 'product-name product-name-link';
     nameLink.textContent = opts.displayName || product?.name || '';
-    nameLink.href = opts.href || `${window.location.origin}/?product=${encodeURIComponent(product?.name || '')}`;
-    nameLink.target = '_blank';
+    nameLink.href = opts.href || buildProductHref(product, opts);
     nameLink.addEventListener('click', (e) => {
+      if (!shouldHandleInAppNavigation(e)) return;
       e.preventDefault();
+      try { e.stopPropagation(); } catch {}
       opts.onOpenProduct?.(product);
     });
 

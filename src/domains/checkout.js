@@ -1,5 +1,6 @@
 (function (window, document) {
 const COUNTRY_OVERRIDE_STORAGE_KEY = "selectedCountryOverride";
+const CHECKOUT_DRAFT_TTL_MS = 30 * 60 * 1000;
 
 function _normalizeCountryCode(value, fallback = "") {
     const code = String(value || "").trim().toUpperCase();
@@ -60,7 +61,10 @@ function saveCheckoutDraftFromModal() {
         }
 
         if (any) {
-            sessionStorage.setItem(CHECKOUT_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+            sessionStorage.setItem(CHECKOUT_DRAFT_STORAGE_KEY, JSON.stringify({
+                savedAt: Date.now(),
+                fields: draft
+            }));
         } else {
             sessionStorage.removeItem(CHECKOUT_DRAFT_STORAGE_KEY);
         }
@@ -72,8 +76,15 @@ async function restoreCheckoutDraftToModal() {
         const raw = sessionStorage.getItem(CHECKOUT_DRAFT_STORAGE_KEY);
         if (!raw) return;
 
-        const draft = JSON.parse(raw);
-        if (!draft || typeof draft !== "object") return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        const savedAt = Number(parsed.savedAt || 0) || 0;
+        if (!savedAt || (Date.now() - savedAt) > CHECKOUT_DRAFT_TTL_MS) {
+            sessionStorage.removeItem(CHECKOUT_DRAFT_STORAGE_KEY);
+            return;
+        }
+
+        const draft = (parsed.fields && typeof parsed.fields === "object") ? parsed.fields : parsed;
 
         for (const [id, val] of Object.entries(draft)) {
             const el = document.getElementById(id);
@@ -323,6 +334,20 @@ async function createPaymentModal() {
       `;
 
     document.body.appendChild(modal);
+
+    try {
+        const basketObj = (typeof readBasket === 'function') ? (readBasket() || {}) : (() => {
+            try { return JSON.parse(localStorage.getItem('basket') || '{}'); } catch { return {}; }
+        })();
+        const itemsCount = Object.values(basketObj || {}).reduce((sum, item) => sum + Math.max(1, Number(item?.quantity ?? item?.qty ?? 1) || 1), 0);
+        sendAnalyticsEvent('checkout_modal_opened', {
+            extra: {
+                currency: localStorage.getItem('selectedCurrency') || window.selectedCurrency || 'EUR',
+                country: _getPreferredCountry(),
+                itemsCount
+            }
+        });
+    } catch { }
 
     // Restore any draft customer data (name/address/email) saved when closing the modal.
     // Note: Stripe PaymentElement details (card, etc.) cannot be persisted for compliance reasons.
@@ -724,6 +749,18 @@ async function initStripePaymentUI(selectedCurrency) {
         orderId: null,
         paymentIntentId
     });
+
+    try {
+        sendAnalyticsEvent('checkout_payment_ui_ready', {
+            extra: {
+                paymentIntentId: paymentIntentId || null,
+                amountCents: amountCents ?? null,
+                currency: currency || selectedCurrency || null,
+                country: country || null,
+                walletVisible: !!document.getElementById('payment-request-button')?.children?.length
+            }
+        });
+    } catch { }
 }
 
 async function setupCheckoutFlow(selectedCurrency) {
@@ -848,6 +885,19 @@ function attachConfirmHandlerOnce() {
             form.reportValidity();
             return;
         }
+
+        try {
+            const details = (typeof readCheckoutForm === 'function') ? (readCheckoutForm() || {}) : {};
+            sendAnalyticsEvent('checkout_details_submitted', {
+                extra: {
+                    country: String(details?.country || getSelectedCountryCode() || '').trim().toUpperCase() || null,
+                    currency: localStorage.getItem('selectedCurrency') || selectedCurrency || null,
+                    hasPhone: !!String(details?.phone || '').trim(),
+                    hasAddress2: !!String(details?.address2 || '').trim(),
+                    marketingOptIn: !!details?.marketingOptIn
+                }
+            });
+        } catch { }
 
         const originalText = btn.textContent;
         btn.disabled = true;
@@ -1047,6 +1097,15 @@ async function initPaymentModalLogic() {
 
             _syncSelectedCurrencyFromCountry(cc);
 
+            try {
+                sendAnalyticsEvent('checkout_country_changed', {
+                    extra: {
+                        country: cc || null,
+                        currency: selectedCurrency || localStorage.getItem('selectedCurrency') || null
+                    }
+                });
+            } catch { }
+
             if (typeof updateAllPrices === "function") updateAllPrices();
 
             // Recreate PI + remount Stripe Elements (server-truth)
@@ -1132,6 +1191,16 @@ async function handleStripeRedirectReturnOnLoad() {
             alert("Payment succeeded, but your order is still being finalized. Please wait a moment and refresh this page if it doesn't update.");
             return;
         }
+
+        stripStripeReturnParamsFromUrl(url);
+        const q = url.searchParams.toString();
+        const cleaned = url.pathname + (q ? `?${q}` : "");
+        try {
+            const currentState = (window.history.state && typeof window.history.state === "object") ? window.history.state : {};
+            const routeState = currentState.route || (Array.isArray(window.userHistoryStack) ? window.userHistoryStack[currentIndex] : null) || null;
+            const snapshot = window.__SS_ROUTER__?.buildHistoryState?.(routeState, currentIndex, { modalOpen: currentState.modalOpen === true }) || { ...currentState, index: currentIndex, route: routeState };
+            window.history.replaceState(snapshot, "", cleaned);
+        } catch { }
 
         __ssHandleSuccessfulCheckoutUi();
         return true;

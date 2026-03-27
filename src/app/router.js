@@ -70,20 +70,43 @@
     };
   }
 
+  function slugifySegment(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  function resolveCategoryKey(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+    if (db && Object.prototype.hasOwnProperty.call(db, raw)) return raw;
+    const normalized = slugifySegment(decodeURIComponent(raw)).replace(/_/g, '-');
+    const keys = Object.keys(db || {});
+    return keys.find((key) => slugifySegment(key).replace(/_/g, '-') === normalized) || raw;
+  }
+
   function parseRoute(urlLike) {
     const url = new URL(urlLike || window.location.href, window.location.origin);
     const params = url.searchParams;
     const path = String(url.pathname || '/');
-    const productFromPath = path.startsWith('/p/') ? decodeURIComponent(path.slice(3)) : '';
+    const productFromPath = path.startsWith('/p/') ? decodeURIComponent(path.slice(3).split('/')[0] || '') : '';
+    const seoProductSlug = path.startsWith('/product/') ? decodeURIComponent(path.slice('/product/'.length).split('/')[0] || '') : '';
+    const categoryFromPath = path.startsWith('/category/') ? decodeURIComponent(path.slice('/category/'.length).split('/')[0] || '') : '';
     const orderFromPath = path.startsWith('/order-status/') ? decodeURIComponent(path.slice('/order-status/'.length).split('/')[0] || '') : '';
     const view = String(params.get('view') || '').trim().toLowerCase();
     return {
       path,
       params,
       productId: params.get('p') || params.get('pid') || params.get('productId') || productFromPath || '',
-      productName: params.get('product') || '',
+      productName: params.get('product') || seoProductSlug.replace(/-/g, ' ') || '',
+      productSlug: seoProductSlug || '',
       query: params.get('q') || '',
-      category: params.get('category') || params.get('c') || '',
+      category: resolveCategoryKey(params.get('category') || params.get('c') || categoryFromPath || ''),
+      categorySlug: categoryFromPath || '',
       sortBy: params.get('sort') || '',
       sortOrder: params.get('order') || params.get('dir') || '',
       view,
@@ -97,12 +120,16 @@
     return !!(
       route?.productId ||
       route?.productName ||
+      route?.productSlug ||
       route?.query ||
       route?.category ||
+      route?.categorySlug ||
       route?.view === 'cart' ||
       route?.view === 'settings' ||
       route?.orderId ||
       route?.path?.startsWith('/p/') ||
+      route?.path?.startsWith('/product/') ||
+      route?.path?.startsWith('/category/') ||
       route?.path?.startsWith('/order-status/')
     );
   }
@@ -116,6 +143,11 @@
           : (typeof window.__ssGetCatalogFlat === 'function' ? window.__ssGetCatalogFlat() : []);
         const eq = typeof window.__ssIdEq === 'function' ? window.__ssIdEq : ((a, b) => String(a ?? '').trim() === String(b ?? '').trim());
         return (flatById || []).find((p) => eq(p?.productId, pid)) || null;
+      }
+    } catch {}
+    try {
+      if (route?.productSlug && typeof window.findProductBySlug === 'function') {
+        return window.findProductBySlug(route.productSlug) || null;
       }
     } catch {}
     try {
@@ -164,7 +196,7 @@
     if (!route || typeof route !== 'object') return null;
     const allowDefaultCatalog = options.allowDefaultCatalog === true;
 
-    if (route.productId || route.productName || route.path.startsWith('/p/')) {
+    if (route.productId || route.productName || route.productSlug || route.path.startsWith('/p/') || route.path.startsWith('/product/')) {
       return createProductState(findProductForRoute(route), route);
     }
 
@@ -231,16 +263,22 @@
       }
 
       if (state?.action === 'loadProducts') {
-        const category = String(state?.data?.[0] || '').trim() || getDefaultLandingCategory();
+        const category = resolveCategoryKey(String(state?.data?.[0] || '').trim() || getDefaultLandingCategory());
         const sortBy = String(state?.data?.[1] || getDefaultSort()).trim() || getDefaultSort();
         const sortOrder = normalizeSortOrder(state?.data?.[2] || getDefaultSortOrder());
         const params = new URLSearchParams();
         const firstCategory = getFirstRenderableCategory();
-        if (category && category !== firstCategory && category !== 'Default_Page') params.set('category', category);
+        const isDefaultCategory = !category || category === firstCategory || category === 'Default_Page';
         if (sortBy && sortBy !== getDefaultSort()) params.set('sort', sortBy);
         if (sortOrder !== 'asc') params.set('order', sortOrder);
         const query = params.toString();
-        return query ? `/?${query}` : '/';
+        if (window.__SS_USE_PATH_ROUTES__ && !isDefaultCategory) {
+          const path = `/category/${encodeURIComponent(slugifySegment(category))}`;
+          return query ? `${path}?${query}` : path;
+        }
+        if (!isDefaultCategory) params.set('category', category);
+        const fallbackQuery = params.toString();
+        return fallbackQuery ? `/?${fallbackQuery}` : '/';
       }
     } catch {}
     return '/';
@@ -506,6 +544,7 @@
     registerAction,
     bind,
     unbind,
+    resolveCategoryKey,
     inspect() {
       return {
         popstateBound,

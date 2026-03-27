@@ -401,8 +401,13 @@ function updateBasket() {
                     const pid = String(it?.productId || it?.pid || it?.id || '').trim();
                     const sel = String(it?.category || it?.variant || it?.selectedCategory || it?.selectedVariant || it?.option || '').trim();
 
-                    const flat = window.__ssCatalogIndexCache?.flat || window.__ssCatalogIndexCache?.flat?.flat || null;
-                    const arr = Array.isArray(flat) ? flat : (Array.isArray(window.__ssCatalogIndexCache?.flat) ? window.__ssCatalogIndexCache.flat : null);
+                    const flatFromCatalog = (typeof window.__ssGetCatalogFlat === 'function') ? window.__ssGetCatalogFlat() : null;
+                    const flatFromCache = window.__ssCatalogIndexCache?.flat || window.__ssCatalogIndexCache?.flat?.flat || null;
+                    const arr = Array.isArray(flatFromCatalog)
+                        ? flatFromCatalog
+                        : (Array.isArray(flatFromCache)
+                            ? flatFromCache
+                            : (Array.isArray(window.__ssCatalogIndexCache?.flat) ? window.__ssCatalogIndexCache.flat : null));
 
                     let baseUnit = NaN;
                     if (arr && pid) {
