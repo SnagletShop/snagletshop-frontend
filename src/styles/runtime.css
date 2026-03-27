@@ -1247,16 +1247,90 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
     grid-auto-columns: minmax(176px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
 }
 
-@media (max-width: 720px) {
+@media (min-width: 721px) {
     .RecoStrip {
-        --reco-gap: 10px;
+        --reco-gap: 12px;
+        grid-auto-columns: calc((100% - (var(--reco-gap) * 4)) / 5);
+    }
+}
+
+@media (max-width: 720px) {
+    .RecoSection {
+        margin-top: 20px;
+        padding-top: 16px;
+    }
+
+    .RecoViewport {
+        padding-bottom: 8px;
+    }
+
+    .RecoStrip {
+        --reco-gap: 8px;
         grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
+    }
+
+    .RecoCard {
+        border-radius: 12px;
+        padding: 6px;
+        gap: 7px;
+    }
+
+    .RecoMedia {
+        border-radius: 9px;
+    }
+
+    .RecoImg {
+        aspect-ratio: 0.9 / 1;
+    }
+
+    .RecoPromo {
+        display: none;
+    }
+
+    .RecoBody {
+        gap: 6px;
+    }
+
+    .RecoName {
+        font-size: 12px;
+        line-height: 1.35;
+        min-height: 2.55em;
+    }
+
+    .RecoMeta {
+        gap: 6px;
+    }
+
+    .RecoPrice {
+        font-size: 15px !important;
+        gap: 4px;
+    }
+
+    .RecoPrice .ss-price-new {
+        font-size: 15px;
+    }
+
+    .RecoPrice .ss-price-old,
+    .RecoPriceOff,
+    .RecoHint {
+        font-size: 10px;
+    }
+
+    .RecoHint {
+        display: none;
+    }
+
+    .RecoBadge {
+        top: 6px;
+        left: 6px;
+        font-size: 9px;
+        padding: 4px 7px;
     }
 }
 
 @media (max-width: 460px) {
     .RecoStrip {
-        --reco-gap: 9px;
+        --reco-gap: 8px;
         grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
     }
 
@@ -1517,28 +1591,28 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
 
 @media (max-width: 680px) {
     .RecoStrip {
-        --reco-gap: 10px;
+        --reco-gap: 8px;
         grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
     }
 
     .RecoCard {
-        border-radius: 13px;
-        padding: 7px;
-        gap: 8px;
+        border-radius: 12px;
+        padding: 6px;
+        gap: 7px;
     }
 
     .RecoImg {
-        aspect-ratio: 0.94 / 1;
+        aspect-ratio: 0.9 / 1;
     }
 
     .RecoName {
-        font-size: 13px;
-        line-height: 1.4;
-        min-height: 2.75em;
+        font-size: 12px;
+        line-height: 1.35;
+        min-height: 2.55em;
     }
 
     .RecoPromo {
-        font-size: 10px;
+        display: none;
     }
 
     .RecoPromoTag {
@@ -1552,8 +1626,8 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
     }
 
     .RecoPrice {
-        font-size: 16px !important;
-        gap: 5px;
+        font-size: 15px !important;
+        gap: 4px;
     }
 
     .RecoPrice .ss-price-old {
@@ -1561,12 +1635,12 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
     }
 
     .RecoPrice .ss-price-new {
-        font-size: 16px;
+        font-size: 15px;
     }
 
     .RecoPriceOff,
     .RecoHint {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .RecoHint {
@@ -1586,27 +1660,27 @@ html.dark-mode .RecoNav:hover:not(:disabled) {
 
 @media (max-width: 460px) {
     .RecoStrip {
-        --reco-gap: 9px;
+        --reco-gap: 8px;
         grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
     }
 
     .RecoCard {
         padding: 6px;
-        gap: 8px;
+        gap: 7px;
     }
 
     .RecoImg {
-        aspect-ratio: .96 / 1;
+        aspect-ratio: 0.9 / 1;
     }
 
     .RecoName {
         font-size: 12px;
-        line-height: 1.4;
-        min-height: 2.7em;
+        line-height: 1.35;
+        min-height: 2.55em;
     }
 
     .RecoMeta {
-        gap: 8px;
+        gap: 6px;
     }
 
     .RecoPrice {

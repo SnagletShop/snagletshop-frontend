@@ -913,9 +913,9 @@ async function __ssRecoRenderForProduct(product) {
 
         function getVisibleWindowCount() {
             try {
-                const stride = getStride();
-                if (!(stride > 0)) return Math.max(1, Number(recState.visibleCount || 1) || 1);
-                return Math.max(1, Math.floor((viewport.clientWidth + 4) / stride));
+                const mobile = String(recState.device || "").toLowerCase() === "mobile";
+                if (mobile) return 2;
+                return __SS_RECO_DESKTOP_VISIBLE_TARGET__;
             } catch {
                 return Math.max(1, Number(recState.visibleCount || 1) || 1);
             }
@@ -998,10 +998,16 @@ async function __ssRecoRenderForProduct(product) {
         function bindNav(btn, dir) {
             if (!btn || btn.dataset.ssRecoNavBound === '1') return;
             btn.dataset.ssRecoNavBound = '1';
-            btn.addEventListener('click', (e) => {
+            const invokeNav = (e) => {
                 try { e.preventDefault(); e.stopPropagation(); } catch { }
+                const now = Date.now();
+                const last = Number(btn.dataset.ssRecoNavTs || 0) || 0;
+                if ((now - last) < 220) return;
+                btn.dataset.ssRecoNavTs = String(now);
                 handleNav(dir);
-            });
+            };
+            btn.addEventListener('click', invokeNav);
+            btn.addEventListener('touchend', invokeNav, { passive: false });
         }
 
         bindNav(btnL, -1);
