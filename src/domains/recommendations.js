@@ -906,10 +906,20 @@ async function __ssRecoRenderForProduct(product) {
             return rect.width + gap;
         }
 
+        function getVisibleWindowCount() {
+            try {
+                const stride = getStride();
+                if (!(stride > 0)) return Math.max(1, Number(recState.visibleCount || 1) || 1);
+                return Math.max(1, Math.round(viewport.clientWidth / stride));
+            } catch {
+                return Math.max(1, Number(recState.visibleCount || 1) || 1);
+            }
+        }
+
         function scrollToIndex(i, behavior = "smooth") {
             const stride = getStride();
             const total = strip.querySelectorAll(".RecoCard").length;
-            const maxIndex = Math.max(0, total - Math.max(1, Number(recState.visibleCount || 1)));
+            const maxIndex = Math.max(0, total - getVisibleWindowCount());
             const target = Math.max(0, Math.min(maxIndex, Math.round(i))) * stride;
             viewport.scrollTo({ left: target, behavior });
         }
@@ -923,8 +933,9 @@ async function __ssRecoRenderForProduct(product) {
             try {
                 const idx = currentIndex();
                 const total = strip.querySelectorAll(".RecoCard").length;
-                const remaining = total - (idx + recState.visibleCount);
-                const nearEnd = remaining <= Math.max(2, recState.visibleCount);
+                const visibleWindow = getVisibleWindowCount();
+                const remaining = total - (idx + visibleWindow);
+                const nearEnd = remaining <= Math.max(2, visibleWindow);
                 if (!nearEnd) return;
                 const batch = await fetchBatch();
                 if (batch && batch.items && batch.items.length) {
@@ -1000,9 +1011,10 @@ async function __ssRecoRenderForProduct(product) {
 
                 const dir = dx < 0 ? 1 : -1;
                 const idx = currentIndex();
+                const visibleWindow = getVisibleWindowCount();
 
                 if (adx >= recState.swipeBigPx) {
-                    scrollToIndex(idx + dir * recState.visibleCount);
+                    scrollToIndex(idx + dir * visibleWindow);
                 } else {
                     scrollToIndex(idx + dir * 1);
                 }
@@ -1021,7 +1033,7 @@ async function __ssRecoRenderForProduct(product) {
             }
         } catch {}
         window.__ssRecoResizeHandler = () => {
-            recState.device = (window.innerWidth <= 700) ? "mobile" : "desktop";
+            recState.device = (window.innerWidth <= 720) ? "mobile" : "desktop";
             __ssRecoApplyLayout(recState, strip, recState.serverUi);
             __ssRecoUpdateNav();
         };
