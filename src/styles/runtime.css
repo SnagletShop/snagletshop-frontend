@@ -1204,14 +1204,15 @@ html.dark-mode .ss-ci-btn {
     gap: var(--reco-gap);
     align-content: start;
     align-items: start;
-    padding-right: 6px;
+    padding-right: 0;
     /* monolith sizing: keep a usable minimum so cards never collapse into tiny tiles */
     grid-auto-columns: minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
 }
 
 @media (max-width: 460px) {
     .RecoStrip {
-        grid-auto-columns: minmax(47.5vw, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+        --reco-gap: 10px;
+        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
     }
 
     .RecoNav {
@@ -1224,8 +1225,11 @@ html.dark-mode .ss-ci-btn {
 
 .RecoCard {
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     min-width: 0;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1256,6 +1260,7 @@ html.dark-mode .ss-ci-btn {
 .RecoMedia {
     position: relative;
     overflow: hidden;
+    box-sizing: border-box;
     border-radius: 16px;
     background:
         radial-gradient(circle at top left, rgba(255, 255, 255, .12), transparent 50%),
@@ -1284,6 +1289,7 @@ html.dark-mode .ss-ci-btn {
     display: grid;
     gap: 10px;
     min-width: 0;
+    box-sizing: border-box;
 }
 
 .RecoName {
@@ -1300,9 +1306,10 @@ html.dark-mode .ss-ci-btn {
 
 .RecoMeta {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: flex-end;
     gap: 12px;
+    min-width: 0;
     font-size: 12px;
     opacity: .96
 }
@@ -1328,28 +1335,6 @@ html.dark-mode .ss-ci-btn {
 .RecoPrice .ss-price-new {
     font-size: 20px;
     color: #ffffff;
-}
-
-.RecoCta {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 11px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .06);
-    border: 1px solid rgba(255, 255, 255, .08);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, .88);
-}
-
-.RecoCta::after {
-    content: "›";
-    font-size: 14px;
-    line-height: 1;
 }
 
 .RecoBadge {
@@ -1417,30 +1402,49 @@ html.dark-mode .ss-ci-btn {
 @media (max-width: 680px) {
     .RecoCard {
         border-radius: 18px;
-        padding: 8px;
+        padding: 7px;
         gap: 10px;
     }
 
     .RecoImg {
-        aspect-ratio: 0.9 / 1;
+        aspect-ratio: 0.88 / 1;
     }
 
     .RecoName {
-        font-size: 13px;
-        min-height: 2.6em;
+        font-size: 12px;
+        min-height: 2.5em;
     }
 
     .RecoPrice {
-        font-size: 17px !important;
+        font-size: 15px !important;
+        gap: 4px;
+    }
+
+    .RecoPrice .ss-price-old {
+        font-size: 11px;
     }
 
     .RecoPrice .ss-price-new {
-        font-size: 18px;
+        font-size: 16px;
     }
 
-    .RecoCta {
-        padding: 6px 9px;
+    .RecoBadge,
+    .RecoDiscountBadge {
+        top: 8px;
+    }
+
+    .RecoBadge {
+        left: 8px;
         font-size: 10px;
+        padding: 5px 8px;
+    }
+
+    .RecoDiscountBadge {
+        right: 8px;
+        min-width: 38px;
+        height: 26px;
+        padding: 0 8px;
+        font-size: 11px;
     }
 }
 

@@ -663,15 +663,7 @@ async function __ssRecoRenderForProduct(product) {
             const meta = document.createElement("div");
             meta.className = "RecoMeta";
 
-            const cta = document.createElement("span");
-            cta.className = "RecoCta";
-            cta.textContent = "View";
-
-            if (hasRealDiscount) {
-                meta.append(price, cta);
-            } else {
-                meta.append(price, cta);
-            }
+            meta.append(price);
 
             body.append(nm, meta);
             card.append(media, body);
