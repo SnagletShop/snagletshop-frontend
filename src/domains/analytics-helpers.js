@@ -73,14 +73,44 @@
     return __ssAbChooseBucket(key) === 'B';
   }
 
+  function __ssABGetTextVariants(product, field) {
+    if (!product || typeof product !== 'object') return [];
+    const raw = Array.isArray(product[`${field}Variants`]) ? product[`${field}Variants`] : [];
+    const primary = String((raw.length ? raw[0] : product[field]) || '').trim();
+    const legacy = String(product[`${field}B`] || '').trim();
+    const out = [];
+    const seen = new Set();
+    const push = (value) => {
+      const next = String(value || '').trim();
+      if (!next || seen.has(next)) return;
+      seen.add(next);
+      out.push(next);
+    };
+    push(primary);
+    raw.forEach(push);
+    push(legacy);
+    return out;
+  }
+
+  function __ssABResolveVariantIndex(product, field, length) {
+    const explicit = Number(product?.[`${field}VariantIndex`]);
+    if (Number.isInteger(explicit) && explicit >= 0 && explicit < Number(length || 0)) return explicit;
+    const key = `${String(product?.productId || product?.id || product?.productLink || product?.name || field)}:${field}`;
+    return Number(length || 0) > 0 ? (__ssAbFNV1a32(`${__ssAbGetUid()}:${key}`) % Number(length || 1)) : 0;
+  }
+
   function __ssABGetProductName(product) {
     if (!product || typeof product !== 'object') return '';
-    return String(product.name || '').trim();
+    const variants = __ssABGetTextVariants(product, 'name');
+    if (!variants.length) return String(product.name || '').trim();
+    return String(variants[__ssABResolveVariantIndex(product, 'name', variants.length)] || variants[0] || '').trim();
   }
 
   function __ssABGetProductDescription(product) {
     if (!product || typeof product !== 'object') return '';
-    return String(product.description || '').trim();
+    const variants = __ssABGetTextVariants(product, 'description');
+    if (!variants.length) return String(product.description || '').trim();
+    return String(variants[__ssABResolveVariantIndex(product, 'description', variants.length)] || variants[0] || '').trim();
   }
 
   function __ssABGetDeliveryText(product) {

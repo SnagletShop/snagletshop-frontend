@@ -16,7 +16,7 @@
   }
 
   async function getCatalog() {
-    return api().json(catalogPath(), { method: 'GET', cache: 'no-store' });
+    return api().json(catalogPath(), { method: 'GET', cache: 'no-store', credentials: 'include' });
   }
 
   window.__SS_CATALOG_SERVICE__ = { getPublicConfig, getAssignments, getCatalog };

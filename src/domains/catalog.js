@@ -25,7 +25,7 @@
   async function getCatalog() {
     const svc = catalogService();
     if (svc && typeof svc.getCatalog === 'function') return svc.getCatalog();
-    if (api() && typeof api().json === 'function') return api().json(catalogPath(), { method: 'GET', cache: 'no-store' });
+    if (api() && typeof api().json === 'function') return api().json(catalogPath(), { method: 'GET', cache: 'no-store', credentials: 'include' });
     throw new Error('Catalog transport is unavailable.');
   }
 

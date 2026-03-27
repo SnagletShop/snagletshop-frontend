@@ -4,7 +4,7 @@
   const api = () => window.__SS_API__;
 
   async function getRecommendations(urlOrPath) {
-    const res = await api().request(urlOrPath, { method: 'GET' });
+    const res = await api().request(urlOrPath, { method: 'GET', credentials: 'include' });
     return res.json().catch(() => null);
   }
 
