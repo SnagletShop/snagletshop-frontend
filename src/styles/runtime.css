@@ -1182,6 +1182,8 @@ html.dark-mode .RecoSection {
     position: relative;
     z-index: 3;
     pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition: transform .18s ease, border-color .18s ease, background .18s ease, opacity .18s ease
 }
 

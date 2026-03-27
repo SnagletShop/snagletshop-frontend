@@ -588,6 +588,7 @@ async function __ssRecoRenderForProduct(product) {
         const strip = document.createElement("div");
         strip.className = "RecoStrip";
         __ssRecoApplyLayout(recState, strip, recState.serverUi);
+        let loadObserver = null;
 
         viewport.appendChild(strip);
         __ssEnsureContributionProducts();
@@ -869,6 +870,8 @@ async function __ssRecoRenderForProduct(product) {
                 }
             } catch { }
 
+            try { bindLoadObserver(); } catch { }
+
             return toAppend.length;
         }
 
@@ -926,12 +929,55 @@ async function __ssRecoRenderForProduct(product) {
             const total = strip.querySelectorAll(".RecoCard").length;
             const maxIndex = Math.max(0, total - getVisibleWindowCount());
             const target = Math.max(0, Math.min(maxIndex, Math.round(i))) * stride;
-            viewport.scrollTo({ left: target, behavior });
+            try {
+                if (typeof viewport.scrollTo === "function") viewport.scrollTo({ left: target, behavior });
+                else viewport.scrollLeft = target;
+            } catch {
+                viewport.scrollLeft = target;
+            }
         }
 
         function currentIndex() {
             const stride = getStride();
             return stride > 0 ? Math.round(viewport.scrollLeft / stride) : 0;
+        }
+
+        function scrollByCards(cardCount, behavior = "smooth") {
+            const delta = getStride() * Number(cardCount || 0);
+            if (!delta) return;
+            try {
+                if (typeof viewport.scrollBy === "function") viewport.scrollBy({ left: delta, behavior });
+                else viewport.scrollLeft += delta;
+            } catch {
+                viewport.scrollLeft += delta;
+            }
+        }
+
+        function bindLoadObserver() {
+            try {
+                if (loadObserver && typeof loadObserver.disconnect === "function") {
+                    loadObserver.disconnect();
+                }
+            } catch { }
+            loadObserver = null;
+            try {
+                if (typeof IntersectionObserver !== "function") return;
+                const cards = strip.querySelectorAll(".RecoCard");
+                const lastCard = cards && cards.length ? cards[cards.length - 1] : null;
+                if (!lastCard) return;
+                loadObserver = new IntersectionObserver((entries) => {
+                    try {
+                        if (entries.some((entry) => entry && entry.isIntersecting)) {
+                            maybeLoadMore(true);
+                        }
+                    } catch { }
+                }, {
+                    root: viewport,
+                    rootMargin: "0px 35% 0px 0px",
+                    threshold: 0.35
+                });
+                loadObserver.observe(lastCard);
+            } catch { }
         }
 
         function distanceToEndPx() {
@@ -985,7 +1031,11 @@ async function __ssRecoRenderForProduct(product) {
                     await maybeLoadMore(true);
                     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
                 }
-                scrollToIndex(currentIndex() + (dir * navStepItems()), "smooth");
+                if (dir > 0 && viewport.scrollWidth <= (viewport.clientWidth + 6)) {
+                    await maybeLoadMore(true);
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                }
+                scrollByCards(dir * navStepItems(), "smooth");
                 setTimeout(() => {
                     try {
                         __ssRecoUpdateNav();
@@ -1007,6 +1057,7 @@ async function __ssRecoRenderForProduct(product) {
                 handleNav(dir);
             };
             btn.addEventListener('click', invokeNav);
+            btn.addEventListener('pointerup', invokeNav);
             btn.addEventListener('touchend', invokeNav, { passive: false });
         }
 
