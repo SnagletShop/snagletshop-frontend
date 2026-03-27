@@ -1206,13 +1206,20 @@ html.dark-mode .ss-ci-btn {
     align-items: start;
     padding-right: 0;
     /* monolith sizing: keep a usable minimum so cards never collapse into tiny tiles */
-    grid-auto-columns: minmax(151px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+    grid-auto-columns: minmax(176px, calc((100% - (var(--reco-gap) * (var(--reco-cols) - 1))) / var(--reco-cols)));
+}
+
+@media (max-width: 720px) {
+    .RecoStrip {
+        --reco-gap: 11px;
+        grid-auto-columns: minmax(210px, calc((100% - (var(--reco-gap) * .55)) / 1.45));
+    }
 }
 
 @media (max-width: 460px) {
     .RecoStrip {
         --reco-gap: 10px;
-        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
+        grid-auto-columns: calc(100% - 56px);
     }
 
     .RecoNav {
@@ -1342,6 +1349,10 @@ html.dark-mode .ss-ci-btn {
     top: 10px;
     left: 10px;
     z-index: 1;
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 11px;
     padding: 6px 10px;
     border-radius: 999px;
@@ -1402,22 +1413,23 @@ html.dark-mode .ss-ci-btn {
 @media (max-width: 680px) {
     .RecoCard {
         border-radius: 18px;
-        padding: 7px;
+        padding: 8px;
         gap: 10px;
     }
 
     .RecoImg {
-        aspect-ratio: 0.88 / 1;
+        aspect-ratio: 0.94 / 1;
     }
 
     .RecoName {
-        font-size: 12px;
-        min-height: 2.5em;
+        font-size: 13px;
+        line-height: 1.4;
+        min-height: 2.8em;
     }
 
     .RecoPrice {
-        font-size: 15px !important;
-        gap: 4px;
+        font-size: 16px !important;
+        gap: 5px;
     }
 
     .RecoPrice .ss-price-old {
@@ -1436,7 +1448,7 @@ html.dark-mode .ss-ci-btn {
     .RecoBadge {
         left: 8px;
         font-size: 10px;
-        padding: 5px 8px;
+        padding: 5px 9px;
     }
 
     .RecoDiscountBadge {
@@ -1445,6 +1457,34 @@ html.dark-mode .ss-ci-btn {
         height: 26px;
         padding: 0 8px;
         font-size: 11px;
+    }
+}
+
+@media (max-width: 460px) {
+    .RecoCard {
+        padding: 9px;
+        gap: 11px;
+    }
+
+    .RecoImg {
+        aspect-ratio: 1 / 1;
+    }
+
+    .RecoName {
+        font-size: 14px;
+        min-height: 2.9em;
+    }
+
+    .RecoMeta {
+        gap: 8px;
+    }
+
+    .RecoPrice {
+        font-size: 17px !important;
+    }
+
+    .RecoPrice .ss-price-new {
+        font-size: 17px;
     }
 }
 
