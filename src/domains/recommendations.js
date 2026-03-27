@@ -338,137 +338,134 @@ async function __ssRecoRenderForProduct(product) {
 
             recState.loading = true;
             try {
-                // sanitize sourceProductId before calling backend
-                try {
-                    let spid = __ssIdNorm(recState.sourceProductId);
+                let attempt = 0;
+                while (attempt++ < 4) {
+                    // sanitize sourceProductId before calling backend
+                    try {
+                        let spid = __ssIdNorm(recState.sourceProductId);
 
-                    // If it's garbage (e.g. "[object Set]"), attempt recovery from URL or product name
-                    if (__ssIsBadId(spid)) {
-                        // 1) URL /p/<pid> or stored current pid
-                        const fromUrl = __ssGetCurrentPidFallback();
-                        if (fromUrl) spid = __ssIdNorm(fromUrl);
+                        // If it's garbage (e.g. "[object Set]"), attempt recovery from URL or product name
+                        if (__ssIsBadId(spid)) {
+                            // 1) URL /p/<pid> or stored current pid
+                            const fromUrl = __ssGetCurrentPidFallback();
+                            if (fromUrl) spid = __ssIdNorm(fromUrl);
 
-                        // 2) product name -> pid
-                        if (!spid || __ssIsBadId(spid)) {
-                            const nm = String(product?.name ?? product?.title ?? '').trim();
-                            const rp = __ssResolvePidFromCatalogByName(nm);
+                            // 2) product name -> pid
+                            if (!spid || __ssIsBadId(spid)) {
+                                const nm = String(product?.name ?? product?.title ?? '').trim();
+                                const rp = __ssResolvePidFromCatalogByName(nm);
+                                if (rp) spid = __ssIdNorm(rp);
+                            }
+                            // 3) last viewed product name -> pid
+                            if (!spid || __ssIsBadId(spid)) {
+                                const nm2 = String(window.__ssCurrentViewedProductName || "").trim();
+                                const rp2 = __ssResolvePidFromCatalogByName(nm2);
+                                if (rp2) spid = __ssIdNorm(rp2);
+                            }
+
+                        }
+
+                        // If spid looks like a name, resolve via catalog
+                        if (spid && /\s/.test(spid)) {
+                            const rp = __ssResolvePidFromCatalogByName(spid);
                             if (rp) spid = __ssIdNorm(rp);
                         }
-                        // 3) last viewed product name -> pid
-                        if (!spid || __ssIsBadId(spid)) {
-                            const nm2 = String(window.__ssCurrentViewedProductName || "").trim();
-                            const rp2 = __ssResolvePidFromCatalogByName(nm2);
-                            if (rp2) spid = __ssIdNorm(rp2);
+
+                        // Final validation
+                        if (!spid || __ssIsBadId(spid) || /\s/.test(spid)) {
+                            console.warn('Reco: invalid sourceProductId, skipping /recs fetch:', recState.sourceProductId);
+                            return null;
                         }
 
+                        recState.sourceProductId = spid;
+                    } catch (e) {
+                        console.warn('Reco: sanitize failed', e);
                     }
 
-                    // If spid looks like a name, resolve via catalog
-                    if (spid && /\s/.test(spid)) {
-                        const rp = __ssResolvePidFromCatalogByName(spid);
-                        if (rp) spid = __ssIdNorm(rp);
-                    }
+                    const u = new URL(`${API_BASE}/recs`);
+                    u.searchParams.set("sourceProductId", recState.sourceProductId);
+                    if (recState.currentProductId) u.searchParams.set("currentProductId", String(recState.currentProductId));
+                    u.searchParams.set("device", recState.device);
+                    u.searchParams.set("offset", String(recState.offset));
+                    u.searchParams.set("limit", String(recState.batchSize));
+                    if (recState.listToken) u.searchParams.set("listToken", recState.listToken);
+                    try {
+                        // Build exclude list only from stable exclusions. Do not add already-rendered
+                        // items here because this request also uses offset pagination; mixing both can
+                        // skip later pages on mobile and leave the strip non-scrollable.
+                        const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
 
-                    // Final validation
-                    if (!spid || __ssIsBadId(spid) || /\s/.test(spid)) {
-                        console.warn('Reco: invalid sourceProductId, skipping /recs fetch:', recState.sourceProductId);
-                        return null;
-                    }
+                        // Always exclude current PDP + source
+                        const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
+                        const src = __ssIdNorm(recState.sourceProductId || '');
+                        if (cur && !__ssIsBadId(cur)) exSet.add(cur);
+                        if (src && !__ssIsBadId(src)) exSet.add(src);
 
-                    recState.sourceProductId = spid;
-                } catch (e) {
-                    console.warn('Reco: sanitize failed', e);
+                        const exCsv = Array.from(exSet).filter(Boolean).join(",");
+                        u.searchParams.set("exclude", exCsv);
+                        recState.__excludeSet = exSet;
+                    } catch { }
+
+                    console.log("[recs] OUT", { url: String(u), sourceProductId: recState.sourceProductId, currentProductId: recState.currentProductId, device: recState.device, offset: recState.offset, limit: recState.batchSize, excludeCount: (recState.__excludeSet instanceof Set) ? recState.__excludeSet.size : 0, listToken: recState.listToken || null });
+
+                    const recoService = window.__SS_RECOMMENDATIONS_SERVICE__;
+                    if (!recoService?.getRecommendations) throw new Error('Recommendations service unavailable: getRecommendations');
+                    const d = await recoService.getRecommendations(String(u));
+                    try { console.log("[recs] IN", { ok: !!(d && d.ok), widgetId: d && d.widgetId, sourceProductId: d && d.sourceProductId, items: Array.isArray(d && d.items) ? d.items.length : 0, hasMore: d && d.hasMore, listToken: (d && d.listToken) || null, token: (d && d.token) || null }); } catch { }
+                    if (!d || !d.ok || !Array.isArray(d.items)) return null;
+
+                    recState.widgetId = recState.widgetId || d.widgetId;
+                    if (!recState.token && typeof d.token === 'string' && d.token) recState.token = d.token;
+                    if (!recState.listToken && typeof d.listToken === 'string' && d.listToken) recState.listToken = d.listToken;
+
+                    const ui = (d.ui && typeof d.ui === "object") ? d.ui : {};
+                    recState.serverUi = ui;
+                    __ssRecoApplyLayout(recState, null, ui);
+
+                    const serverReturned = Array.isArray(d.items) ? d.items.length : 0;
+                    const maxAdd = (recState.maxItems > 0) ? Math.max(0, recState.maxItems - recState.offset) : 9999;
+                    const items = (d.items || []).slice(0, maxAdd);
+
+                    try {
+                        const exSet = (recState.__excludeSet instanceof Set) ? recState.__excludeSet : new Set();
+                        const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
+                        if (cur && !__ssIsBadId(cur)) exSet.add(cur);
+                        const filtered = [];
+                        for (const it of items) {
+                            const pid = __ssIdNorm(it && it.productId);
+                            if (pid && exSet.has(pid)) continue;
+                            filtered.push(it);
+                        }
+                        items.length = 0;
+                        items.push(...filtered);
+                    } catch { }
+
+                    try {
+                        if (Array.isArray(d.bestPerformerIds)) {
+                            recState.bestPerformerIds = d.bestPerformerIds.slice();
+                            const bs = new Set();
+                            d.bestPerformerIds.forEach(pid => { const n = __ssIdNorm(pid); if (n) bs.add(n); });
+                            recState.bestSet = bs;
+                        }
+                    } catch { }
+
+                    recState.offset += serverReturned;
+                    recState.batchesLoaded += 1;
+                    recState.hasMore = !!d.hasMore && serverReturned > 0;
+                    try {
+                        const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
+                        const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
+                        const src = __ssIdNorm(recState.sourceProductId || '');
+                        if (cur && !__ssIsBadId(cur)) exSet.add(cur);
+                        if (src && !__ssIsBadId(src)) exSet.add(src);
+                        recState.excludeSet = exSet;
+                    } catch { }
+
+                    if (items.length > 0 || !recState.hasMore || serverReturned <= 0) {
+                        return { d, items };
+                    }
                 }
-
-                const u = new URL(`${API_BASE}/recs`);
-                u.searchParams.set("sourceProductId", recState.sourceProductId);
-                if (recState.currentProductId) u.searchParams.set("currentProductId", String(recState.currentProductId));
-                u.searchParams.set("device", recState.device);
-                u.searchParams.set("offset", String(recState.offset));
-                u.searchParams.set("limit", String(recState.batchSize));
-                if (recState.listToken) u.searchParams.set("listToken", recState.listToken);
-                try {
-                    // Build exclude list only from stable exclusions. Do not add already-rendered
-                    // items here because this request also uses offset pagination; mixing both can
-                    // skip later pages on mobile and leave the strip non-scrollable.
-                    const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
-
-                    // Always exclude current PDP + source
-                    const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
-                    const src = __ssIdNorm(recState.sourceProductId || '');
-                    if (cur && !__ssIsBadId(cur)) exSet.add(cur);
-                    if (src && !__ssIsBadId(src)) exSet.add(src);
-
-                    const exCsv = Array.from(exSet).filter(Boolean).join(",");
-                    // Always include exclude param (helps backend logs + deterministic behavior)
-                    u.searchParams.set("exclude", exCsv);
-
-                    // Keep for client-side filtering too
-                    recState.__excludeSet = exSet;
-                } catch { }
-
-                console.log("[recs] OUT", { url: String(u), sourceProductId: recState.sourceProductId, currentProductId: recState.currentProductId, device: recState.device, offset: recState.offset, limit: recState.batchSize, excludeCount: (recState.__excludeSet instanceof Set) ? recState.__excludeSet.size : 0, listToken: recState.listToken || null });
-
-                const recoService = window.__SS_RECOMMENDATIONS_SERVICE__;
-                if (!recoService?.getRecommendations) throw new Error('Recommendations service unavailable: getRecommendations');
-                const d = await recoService.getRecommendations(String(u));
-                try { console.log("[recs] IN", { ok: !!(d && d.ok), widgetId: d && d.widgetId, sourceProductId: d && d.sourceProductId, items: Array.isArray(d && d.items) ? d.items.length : 0, hasMore: d && d.hasMore, listToken: (d && d.listToken) || null, token: (d && d.token) || null }); } catch { }
-                if (!d || !d.ok || !Array.isArray(d.items)) return null;
-
-                recState.widgetId = recState.widgetId || d.widgetId;
-                if (!recState.token && typeof d.token === 'string' && d.token) recState.token = d.token;
-                if (!recState.listToken && typeof d.listToken === 'string' && d.listToken) recState.listToken = d.listToken;
-
-                const ui = (d.ui && typeof d.ui === "object") ? d.ui : {};
-                recState.serverUi = ui;
-                __ssRecoApplyLayout(recState, null, ui);
-
-                // cap limit client-side if server doesn't
-                const maxAdd = (recState.maxItems > 0) ? Math.max(0, recState.maxItems - recState.offset) : 9999;
-                const items = (d.items || []).slice(0, maxAdd);
-
-                // Defense-in-depth: never show the product currently being viewed (or anything in exclude set)
-                try {
-                    const exSet = (recState.__excludeSet instanceof Set) ? recState.__excludeSet : new Set();
-                    const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
-                    if (cur && !__ssIsBadId(cur)) exSet.add(cur);
-                    const filtered = [];
-                    for (const it of items) {
-                        const pid = __ssIdNorm(it && it.productId);
-                        if (pid && exSet.has(pid)) continue;
-                        filtered.push(it);
-                    }
-                    // replace in-place so offset math uses filtered length
-                    items.length = 0;
-                    items.push(...filtered);
-                } catch { }
-
-                const serverReturned = Array.isArray(d.items) ? d.items.length : 0;
-                // Capture best performers list for sparse repeat allowance (server-provided).
-                try {
-                    if (Array.isArray(d.bestPerformerIds)) {
-                        recState.bestPerformerIds = d.bestPerformerIds.slice();
-                        const bs = new Set();
-                        d.bestPerformerIds.forEach(pid => { const n = __ssIdNorm(pid); if (n) bs.add(n); });
-                        recState.bestSet = bs;
-                    }
-                } catch { }
-
-                recState.offset += serverReturned;
-                recState.batchesLoaded += 1;
-                recState.hasMore = !!d.hasMore && serverReturned > 0;
-                try {
-                    // Keep stable exclusions limited to explicit/current/source ids.
-                    // Already-rendered items are de-duplicated client-side via seenSet.
-                    const exSet = (recState.excludeSet instanceof Set) ? new Set(recState.excludeSet) : new Set();
-                    const cur = __ssIdNorm(recState.currentProductId || recState.sourceProductId || product?.productId || '');
-                    const src = __ssIdNorm(recState.sourceProductId || '');
-                    if (cur && !__ssIsBadId(cur)) exSet.add(cur);
-                    if (src && !__ssIsBadId(src)) exSet.add(src);
-                    recState.excludeSet = exSet;
-                } catch { }
-
-                return { d, items };
+                return null;
             } finally {
                 recState.loading = false;
             }
@@ -573,6 +570,9 @@ async function __ssRecoRenderForProduct(product) {
         btnR.setAttribute("aria-label", "Scroll right");
         btnR.innerHTML = "&rsaquo;";
         btnR.textContent = "›";
+
+        btnL.innerHTML = "&#8249;";
+        btnR.innerHTML = "&#8250;";
 
         navs.appendChild(btnL);
         navs.appendChild(btnR);
@@ -910,7 +910,7 @@ async function __ssRecoRenderForProduct(product) {
             try {
                 const stride = getStride();
                 if (!(stride > 0)) return Math.max(1, Number(recState.visibleCount || 1) || 1);
-                return Math.max(1, Math.round(viewport.clientWidth / stride));
+                return Math.max(1, Math.floor((viewport.clientWidth + 4) / stride));
             } catch {
                 return Math.max(1, Number(recState.visibleCount || 1) || 1);
             }
@@ -935,7 +935,11 @@ async function __ssRecoRenderForProduct(product) {
 
         async function maybeLoadMore(force = false) {
             try {
-                const nearEnd = force || distanceToEndPx() <= Math.max(getStride() * 2, 28);
+                const visibleWindow = getVisibleWindowCount();
+                const totalCards = strip.querySelectorAll(".RecoCard").length;
+                const nearEndByIndex = (currentIndex() + visibleWindow) >= Math.max(0, totalCards - 1);
+                const nearEndByPixels = distanceToEndPx() <= Math.max(getStride() * 2, 28);
+                const nearEnd = force || nearEndByIndex || nearEndByPixels;
                 if (!nearEnd) return;
                 const batch = await fetchBatch();
                 if (batch && batch.items && batch.items.length) {
@@ -952,7 +956,7 @@ async function __ssRecoRenderForProduct(product) {
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
                 const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
                 btnL.disabled = viewport.scrollLeft <= 2;
-                btnR.disabled = viewport.scrollLeft >= (maxScroll - 2);
+                btnR.disabled = (viewport.scrollLeft >= (maxScroll - 2)) && !recState.hasMore;
             } catch { }
         }
 
@@ -963,9 +967,22 @@ async function __ssRecoRenderForProduct(product) {
 
         async function handleNav(dir) {
             try {
-                if (dir > 0) await maybeLoadMore(true);
-                const stride = getStride();
-                viewport.scrollBy({ left: dir * stride, behavior: "smooth" });
+                const visibleWindow = getVisibleWindowCount();
+                const totalBefore = strip.querySelectorAll(".RecoCard").length;
+                const current = currentIndex();
+                const targetBefore = current + (dir * navStepItems());
+                const needsMoreAhead = dir > 0 && (targetBefore + visibleWindow) >= totalBefore;
+                if (needsMoreAhead || (dir > 0 && distanceToEndPx() <= Math.max(getStride(), 24))) {
+                    await maybeLoadMore(true);
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                }
+                scrollToIndex(currentIndex() + (dir * navStepItems()), "smooth");
+                setTimeout(() => {
+                    try {
+                        __ssRecoUpdateNav();
+                        if (dir > 0) maybeLoadMore();
+                    } catch { }
+                }, 220);
             } catch { }
         }
 
