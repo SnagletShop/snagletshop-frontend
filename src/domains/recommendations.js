@@ -929,8 +929,10 @@ async function __ssRecoRenderForProduct(product) {
             const total = strip.querySelectorAll(".RecoCard").length;
             const maxIndex = Math.max(0, total - getVisibleWindowCount());
             const target = Math.max(0, Math.min(maxIndex, Math.round(i))) * stride;
+            const mobile = String(recState.device || "").toLowerCase() === "mobile";
+            const effectiveBehavior = mobile ? "auto" : behavior;
             try {
-                if (typeof viewport.scrollTo === "function") viewport.scrollTo({ left: target, behavior });
+                if (typeof viewport.scrollTo === "function") viewport.scrollTo({ left: target, behavior: effectiveBehavior });
                 else viewport.scrollLeft = target;
             } catch {
                 viewport.scrollLeft = target;
@@ -980,6 +982,23 @@ async function __ssRecoRenderForProduct(product) {
             } catch { }
         }
 
+        async function ensureAdvanceCapacity(dir) {
+            if (!(dir > 0)) return;
+            let safety = 0;
+            while (safety++ < 6) {
+                const totalCards = strip.querySelectorAll(".RecoCard").length;
+                const needCards = currentIndex() + getVisibleWindowCount() + navStepItems();
+                const canAdvanceByScroll = distanceToEndPx() > Math.max(2, getStride() * 0.45);
+                if (totalCards > needCards || canAdvanceByScroll) break;
+                const beforeCards = totalCards;
+                await maybeLoadMore(true);
+                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const afterCards = strip.querySelectorAll(".RecoCard").length;
+                if (afterCards > beforeCards) break;
+                if (!recState.hasMore && recState.endProbeUsed) break;
+            }
+        }
+
         function distanceToEndPx() {
             return Math.max(0, viewport.scrollWidth - (viewport.scrollLeft + viewport.clientWidth));
         }
@@ -1022,20 +1041,9 @@ async function __ssRecoRenderForProduct(product) {
 
         async function handleNav(dir) {
             try {
-                const visibleWindow = getVisibleWindowCount();
-                const totalBefore = strip.querySelectorAll(".RecoCard").length;
-                const current = currentIndex();
-                const targetBefore = current + (dir * navStepItems());
-                const needsMoreAhead = dir > 0 && (targetBefore + visibleWindow) >= totalBefore;
-                if (needsMoreAhead || (dir > 0 && distanceToEndPx() <= Math.max(getStride(), 24))) {
-                    await maybeLoadMore(true);
-                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-                }
-                if (dir > 0 && viewport.scrollWidth <= (viewport.clientWidth + 6)) {
-                    await maybeLoadMore(true);
-                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-                }
-                scrollByCards(dir * navStepItems(), "smooth");
+                await ensureAdvanceCapacity(dir);
+                const nextIndex = currentIndex() + (dir * navStepItems());
+                scrollToIndex(nextIndex, "smooth");
                 setTimeout(() => {
                     try {
                         __ssRecoUpdateNav();
@@ -1056,9 +1064,19 @@ async function __ssRecoRenderForProduct(product) {
                 btn.dataset.ssRecoNavTs = String(now);
                 handleNav(dir);
             };
-            btn.addEventListener('click', invokeNav);
-            btn.addEventListener('pointerup', invokeNav);
-            btn.addEventListener('touchend', invokeNav, { passive: false });
+            btn.addEventListener('click', (e) => {
+                const suppressUntil = Number(btn.dataset.ssRecoSuppressClickUntil || 0) || 0;
+                if (Date.now() < suppressUntil) {
+                    try { e.preventDefault(); e.stopPropagation(); } catch { }
+                    return;
+                }
+                invokeNav(e);
+            });
+            btn.addEventListener('pointerdown', (e) => {
+                if (e.pointerType !== 'touch') return;
+                btn.dataset.ssRecoSuppressClickUntil = String(Date.now() + 450);
+                invokeNav(e);
+            });
         }
 
         bindNav(btnL, -1);
