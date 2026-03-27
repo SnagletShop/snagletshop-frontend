@@ -16,17 +16,55 @@
     return key;
   }
 
-  function extractPublishableKey(data) {
-    return repairLegacyPublishableKey(
+  function normalizeStripeMode(raw) {
+    const mode = String(raw || '').trim().toLowerCase();
+    return (mode === 'test' || mode === 'live') ? mode : '';
+  }
+
+  function extractStripeConfig(data) {
+    const key = repairLegacyPublishableKey(
       data?.stripePublishableKey ||
       data?.publishableKey ||
       data?.config?.stripePublishableKey ||
       data?.config?.publishableKey
     );
+    const stripeMode = normalizeStripeMode(
+      data?.stripeMode ||
+      data?.config?.stripeMode ||
+      data?.meta?.stripeMode ||
+      ''
+    );
+    return { key, stripeMode };
   }
 
-  function assertPublishableKeySafe(pk) {
+  function getWindowStripeMode() {
+    return normalizeStripeMode(
+      window.__SS_STRIPE_MODE ||
+      window.preloadedData?.publicConfig?.stripeMode ||
+      window.preloadedData?.storefrontConfig?.stripeMode ||
+      window.preloadedData?.publicConfig?.config?.stripeMode ||
+      window.preloadedData?.storefrontConfig?.config?.stripeMode ||
+      window.storefrontCfg?.stripeMode ||
+      window.storefrontCfg?.config?.stripeMode ||
+      window.document?.querySelector?.('meta[name="stripe-mode"]')?.content ||
+      ''
+    );
+  }
+
+  function rememberStripeConfig(key, stripeMode) {
+    const safeKey = repairLegacyPublishableKey(key);
+    const mode = normalizeStripeMode(stripeMode);
+    if (safeKey) {
+      window.STRIPE_PUBLISHABLE_KEY = safeKey;
+      window.STRIPE_PUBLISHABLE = safeKey;
+    }
+    if (mode) window.__SS_STRIPE_MODE = mode;
+    return safeKey;
+  }
+
+  function assertPublishableKeySafe(pk, opts = {}) {
     const key = repairLegacyPublishableKey(pk);
+    const stripeMode = normalizeStripeMode(opts.stripeMode || getWindowStripeMode());
     if (!key || key === '__STRIPE_PUBLISHABLE_KEY__') {
       throw new Error('Stripe publishable key is not configured. Set <meta name="stripe-publishable-key" content="pk_live_..."/> or provide it from the backend public config.');
     }
@@ -34,10 +72,16 @@
       throw new Error('Stripe secret key was supplied to the storefront. Use a Stripe publishable key (pk_...) instead.');
     }
     if (key.startsWith('pk_test_')) {
-      if (PRODUCTION_HOST_RE.test(String(window.location?.hostname || ''))) {
+      const isProductionHost = PRODUCTION_HOST_RE.test(String(window.location?.hostname || ''));
+      const backendExplicitlyTest = stripeMode === 'test';
+      if (isProductionHost && !backendExplicitlyTest) {
         throw new Error('A Stripe TEST publishable key was supplied on a production host. Fix the backend/public config before enabling checkout.');
       }
-      try { console.warn('[stripe][config] Using a Stripe TEST publishable key on this domain.'); } catch {}
+      try {
+        console.warn(backendExplicitlyTest
+          ? '[stripe][config] Backend explicitly enabled Stripe TEST mode on this host.'
+          : '[stripe][config] Using a Stripe TEST publishable key on this domain.');
+      } catch {}
     }
     return key;
   }
@@ -45,30 +89,26 @@
   async function ensureStripePublishableKey(ctx = {}) {
     const fromWindow = repairLegacyPublishableKey(window.STRIPE_PUBLISHABLE_KEY || window.STRIPE_PUBLISHABLE);
     if (fromWindow) {
-      const safe = assertPublishableKeySafe(fromWindow);
-      window.STRIPE_PUBLISHABLE_KEY = safe;
-      window.STRIPE_PUBLISHABLE = safe;
-      return safe;
+      const stripeMode = getWindowStripeMode();
+      const safe = assertPublishableKeySafe(fromWindow, { stripeMode });
+      return rememberStripeConfig(safe, stripeMode);
     }
 
     const fromMeta = repairLegacyPublishableKey(window.document?.querySelector?.('meta[name="stripe-publishable-key"]')?.content);
     if (fromMeta) {
-      const safe = assertPublishableKeySafe(fromMeta);
-      window.STRIPE_PUBLISHABLE_KEY = safe;
-      window.STRIPE_PUBLISHABLE = safe;
-      return safe;
+      const stripeMode = normalizeStripeMode(window.document?.querySelector?.('meta[name="stripe-mode"]')?.content);
+      const safe = assertPublishableKeySafe(fromMeta, { stripeMode });
+      return rememberStripeConfig(safe, stripeMode);
     }
 
-    const fromPreloaded = extractPublishableKey(
+    const preloaded = extractStripeConfig(
       window.preloadedData?.publicConfig ||
       window.preloadedData?.storefrontConfig ||
       window.storefrontCfg
     );
-    if (fromPreloaded) {
-      const safe = assertPublishableKeySafe(fromPreloaded);
-      window.STRIPE_PUBLISHABLE_KEY = safe;
-      window.STRIPE_PUBLISHABLE = safe;
-      return safe;
+    if (preloaded.key) {
+      const safe = assertPublishableKeySafe(preloaded.key, { stripeMode: preloaded.stripeMode });
+      return rememberStripeConfig(safe, preloaded.stripeMode);
     }
 
     const loaders = [
@@ -82,12 +122,10 @@
     for (const load of loaders) {
       try {
         const data = await load?.();
-        const key = extractPublishableKey(data);
-        if (!key) continue;
-        const safe = assertPublishableKeySafe(key);
-        window.STRIPE_PUBLISHABLE_KEY = safe;
-        window.STRIPE_PUBLISHABLE = safe;
-        return safe;
+        const cfg = extractStripeConfig(data);
+        if (!cfg.key) continue;
+        const safe = assertPublishableKeySafe(cfg.key, { stripeMode: cfg.stripeMode });
+        return rememberStripeConfig(safe, cfg.stripeMode);
       } catch {}
     }
 

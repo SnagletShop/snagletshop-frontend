@@ -5,8 +5,19 @@
 
   function __snagletGetTurnstileSiteKey() {
     const meta = document.querySelector('meta[name="turnstile-sitekey"]');
-    const content = meta?.getAttribute('content') || '';
-    return String(content).trim();
+    const metaContent = String(meta?.getAttribute('content') || '').trim();
+    if (metaContent) return metaContent;
+
+    const cfgContent = String(
+      window.preloadedData?.storefrontConfig?.turnstileSiteKey ||
+      window.preloadedData?.publicConfig?.turnstileSiteKey ||
+      window.storefrontCfg?.turnstileSiteKey ||
+      window.storefrontCfg?.config?.turnstileSiteKey ||
+      ''
+    ).trim();
+    if (cfgContent) return cfgContent;
+
+    return '';
   }
 
   function __snagletEnsureTurnstileContainer() {
