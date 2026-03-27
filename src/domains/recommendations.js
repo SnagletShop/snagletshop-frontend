@@ -18,6 +18,7 @@ window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
     mobileSwipeBigPx: 120
 };
 window.__ssSmartRecoApiCache = window.__ssSmartRecoApiCache || __ssSmartRecoApiCache;
+const __SS_RECO_DESKTOP_VISIBLE_TARGET__ = 5;
 
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
@@ -202,10 +203,10 @@ function __ssRecoGetLayout(device) {
     const cfg = __ssRecoGetLayoutSettings();
     const visibleCount = mobile
         ? Math.max(1, Number(cfg.mobileVisibleCount || 2) || 2)
-        : Math.max(1, Number(cfg.desktopVisibleCount || 3) || 3);
+        : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
     const batchSize = mobile
         ? Math.max(1, Number(cfg.mobileBatchSize || 2) || 2)
-        : Math.max(1, Number(cfg.desktopBatchSize || 3) || 3);
+        : Math.max(__SS_RECO_DESKTOP_VISIBLE_TARGET__, Number(cfg.desktopBatchSize || __SS_RECO_DESKTOP_VISIBLE_TARGET__) || __SS_RECO_DESKTOP_VISIBLE_TARGET__);
     const maxBatches = mobile
         ? Math.max(1, Number(cfg.mobileMaxBatches || 6) || 6)
         : Math.max(1, Number(cfg.desktopMaxBatches || 6) || 6);
@@ -226,8 +227,13 @@ function __ssRecoGetLayout(device) {
 function __ssRecoApplyLayout(recState, strip, ui = null) {
     const layout = __ssRecoGetLayout(recState?.device);
     if (!recState) return layout;
-    recState.visibleCount = Math.max(1, Number(ui?.visibleCount || 0) || Number(layout.visibleCount || recState.visibleCount || 1) || 1);
-    recState.batchSize = Math.max(1, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1);
+    const mobile = String(recState?.device || "").toLowerCase() === "mobile";
+    recState.visibleCount = mobile
+        ? Math.max(1, Number(ui?.visibleCount || 0) || Number(layout.visibleCount || recState.visibleCount || 1) || 1)
+        : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
+    recState.batchSize = mobile
+        ? Math.max(1, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1)
+        : Math.max(__SS_RECO_DESKTOP_VISIBLE_TARGET__, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || __SS_RECO_DESKTOP_VISIBLE_TARGET__) || __SS_RECO_DESKTOP_VISIBLE_TARGET__);
     recState.maxBatches = Math.max(1, Number(ui?.maxBatches || 0) || Number(layout.maxBatches || recState.maxBatches || 1) || 1);
     recState.maxItems = Math.max(0, Number(ui?.maxItems || 0) || Number(layout.maxItems || recState.maxItems || 0) || 0);
     recState.swipeSmallPx = Math.max(5, Number(ui?.swipeSmallPx || 0) || Number(layout.swipeSmallPx || recState.swipeSmallPx || 35) || 35);
@@ -589,6 +595,11 @@ async function __ssRecoRenderForProduct(product) {
             card.className = "RecoCard";
             card.dataset.productId = __ssIdNorm(it.productId);
             card.dataset.position = String(it.position || (idx + 1));
+            card.setAttribute("role", "button");
+            card.setAttribute("tabindex", "0");
+
+            const media = document.createElement("div");
+            media.className = "RecoMedia";
 
             const img = document.createElement("img");
             img.className = "RecoImg";
@@ -596,16 +607,15 @@ async function __ssRecoRenderForProduct(product) {
             img.alt = String(it.name || "");
             img.src = String(it.image || "");
 
+            media.appendChild(img);
+
             const nm = document.createElement("div");
             nm.className = "RecoName";
             nm.textContent = String(it.name || "");
 
-            const meta = document.createElement("div");
-            meta.className = "RecoMeta";
-
             const price = document.createElement("span");
             // Make it compatible with updateAllPrices() (currency + tariffs)
-            price.className = "product-price";
+            price.className = "product-price RecoPrice";
             const eur = Number(it.price || 0);
             const discPct = Number(it.discountPct || 0);
             let discPrice = Number(it.discountedPrice || 0);
@@ -630,20 +640,43 @@ async function __ssRecoRenderForProduct(product) {
             const badge = document.createElement("span");
             badge.className = "RecoBadge";
             const pos = Number(it.position || (idx + 1));
-            if (pos <= 2) badge.textContent = "Bestseller";
-            else badge.textContent = "Suggested";
-
-            if (hasRealDiscount) {
-                const dsc = document.createElement("span");
-
-                meta.append(price, badge, dsc);
+            if (pos <= 2) {
+                badge.textContent = "Bestseller";
+                badge.classList.add("RecoBadge--best");
             } else {
-                meta.append(price, badge);
+                badge.textContent = "Picked for you";
+                badge.classList.add("RecoBadge--soft");
             }
 
-            card.append(img, nm, meta);
+            media.appendChild(badge);
 
-            card.addEventListener("click", (e) => {
+            if (hasRealDiscount) {
+                const discountBadge = document.createElement("span");
+                discountBadge.className = "RecoDiscountBadge";
+                discountBadge.textContent = `-${Math.round(discPct)}%`;
+                media.appendChild(discountBadge);
+            }
+
+            const body = document.createElement("div");
+            body.className = "RecoBody";
+
+            const meta = document.createElement("div");
+            meta.className = "RecoMeta";
+
+            const cta = document.createElement("span");
+            cta.className = "RecoCta";
+            cta.textContent = "View";
+
+            if (hasRealDiscount) {
+                meta.append(price, cta);
+            } else {
+                meta.append(price, cta);
+            }
+
+            body.append(nm, meta);
+            card.append(media, body);
+
+            const openRecoProduct = (e) => {
                 e.preventDefault();
 
                 __ssRecoSendEvent("click", {
@@ -733,6 +766,13 @@ async function __ssRecoRenderForProduct(product) {
                             return { discountToken: String(it.discountToken || ""), discountPct: pct, discountedPrice: disc };
                         })()
                     ]);
+                }
+            };
+
+            card.addEventListener("click", openRecoProduct);
+            card.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    openRecoProduct(e);
                 }
             });
 

@@ -1145,16 +1145,23 @@ html.dark-mode .ss-ci-btn {
 }
 
 .RecoNav {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, .14);
-    background: rgba(255, 255, 255, .06);
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .04));
     color: inherit;
     cursor: pointer;
     display: grid;
     place-items: center;
-    user-select: none
+    user-select: none;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, opacity .18s ease
+}
+
+.RecoNav:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, .22);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .06));
 }
 
 .RecoNav:disabled {
@@ -1220,43 +1227,177 @@ html.dark-mode .ss-ci-btn {
     min-width: 0;
     width: 100%;
     display: flex;
-    flex-direction: column
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .03)),
+        linear-gradient(180deg, rgba(25, 25, 25, .95), rgba(18, 18, 18, .98));
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .18);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease, background .22s ease;
 }
 
 .RecoCard:hover {
-    background: rgba(255, 255, 255, .07)
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, .18);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .22);
+}
+
+.RecoCard:focus-visible {
+    outline: none;
+    border-color: rgba(59, 130, 246, .7);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .18), 0 20px 40px rgba(0, 0, 0, .22);
+}
+
+.RecoMedia {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, .12), transparent 50%),
+        rgba(255, 255, 255, .05);
+    border: 1px solid rgba(255, 255, 255, .08);
+}
+
+.RecoMedia::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 42%;
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .28));
+    pointer-events: none;
 }
 
 .RecoImg {
     width: 100%;
-    aspect-ratio: 1/1;
+    aspect-ratio: 0.96 / 1;
     object-fit: cover;
-    border-radius: 12px;
+    display: block;
     background: rgba(255, 255, 255, .06)
 }
 
+.RecoBody {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+}
+
 .RecoName {
-    font-size: 13px;
-    line-height: 1.25;
-    max-height: 3.8em;
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: .01em;
+    min-height: 2.7em;
     overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .RecoMeta {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-end;
+    gap: 12px;
     font-size: 12px;
-    opacity: .9
+    opacity: .96
+}
+
+.RecoPrice {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 19px !important;
+    line-height: 1.1;
+    font-weight: 700;
+    color: #f7fafc;
+}
+
+.RecoPrice .ss-price-old {
+    font-size: 13px;
+    color: rgba(255, 255, 255, .48);
+    text-decoration-thickness: 1.5px;
+}
+
+.RecoPrice .ss-price-new {
+    font-size: 20px;
+    color: #ffffff;
+}
+
+.RecoCta {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 255, 255, .08);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .88);
+}
+
+.RecoCta::after {
+    content: "›";
+    font-size: 14px;
+    line-height: 1;
 }
 
 .RecoBadge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
     font-size: 11px;
-    padding: 2px 8px;
+    padding: 6px 10px;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, .14);
-    opacity: .9
+    background: rgba(17, 24, 39, .78);
+    backdrop-filter: blur(10px);
+    color: #f8fafc;
+    opacity: .96
+}
+
+.RecoBadge--best {
+    background: linear-gradient(135deg, rgba(251, 191, 36, .94), rgba(249, 115, 22, .9));
+    border-color: rgba(255, 214, 102, .45);
+    color: #111827;
+    box-shadow: 0 8px 18px rgba(249, 115, 22, .24);
+}
+
+.RecoBadge--soft {
+    background: rgba(17, 24, 39, .78);
+    border-color: rgba(255, 255, 255, .14);
+}
+
+.RecoDiscountBadge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #eff6ff;
+    border: 1px solid rgba(147, 197, 253, .28);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, .26);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .01em;
 }
 
 .RecoOld {
@@ -1271,6 +1412,36 @@ html.dark-mode .ss-ci-btn {
 
 .RecoDisc {
     border-color: rgba(255, 255, 255, .22)
+}
+
+@media (max-width: 680px) {
+    .RecoCard {
+        border-radius: 18px;
+        padding: 8px;
+        gap: 10px;
+    }
+
+    .RecoImg {
+        aspect-ratio: 0.9 / 1;
+    }
+
+    .RecoName {
+        font-size: 13px;
+        min-height: 2.6em;
+    }
+
+    .RecoPrice {
+        font-size: 17px !important;
+    }
+
+    .RecoPrice .ss-price-new {
+        font-size: 18px;
+    }
+
+    .RecoCta {
+        padding: 6px 9px;
+        font-size: 10px;
+    }
 }
 
 /* basket toast */
