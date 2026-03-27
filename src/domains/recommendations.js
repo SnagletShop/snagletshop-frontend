@@ -19,6 +19,7 @@ window.__SS_RECO_LAYOUT__ = window.__SS_RECO_LAYOUT__ || {
 };
 window.__ssSmartRecoApiCache = window.__ssSmartRecoApiCache || __ssSmartRecoApiCache;
 const __SS_RECO_DESKTOP_VISIBLE_TARGET__ = 5;
+const __SS_RECO_DESKTOP_BATCH_TARGET__ = 5;
 
 function __ssRecoClearRecentClick() {
     try { localStorage.removeItem("ss_reco_last_click_v1"); } catch { }
@@ -206,7 +207,7 @@ function __ssRecoGetLayout(device) {
         : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
     const batchSize = mobile
         ? Math.max(1, Number(cfg.mobileBatchSize || 2) || 2)
-        : Math.max(__SS_RECO_DESKTOP_VISIBLE_TARGET__, Number(cfg.desktopBatchSize || __SS_RECO_DESKTOP_VISIBLE_TARGET__) || __SS_RECO_DESKTOP_VISIBLE_TARGET__);
+        : __SS_RECO_DESKTOP_BATCH_TARGET__;
     const maxBatches = mobile
         ? Math.max(1, Number(cfg.mobileMaxBatches || 6) || 6)
         : Math.max(1, Number(cfg.desktopMaxBatches || 6) || 6);
@@ -233,7 +234,7 @@ function __ssRecoApplyLayout(recState, strip, ui = null) {
         : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
     recState.batchSize = mobile
         ? Math.max(1, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1)
-        : Math.max(__SS_RECO_DESKTOP_VISIBLE_TARGET__, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || __SS_RECO_DESKTOP_VISIBLE_TARGET__) || __SS_RECO_DESKTOP_VISIBLE_TARGET__);
+        : __SS_RECO_DESKTOP_BATCH_TARGET__;
     recState.maxBatches = Math.max(1, Number(ui?.maxBatches || 0) || Number(layout.maxBatches || recState.maxBatches || 1) || 1);
     recState.maxItems = Math.max(0, Number(ui?.maxItems || 0) || Number(layout.maxItems || recState.maxItems || 0) || 0);
     recState.swipeSmallPx = Math.max(5, Number(ui?.swipeSmallPx || 0) || Number(layout.swipeSmallPx || recState.swipeSmallPx || 35) || 35);
