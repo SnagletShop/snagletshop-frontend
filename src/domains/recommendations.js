@@ -1029,14 +1029,18 @@ async function __ssRecoRenderForProduct(product) {
                 // align width
                 try { const w = anchor.getBoundingClientRect().width; if (w && w > 240) section.style.maxWidth = Math.round(w) + 'px'; } catch { }
                 const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+                const mobile = String(recState.device || "").toLowerCase() === "mobile";
                 btnL.disabled = viewport.scrollLeft <= 2;
-                btnR.disabled = (viewport.scrollLeft >= (maxScroll - 2)) && !recState.hasMore && !!recState.endProbeUsed;
+                btnR.disabled = mobile
+                    ? (distanceToEndPx() <= 2 && !recState.hasMore && !!recState.endProbeUsed)
+                    : ((viewport.scrollLeft >= (maxScroll - 2)) && !recState.hasMore && !!recState.endProbeUsed);
             } catch { }
         }
 
         // Nav buttons: support mobile tap reliably + step one item on mobile
         function navStepItems() {
-            return 1;
+            const mobile = String(recState.device || "").toLowerCase() === "mobile";
+            return mobile ? getVisibleWindowCount() : 1;
         }
 
         async function handleNav(dir) {
@@ -1072,6 +1076,11 @@ async function __ssRecoRenderForProduct(product) {
                 }
                 invokeNav(e);
             });
+            btn.addEventListener('mousedown', invokeNav);
+            btn.addEventListener('touchstart', (e) => {
+                btn.dataset.ssRecoSuppressClickUntil = String(Date.now() + 450);
+                invokeNav(e);
+            }, { passive: false });
             btn.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'touch') return;
                 btn.dataset.ssRecoSuppressClickUntil = String(Date.now() + 450);
@@ -1118,13 +1127,22 @@ async function __ssRecoRenderForProduct(product) {
                 } else {
                     viewport.scrollBy({ left: dir * stride, behavior: "smooth" });
                 }
-                await maybeLoadMore();
+                await maybeLoadMore(true);
             } catch { }
         }, { passive: true });
 
         if (viewport && viewport.dataset.ssRecoScrollBound !== '1') {
             viewport.dataset.ssRecoScrollBound = '1';
-            viewport.addEventListener('scroll', () => { __ssRecoUpdateNav(); maybeLoadMore(); }, { passive: true });
+            let scrollTicking = false;
+            viewport.addEventListener('scroll', () => {
+                __ssRecoUpdateNav();
+                if (scrollTicking) return;
+                scrollTicking = true;
+                requestAnimationFrame(() => {
+                    scrollTicking = false;
+                    maybeLoadMore(distanceToEndPx() <= Math.max(getStride(), 24));
+                });
+            }, { passive: true });
         }
 
         try {
