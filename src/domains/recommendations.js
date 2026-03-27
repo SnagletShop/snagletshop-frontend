@@ -202,6 +202,8 @@ function __ssGetSmartRecoPayloadKey(payload = {}) {
 function __ssRecoGetLayout(device) {
     const mobile = String(device || "").toLowerCase() === "mobile";
     const cfg = __ssRecoGetLayoutSettings();
+    const mobileMaxBatchesRaw = Number(cfg.mobileMaxBatches || 0) || 0;
+    const mobileMaxItemsRaw = Number(cfg.mobileMaxItems || 0) || 0;
     const visibleCount = mobile
         ? Math.max(1, Number(cfg.mobileVisibleCount || 2) || 2)
         : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
@@ -209,10 +211,10 @@ function __ssRecoGetLayout(device) {
         ? Math.max(1, Number(cfg.mobileBatchSize || 2) || 2)
         : __SS_RECO_DESKTOP_BATCH_TARGET__;
     const maxBatches = mobile
-        ? Math.max(1, Number(cfg.mobileMaxBatches || 6) || 6)
+        ? Math.max(10, mobileMaxBatchesRaw > 0 ? mobileMaxBatchesRaw : 10)
         : Math.max(1, Number(cfg.desktopMaxBatches || 6) || 6);
     const maxItems = mobile
-        ? Math.max(0, Number(cfg.mobileMaxItems || 0) || 0)
+        ? (mobileMaxItemsRaw > 0 ? Math.max(24, mobileMaxItemsRaw) : 0)
         : Math.max(0, Number(cfg.desktopMaxItems || 0) || 0);
     const swipeSmallPx = mobile
         ? Math.max(5, Number(cfg.mobileSwipeSmallPx || 35) || 35)
@@ -229,14 +231,31 @@ function __ssRecoApplyLayout(recState, strip, ui = null) {
     const layout = __ssRecoGetLayout(recState?.device);
     if (!recState) return layout;
     const mobile = String(recState?.device || "").toLowerCase() === "mobile";
+    const uiMobileMaxBatchesRaw = Number(ui?.maxBatches || 0) || 0;
+    const layoutMobileMaxBatchesRaw = Number(layout.maxBatches || 0) || 0;
+    const currentMobileMaxBatchesRaw = Number(recState.maxBatches || 0) || 0;
+    const uiMobileMaxItemsRaw = Number(ui?.maxItems || 0) || 0;
+    const layoutMobileMaxItemsRaw = Number(layout.maxItems || 0) || 0;
+    const currentMobileMaxItemsRaw = Number(recState.maxItems || 0) || 0;
     recState.visibleCount = mobile
         ? Math.max(1, Number(ui?.visibleCount || 0) || Number(layout.visibleCount || recState.visibleCount || 1) || 1)
         : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
     recState.batchSize = mobile
         ? Math.max(1, Number(ui?.batchSize || 0) || Number(layout.batchSize || recState.batchSize || 1) || 1)
         : __SS_RECO_DESKTOP_BATCH_TARGET__;
-    recState.maxBatches = Math.max(1, Number(ui?.maxBatches || 0) || Number(layout.maxBatches || recState.maxBatches || 1) || 1);
-    recState.maxItems = Math.max(0, Number(ui?.maxItems || 0) || Number(layout.maxItems || recState.maxItems || 0) || 0);
+    recState.maxBatches = mobile
+        ? Math.max(10, uiMobileMaxBatchesRaw > 0 ? uiMobileMaxBatchesRaw : (layoutMobileMaxBatchesRaw > 0 ? layoutMobileMaxBatchesRaw : (currentMobileMaxBatchesRaw > 0 ? currentMobileMaxBatchesRaw : 10)))
+        : Math.max(1, Number(ui?.maxBatches || 0) || Number(layout.maxBatches || recState.maxBatches || 1) || 1);
+    recState.maxItems = mobile
+        ? (() => {
+            const raw = uiMobileMaxItemsRaw > 0
+                ? uiMobileMaxItemsRaw
+                : (layoutMobileMaxItemsRaw > 0
+                    ? layoutMobileMaxItemsRaw
+                    : currentMobileMaxItemsRaw);
+            return raw > 0 ? Math.max(24, raw) : 0;
+        })()
+        : Math.max(0, Number(ui?.maxItems || 0) || Number(layout.maxItems || recState.maxItems || 0) || 0);
     recState.swipeSmallPx = Math.max(5, Number(ui?.swipeSmallPx || 0) || Number(layout.swipeSmallPx || recState.swipeSmallPx || 35) || 35);
     recState.swipeBigPx = Math.max(recState.swipeSmallPx + 12, Number(ui?.swipeBigPx || 0) || Number(layout.swipeBigPx || recState.swipeBigPx || 120) || 120);
     try {
