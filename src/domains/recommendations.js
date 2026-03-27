@@ -1029,6 +1029,20 @@ async function __ssRecoRenderForProduct(product) {
             return Math.max(0, viewport.scrollWidth - (viewport.scrollLeft + viewport.clientWidth));
         }
 
+        function isMobilePageNearBottom() {
+            try {
+                const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+                const scrollTop = window.scrollY || window.pageYOffset || document.documentElement?.scrollTop || 0;
+                const scrollHeight = Math.max(
+                    document.body?.scrollHeight || 0,
+                    document.documentElement?.scrollHeight || 0
+                );
+                return (scrollTop + viewportHeight) >= (scrollHeight - 280);
+            } catch {
+                return false;
+            }
+        }
+
         async function maybeLoadMore(force = false) {
             try {
                 const mobile = String(recState.device || "").toLowerCase() === "mobile";
@@ -1041,7 +1055,7 @@ async function __ssRecoRenderForProduct(product) {
                 const lastCardRect = lastCard?.getBoundingClientRect?.() || null;
                 const nearEndByPage = !!lastCardRect && (lastCardRect.top <= ((window.innerHeight || document.documentElement?.clientHeight || 0) + 240));
                 const nearEnd = mobile
-                    ? (force || nearEndByPage || totalCards < Math.max(4, visibleWindow * 2))
+                    ? (force || nearEndByPage || isMobilePageNearBottom() || totalCards < Math.max(4, visibleWindow * 2))
                     : (force || nearEndByIndex || nearEndByPixels);
                 if (!nearEnd) return;
                 let safety = 0;
@@ -1052,7 +1066,14 @@ async function __ssRecoRenderForProduct(product) {
                     const appended = appendItems(batch.items);
                     __ssRecoApplyLayout(recState, strip, recState.serverUi);
                     __ssRecoUpdateNav();
-                    if (appended > 0 || !recState.hasMore) break;
+                    if (!mobile && (appended > 0 || !recState.hasMore)) break;
+                    if (mobile) {
+                        if (!recState.hasMore) break;
+                        if (appended <= 0) break;
+                        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                        if (!isMobilePageNearBottom()) break;
+                        continue;
+                    }
                 }
             } catch { }
         }
@@ -1204,22 +1225,6 @@ async function __ssRecoRenderForProduct(product) {
             }, { passive: true });
         }
 
-        if (String(recState.device || "").toLowerCase() === "mobile") {
-            try {
-                if (typeof window.__ssRecoMobilePageLoadHandler === 'function') {
-                    window.removeEventListener('scroll', window.__ssRecoMobilePageLoadHandler);
-                    window.removeEventListener('resize', window.__ssRecoMobilePageLoadHandler);
-                }
-            } catch { }
-            const mobilePageLoadHandler = () => {
-                try { maybeLoadMore(); } catch { }
-            };
-            window.__ssRecoMobilePageLoadHandler = mobilePageLoadHandler;
-            window.addEventListener('scroll', mobilePageLoadHandler, { passive: true });
-            window.addEventListener('resize', mobilePageLoadHandler, { passive: true });
-            setTimeout(mobilePageLoadHandler, 180);
-        }
-
         try {
             if (typeof window.__ssRecoResizeHandler === 'function') {
                 window.removeEventListener('resize', window.__ssRecoResizeHandler);
@@ -1230,6 +1235,17 @@ async function __ssRecoRenderForProduct(product) {
                 window.__ssRecoMobilePageLoadHandler = null;
             }
         } catch {}
+
+        if (String(recState.device || "").toLowerCase() === "mobile") {
+            const mobilePageLoadHandler = () => {
+                try { maybeLoadMore(); } catch { }
+            };
+            window.__ssRecoMobilePageLoadHandler = mobilePageLoadHandler;
+            window.addEventListener('scroll', mobilePageLoadHandler, { passive: true });
+            window.addEventListener('resize', mobilePageLoadHandler, { passive: true });
+            setTimeout(mobilePageLoadHandler, 180);
+        }
+
         window.__ssRecoResizeHandler = () => {
             recState.device = (window.innerWidth <= 720) ? "mobile" : "desktop";
             __ssRecoApplyLayout(recState, strip, recState.serverUi);
