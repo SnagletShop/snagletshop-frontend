@@ -1112,6 +1112,16 @@ html.dark-mode .ss-ci-btn {
 
 /* recommendations */
 .RecoSection {
+    --reco-card-bg: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02)), linear-gradient(180deg, #1a1a1d, #141417);
+    --reco-card-border: rgba(255, 255, 255, .09);
+    --reco-card-border-hover: rgba(255, 255, 255, .16);
+    --reco-card-shadow: 0 12px 24px rgba(0, 0, 0, .22);
+    --reco-card-shadow-hover: 0 16px 30px rgba(0, 0, 0, .28);
+    --reco-media-bg: rgba(255, 255, 255, .05);
+    --reco-media-border: rgba(255, 255, 255, .08);
+    --reco-text: var(--Default_Text_Colour, #f5f5f7);
+    --reco-muted: rgba(255, 255, 255, .62);
+    --reco-price: #ff6a4a;
     margin-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, .12);
     padding-top: 18px;
@@ -1121,6 +1131,19 @@ html.dark-mode .ss-ci-btn {
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
+}
+
+html.dark-mode .RecoSection {
+    --reco-card-bg: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .018)), linear-gradient(180deg, #18181b, #121214);
+    --reco-card-border: rgba(255, 255, 255, .1);
+    --reco-card-border-hover: rgba(255, 255, 255, .18);
+    --reco-card-shadow: 0 14px 28px rgba(0, 0, 0, .26);
+    --reco-card-shadow-hover: 0 18px 34px rgba(0, 0, 0, .32);
+    --reco-media-bg: rgba(255, 255, 255, .055);
+    --reco-media-border: rgba(255, 255, 255, .09);
+    --reco-text: rgba(255, 255, 255, .96);
+    --reco-muted: rgba(255, 255, 255, .64);
+    --reco-price: #ff7250;
 }
 
 .RecoHead {
@@ -1211,15 +1234,15 @@ html.dark-mode .ss-ci-btn {
 
 @media (max-width: 720px) {
     .RecoStrip {
-        --reco-gap: 11px;
-        grid-auto-columns: minmax(188px, calc((100% - (var(--reco-gap) * 1.15)) / 1.82));
+        --reco-gap: 10px;
+        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
     }
 }
 
 @media (max-width: 460px) {
     .RecoStrip {
-        --reco-gap: 10px;
-        grid-auto-columns: calc((100% - (var(--reco-gap) * 1.15)) / 1.72);
+        --reco-gap: 9px;
+        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
     }
 
     .RecoNav {
@@ -1242,9 +1265,9 @@ html.dark-mode .ss-ci-btn {
     gap: 10px;
     padding: 10px;
     border-radius: 14px;
-    border: 1px solid #e6e8ec;
-    background: linear-gradient(180deg, #ffffff, #fcfcfd);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, .08);
+    border: 1px solid var(--reco-card-border);
+    background: var(--reco-card-bg);
+    box-shadow: var(--reco-card-shadow);
     cursor: pointer;
     overflow: hidden;
     transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
@@ -1252,8 +1275,8 @@ html.dark-mode .ss-ci-btn {
 
 .RecoCard:hover {
     transform: translateY(-2px);
-    border-color: #d7dbe2;
-    box-shadow: 0 14px 28px rgba(0, 0, 0, .11);
+    border-color: var(--reco-card-border-hover);
+    box-shadow: var(--reco-card-shadow-hover);
 }
 
 .RecoCard:focus-visible {
@@ -1267,8 +1290,8 @@ html.dark-mode .ss-ci-btn {
     overflow: hidden;
     box-sizing: border-box;
     border-radius: 10px;
-    background: #f5f5f7;
-    border: 1px solid #eceef2;
+    background: var(--reco-media-bg);
+    border: 1px solid var(--reco-media-border);
 }
 
 .RecoMedia::after {
@@ -1280,7 +1303,7 @@ html.dark-mode .ss-ci-btn {
     aspect-ratio: 0.96 / 1;
     object-fit: cover;
     display: block;
-    background: #f5f5f7
+    background: var(--reco-media-bg)
 }
 
 .RecoBody {
@@ -1330,14 +1353,14 @@ html.dark-mode .ss-ci-btn {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #7a828f;
+    color: var(--reco-muted);
 }
 
 .RecoName {
     font-size: 14px;
     line-height: 1.4;
     font-weight: 500;
-    color: #22252b;
+    color: var(--reco-text);
     letter-spacing: 0;
     min-height: 2.8em;
     overflow: hidden;
@@ -1370,24 +1393,24 @@ html.dark-mode .ss-ci-btn {
     font-size: 21px !important;
     line-height: 1.1;
     font-weight: 700;
-    color: #ff2941;
+    color: var(--reco-price);
 }
 
 .RecoPrice .ss-price-old {
     order: 2;
     font-size: 14px;
-    color: #8b93a1;
+    color: var(--reco-muted);
     text-decoration-thickness: 1px;
 }
 
 .RecoPrice .ss-price-new {
     order: 1;
     font-size: 21px;
-    color: #ff2941;
+    color: var(--reco-price);
 }
 
 .RecoPriceOff {
-    color: #ff2941;
+    color: var(--reco-price);
     font-size: 14px;
     font-weight: 500;
 }
@@ -1405,32 +1428,32 @@ html.dark-mode .ss-ci-btn {
     font-weight: 700;
     padding: 5px 8px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, .75);
-    background: rgba(255, 255, 255, .96);
-    color: #2b2f36;
-    box-shadow: 0 4px 10px rgba(15, 23, 42, .08);
+    border: 1px solid rgba(255, 255, 255, .16);
+    background: rgba(15, 23, 42, .55);
+    color: #f8fafc;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .18);
 }
 
 .RecoBadge--best {
-    background: #fff7ec;
-    border-color: #ffd9a8;
-    color: #b45309;
+    background: rgba(255, 145, 0, .16);
+    border-color: rgba(255, 180, 77, .32);
+    color: #ffbe6b;
 }
 
 .RecoBadge--deal {
-    background: #fff1f2;
-    border-color: #fecdd3;
-    color: #e11d48;
+    background: rgba(255, 90, 54, .18);
+    border-color: rgba(255, 120, 92, .34);
+    color: #ff9f88;
 }
 
 .RecoBadge--soft {
-    background: #eef4ff;
-    border-color: #cfe0ff;
-    color: #2563eb;
+    background: rgba(59, 130, 246, .16);
+    border-color: rgba(96, 165, 250, .3);
+    color: #93c5fd;
 }
 
 .RecoHint {
-    color: #7a828f;
+    color: var(--reco-muted);
     font-size: 12px;
     line-height: 1.25;
     white-space: nowrap;
@@ -1439,7 +1462,7 @@ html.dark-mode .ss-ci-btn {
 }
 
 .RecoHint--deal {
-    color: #ff2941;
+    color: var(--reco-price);
 }
 
 .RecoDiscountBadge {
@@ -1478,10 +1501,15 @@ html.dark-mode .ss-ci-btn {
 }
 
 @media (max-width: 680px) {
+    .RecoStrip {
+        --reco-gap: 10px;
+        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
+    }
+
     .RecoCard {
         border-radius: 13px;
-        padding: 8px;
-        gap: 9px;
+        padding: 7px;
+        gap: 8px;
     }
 
     .RecoImg {
@@ -1499,9 +1527,13 @@ html.dark-mode .ss-ci-btn {
     }
 
     .RecoPromoTag {
-        min-width: 40px;
+        min-width: 38px;
         height: 18px;
-        padding: 0 6px;
+        padding: 0 5px;
+    }
+
+    .RecoPromoText {
+        display: none;
     }
 
     .RecoPrice {
@@ -1522,6 +1554,10 @@ html.dark-mode .ss-ci-btn {
         font-size: 11px;
     }
 
+    .RecoHint {
+        display: none;
+    }
+
     .RecoBadge {
         top: 8px;
     }
@@ -1534,9 +1570,14 @@ html.dark-mode .ss-ci-btn {
 }
 
 @media (max-width: 460px) {
+    .RecoStrip {
+        --reco-gap: 9px;
+        grid-auto-columns: calc((100% - var(--reco-gap)) / 2);
+    }
+
     .RecoCard {
-        padding: 8px;
-        gap: 10px;
+        padding: 6px;
+        gap: 8px;
     }
 
     .RecoImg {
@@ -1544,9 +1585,9 @@ html.dark-mode .ss-ci-btn {
     }
 
     .RecoName {
-        font-size: 13px;
+        font-size: 12px;
         line-height: 1.4;
-        min-height: 2.8em;
+        min-height: 2.7em;
     }
 
     .RecoMeta {
@@ -1554,11 +1595,23 @@ html.dark-mode .ss-ci-btn {
     }
 
     .RecoPrice {
-        font-size: 16px !important;
+        font-size: 15px !important;
     }
 
     .RecoPrice .ss-price-new {
-        font-size: 16px;
+        font-size: 15px;
+    }
+
+    .RecoPrice .ss-price-old,
+    .RecoPriceOff {
+        font-size: 10px;
+    }
+
+    .RecoBadge {
+        top: 6px;
+        left: 6px;
+        font-size: 9px;
+        padding: 4px 7px;
     }
 }
 
