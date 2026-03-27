@@ -1061,6 +1061,15 @@ async function __ssRecoRenderForProduct(product) {
 
         async function handleNav(dir) {
             try {
+                const mobile = String(recState.device || "").toLowerCase() === "mobile";
+                if (mobile) {
+                    const idx = currentIndex();
+                    const nextIndex = Math.max(0, idx + (dir * navStepItems()));
+                    scrollToIndex(nextIndex, "smooth");
+                    if (dir > 0) await maybeLoadMore();
+                    setTimeout(() => { try { __ssRecoUpdateNav(); } catch { } }, 220);
+                    return;
+                }
                 await ensureAdvanceCapacity(dir);
                 const idx = currentIndex();
                 const nextIndex = Math.max(0, idx + (dir * navStepItems()));
@@ -1124,15 +1133,13 @@ async function __ssRecoRenderForProduct(product) {
 
                 const dir = dx < 0 ? 1 : -1;
                 const idx = currentIndex();
-                const visibleWindow = getVisibleWindowCount();
-                const stride = getStride();
 
                 if (adx >= recState.swipeBigPx) {
-                    viewport.scrollBy({ left: dir * stride * visibleWindow, behavior: "smooth" });
+                    scrollToIndex(idx + dir * getVisibleWindowCount(), "smooth");
                 } else {
-                    viewport.scrollBy({ left: dir * stride, behavior: "smooth" });
+                    scrollToIndex(idx + dir, "smooth");
                 }
-                await maybeLoadMore(true);
+                await maybeLoadMore();
             } catch { }
         }, { passive: true });
 
@@ -1141,6 +1148,10 @@ async function __ssRecoRenderForProduct(product) {
             let scrollTicking = false;
             viewport.addEventListener('scroll', () => {
                 __ssRecoUpdateNav();
+                if (String(recState.device || "").toLowerCase() === "mobile") {
+                    maybeLoadMore();
+                    return;
+                }
                 if (scrollTicking) return;
                 scrollTicking = true;
                 requestAnimationFrame(() => {
