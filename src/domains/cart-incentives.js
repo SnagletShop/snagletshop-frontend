@@ -513,49 +513,94 @@ function __ssBindCartIncentives(rootEl) {
     return window.GoToProductPage(...data);
   }, { passive:false });
 }
-  async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
+async function __ssValidateRecoDiscountsInBasketBestEffort(entries) {
   try {
+    const liveBasket = (() => {
+      try {
+        if (window.basket && typeof window.basket === 'object') return window.basket;
+      } catch {}
+      try {
+        if (typeof basket !== 'undefined' && basket && typeof basket === 'object') return basket;
+      } catch {}
+      return null;
+    })();
+    const storePut = window.__SS_RECOMMENDATIONS__?.__ssRecoDiscountStorePut;
     const toks=[]; const byTok = new Map();
-    for (const [k, it] of (entries || [])) { const tok = String(it?.recoDiscountToken || '').trim(); if (!tok) continue; const pid = String(it?.productId || '').trim(); toks.push({ token:tok, productId:pid }); byTok.set(tok, { key:k, item:it }); }
+    for (const [k, it] of (entries || [])) {
+      const liveIt = (liveBasket && liveBasket[k] && typeof liveBasket[k] === 'object') ? liveBasket[k] : null;
+      const tok = String(liveIt?.recoDiscountToken || it?.recoDiscountToken || '').trim();
+      if (!tok) continue;
+      const pid = String(liveIt?.productId || it?.productId || '').trim();
+      toks.push({ token:tok, productId:pid });
+      byTok.set(tok, { key:k, item:it, liveItem:liveIt });
+    }
     if (!toks.length) return;
     const data = await window.__SS_RECOMMENDATIONS__.quoteRecommendations(toks);
     if (!data || !data.ok || !Array.isArray(data.quotes)) return;
     let changed = false;
     for (const q of data.quotes) {
       const tok = String(q?.token || '').trim(); if (!tok) continue; const ref = byTok.get(tok); if (!ref) continue;
+      const targets = [ref.liveItem, ref.item].filter((it, idx, arr) => it && arr.indexOf(it) === idx);
+      if (!targets.length) continue;
       if (!q.valid) {
-        const it=ref.item; const orig=Number(it?.unitPriceOriginalEUR || 0) || 0;
-        if (orig > 0 && ((Number(it?.price || 0) > 0 && Number(it?.price || 0) < orig) || (Number(it?.unitPriceEUR || 0) > 0 && Number(it?.unitPriceEUR || 0) < orig))) {
-          it.price = orig;
-          it.unitPriceEUR = orig;
-          delete it.recoDiscountToken;
-          delete it.recoDiscountPct;
-          delete it.unitPriceOriginalEUR;
-          changed = true;
+        for (const it of targets) {
+          const orig=Number(it?.unitPriceOriginalEUR || 0) || 0;
+          if (orig > 0 && ((Number(it?.price || 0) > 0 && Number(it?.price || 0) < orig) || (Number(it?.unitPriceEUR || 0) > 0 && Number(it?.unitPriceEUR || 0) < orig))) {
+            it.price = orig;
+            it.unitPriceEUR = orig;
+            delete it.recoDiscountToken;
+            delete it.recoDiscountPct;
+            delete it.unitPriceOriginalEUR;
+            changed = true;
+          }
         }
         continue;
       }
       if (q.valid) {
-        const it=ref.item;
-        const nextPct=Number(q.discountPct || it?.recoDiscountPct || 0) || 0;
-        const nextOrig = Number(q?.originalPrice || it?.unitPriceOriginalEUR || it?.unitPriceEUR || it?.price || 0) || 0;
+        const basis = targets[0];
+        const nextPct=Number(q.discountPct || basis?.recoDiscountPct || 0) || 0;
+        const nextOrig = Number(q?.originalPrice || basis?.unitPriceOriginalEUR || basis?.unitPriceEUR || basis?.price || 0) || 0;
         const nextDisc=(Number(q.discountedPrice || 0) || 0) || ((nextOrig > 0 && nextPct > 0) ? Math.round((nextOrig * (1 - nextPct / 100)) * 100) / 100 : 0);
         if (nextDisc > 0) {
-          const currentPrice = Number(it?.price || 0) || 0;
-          const currentUnit = Number(it?.unitPriceEUR || 0) || 0;
-          const currentOrig = Number(it?.unitPriceOriginalEUR || 0) || 0;
-          if (nextOrig > 0) it.unitPriceOriginalEUR = nextOrig;
-          else if (!(currentOrig > 0)) it.unitPriceOriginalEUR = Math.max(currentPrice, currentUnit, nextDisc);
-          if (currentPrice !== nextDisc || currentUnit !== nextDisc || Number(it?.recoDiscountPct || 0) !== nextPct || (nextOrig > 0 && currentOrig !== nextOrig)) {
-            it.price = nextDisc;
-            it.unitPriceEUR = nextDisc;
-            if (nextPct > 0) it.recoDiscountPct = nextPct;
-            changed = true;
+          try {
+            if (typeof storePut === 'function') {
+              storePut(tok, {
+                productId: String(q?.productId || basis?.productId || '').trim(),
+                discountPct: nextPct,
+                discountedPrice: nextDisc,
+                originalPrice: nextOrig
+              });
+            }
+          } catch {}
+          for (const it of targets) {
+            const currentPrice = Number(it?.price || 0) || 0;
+            const currentUnit = Number(it?.unitPriceEUR || 0) || 0;
+            const currentOrig = Number(it?.unitPriceOriginalEUR || 0) || 0;
+            if (nextOrig > 0) it.unitPriceOriginalEUR = nextOrig;
+            else if (!(currentOrig > 0)) it.unitPriceOriginalEUR = Math.max(currentPrice, currentUnit, nextDisc);
+            if (currentPrice !== nextDisc || currentUnit !== nextDisc || Number(it?.recoDiscountPct || 0) !== nextPct || (nextOrig > 0 && currentOrig !== nextOrig)) {
+              it.price = nextDisc;
+              it.unitPriceEUR = nextDisc;
+              if (nextPct > 0) it.recoDiscountPct = nextPct;
+              changed = true;
+            }
           }
         }
       }
     }
-    if (changed) { try { persistBasket('reco_quote_revalidated'); } catch {} try { updateBasket(); } catch {} }
+    if (changed) {
+      if (liveBasket && typeof persistBasket === 'function') {
+        try { persistBasket('reco_quote_revalidated'); } catch {}
+      } else {
+        try {
+          const snapshot = {};
+          for (const [k, it] of (entries || [])) snapshot[k] = it;
+          localStorage.setItem('basket', JSON.stringify(snapshot));
+          localStorage.setItem('basket_rev', String(Date.now()));
+        } catch {}
+      }
+      try { updateBasket(); } catch {}
+    }
   } catch {}
 }
 try {
