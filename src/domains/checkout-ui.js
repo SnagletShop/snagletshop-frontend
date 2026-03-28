@@ -78,6 +78,49 @@ function getStripeAppearanceForModal() {
     };
 }
 
+const __SS_STRIPE_PAYMENT_REQUEST_SUPPORTED_COUNTRIES__ = new Set([
+    'AE', 'AT', 'AU', 'BE', 'BG', 'BR', 'CA', 'CH', 'CI', 'CR', 'CY', 'CZ', 'DE', 'DK', 'DO', 'EE',
+    'ES', 'FI', 'FR', 'GB', 'GI', 'GR', 'GT', 'HK', 'HR', 'HU', 'ID', 'IE', 'IN', 'IT', 'JP', 'LI',
+    'LT', 'LU', 'LV', 'MT', 'MX', 'MY', 'NL', 'NO', 'NZ', 'PE', 'PH', 'PL', 'PT', 'RO', 'SE', 'SG',
+    'SI', 'SK', 'SN', 'TH', 'TT', 'US', 'UY'
+]);
+
+const __SS_STRIPE_PAYMENT_REQUEST_COUNTRY_FALLBACKS__ = {
+    AS: 'US',
+    GU: 'US',
+    MP: 'US',
+    PR: 'US',
+    UM: 'US',
+    VI: 'US',
+    AX: 'FI',
+    GG: 'GB',
+    IM: 'GB',
+    JE: 'GB',
+    BQ: 'NL',
+    CW: 'NL',
+    SX: 'NL',
+    GF: 'FR',
+    GP: 'FR',
+    MQ: 'FR',
+    RE: 'FR',
+    YT: 'FR',
+    PM: 'FR',
+    BL: 'FR',
+    MF: 'FR'
+};
+
+function __ssIsIso2Country(value) {
+    return /^[A-Z]{2}$/.test(String(value || '').trim().toUpperCase());
+}
+
+function __ssNormalizeWalletPaymentRequestCountry(value) {
+    const cc = String(value || '').trim().toUpperCase();
+    if (__SS_STRIPE_PAYMENT_REQUEST_SUPPORTED_COUNTRIES__.has(cc)) return cc;
+    const mapped = String(__SS_STRIPE_PAYMENT_REQUEST_COUNTRY_FALLBACKS__[cc] || '').trim().toUpperCase();
+    if (mapped && __SS_STRIPE_PAYMENT_REQUEST_SUPPORTED_COUNTRIES__.has(mapped)) return mapped;
+    return 'US';
+}
+
 // ----------------------------------------------------------------------------
 // Checkout draft persistence (name/address/email only)
 // Stripe Payment Element details cannot be persisted.
@@ -177,7 +220,8 @@ async function setupWalletPaymentRequestButton({
 
     resetWalletPaymentRequestButton();
 
-    const cc = _isIso2Country(country) ? String(country).trim().toUpperCase() : "US";
+    const actualCountry = __ssIsIso2Country(country) ? String(country).trim().toUpperCase() : "US";
+    const cc = __ssNormalizeWalletPaymentRequestCountry(actualCountry);
     const cur = String(currency || "EUR").trim().toLowerCase();
     const amt = parseInt(amountCents, 10);
 
@@ -246,7 +290,7 @@ async function setupWalletPaymentRequestButton({
                 if (!userDetails.name) userDetails.name = parts[0] || "";
                 if (!userDetails.surname) userDetails.surname = parts.slice(1).join(" ") || "";
             }
-            if (!userDetails.country) userDetails.country = cc;
+            if (!userDetails.country) userDetails.country = actualCountry;
 
             // Attach customer details to the SAME order/PI (your pipeline)
             try {
