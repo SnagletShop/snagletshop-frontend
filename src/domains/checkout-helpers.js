@@ -106,6 +106,8 @@
     const hasRecoToken = currentFullCart.some((item) => String(item?.recoDiscountToken || '').trim());
     if (!hasRecoToken) return { fullCart: currentFullCart, stripeCart: currentStripeCart };
 
+    const rt = window.__SS_CHECKOUT_RUNTIME__ || {};
+
     try {
       const basketObj = JSON.parse(localStorage.getItem('basket') || '{}');
       const entries = Object.entries((basketObj && typeof basketObj === 'object') ? basketObj : {});
@@ -114,30 +116,173 @@
       }
     } catch {}
 
+    let nextFullCart = currentFullCart;
+    let nextStripeCart = currentStripeCart;
     try {
-      const rt = window.__SS_CHECKOUT_RUNTIME__ || {};
-      const nextFullCart = (typeof rt.buildFullCartFromBasket === 'function')
+      nextFullCart = (typeof rt.buildFullCartFromBasket === 'function')
         ? (rt.buildFullCartFromBasket() || [])
         : currentFullCart;
-      const nextStripeCart = (typeof rt.buildStripeSafeCart === 'function')
+      nextStripeCart = (typeof rt.buildStripeSafeCart === 'function')
         ? (rt.buildStripeSafeCart({}, nextFullCart) || [])
         : currentStripeCart;
-      return { fullCart: nextFullCart, stripeCart: nextStripeCart };
     } catch {
-      return { fullCart: currentFullCart, stripeCart: currentStripeCart };
+      nextFullCart = currentFullCart;
+      nextStripeCart = currentStripeCart;
     }
+
+    try {
+      const quoteRecommendations = window.__SS_RECOMMENDATIONS__?.quoteRecommendations;
+      const storePut = window.__SS_RECOMMENDATIONS__?.__ssRecoDiscountStorePut;
+      if (typeof quoteRecommendations === 'function') {
+        const reqItems = [];
+        const fullByToken = new Map();
+        for (const item of (nextFullCart || [])) {
+          const tok = String(item?.recoDiscountToken || '').trim();
+          if (!tok) continue;
+          const pid = String(item?.productId || item?.pid || item?.id || '').trim();
+          reqItems.push({ token: tok, productId: pid });
+          const bucket = fullByToken.get(tok) || [];
+          bucket.push(item);
+          fullByToken.set(tok, bucket);
+        }
+
+        if (reqItems.length) {
+          const quoteData = await quoteRecommendations(reqItems);
+          if (quoteData && quoteData.ok && Array.isArray(quoteData.quotes)) {
+            const quotesByToken = new Map();
+            for (const q of quoteData.quotes) {
+              const tok = String(q?.token || '').trim();
+              if (tok) quotesByToken.set(tok, q);
+            }
+
+            let changed = false;
+            for (const [tok, items] of fullByToken.entries()) {
+              const q = quotesByToken.get(tok);
+              if (!q) continue;
+
+              if (!q.valid) {
+                for (const item of items) {
+                  const orig = Number(item?.unitPriceOriginalEUR || item?.originalUnitPriceEUR || item?.price || item?.unitPriceEUR || 0) || 0;
+                  if (orig > 0) {
+                    item.price = orig;
+                    item.unitPriceEUR = orig;
+                  }
+                  delete item.recoDiscountToken;
+                  delete item.recoDiscountPct;
+                  delete item.unitPriceOriginalEUR;
+                  delete item.originalUnitPriceEUR;
+                  changed = true;
+                }
+                continue;
+              }
+
+              const nextPct = Number(q?.discountPct || 0) || 0;
+              const nextOrig = Number(q?.originalPrice || 0) || 0;
+              const nextDisc = Number(q?.discountedPrice || 0) || 0;
+              if (!(nextOrig > 0) || !(nextDisc > 0)) continue;
+
+              try {
+                if (typeof storePut === 'function') {
+                  storePut(tok, {
+                    productId: String(q?.productId || items[0]?.productId || '').trim(),
+                    discountPct: nextPct,
+                    discountedPrice: nextDisc,
+                    originalPrice: nextOrig
+                  });
+                }
+              } catch {}
+
+              for (const item of items) {
+                if (
+                  Number(item?.price || 0) !== nextDisc ||
+                  Number(item?.unitPriceEUR || 0) !== nextDisc ||
+                  Number(item?.recoDiscountPct || 0) !== nextPct ||
+                  Number(item?.unitPriceOriginalEUR || item?.originalUnitPriceEUR || 0) !== nextOrig
+                ) {
+                  item.price = nextDisc;
+                  item.unitPriceEUR = nextDisc;
+                  item.recoDiscountPct = nextPct;
+                  item.unitPriceOriginalEUR = nextOrig;
+                  item.originalUnitPriceEUR = nextOrig;
+                  changed = true;
+                }
+              }
+            }
+
+            if (changed) {
+              try {
+                const rawBasket = JSON.parse(localStorage.getItem('basket') || '{}');
+                let basketChanged = false;
+                for (const it of Object.values((rawBasket && typeof rawBasket === 'object') ? rawBasket : {})) {
+                  const tok = String(it?.recoDiscountToken || '').trim();
+                  if (!tok) continue;
+                  const q = quotesByToken.get(tok);
+                  if (!q) continue;
+                  if (!q.valid) {
+                    const orig = Number(it?.unitPriceOriginalEUR || it?.originalUnitPriceEUR || it?.price || it?.unitPriceEUR || 0) || 0;
+                    if (orig > 0) {
+                      it.price = orig;
+                      it.unitPriceEUR = orig;
+                    }
+                    delete it.recoDiscountToken;
+                    delete it.recoDiscountPct;
+                    delete it.unitPriceOriginalEUR;
+                    delete it.originalUnitPriceEUR;
+                    basketChanged = true;
+                    continue;
+                  }
+
+                  const nextPct = Number(q?.discountPct || 0) || 0;
+                  const nextOrig = Number(q?.originalPrice || 0) || 0;
+                  const nextDisc = Number(q?.discountedPrice || 0) || 0;
+                  if (!(nextOrig > 0) || !(nextDisc > 0)) continue;
+                  if (
+                    Number(it?.price || 0) !== nextDisc ||
+                    Number(it?.unitPriceEUR || 0) !== nextDisc ||
+                    Number(it?.recoDiscountPct || 0) !== nextPct ||
+                    Number(it?.unitPriceOriginalEUR || it?.originalUnitPriceEUR || 0) !== nextOrig
+                  ) {
+                    it.price = nextDisc;
+                    it.unitPriceEUR = nextDisc;
+                    it.recoDiscountPct = nextPct;
+                    it.unitPriceOriginalEUR = nextOrig;
+                    it.originalUnitPriceEUR = nextOrig;
+                    basketChanged = true;
+                  }
+                }
+                if (basketChanged) {
+                  localStorage.setItem('basket', JSON.stringify(rawBasket));
+                  localStorage.setItem('basket_rev', String(Date.now()));
+                  try { window.basket = rawBasket; } catch {}
+                  try { basket = rawBasket; } catch {}
+                }
+              } catch {}
+
+              nextStripeCart = (typeof rt.buildStripeSafeCart === 'function')
+                ? (rt.buildStripeSafeCart({}, nextFullCart) || nextStripeCart)
+                : nextStripeCart;
+            }
+          }
+        }
+      }
+    } catch {}
+
+    return { fullCart: nextFullCart, stripeCart: nextStripeCart };
   }
 
   async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
     let syncedFullCart = Array.isArray(fullCart) ? fullCart : [];
     let syncedStripeCart = Array.isArray(stripeCart) ? stripeCart : [];
+    let forcedClientAmountCents = 0;
     for (let attempt = 1; attempt <= 2; attempt++) {
       await window.preloadSettingsData();
 
       ({ fullCart: syncedFullCart, stripeCart: syncedStripeCart } = await syncRecoDiscountsForCheckout(syncedFullCart, syncedStripeCart));
 
-      const expectedClientTotal = computeExpectedClientTotalForServer(syncedFullCart, currency, country);
-      const clientAmountCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
+      const computedExpectedClientTotal = computeExpectedClientTotalForServer(syncedFullCart, currency, country);
+      const computedClientAmountCents = Math.round((Number(computedExpectedClientTotal || 0) || 0) * 100);
+      const clientAmountCents = (forcedClientAmountCents > 0) ? forcedClientAmountCents : computedClientAmountCents;
+      const expectedClientTotal = clientAmountCents / 100;
       const order_summary = buildStripeOrderSummary(syncedStripeCart);
 
       const fxFetchedAt =
@@ -206,6 +351,12 @@
       }
 
       if (status === 409 && attempt === 1 && (code === "FX_SNAPSHOT_NOT_FOUND" || code === "TOTAL_MISMATCH")) {
+        if (code === "TOTAL_MISMATCH") {
+          const serverAmountCents = Number(data?.serverAmountCents || 0) || 0;
+          if (serverAmountCents > 0) {
+            forcedClientAmountCents = serverAmountCents;
+          }
+        }
         await refreshFxSnapshotForCheckoutRetry();
         continue;
       }
