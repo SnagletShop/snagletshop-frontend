@@ -502,6 +502,14 @@ async function initStripePaymentUI(selectedCurrency) {
     // analytics: begin checkout
     try {
         const items = buildAnalyticsCartItems(stripeCart);
+        const safeSelectedCurrency = _getSafeCheckoutCurrency(getSelectedCountryCode(), selectedCurrency);
+        if (safeSelectedCurrency && safeSelectedCurrency !== String(selectedCurrency || "").toUpperCase()) {
+            selectedCurrency = safeSelectedCurrency;
+            try { window.selectedCurrency = safeSelectedCurrency; } catch { }
+            try { localStorage.setItem("selectedCurrency", safeSelectedCurrency); } catch { }
+            try { if (typeof syncCurrencySelects === "function") syncCurrencySelects(safeSelectedCurrency); } catch { }
+            try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
+        }
         sendAnalyticsEvent('begin_checkout', {
             extra: {
                 currency: selectedCurrency,
@@ -550,6 +558,14 @@ async function initStripePaymentUI(selectedCurrency) {
     });
 
     const { clientSecret, paymentIntentId, amountCents, currency, checkoutId, checkoutPublicToken } = data;
+    const resolvedCurrency = String(currency || selectedCurrency || 'EUR').trim().toUpperCase();
+    if (resolvedCurrency && resolvedCurrency !== String(selectedCurrency || '').trim().toUpperCase()) {
+        selectedCurrency = resolvedCurrency;
+        try { window.selectedCurrency = resolvedCurrency; } catch { }
+        try { localStorage.setItem('selectedCurrency', resolvedCurrency); } catch { }
+        try { if (typeof syncCurrencySelects === "function") syncCurrencySelects(resolvedCurrency); } catch { }
+        try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
+    }
 
     // 0-value carts: finalize immediately without Stripe UI
     if (data && data.free) {
@@ -854,14 +870,23 @@ function _getDetectedCountry() {
     return _getPreferredCountry();
 }
 
+function _getSafeCheckoutCurrency(countryCode, preferredCurrency) {
+    const cc = String(countryCode || "").trim().toUpperCase();
+    const requested = String(preferredCurrency || "").trim().toUpperCase();
+    if (requested === "UAH" || cc === "UA") return "EUR";
+    return requested || String((window.countryToCurrency || {})?.[cc] || "EUR").trim().toUpperCase() || "EUR";
+}
+
 function _syncSelectedCurrencyFromCountry(countryCode) {
     if (localStorage.getItem("manualCurrencyOverride")) return;
     const cc = String(countryCode || "").toUpperCase();
-    const next = (window.countryToCurrency || {})?.[cc];
+    const next = _getSafeCheckoutCurrency(cc, (window.countryToCurrency || {})?.[cc]);
     if (next) {
         selectedCurrency = next;
+        try { window.selectedCurrency = next; } catch { }
         localStorage.setItem("selectedCurrency", selectedCurrency);
         if (typeof syncCurrencySelects === "function") syncCurrencySelects(selectedCurrency);
+        try { if (typeof updateAllPrices === "function") updateAllPrices(); } catch { }
     }
 }
 
