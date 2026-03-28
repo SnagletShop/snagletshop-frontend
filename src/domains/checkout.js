@@ -783,6 +783,7 @@ async function initStripePaymentUI(selectedCurrency) {
         amountCents,
         currency: (currency || selectedCurrency),
         country,
+        walletCountry: _normalizeWalletPaymentRequestCountry(country),
         orderId: null,
         paymentIntentId
     });
@@ -875,6 +876,47 @@ function _getSafeCheckoutCurrency(countryCode, preferredCurrency) {
     const requested = String(preferredCurrency || "").trim().toUpperCase();
     if (requested === "UAH" || cc === "UA") return "EUR";
     return requested || String((window.countryToCurrency || {})?.[cc] || "EUR").trim().toUpperCase() || "EUR";
+}
+
+function _normalizeWalletPaymentRequestCountry(countryCode) {
+    try {
+        const runtimeNormalize = window.__SS_CHECKOUT_UI__?.normalizeWalletPaymentRequestCountry;
+        if (typeof runtimeNormalize === "function") return runtimeNormalize(countryCode);
+    } catch { }
+
+    const cc = String(countryCode || "").trim().toUpperCase();
+    const supported = new Set([
+        "AE", "AT", "AU", "BE", "BG", "BR", "CA", "CH", "CI", "CR", "CY", "CZ", "DE", "DK", "DO", "EE",
+        "ES", "FI", "FR", "GB", "GI", "GR", "GT", "HK", "HR", "HU", "ID", "IE", "IN", "IT", "JP", "LI",
+        "LT", "LU", "LV", "MT", "MX", "MY", "NL", "NO", "NZ", "PE", "PH", "PL", "PT", "RO", "SE", "SG",
+        "SI", "SK", "SN", "TH", "TT", "US", "UY"
+    ]);
+    if (supported.has(cc)) return cc;
+    const fallbackMap = {
+        AS: "US",
+        GU: "US",
+        MP: "US",
+        PR: "US",
+        UM: "US",
+        VI: "US",
+        AX: "FI",
+        GG: "GB",
+        IM: "GB",
+        JE: "GB",
+        BQ: "NL",
+        CW: "NL",
+        SX: "NL",
+        GF: "FR",
+        GP: "FR",
+        MQ: "FR",
+        RE: "FR",
+        YT: "FR",
+        PM: "FR",
+        BL: "FR",
+        MF: "FR"
+    };
+    const mapped = String(fallbackMap[cc] || "").trim().toUpperCase();
+    return supported.has(mapped) ? mapped : "US";
 }
 
 function _syncSelectedCurrencyFromCountry(countryCode) {

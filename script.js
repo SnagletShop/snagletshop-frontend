@@ -956,7 +956,61 @@ function _getStripeAppearance(){
         }
       };
 }
-async function setupWalletPaymentRequestButton(){ return window.__SS_CHECKOUT_UI__?.setupWalletPaymentRequestButton?.apply(this, arguments); }
+function __ssNormalizeLegacyWalletPaymentRequestCountry(value){
+    try {
+        const runtimeNormalize = window.__SS_CHECKOUT_UI__?.normalizeWalletPaymentRequestCountry;
+        if (typeof runtimeNormalize === 'function') return runtimeNormalize(value);
+    } catch {}
+    const cc = String(value || '').trim().toUpperCase();
+    const supported = new Set([
+        'AE', 'AT', 'AU', 'BE', 'BG', 'BR', 'CA', 'CH', 'CI', 'CR', 'CY', 'CZ', 'DE', 'DK', 'DO', 'EE',
+        'ES', 'FI', 'FR', 'GB', 'GI', 'GR', 'GT', 'HK', 'HR', 'HU', 'ID', 'IE', 'IN', 'IT', 'JP', 'LI',
+        'LT', 'LU', 'LV', 'MT', 'MX', 'MY', 'NL', 'NO', 'NZ', 'PE', 'PH', 'PL', 'PT', 'RO', 'SE', 'SG',
+        'SI', 'SK', 'SN', 'TH', 'TT', 'US', 'UY'
+    ]);
+    if (supported.has(cc)) return cc;
+    switch (cc) {
+        case 'AS':
+        case 'GU':
+        case 'MP':
+        case 'PR':
+        case 'UM':
+        case 'VI':
+            return 'US';
+        case 'AX':
+            return 'FI';
+        case 'GG':
+        case 'IM':
+        case 'JE':
+            return 'GB';
+        case 'BQ':
+        case 'CW':
+        case 'SX':
+            return 'NL';
+        case 'GF':
+        case 'GP':
+        case 'MQ':
+        case 'RE':
+        case 'YT':
+        case 'PM':
+        case 'BL':
+        case 'MF':
+            return 'FR';
+        default:
+            return 'US';
+    }
+}
+async function setupWalletPaymentRequestButton(){
+    const impl = window.__SS_CHECKOUT_UI__?.setupWalletPaymentRequestButton;
+    if (typeof impl !== 'function') return;
+    const first = arguments[0];
+    if (first && typeof first === 'object' && !Array.isArray(first)) {
+        const opts = { ...first };
+        opts.walletCountry = __ssNormalizeLegacyWalletPaymentRequestCountry(opts.walletCountry || opts.country);
+        return impl.call(this, opts);
+    }
+    return impl.apply(this, arguments);
+}
 const PAYMENT_SUCCESS_FLAG_KEY = "payment_successful";
 const PAYMENT_SUCCESS_RELOAD_KEY = "payment_successful_reload_on_ok";
 function __clearLegacyPaymentSuccessLocalStorage(){ return window.__SS_MODAL_RUNTIME__?.clearLegacyPaymentSuccessLocalStorage?.({ flagKey:PAYMENT_SUCCESS_FLAG_KEY, reloadKey:PAYMENT_SUCCESS_RELOAD_KEY }); }

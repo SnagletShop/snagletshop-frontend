@@ -212,6 +212,7 @@ async function setupWalletPaymentRequestButton({
     amountCents,
     currency,
     country,
+    walletCountry,
     orderId,
     paymentIntentId
 }) {
@@ -221,7 +222,10 @@ async function setupWalletPaymentRequestButton({
     resetWalletPaymentRequestButton();
 
     const actualCountry = __ssIsIso2Country(country) ? String(country).trim().toUpperCase() : "US";
-    const cc = __ssNormalizeWalletPaymentRequestCountry(actualCountry);
+    const requestedWalletCountry = __ssIsIso2Country(walletCountry)
+        ? String(walletCountry).trim().toUpperCase()
+        : actualCountry;
+    const cc = __ssNormalizeWalletPaymentRequestCountry(requestedWalletCountry);
     const cur = String(currency || "EUR").trim().toLowerCase();
     const amt = parseInt(amountCents, 10);
 
@@ -491,6 +495,7 @@ function showPaymentSuccessOverlay(message) {
 
   window.__SS_CHECKOUT_UI__ = {
     getStripeAppearanceForModal,
+    normalizeWalletPaymentRequestCountry: __ssNormalizeWalletPaymentRequestCountry,
     setupWalletPaymentRequestButton,
     showPaymentSuccessOverlay
   };
