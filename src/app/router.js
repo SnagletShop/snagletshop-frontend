@@ -304,6 +304,17 @@
   }
 
   function defaultDispatch(state) {
+    try {
+      const action = String(state?.action || '').trim();
+      if (['loadProducts', 'GoToProductPage', 'GoToCart', 'GoToSettings', 'searchQuery'].includes(action)
+        && typeof window.__ssEndProductViewSessionSend === 'function') {
+        window.__ssEndProductViewSessionSend(
+          window.__ssCurrentViewedProductName,
+          window.__ssCurrentViewedProductLink,
+          { endReason: `route:${action}` }
+        );
+      }
+    } catch {}
     switch (state?.action) {
       case 'loadProducts': {
         const [category, sort, order] = state.data || [];

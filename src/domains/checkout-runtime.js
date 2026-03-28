@@ -104,7 +104,14 @@
         price: resolveUnitPrice(i),
         selectedOption: i.selectedOption || '',
         selectedOptions: normalizeSelectedOptions(i.selectedOptions || []),
-        recoDiscountToken: i.recoDiscountToken || ''
+        recoDiscountToken: i.recoDiscountToken || '',
+        recoTrackingToken: i.recoTrackingToken || '',
+        recoWidgetId: i.recoWidgetId || '',
+        recoSourceProductId: i.recoSourceProductId || '',
+        recoPosition: i.recoPosition ?? null,
+        smartRecoToken: i.smartRecoToken || '',
+        smartRecoItemKey: i.smartRecoItemKey || '',
+        smartRecoPlacement: i.smartRecoPlacement || ''
       };
       if (i.productId) out.productId = String(i.productId).trim();
       if (i.productLink) out.productLink = String(i.productLink).trim();
@@ -124,6 +131,13 @@
           out.unitPriceOriginalEUR = it?.unitPriceOriginalEUR ?? it?.originalUnitPriceEUR ?? it?.compareAtPriceEUR ?? it?.originalPriceEUR ?? it?.originalPriceEur ?? 0;
         }
         if (out.originalUnitPriceEUR == null) out.originalUnitPriceEUR = out.unitPriceOriginalEUR ?? 0;
+        out.recoTrackingToken = it?.recoTrackingToken || '';
+        out.recoWidgetId = it?.recoWidgetId || '';
+        out.recoSourceProductId = it?.recoSourceProductId || '';
+        out.recoPosition = it?.recoPosition ?? null;
+        out.smartRecoToken = it?.smartRecoToken || '';
+        out.smartRecoItemKey = it?.smartRecoItemKey || '';
+        out.smartRecoPlacement = it?.smartRecoPlacement || '';
         out.unitPriceEUR = resolveUnitPrice(out);
         out.price = out.unitPriceEUR;
         return out;
@@ -195,8 +209,15 @@
           quantity: qty,
           unitPriceEUR: unitEUR,
           recoDiscountToken: String(item?.recoDiscountToken || '').slice(0, 500),
+          recoTrackingToken: String(item?.recoTrackingToken || '').slice(0, 500),
+          recoWidgetId: String(item?.recoWidgetId || '').slice(0, 160),
+          recoSourceProductId: String(item?.recoSourceProductId || '').slice(0, 160),
+          recoPosition: item?.recoPosition == null ? null : (Number(item?.recoPosition || 0) || 0),
           recoDiscountPct: Number(item?.recoDiscountPct || 0) || 0,
           unitPriceOriginalEUR: (item?.unitPriceOriginalEUR != null ? Number(item.unitPriceOriginalEUR) : null),
+          smartRecoToken: String(item?.smartRecoToken || '').slice(0, 500),
+          smartRecoItemKey: String(item?.smartRecoItemKey || '').slice(0, 240),
+          smartRecoPlacement: String(item?.smartRecoPlacement || '').slice(0, 120),
           price: unitEUR,
           expectedPurchasePrice: expected,
           productLink: String(item?.productLink || prod?.productLink || 'N/A').slice(0, 800),

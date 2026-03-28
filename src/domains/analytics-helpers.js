@@ -3,6 +3,8 @@
   const UID_KEY = '__ss_ab_uid_v1';
   const CLICK_TOKEN_KEY = '__ss_recent_click_token_v1';
   const VIEW_SESSION_KEY = '__ss_view_session_v1';
+  const ANALYTICS_SESSION_KEY = '__ss_analytics_session_v1';
+  const LAST_PURCHASE_TRACK_KEY = '__ss_last_purchase_track_v1';
 
   function __ssAbFNV1a32(str) {
     let h = 0x811c9dc5;
@@ -17,6 +19,14 @@
   function __ssToken(prefix = 't') {
     const rand = Math.random().toString(36).slice(2, 10);
     return `${prefix}_${Date.now().toString(36)}_${rand}`;
+  }
+
+  function __ssSafeSessionStorage() {
+    try { return window.sessionStorage; } catch { return null; }
+  }
+
+  function __ssSafeLocalStorage() {
+    try { return window.localStorage; } catch { return null; }
   }
 
   function __ssAbGetUid() {
@@ -140,36 +150,100 @@
     return token;
   }
 
-  function __ssConsumeRecentClickToken(maxAgeMs = 15000) {
+  function __ssConsumeRecentClickToken(maxAgeMs = 15_000) {
     try {
       const raw = localStorage.getItem(CLICK_TOKEN_KEY);
       if (!raw) return null;
       localStorage.removeItem(CLICK_TOKEN_KEY);
       const parsed = JSON.parse(raw);
       if (!parsed || !parsed.token) return null;
-      if ((Date.now() - Number(parsed.at || 0)) > Number(maxAgeMs || 15000)) return null;
+      if ((Date.now() - Number(parsed.at || 0)) > Number(maxAgeMs || 15_000)) return null;
       return String(parsed.token);
     } catch {
       return null;
     }
   }
 
+  function __ssGetAnalyticsSessionId() {
+    try {
+      const winValue = String(window.__ssSessionId || '').trim();
+      if (winValue) return winValue;
+    } catch {}
+
+    try {
+      if (typeof window.__ssRecoGetSessionId === 'function') {
+        const shared = String(window.__ssRecoGetSessionId() || '').trim();
+        if (shared) {
+          window.__ssSessionId = shared;
+          return shared;
+        }
+      }
+    } catch {}
+
+    try {
+      const store = __ssSafeSessionStorage();
+      const existing = String(store?.getItem?.(ANALYTICS_SESSION_KEY) || '').trim();
+      if (existing) {
+        window.__ssSessionId = existing;
+        return existing;
+      }
+      const next = __ssToken('sess');
+      store?.setItem?.(ANALYTICS_SESSION_KEY, next);
+      window.__ssSessionId = next;
+      return next;
+    } catch {}
+
+    const fallback = __ssToken('sess');
+    try { window.__ssSessionId = fallback; } catch {}
+    return fallback;
+  }
+
+  function __ssGetCurrentAnalyticsPath() {
+    try {
+      return String(window.location?.pathname || '/').trim() || '/';
+    } catch {
+      return '/';
+    }
+  }
+
+  function __ssBuildAnalyticsProductObject(productName, override = {}) {
+    return {
+      productId: String(override.productId || override.pid || override.id || '').trim(),
+      name: String(productName || override.productName || override.name || '').trim(),
+      category: String(override.category || '').trim(),
+      productLink: String(override.productLink || override.link || '').trim(),
+      priceEUR: Number(override.priceEUR || 0) || 0,
+      currency: String(override.currency || '').trim().toUpperCase(),
+    };
+  }
+
   function __ssStartProductViewSession() {
     const session = { token: __ssToken('view'), at: Date.now() };
-    try { sessionStorage.setItem(VIEW_SESSION_KEY, JSON.stringify(session)); } catch {}
+    try { __ssSafeSessionStorage()?.setItem?.(VIEW_SESSION_KEY, JSON.stringify(session)); } catch {}
     window.__ssCurrentViewToken = session.token;
     return session.token;
   }
 
-  function __ssEndProductViewSessionSend(productName, productLink) {
+  function __ssEndProductViewSessionSend(productName, productLink, extra = {}) {
     try {
-      const token = window.__ssCurrentViewToken || null;
+      const store = __ssSafeSessionStorage();
+      const raw = store?.getItem?.(VIEW_SESSION_KEY) || '';
+      const parsed = raw ? JSON.parse(raw) : null;
+      const token = String(window.__ssCurrentViewToken || parsed?.token || '').trim();
+      const startedAt = Number(parsed?.at || 0) || 0;
       window.__ssCurrentViewToken = null;
-      try { sessionStorage.removeItem(VIEW_SESSION_KEY); } catch {}
+      try { store?.removeItem?.(VIEW_SESSION_KEY); } catch {}
       if (!token) return false;
-      return sendAnalyticsEvent('product_view_end', {
-        ...buildAnalyticsProductPayload(productName, { productLink }),
-        extra: { viewToken: token }
+      const durationMs = Math.max(1, Date.now() - startedAt);
+      return sendAnalyticsEvent('product_time', {
+        ...buildAnalyticsProductPayload(productName || window.__ssCurrentViewedProductName, {
+          productLink: productLink || window.__ssCurrentViewedProductLink || '',
+        }),
+        extra: {
+          viewToken: token,
+          durationMs,
+          ...((extra && typeof extra === 'object') ? extra : {}),
+        }
       }, { keepalive: true });
     } catch {
       return false;
@@ -177,24 +251,34 @@
   }
 
   function buildAnalyticsProductPayload(productName, override = {}) {
+    const product = __ssBuildAnalyticsProductObject(productName, override);
     const payload = {
-      productName: String(productName || override.productName || '').trim(),
-      priceEUR: Number(override.priceEUR || 0) || 0,
-      productLink: String(override.productLink || '').trim(),
+      product,
+      productName: product.name,
+      priceEUR: product.priceEUR,
+      productLink: product.productLink,
       extra: { ...(override.extra || {}) }
     };
-    if (override.productId) payload.productId = String(override.productId);
-    if (override.currency) payload.currency = String(override.currency);
+    if (product.productId) payload.productId = product.productId;
+    if (product.category) payload.category = product.category;
+    if (product.currency) payload.currency = product.currency;
     return payload;
   }
 
   async function sendAnalyticsEvent(type, payload = {}, options = {}) {
+    const product = (payload?.product && typeof payload.product === 'object')
+      ? payload.product
+      : __ssBuildAnalyticsProductObject(payload?.productName || payload?.name, payload || {});
     const body = {
       type: String(type || '').trim(),
       at: new Date().toISOString(),
       uid: __ssAbGetUid(),
+      sessionId: __ssGetAnalyticsSessionId(),
+      path: __ssGetCurrentAnalyticsPath(),
+      websiteOrigin: window.location?.origin || '',
       experiments: __ssGetExperiments(),
-      ...payload
+      ...payload,
+      product,
     };
     try {
       return await window.__SS_ANALYTICS__?.sendEvent?.(body, options);
@@ -202,6 +286,139 @@
       return false;
     }
   }
+
+  function __ssReadBasketSnapshot() {
+    try {
+      if (typeof window.readBasket === 'function') {
+        const basket = window.readBasket() || {};
+        if (basket && typeof basket === 'object') return basket;
+      }
+    } catch {}
+    try {
+      return JSON.parse(localStorage.getItem('basket') || '{}') || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function __ssNormalizePurchaseItems(basket) {
+    return Object.values(basket || {}).map((item) => ({
+      productId: String(item?.productId || item?.pid || item?.id || '').trim(),
+      name: String(item?.displayName || item?.name || '').trim(),
+      productLink: String(item?.productLink || '').trim(),
+      quantity: Math.max(1, Number(item?.quantity ?? item?.qty ?? 1) || 1),
+      unitPriceEUR: Number(item?.price ?? item?.unitPriceEUR ?? 0) || 0,
+      unitPriceOriginalEUR: item?.unitPriceOriginalEUR == null ? null : (Number(item?.unitPriceOriginalEUR || 0) || 0),
+      recoDiscountToken: String(item?.recoDiscountToken || '').trim(),
+      recoDiscountPct: Number(item?.recoDiscountPct || 0) || 0,
+      recoTrackingToken: String(item?.recoTrackingToken || '').trim(),
+      recoWidgetId: String(item?.recoWidgetId || '').trim(),
+      recoSourceProductId: String(item?.recoSourceProductId || '').trim(),
+      recoPosition: item?.recoPosition == null ? null : (Number(item?.recoPosition || 0) || 0),
+      smartRecoToken: String(item?.smartRecoToken || '').trim(),
+      smartRecoItemKey: String(item?.smartRecoItemKey || item?.productId || item?.name || '').trim(),
+      smartRecoPlacement: String(item?.smartRecoPlacement || '').trim(),
+    })).filter((item) => item.name || item.productId || item.productLink);
+  }
+
+  function __ssShouldSkipTrackedPurchase(key) {
+    if (!key) return false;
+    try {
+      const store = __ssSafeSessionStorage();
+      const raw = store?.getItem?.(LAST_PURCHASE_TRACK_KEY) || '';
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (String(parsed?.key || '') !== String(key)) return false;
+      return (Date.now() - Number(parsed?.at || 0)) < (10 * 60 * 1000);
+    } catch {
+      return false;
+    }
+  }
+
+  function __ssRememberTrackedPurchase(key) {
+    if (!key) return;
+    try {
+      __ssSafeSessionStorage()?.setItem?.(LAST_PURCHASE_TRACK_KEY, JSON.stringify({ key: String(key), at: Date.now() }));
+    } catch {}
+  }
+
+  async function __ssTrackSuccessfulPurchase(meta = {}, basketOverride = null) {
+    try {
+      const orderId = String(meta?.orderId || window.latestOrderId || '').trim();
+      const paymentIntentId = String(meta?.paymentIntentId || window.latestPaymentIntentId || '').trim();
+      const dedupeKey = orderId || paymentIntentId || '';
+      if (__ssShouldSkipTrackedPurchase(dedupeKey)) return false;
+
+      const basket = (basketOverride && typeof basketOverride === 'object') ? basketOverride : __ssReadBasketSnapshot();
+      const items = __ssNormalizePurchaseItems(basket);
+      if (!items.length) return false;
+
+      const currency = String(localStorage.getItem('selectedCurrency') || window.selectedCurrency || meta?.currency || 'EUR').trim().toUpperCase();
+      const totalEUR = items.reduce((sum, item) => sum + ((Number(item?.unitPriceEUR || 0) || 0) * (Number(item?.quantity || 1) || 1)), 0);
+      const sessionId = __ssGetAnalyticsSessionId();
+
+      __ssRememberTrackedPurchase(dedupeKey);
+
+      await Promise.allSettled([
+        sendAnalyticsEvent('purchase', {
+          extra: {
+            orderId: orderId || null,
+            paymentIntentId: paymentIntentId || null,
+            currency,
+            itemsCount: items.length,
+            totalEUR: Math.round(totalEUR * 100) / 100,
+            items: items.map((item) => ({
+              productId: item.productId || null,
+              name: item.name || '',
+              productLink: item.productLink || '',
+              quantity: item.quantity,
+              unitPriceEUR: item.unitPriceEUR,
+              unitPriceOriginalEUR: item.unitPriceOriginalEUR,
+              recoDiscountPct: item.recoDiscountPct || 0,
+              smartRecoPlacement: item.smartRecoPlacement || '',
+            })),
+          }
+        }, { keepalive: true }),
+        ...items
+          .filter((item) => item.recoTrackingToken && item.productId)
+          .map((item) => window.__SS_RECOMMENDATIONS_SERVICE__?.sendRecoEvent?.({
+            type: 'purchase',
+            widgetId: item.recoWidgetId || '',
+            token: item.recoTrackingToken,
+            sourceProductId: item.recoSourceProductId || '',
+            targetProductId: item.productId,
+            position: item.recoPosition || 0,
+            sessionId,
+            extra: {
+              orderId: orderId || null,
+              paymentIntentId: paymentIntentId || null,
+            }
+          })),
+        ...items
+          .filter((item) => item.smartRecoToken && item.smartRecoItemKey)
+          .map((item) => window.__SS_RECOMMENDATIONS_SERVICE__?.sendSmartRecoEvent?.({
+            type: 'purchase',
+            token: item.smartRecoToken,
+            itemKey: item.smartRecoItemKey,
+            sessionId,
+          })),
+      ]);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  (function __ssBindAnalyticsLifecycle() {
+    if (window.__ssAnalyticsLifecycleBound === true) return;
+    window.__ssAnalyticsLifecycleBound = true;
+    window.addEventListener('pagehide', () => {
+      try {
+        __ssEndProductViewSessionSend(window.__ssCurrentViewedProductName, window.__ssCurrentViewedProductLink, { endReason: 'pagehide' });
+      } catch {}
+    }, { capture: true });
+  })();
 
   window.__SS_ANALYTICS_HELPERS__ = {
     __ssAbFNV1a32,
@@ -220,8 +437,10 @@
     __ssToken,
     __ssRememberClickToken,
     __ssConsumeRecentClickToken,
+    __ssGetAnalyticsSessionId,
     __ssStartProductViewSession,
     __ssEndProductViewSessionSend,
+    __ssTrackSuccessfulPurchase,
     buildAnalyticsProductPayload
   };
 })(window, document);

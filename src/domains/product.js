@@ -383,13 +383,23 @@ function updateImage(direction = "none") {
 
 function GoToProductPage(productName, productPrice, productDescription) {
     console.log("Product clicked:", productName);
-    // analytics: product opened (viewer)
+    try {
+        __ssEndProductViewSessionSend(window.__ssCurrentViewedProductName, window.__ssCurrentViewedProductLink, { endReason: "navigate_product" });
+    } catch { }
+    // analytics: product click + product opened (viewer)
+    const __ssClickToken2 = __ssToken("click");
+    try { __ssRememberClickToken(__ssClickToken2); } catch { }
+    try {
+        sendAnalyticsEvent('product_click', {
+            ...buildAnalyticsProductPayload(productName, { priceEUR: productPrice }),
+            extra: { clickToken: __ssClickToken2 }
+        });
+    } catch { }
     const __ssViewToken = __ssStartProductViewSession();
     window.__ssCurrentViewedProductName = productName;
     // Initialize safely; the concrete product object is resolved further below.
     // NOTE: do not reference `product` here (TDZ) because it's declared later.
     window.__ssCurrentViewedProductLink = (typeof productLink !== 'undefined' ? productLink : '');
-    const __ssClickToken2 = __ssConsumeRecentClickToken();
     sendAnalyticsEvent('product_open', {
         ...buildAnalyticsProductPayload(productName, { priceEUR: productPrice }),
         extra: { viewToken: __ssViewToken, clickToken: __ssClickToken2 }

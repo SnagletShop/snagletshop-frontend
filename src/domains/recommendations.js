@@ -290,7 +290,16 @@ function __ssRecoMaybeAttributeAddToCart(targetProductId) {
             sessionId: click.sessionId
         });
 
-        const out = { discountToken: String(click.discountToken || ""), discountPct: Number(click.discountPct || 0), discountedPrice: Number(click.discountedPrice || 0) };
+        const out = {
+            discountToken: String(click.discountToken || ""),
+            discountPct: Number(click.discountPct || 0),
+            discountedPrice: Number(click.discountedPrice || 0),
+            recoTrackingToken: String(click.token || ""),
+            recoWidgetId: String(click.widgetId || ""),
+            recoSourceProductId: String(click.sourceProductId || ""),
+            recoPosition: (click.position == null) ? null : (Number(click.position || 0) || 0),
+            recoSessionId: String(click.sessionId || "")
+        };
 
         // one attribution per click
         __ssRecoClearRecentClick();

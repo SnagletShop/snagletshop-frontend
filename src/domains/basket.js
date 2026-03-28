@@ -155,6 +155,25 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
 
     let __recoDisc = null;
     try { __recoDisc = __ssRecoMaybeAttributeAddToCart(productIdForCart); } catch { }
+    let __smartRecoMeta = null;
+    try {
+        const pending = window.__ssPendingSmartRecoAddMeta || null;
+        const age = Date.now() - Number(pending?.ts || 0);
+        const pendingPid = String(pending?.productId || "").trim();
+        const pendingName = String(pending?.name || "").trim();
+        const matches = (pendingPid && productIdForCart && pendingPid === String(productIdForCart).trim())
+            || (pendingName && pendingName === String(productName || "").trim());
+        if (pending && matches && age >= 0 && age <= (30 * 60 * 1000)) {
+            __smartRecoMeta = {
+                smartRecoToken: String(pending?.token || "").trim(),
+                smartRecoItemKey: String(pending?.itemKey || productIdForCart || productName || "").trim(),
+                smartRecoPlacement: String(pending?.placement || "").trim()
+            };
+            delete window.__ssPendingSmartRecoAddMeta;
+        } else if (pending && age > (30 * 60 * 1000)) {
+            delete window.__ssPendingSmartRecoAddMeta;
+        }
+    } catch { }
 
 
     __ssEnsureABUiStyles();
@@ -253,6 +272,16 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
                 basket[key].recoDiscountToken = String(__recoDisc.discountToken || "");
                 basket[key].recoDiscountPct = Number(__recoDisc.discountPct || 0);
                 basket[key].unitPriceOriginalEUR = Number(__origPriceBeforeReco);
+                if (String(__recoDisc.recoTrackingToken || "")) basket[key].recoTrackingToken = String(__recoDisc.recoTrackingToken || "");
+                if (String(__recoDisc.recoWidgetId || "")) basket[key].recoWidgetId = String(__recoDisc.recoWidgetId || "");
+                if (String(__recoDisc.recoSourceProductId || "")) basket[key].recoSourceProductId = String(__recoDisc.recoSourceProductId || "");
+                if (__recoDisc.recoPosition != null) basket[key].recoPosition = Number(__recoDisc.recoPosition || 0) || 0;
+                if (String(__recoDisc.recoSessionId || "")) basket[key].recoSessionId = String(__recoDisc.recoSessionId || "");
+            }
+            if (__smartRecoMeta && String(__smartRecoMeta.smartRecoToken || "")) {
+                basket[key].smartRecoToken = String(__smartRecoMeta.smartRecoToken || "");
+                basket[key].smartRecoItemKey = String(__smartRecoMeta.smartRecoItemKey || "");
+                basket[key].smartRecoPlacement = String(__smartRecoMeta.smartRecoPlacement || "");
             }
         } else {
             basket[key] = {
@@ -269,7 +298,21 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
                 description: productDescription,
                 ...(selectedOption ? { selectedOption } : {}),
                 ...(selOpts.length ? { selectedOptions: selOpts } : {}),
-                ...((__recoDisc && String(__recoDisc.discountToken || "")) ? { recoDiscountToken: String(__recoDisc.discountToken || ""), recoDiscountPct: Number(__recoDisc.discountPct || 0), unitPriceOriginalEUR: Number(__origPriceBeforeReco) } : {})
+                ...((__recoDisc && String(__recoDisc.discountToken || "")) ? {
+                    recoDiscountToken: String(__recoDisc.discountToken || ""),
+                    recoDiscountPct: Number(__recoDisc.discountPct || 0),
+                    unitPriceOriginalEUR: Number(__origPriceBeforeReco),
+                    recoTrackingToken: String(__recoDisc.recoTrackingToken || ""),
+                    recoWidgetId: String(__recoDisc.recoWidgetId || ""),
+                    recoSourceProductId: String(__recoDisc.recoSourceProductId || ""),
+                    recoPosition: (__recoDisc.recoPosition == null) ? null : (Number(__recoDisc.recoPosition || 0) || 0),
+                    recoSessionId: String(__recoDisc.recoSessionId || "")
+                } : {}),
+                ...((__smartRecoMeta && String(__smartRecoMeta.smartRecoToken || "")) ? {
+                    smartRecoToken: String(__smartRecoMeta.smartRecoToken || ""),
+                    smartRecoItemKey: String(__smartRecoMeta.smartRecoItemKey || ""),
+                    smartRecoPlacement: String(__smartRecoMeta.smartRecoPlacement || "")
+                } : {})
             };
         }
 

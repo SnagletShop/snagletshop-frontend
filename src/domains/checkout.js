@@ -176,6 +176,20 @@ function __ssHandleSuccessfulCheckoutUi() {
         orderPublicToken: window.latestOrderPublicToken || null,
         orderStatusUrl: window.latestOrderStatusUrl || null
     };
+    let basketSnapshot = null;
+    try {
+        basketSnapshot = (typeof readBasket === "function")
+            ? (readBasket() || {})
+            : (() => { try { return JSON.parse(localStorage.getItem("basket") || "{}"); } catch { return {}; } })();
+    } catch { }
+
+    try {
+        window.__SS_ANALYTICS_HELPERS__?.__ssTrackSuccessfulPurchase?.({
+            orderId: orderSnapshot.orderId || null,
+            paymentIntentId: window.latestPaymentIntentId || null,
+            currency: localStorage.getItem("selectedCurrency") || window.selectedCurrency || "EUR"
+        }, basketSnapshot || {});
+    } catch { }
 
     try { clearPaymentPendingFlag(); } catch { }
     try { clearBasketCompletely(); } catch { }
@@ -456,8 +470,15 @@ async function initStripePaymentUI(selectedCurrency) {
             selectedOption: String(it?.selectedOption || ''),
             selectedOptions: normSel(it?.selectedOptions || []),
             recoDiscountToken: String(it?.recoDiscountToken || it?.discountToken || ''),
+            recoTrackingToken: String(it?.recoTrackingToken || ''),
+            recoWidgetId: String(it?.recoWidgetId || ''),
+            recoSourceProductId: String(it?.recoSourceProductId || ''),
+            recoPosition: it?.recoPosition == null ? null : (Number(it?.recoPosition || 0) || 0),
             recoDiscountPct: Number(it?.recoDiscountPct || 0) || 0,
-            unitPriceOriginalEUR: Number(it?.unitPriceOriginalEUR || 0) || 0
+            unitPriceOriginalEUR: Number(it?.unitPriceOriginalEUR || 0) || 0,
+            smartRecoToken: String(it?.smartRecoToken || ''),
+            smartRecoItemKey: String(it?.smartRecoItemKey || ''),
+            smartRecoPlacement: String(it?.smartRecoPlacement || '')
         }));
 
         fullCart = fc;

@@ -52,6 +52,19 @@
       orderPublicToken: window.latestOrderPublicToken || null,
       orderStatusUrl: window.latestOrderStatusUrl || null
     };
+    let basketSnapshot = null;
+    try {
+      basketSnapshot = (typeof ctx.readBasket === 'function')
+        ? (ctx.readBasket() || {})
+        : (() => { try { return JSON.parse(localStorage.getItem('basket') || '{}'); } catch { return {}; } })();
+    } catch {}
+    try {
+      window.__SS_ANALYTICS_HELPERS__?.__ssTrackSuccessfulPurchase?.({
+        orderId: orderSnapshot.orderId || null,
+        paymentIntentId: window.latestPaymentIntentId || null,
+        currency: localStorage.getItem('selectedCurrency') || window.selectedCurrency || 'EUR'
+      }, basketSnapshot || {});
+    } catch {}
     api.clearPaymentPendingFlag(ctx);
     try { ctx.clearBasketCompletely?.(); } catch {}
     try { ctx.clearCheckoutDraft?.(); } catch {}

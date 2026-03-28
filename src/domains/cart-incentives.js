@@ -408,6 +408,19 @@ function __ssBindCartIncentives(rootEl) {
       const livePrice = __ssResolveAddonPriceEUR(p);
       const groups = __ssExtractOptionGroups(p); const sel = __ssDefaultSelectedOptions(groups); __ssSmartRecoEvent('add_to_cart', String(p.productId || p.name || name));
       try {
+        const smartToken = String(window.__ssSmartCartRecoCache?.token || '').trim();
+        if (smartToken) {
+          window.__ssPendingSmartRecoAddMeta = {
+            token: smartToken,
+            itemKey: String(p.productId || p.name || name || '').trim(),
+            productId: String(p.productId || '').trim(),
+            name: String(p.name || name || '').trim(),
+            placement: 'cart_topup_v1',
+            ts: Date.now()
+          };
+        }
+      } catch {}
+      try {
         const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim(); const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0; const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0; const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
         if (tok && pct > 0 && disc > 0) {
           __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:tok, discountPct:pct, originalPrice:(orig > 0 ? orig : livePrice || Number(p.price || 0) || 0), discountedPrice:disc, productId:String(p.productId || '') });
@@ -434,6 +447,19 @@ function __ssBindCartIncentives(rootEl) {
     if (typeof window.navigate !== 'function' && typeof window.GoToProductPage !== 'function') return;
     e.preventDefault();
     const discount = (token && pct > 0 && disc > 0) ? { discountToken: token, discountPct: pct, discountedPrice: disc, originalPrice: (orig > 0 ? orig : Number(p?.price || 0) || disc) } : null;
+    try {
+      const smartToken = String(window.__ssSmartCartRecoCache?.token || '').trim();
+      if (smartToken) {
+        window.__ssPendingSmartRecoAddMeta = {
+          token: smartToken,
+          itemKey: String(p.productId || p.name || name || '').trim(),
+          productId: String(p.productId || '').trim(),
+          name: String(p.name || name || '').trim(),
+          placement: 'cart_topup_v1',
+          ts: Date.now()
+        };
+      }
+    } catch {}
     try {
       if (discount) {
         __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:token, discountPct:pct, originalPrice:(orig > 0 ? orig : Number(p?.price || 0) || disc), discountedPrice:disc, productId:String(p.productId || '') });
