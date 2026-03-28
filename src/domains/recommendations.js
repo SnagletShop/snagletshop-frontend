@@ -213,7 +213,7 @@ function __ssRecoGetLayout(device) {
     const mobile = String(device || "").toLowerCase() === "mobile";
     const cfg = __ssRecoGetLayoutSettings();
     const mobileMaxBatchesRaw = Number(cfg.mobileMaxBatches || 0) || 0;
-    const mobileMaxItemsRaw = Number(cfg.mobileMaxItems || 0) || 0;
+    const mobileMaxItemsRaw = Number(cfg.mobileMaxItems || cfg.desktopMaxItems || 0) || 0;
     const visibleCount = mobile
         ? Math.max(1, Number(cfg.mobileVisibleCount || 2) || 2)
         : __SS_RECO_DESKTOP_VISIBLE_TARGET__;
