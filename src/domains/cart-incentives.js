@@ -396,7 +396,7 @@ function __ssShouldHandleInAppNavigation(event) {
 }
 function __ssBindCartIncentives(rootEl) {
   const root = rootEl || document; if (!root || root.__ssCartIncBound) return; root.__ssCartIncBound = true;
-  root.addEventListener('click', (e) => {
+  root.addEventListener('click', async (e) => {
     const btn = e.target?.closest?.('[data-ss-quickadd]');
     if (btn) {
       e.preventDefault();
@@ -421,17 +421,44 @@ function __ssBindCartIncentives(rootEl) {
         }
       } catch {}
       let explicitRecoMeta = null;
+      let quotedOrig = 0;
+      let quotedDisc = 0;
+      let quotedPct = 0;
       try {
         const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim();
-        const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0;
-        const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0;
-        const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
-        if (tok && pct > 0 && disc > 0) {
+        const pctRaw = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0;
+        const origRaw = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0;
+        const discRaw = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
+        quotedOrig = (livePrice || Number(p.price || 0) || origRaw || discRaw || 0);
+        quotedPct = pctRaw;
+        quotedDisc = discRaw;
+        if (tok) {
+          try {
+            const quoteData = await window.__SS_RECOMMENDATIONS__?.quoteRecommendations?.([{ token: tok, productId: String(p.productId || '') }]);
+            const quote = Array.isArray(quoteData?.quotes) ? quoteData.quotes.find((q) => String(q?.token || '').trim() === tok) : null;
+            if (quote?.valid) {
+              quotedPct = Number(quote?.discountPct || quotedPct || 0) || 0;
+              quotedOrig = Number(quote?.originalPrice || quotedOrig || 0) || quotedOrig || 0;
+              quotedDisc = Number(quote?.discountedPrice || 0) || 0;
+              if (!(quotedDisc > 0) && quotedOrig > 0 && quotedPct > 0) {
+                quotedDisc = Math.round((quotedOrig * (1 - quotedPct / 100)) * 100) / 100;
+              }
+              try {
+                __ssRecoDiscountStorePut(tok, {
+                  productId: __ssIdNorm(p?.productId || ''),
+                  discountPct: quotedPct,
+                  discountedPrice: quotedDisc
+                });
+              } catch {}
+            }
+          } catch {}
+        }
+        if (tok && quotedPct > 0 && quotedDisc > 0) {
           explicitRecoMeta = {
             discountToken: tok,
-            discountPct: pct,
-            discountedPrice: disc,
-            originalPrice: (orig > 0 ? orig : livePrice || Number(p.price || 0) || disc),
+            discountPct: quotedPct,
+            discountedPrice: quotedDisc,
+            originalPrice: (quotedOrig > 0 ? quotedOrig : livePrice || Number(p.price || 0) || quotedDisc),
             recoTrackingToken: String(window.__ssSmartCartRecoCache?.token || '').trim(),
             recoWidgetId: 'smart_cart_addons_v1',
             recoSourceProductId: '',
@@ -441,7 +468,7 @@ function __ssBindCartIncentives(rootEl) {
         }
       } catch {}
       const buttonDisc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
-      const basePrice = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || livePrice || Number(p.price || 0) || buttonDisc || 0;
+      const basePrice = (quotedOrig > 0 ? quotedOrig : (livePrice || Number(p.price || 0) || buttonDisc || 0));
       addToCart(p.name, basePrice, p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null), explicitRecoMeta);
       try { updateBasket(); } catch {}
       return;
@@ -508,13 +535,18 @@ function __ssBindCartIncentives(rootEl) {
         }
         continue;
       }
-      if (q.valid && Number(q.discountedPrice || 0) > 0) {
-        const it=ref.item; const nextDisc=Number(q.discountedPrice || 0) || 0; const nextPct=Number(q.discountPct || it?.recoDiscountPct || 0) || 0;
+      if (q.valid) {
+        const it=ref.item;
+        const nextPct=Number(q.discountPct || it?.recoDiscountPct || 0) || 0;
+        const nextOrig = Number(q?.originalPrice || it?.unitPriceOriginalEUR || it?.unitPriceEUR || it?.price || 0) || 0;
+        const nextDisc=(Number(q.discountedPrice || 0) || 0) || ((nextOrig > 0 && nextPct > 0) ? Math.round((nextOrig * (1 - nextPct / 100)) * 100) / 100 : 0);
         if (nextDisc > 0) {
           const currentPrice = Number(it?.price || 0) || 0;
           const currentUnit = Number(it?.unitPriceEUR || 0) || 0;
-          if (!(Number(it?.unitPriceOriginalEUR || 0) > 0)) it.unitPriceOriginalEUR = Math.max(currentPrice, currentUnit, nextDisc);
-          if (currentPrice !== nextDisc || currentUnit !== nextDisc || Number(it?.recoDiscountPct || 0) !== nextPct) {
+          const currentOrig = Number(it?.unitPriceOriginalEUR || 0) || 0;
+          if (nextOrig > 0) it.unitPriceOriginalEUR = nextOrig;
+          else if (!(currentOrig > 0)) it.unitPriceOriginalEUR = Math.max(currentPrice, currentUnit, nextDisc);
+          if (currentPrice !== nextDisc || currentUnit !== nextDisc || Number(it?.recoDiscountPct || 0) !== nextPct || (nextOrig > 0 && currentOrig !== nextOrig)) {
             it.price = nextDisc;
             it.unitPriceEUR = nextDisc;
             if (nextPct > 0) it.recoDiscountPct = nextPct;

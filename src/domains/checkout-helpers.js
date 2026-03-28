@@ -100,13 +100,45 @@
     return clone;
   }
 
+  async function syncRecoDiscountsForCheckout(fullCart, stripeCart) {
+    const currentFullCart = Array.isArray(fullCart) ? fullCart : [];
+    const currentStripeCart = Array.isArray(stripeCart) ? stripeCart : [];
+    const hasRecoToken = currentFullCart.some((item) => String(item?.recoDiscountToken || '').trim());
+    if (!hasRecoToken) return { fullCart: currentFullCart, stripeCart: currentStripeCart };
+
+    try {
+      const basketObj = JSON.parse(localStorage.getItem('basket') || '{}');
+      const entries = Object.entries((basketObj && typeof basketObj === 'object') ? basketObj : {});
+      if (entries.length && typeof window.__ssValidateRecoDiscountsInBasketBestEffort === 'function') {
+        await window.__ssValidateRecoDiscountsInBasketBestEffort(entries);
+      }
+    } catch {}
+
+    try {
+      const rt = window.__SS_CHECKOUT_RUNTIME__ || {};
+      const nextFullCart = (typeof rt.buildFullCartFromBasket === 'function')
+        ? (rt.buildFullCartFromBasket() || [])
+        : currentFullCart;
+      const nextStripeCart = (typeof rt.buildStripeSafeCart === 'function')
+        ? (rt.buildStripeSafeCart({}, nextFullCart) || [])
+        : currentStripeCart;
+      return { fullCart: nextFullCart, stripeCart: nextStripeCart };
+    } catch {
+      return { fullCart: currentFullCart, stripeCart: currentStripeCart };
+    }
+  }
+
   async function createPaymentIntentOnServer({ websiteOrigin, currency, country, fullCart, stripeCart }) {
+    let syncedFullCart = Array.isArray(fullCart) ? fullCart : [];
+    let syncedStripeCart = Array.isArray(stripeCart) ? stripeCart : [];
     for (let attempt = 1; attempt <= 2; attempt++) {
       await window.preloadSettingsData();
 
-      const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
+      ({ fullCart: syncedFullCart, stripeCart: syncedStripeCart } = await syncRecoDiscountsForCheckout(syncedFullCart, syncedStripeCart));
+
+      const expectedClientTotal = computeExpectedClientTotalForServer(syncedFullCart, currency, country);
       const clientAmountCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
-      const order_summary = buildStripeOrderSummary(stripeCart);
+      const order_summary = buildStripeOrderSummary(syncedStripeCart);
 
       const fxFetchedAt =
         (typeof window.exchangeRatesFetchedAt !== "undefined" && Number(window.exchangeRatesFetchedAt) > 0)
@@ -121,8 +153,8 @@
         websiteOrigin,
         currency,
         country,
-        products: stripeCart,
-        productsFull: fullCart,
+        products: syncedStripeCart,
+        productsFull: syncedFullCart,
         expectedClientTotal,
         clientAmountCents,
         applyTariff: window.getApplyTariffFlag(),
@@ -293,6 +325,7 @@
 
   async function getOrCreatePaymentIntentRecycled({ websiteOrigin, currency, country, fullCart, stripeCart }) {
     await window.preloadSettingsData();
+    ({ fullCart, stripeCart } = await syncRecoDiscountsForCheckout(fullCart, stripeCart));
     const expectedClientTotal = computeExpectedClientTotalForServer(fullCart, currency, country);
     const expectedTotalCents = Math.round((Number(expectedClientTotal || 0) || 0) * 100);
     const publishableKeyFingerprint = _getStripePublishableKeyFingerprint();
