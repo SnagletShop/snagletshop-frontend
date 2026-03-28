@@ -131,7 +131,7 @@ function GoToCart() {
     removeSortContainer();
 }
 
-function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
+function addToCart(productName, price, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null, explicitRecoMeta = null) {
     // Prefer explicit productId passed by callers (PDP/recs) to avoid name/link matching failures.
     let productIdForCart = String(productIdHint || "").trim();
 
@@ -153,8 +153,43 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
 
     if (!productIdForCart) productIdForCart = null;
 
-    let __recoDisc = null;
-    try { __recoDisc = __ssRecoMaybeAttributeAddToCart(productIdForCart); } catch { }
+    let __explicitRecoDisc = null;
+    try {
+        const src = (explicitRecoMeta && typeof explicitRecoMeta === "object") ? explicitRecoMeta : null;
+        const tok = String(src?.discountToken || "").trim();
+        const pct = Math.max(0, Math.min(80, Number(src?.discountPct || 0) || 0));
+        const disc = Number(src?.discountedPrice || 0) || 0;
+        const orig = Number(src?.originalPrice || 0) || 0;
+        if (tok && pct > 0 && disc > 0) {
+            __explicitRecoDisc = {
+                discountToken: tok,
+                discountPct: pct,
+                discountedPrice: disc,
+                originalPrice: orig,
+                recoTrackingToken: String(src?.recoTrackingToken || "").trim(),
+                recoWidgetId: String(src?.recoWidgetId || "").trim(),
+                recoSourceProductId: String(src?.recoSourceProductId || "").trim(),
+                recoPosition: (src?.recoPosition == null) ? null : (Number(src?.recoPosition || 0) || 0),
+                recoSessionId: String(src?.recoSessionId || "").trim()
+            };
+        }
+    } catch {}
+
+    let __recoDisc = __explicitRecoDisc;
+    if (!__recoDisc) {
+        try { __recoDisc = __ssRecoMaybeAttributeAddToCart(productIdForCart); } catch { }
+    } else {
+        try {
+            __ssRecoSendEvent?.("add_to_cart", {
+                widgetId: __recoDisc.recoWidgetId,
+                token: __recoDisc.recoTrackingToken,
+                sourceProductId: __recoDisc.recoSourceProductId,
+                targetProductId: String(productIdForCart || "").trim(),
+                position: __recoDisc.recoPosition,
+                sessionId: __recoDisc.recoSessionId
+            });
+        } catch {}
+    }
     let __smartRecoMeta = null;
     try {
         const pending = window.__ssPendingSmartRecoAddMeta || null;
@@ -211,7 +246,9 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     const priceEUR = __ssResolveVariantPriceEUR(pRef, selOpts, selectedOption) || (parseFloat(price) || Number(price) || 0);
     price = priceEUR;
 
-    let __origPriceBeforeReco = price;
+    let __origPriceBeforeReco = (Number(__recoDisc?.originalPrice || 0) > 0)
+        ? Number(__recoDisc.originalPrice || 0)
+        : price;
     const __pdpRecoApplied = (productIdForCart && window.__ssRecoPdpDiscountAppliedFor && String(window.__ssRecoPdpDiscountAppliedFor) === String(productIdForCart));
     // If discount was applied on PDP (from reco click), ensure we keep the token/pct for cart + checkout
     // even if the recent-click attribution is missing/cleared.
@@ -248,7 +285,10 @@ function addToCart(productName, price, imageUrl, expectedPurchasePrice, productL
     if (__recoDisc && Number(__recoDisc.discountPct || 0) > 0 && String(__recoDisc.discountToken || "")) {
         const pct = Math.max(0, Math.min(80, Number(__recoDisc.discountPct || 0)));
         if (!__pdpRecoApplied) {
-            const discounted = Math.round((price * (1 - pct / 100)) * 100) / 100;
+            const explicitDiscounted = Number(__recoDisc.discountedPrice || 0) || 0;
+            const discounted = (explicitDiscounted > 0)
+                ? explicitDiscounted
+                : Math.round((price * (1 - pct / 100)) * 100) / 100;
             if (Number.isFinite(discounted) && discounted > 0) {
                 price = discounted;
             }

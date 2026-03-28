@@ -420,14 +420,29 @@ function __ssBindCartIncentives(rootEl) {
           };
         }
       } catch {}
+      let explicitRecoMeta = null;
       try {
-        const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim(); const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0; const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0; const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
+        const tok = String(btn.getAttribute('data-ss-quickadd-token') || '').trim();
+        const pct = Number(btn.getAttribute('data-ss-quickadd-pct') || 0) || 0;
+        const orig = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || 0;
+        const disc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
         if (tok && pct > 0 && disc > 0) {
-          __ssRecoSaveRecentClick({ widgetId:'smart_cart_addons_v1', token:String(__ssSmartCartRecoCache?.token || ''), sessionId:String(window.__ssSessionId || ''), sourceProductId:'', targetProductId:String(p.productId || ''), position:0, discountToken:tok, discountPct:pct, originalPrice:(orig > 0 ? orig : livePrice || Number(p.price || 0) || 0), discountedPrice:disc, productId:String(p.productId || '') });
+          explicitRecoMeta = {
+            discountToken: tok,
+            discountPct: pct,
+            discountedPrice: disc,
+            originalPrice: (orig > 0 ? orig : livePrice || Number(p.price || 0) || disc),
+            recoTrackingToken: String(window.__ssSmartCartRecoCache?.token || '').trim(),
+            recoWidgetId: 'smart_cart_addons_v1',
+            recoSourceProductId: '',
+            recoPosition: 0,
+            recoSessionId: String(window.__ssSessionId || '').trim()
+          };
         }
       } catch {}
       const buttonDisc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
-      addToCart(p.name, buttonDisc > 0 ? buttonDisc : (livePrice || Number(p.price || 0) || 0), p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null));
+      const basePrice = Number(btn.getAttribute('data-ss-quickadd-orig') || 0) || livePrice || Number(p.price || 0) || buttonDisc || 0;
+      addToCart(p.name, basePrice, p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null), explicitRecoMeta);
       try { updateBasket(); } catch {}
       return;
     }
