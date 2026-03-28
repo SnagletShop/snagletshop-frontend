@@ -310,6 +310,26 @@ async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, ch
     const cs = String(clientSecret || '').trim();
     if (!piid || !piid.startsWith('pi_')) return null;
     if (!cs || !cs.includes('_secret_')) return null;
+    const pending = (() => {
+        try {
+            const raw = localStorage.getItem('payment_pending_v1');
+            return raw ? (JSON.parse(raw) || {}) : {};
+        } catch {
+            return {};
+        }
+    })();
+    const resolvedCheckoutId = String(
+        checkoutId
+        || pending?.checkoutId
+        || window.latestCheckoutId
+        || ''
+    ).trim();
+    const resolvedCheckoutToken = String(
+        checkoutToken
+        || pending?.checkoutToken
+        || window.latestCheckoutPublicToken
+        || ''
+    ).trim();
     const deadline = Date.now() + maxWaitMs;
     let attemptedFinalize = false;
     while (Date.now() < deadline) {
@@ -324,8 +344,13 @@ async function resolveOrderIdByPaymentIntent({ paymentIntentId, clientSecret, ch
                 if (!attemptedFinalize) {
                     attemptedFinalize = true;
                     try {
-                        if (checkoutId && checkoutToken && window.__SS_CHECKOUT_API__?.finalizeOrder) {
-                            const fd = await window.__SS_CHECKOUT_API__.finalizeOrder({ paymentIntentId: piid, clientSecret: cs, checkoutId, token: checkoutToken });
+                        if (resolvedCheckoutId && resolvedCheckoutToken && window.__SS_CHECKOUT_API__?.finalizeOrder) {
+                            const fd = await window.__SS_CHECKOUT_API__.finalizeOrder({
+                                paymentIntentId: piid,
+                                clientSecret: cs,
+                                checkoutId: resolvedCheckoutId,
+                                token: resolvedCheckoutToken
+                            });
                             if (fd?.orderId) return String(fd.orderId);
                         }
                     } catch {}

@@ -189,6 +189,252 @@
     return { ...entry, code };
   }
 
+  const SEARCH_LOCALES = [
+    'en', 'en-US', 'en-GB', 'sk', 'cs', 'pl', 'de', 'fr', 'es', 'it', 'pt', 'pt-BR',
+    'nl', 'sv', 'da', 'fi', 'no', 'hu', 'ro', 'bg', 'hr', 'sl', 'uk', 'ru', 'tr',
+    'el', 'ar', 'he', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ms', 'th', 'vi'
+  ];
+
+  const US_STATE_NAMES = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+    'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
+    'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
+    'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
+    'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+    'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
+    'Washington', 'West Virginia', 'Wisconsin', 'Wyoming', 'District of Columbia'
+  ];
+
+  const COUNTRY_ALIAS_MAP = {
+    US: ['US', 'U.S.', 'USA', 'U.S.A.', 'United States of America', 'America', ...US_STATE_NAMES],
+    GB: ['UK', 'U.K.', 'Britain', 'Great Britain', 'England', 'Scotland', 'Wales', 'Northern Ireland'],
+    AE: ['UAE', 'U.A.E.', 'Emirates'],
+    CZ: ['Czech Republic', 'Cesko', 'Česko'],
+    KR: ['South Korea', 'Republic of Korea', 'Korea', '대한민국', '한국'],
+    RU: ['Russian Federation', 'Россия'],
+    UA: ['Україна', 'Украина'],
+    DE: ['Deutschland'],
+    AT: ['Österreich', 'Oesterreich'],
+    CH: ['Schweiz', 'Suisse', 'Svizzera'],
+    ES: ['España', 'Espana'],
+    GR: ['Ελλάδα', 'Hellas'],
+    JP: ['Nippon', 'Nihon', '日本'],
+    CN: ['Zhongguo', '中国', '中國'],
+    IN: ['Bharat', 'भारत'],
+    FI: ['Suomi'],
+    SE: ['Sverige'],
+    NO: ['Norge'],
+    DK: ['Danmark'],
+    PL: ['Polska'],
+    HU: ['Magyarország', 'Magyarorszag'],
+    RO: ['România', 'Romania'],
+    BG: ['България'],
+    TR: ['Türkiye', 'Turkiye'],
+    IL: ['ישראל'],
+    SA: ['السعودية'],
+    BR: ['Brasil'],
+    MX: ['México', 'Mexico'],
+    NL: ['Nederland', 'Holland'],
+    SK: ['Slovensko'],
+    SI: ['Slovenija'],
+    HR: ['Hrvatska'],
+    LV: ['Latvija'],
+    LT: ['Lietuva'],
+    EE: ['Eesti'],
+    CI: ['Cote d Ivoire', 'Côte d’Ivoire', 'Ivory Coast']
+  };
+
+  const CURRENCY_ALIAS_MAP = {
+    EUR: ['Euro', 'Euros', '€'],
+    USD: ['US Dollar', 'US Dollars', 'American Dollar', 'American Dollars', 'Dollar', 'Dollars', '$', 'Buck', 'Bucks'],
+    GBP: ['British Pound', 'British Pounds', 'Pound Sterling', 'Pounds', '£'],
+    CAD: ['Canadian Dollar', 'Canadian Dollars', 'C$', 'CA Dollar'],
+    AUD: ['Australian Dollar', 'Australian Dollars', 'A$', 'AU Dollar'],
+    MXN: ['Mexican Peso', 'Mexican Pesos'],
+    PLN: ['Polish Zloty', 'Polish Złoty', 'Zloty', 'Złoty'],
+    CZK: ['Czech Koruna', 'Czech Crown', 'Koruna'],
+    SEK: ['Swedish Krona', 'Swedish Crown', 'Krona'],
+    NOK: ['Norwegian Krone', 'Norwegian Crown', 'Krone'],
+    DKK: ['Danish Krone', 'Danish Crown', 'Krone'],
+    HUF: ['Hungarian Forint', 'Forint'],
+    RON: ['Romanian Leu', 'Leu'],
+    BGN: ['Bulgarian Lev', 'Lev'],
+    RUB: ['Russian Ruble', 'Rouble', 'Рубль'],
+    UAH: ['Ukrainian Hryvnia', 'Hryvnia', 'Hrivnia', 'Гривня'],
+    JPY: ['Japanese Yen', 'Yen', '円'],
+    CNY: ['Chinese Yuan', 'Yuan', 'Renminbi', '人民币'],
+    INR: ['Indian Rupee', 'Rupee', '₹'],
+    KRW: ['South Korean Won', 'Won', '원'],
+    BRL: ['Brazilian Real', 'Real'],
+    ARS: ['Argentine Peso', 'Argentinian Peso'],
+    CLP: ['Chilean Peso'],
+    COP: ['Colombian Peso'],
+    PEN: ['Peruvian Sol', 'Nuevo Sol'],
+    TRY: ['Turkish Lira', 'Lira'],
+    ILS: ['Israeli Shekel', 'New Shekel', 'Shekel'],
+    AED: ['UAE Dirham', 'Dirham'],
+    SAR: ['Saudi Riyal', 'Riyal'],
+    ZAR: ['South African Rand', 'Rand'],
+    NGN: ['Nigerian Naira', 'Naira'],
+    KES: ['Kenyan Shilling', 'Shilling'],
+    EGP: ['Egyptian Pound'],
+    NZD: ['New Zealand Dollar', 'NZ Dollar'],
+    FJD: ['Fijian Dollar'],
+    PHP: ['Philippine Peso', 'Peso'],
+    THB: ['Thai Baht', 'Baht'],
+    VND: ['Vietnamese Dong', 'Dong'],
+    MYR: ['Malaysian Ringgit', 'Ringgit'],
+    IDR: ['Indonesian Rupiah', 'Rupiah'],
+    PKR: ['Pakistani Rupee'],
+    BDT: ['Bangladeshi Taka', 'Taka']
+  };
+
+  function normalizeSearchText(value) {
+    let text = String(value || '').trim().toLowerCase();
+    if (!text) return '';
+    try { text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch {}
+    text = text
+      .replace(/ß/g, 'ss')
+      .replace(/æ/g, 'ae')
+      .replace(/œ/g, 'oe')
+      .replace(/ø/g, 'o')
+      .replace(/đ/g, 'd')
+      .replace(/ł/g, 'l')
+      .replace(/þ/g, 'th')
+      .replace(/&/g, ' and ')
+      .replace(/[@]/g, ' at ')
+      .replace(/[’'`´]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
+    return text;
+  }
+
+  function collectIntlDisplayNames(type, code, locales = SEARCH_LOCALES) {
+    const out = [];
+    const seen = new Set();
+    if (!code || typeof Intl === 'undefined' || typeof Intl.DisplayNames !== 'function') return out;
+    for (const locale of locales) {
+      try {
+        const dn = new Intl.DisplayNames([locale], { type });
+        const value = String(dn.of(code) || '').trim();
+        if (!value || value.toUpperCase() === String(code).toUpperCase() || seen.has(value)) continue;
+        seen.add(value);
+        out.push(value);
+      } catch {}
+    }
+    return out;
+  }
+
+  function buildSearchAliases(values = []) {
+    const aliases = [];
+    const seen = new Set();
+    const push = (value) => {
+      const raw = String(value || '').trim();
+      if (!raw) return;
+      const normalized = normalizeSearchText(raw);
+      const compact = normalized.replace(/\s+/g, '');
+      for (const variant of [raw, normalized, compact]) {
+        const candidate = String(variant || '').trim();
+        if (!candidate) continue;
+        const key = candidate.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        aliases.push(candidate);
+      }
+    };
+    values.forEach(push);
+    return aliases;
+  }
+
+  function buildTomSelectScore() {
+    return function score(search) {
+      const queryRaw = String(search?.query || '').trim();
+      const queryNorm = normalizeSearchText(queryRaw);
+      const queryCompact = queryNorm.replace(/\s+/g, '');
+      if (!queryNorm && !queryCompact) return () => 1;
+      return function itemScore(item) {
+        const aliases = Array.isArray(item?.searchAliases)
+          ? item.searchAliases
+          : buildSearchAliases([item?.text, item?.value, item?.searchTokens]);
+        let best = 0;
+        for (const alias of aliases) {
+          const aliasNorm = normalizeSearchText(alias);
+          const aliasCompact = aliasNorm.replace(/\s+/g, '');
+          if (!aliasNorm && !aliasCompact) continue;
+          if (queryCompact && aliasCompact === queryCompact) best = Math.max(best, 1000);
+          else if (queryNorm && aliasNorm === queryNorm) best = Math.max(best, 950);
+          else if (queryCompact && aliasCompact.startsWith(queryCompact)) best = Math.max(best, 760);
+          else if (queryNorm && aliasNorm.startsWith(queryNorm)) best = Math.max(best, 720);
+          else if (queryNorm) {
+            const tokens = aliasNorm.split(' ').filter(Boolean);
+            if (tokens.some((token) => token.startsWith(queryNorm))) best = Math.max(best, 560);
+            else if (aliasNorm.includes(queryNorm) || (queryCompact && aliasCompact.includes(queryCompact))) best = Math.max(best, 360);
+          }
+        }
+        return best > 0 ? best / 1000 : 0;
+      };
+    };
+  }
+
+  function getCountryAliases(ctx = {}, code = '') {
+    const cc = String(code || '').trim().toUpperCase();
+    if (!cc) return [];
+    const name = String(ctx.countryNames?.[cc] || cc).trim();
+    return buildSearchAliases([
+      cc,
+      name,
+      ...(COUNTRY_ALIAS_MAP[cc] || []),
+      ...collectIntlDisplayNames('region', cc)
+    ]);
+  }
+
+  function buildCountrySearchOptions(ctx = {}, countriesList = []) {
+    return countriesList.map((entry) => {
+      const code = String(entry?.code || '').trim().toUpperCase();
+      const text = String(ctx.countryNames?.[code] || code).trim();
+      const searchAliases = getCountryAliases(ctx, code);
+      return {
+        value: code,
+        text,
+        code,
+        searchAliases,
+        searchTokens: searchAliases.join(' | ')
+      };
+    }).filter((entry) => entry.value);
+  }
+
+  function buildCurrencySearchOptions(ctx = {}, codes = []) {
+    const countriesByCurrency = {};
+    for (const [countryCode, currencyCode] of Object.entries(ctx.countryToCurrency || {})) {
+      const cur = String(currencyCode || '').trim().toUpperCase();
+      if (!cur) continue;
+      countriesByCurrency[cur] = countriesByCurrency[cur] || [];
+      countriesByCurrency[cur].push(String(countryCode || '').trim().toUpperCase());
+    }
+    return codes.map((code) => {
+      const currencyCode = String(code || '').trim().toUpperCase();
+      const symbol = String(ctx.currencySymbols?.[currencyCode] || '').trim();
+      const englishName = collectIntlDisplayNames('currency', currencyCode, ['en'])[0] || currencyCode;
+      const countryAliases = (countriesByCurrency[currencyCode] || []).flatMap((countryCode) => getCountryAliases(ctx, countryCode));
+      const searchAliases = buildSearchAliases([
+        currencyCode,
+        symbol,
+        englishName,
+        ...(CURRENCY_ALIAS_MAP[currencyCode] || []),
+        ...collectIntlDisplayNames('currency', currencyCode),
+        ...countryAliases
+      ]);
+      return {
+        value: currencyCode,
+        text: `${symbol || ''} ${currencyCode}`.trim(),
+        code: currencyCode,
+        searchAliases,
+        searchTokens: searchAliases.join(' | ')
+      };
+    }).filter((entry) => entry.value);
+  }
+
   function buildCurrencyCodeList(ctx = {}) {
     const codes = [];
     const seen = new Set();
@@ -354,13 +600,16 @@
     }
 
     if (currencySelect) {
-      currencySelect.innerHTML = '';
       const codes = buildCurrencyCodeList(ctx);
-      for (const code of codes) {
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${ctx.currencySymbols?.[code] || ''} ${code}`.trim();
-        currencySelect.appendChild(opt);
+      const currencyOptions = buildCurrencySearchOptions(ctx, codes);
+      currencySelect.innerHTML = '';
+      if (typeof TomSelect !== 'function') {
+        for (const option of currencyOptions) {
+          const opt = document.createElement('option');
+          opt.value = option.value;
+          opt.textContent = option.text;
+          currencySelect.appendChild(opt);
+        }
       }
 
       const restoredCurrency = localStorage.getItem('selectedCurrency') || ctx.getSelectedCurrency?.() || 'EUR';
@@ -370,15 +619,16 @@
     }
 
     if (countrySelect) {
+      const countryOptions = buildCountrySearchOptions(ctx, countriesList);
       countrySelect.innerHTML = '';
-      countriesList.forEach((c) => {
-        const code = String(c.code || '').toUpperCase();
-        if (!code) return;
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = ctx.countryNames?.[code] || code;
-        countrySelect.appendChild(opt);
-      });
+      if (typeof TomSelect !== 'function') {
+        countryOptions.forEach((option) => {
+          const opt = document.createElement('option');
+          opt.value = option.value;
+          opt.textContent = option.text;
+          countrySelect.appendChild(opt);
+        });
+      }
       countrySelect.value = detectedCountry;
     }
 
@@ -387,9 +637,16 @@
 
     if (currencySelect) {
       if (typeof TomSelect === 'function') {
+        const currencyOptions = buildCurrencySearchOptions(ctx, buildCurrencyCodeList(ctx));
         new TomSelect('#currencySelect', {
+          options: currencyOptions,
+          items: [localStorage.getItem('selectedCurrency') || ctx.getSelectedCurrency?.() || 'EUR'],
+          valueField: 'value',
+          labelField: 'text',
+          searchField: ['text', 'searchTokens'],
+          score: buildTomSelectScore(),
           maxOptions: 200,
-          sortField: { field: 'text', direction: 'asc' },
+          sortField: [{ field: '$score', direction: 'desc' }, { field: 'text', direction: 'asc' }],
           placeholder: 'Select a currency…',
           closeAfterSelect: true,
           onChange: (val) => {
@@ -408,9 +665,16 @@
 
     if (countrySelect) {
       if (typeof TomSelect === 'function') {
+        const countryOptions = buildCountrySearchOptions(ctx, countriesList);
         new TomSelect('#countrySelect', {
+          options: countryOptions,
+          items: [detectedCountry],
+          valueField: 'value',
+          labelField: 'text',
+          searchField: ['text', 'searchTokens'],
+          score: buildTomSelectScore(),
           maxOptions: 1000,
-          sortField: { field: 'text', direction: 'asc' },
+          sortField: [{ field: '$score', direction: 'desc' }, { field: 'text', direction: 'asc' }],
           placeholder: 'Select a country…',
           closeAfterSelect: true,
           onChange: (val) => {
