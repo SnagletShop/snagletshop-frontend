@@ -428,6 +428,60 @@
     return instance;
   }
 
+  function enhanceTomSelectFiltering(instance, sourceOptions = []) {
+    if (!instance || typeof instance !== 'object' || instance.__ssFilteringReady) return instance;
+    const allOptions = Array.isArray(sourceOptions) ? sourceOptions.slice() : [];
+    const scoreFactory = buildTomSelectScore();
+    const getSelectedValues = () => {
+      try {
+        const values = Array.isArray(instance.items) ? instance.items.slice() : [];
+        if (values.length) return values.filter(Boolean);
+      } catch {}
+      try {
+        const single = instance.getValue?.();
+        return single ? [single] : [];
+      } catch {}
+      return [];
+    };
+    const render = (query = '') => {
+      const scorer = scoreFactory({ query });
+      let filtered = allOptions.slice();
+      if (String(query || '').trim()) {
+        filtered = allOptions
+          .map((option) => ({ option, score: Number(scorer(option) || 0) }))
+          .filter((entry) => entry.score > 0)
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return String(a.option?.text || '').localeCompare(String(b.option?.text || ''));
+          })
+          .map((entry) => entry.option);
+      }
+      const selected = new Set(getSelectedValues());
+      const selectedBackfill = allOptions.filter((option) => selected.has(option?.value));
+      const seen = new Set();
+      const finalOptions = [...filtered, ...selectedBackfill].filter((option) => {
+        const value = String(option?.value || '').trim();
+        if (!value || seen.has(value)) return false;
+        seen.add(value);
+        return true;
+      });
+      try { instance.clearOptions(); } catch {}
+      for (const option of finalOptions) {
+        try { instance.addOption(option); } catch {}
+      }
+      try { instance.refreshOptions(String(query || '').trim().length > 0); } catch {}
+    };
+    try {
+      instance.on?.('type', render);
+      instance.on?.('dropdown_open', () => render(instance.control_input?.value || ''));
+      instance.on?.('clear', () => render(''));
+      instance.on?.('change', () => render(instance.control_input?.value || ''));
+    } catch {}
+    render('');
+    instance.__ssFilteringReady = true;
+    return instance;
+  }
+
   function getCountryAliases(ctx = {}, code = '') {
     const cc = String(code || '').trim().toUpperCase();
     if (!cc) return [];
@@ -721,6 +775,7 @@
           }
         });
         enhanceTomSelectSearch(currencyTom, { placeholder: 'Type to search currency...' });
+        enhanceTomSelectFiltering(currencyTom, currencyOptions);
       }
       currencySelect.classList.remove('tom-hidden');
     }
@@ -767,6 +822,7 @@
           }
         });
         enhanceTomSelectSearch(countryTom, { placeholder: 'Type to search country...' });
+        enhanceTomSelectFiltering(countryTom, countryOptions);
       }
       countrySelect.classList.remove('tom-hidden');
     }
