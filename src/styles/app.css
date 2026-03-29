@@ -6927,9 +6927,80 @@
 }
 
 @media (max-width: 680px) {
+    #ProductWrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 12px 18px !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+    }
+
+    .SortContainer {
+        display: block !important;
+        position: static !important;
+        grid-row: auto !important;
+        grid-column: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 10px 12px 10px !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+        z-index: auto !important;
+    }
+
+    .CatalogUtilityRow {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    .CatalogUtilityCopy {
+        width: 100% !important;
+    }
+
+    .CatalogUtilityEyebrow {
+        margin: 0 0 4px !important;
+        font-size: 10px !important;
+    }
+
+    .CatalogUtilityTitle {
+        margin: 0 !important;
+        font-size: 7vw !important;
+        line-height: 1.05 !important;
+    }
+
+    .CatalogUtilityMeta {
+        margin: 4px 0 0 !important;
+        font-size: 14px !important;
+    }
+
+    .CatalogUtilityControls {
+        width: 100% !important;
+        margin-left: 0 !important;
+        justify-content: flex-start !important;
+    }
+
+    .CatalogUtilityControls .SSSort {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .CatalogUtilityControls .SSSortLabel {
+        font-size: 12px !important;
+    }
+
+    .CatalogUtilityControls .SSSortTriggerText {
+        font-size: 13px !important;
+    }
+
     #Viewer:has(> .product) {
-        grid-template-columns: 1fr !important;
-        gap: 14px !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 12px !important;
         padding: 8px 0 24px !important;
     }
 
@@ -6948,8 +7019,8 @@
         display: grid !important;
         grid-template-columns: 1fr !important;
         grid-template-areas:
-            "name"
             "media"
+            "name"
             "price"
             "meta"
             "actions" !important;
@@ -6962,6 +7033,13 @@
     .product-name {
         grid-area: name !important;
         margin: 0 !important;
+        font-size: 4.85vw !important;
+        line-height: 1.24 !important;
+        min-height: calc(1.24em * 2) !important;
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        overflow: hidden !important;
     }
 
     .product-media-frame {
