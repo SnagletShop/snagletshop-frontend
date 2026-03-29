@@ -6902,6 +6902,11 @@
     color: var(--Muted_Text_Colour);
 }
 
+.product-sold-count__value,
+.product-sold-count__suffix {
+    white-space: nowrap;
+}
+
 @media (max-width: 680px) {
     .product-rating-meta {
         margin: 4px 0 8px;
@@ -6985,25 +6990,47 @@
     }
 
     .CatalogUtilityControls .SSSort {
-        width: 100% !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: auto !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        justify-content: space-between !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
     .CatalogUtilityControls .SSSortLabel {
         font-size: 12px !important;
+        font-weight: 700 !important;
+        color: var(--Default_Text_Colour) !important;
+        line-height: 1 !important;
     }
 
     .CatalogUtilityControls .SSSortTrigger {
-        width: 100% !important;
-        min-height: 38px !important;
+        width: auto !important;
+        min-width: 104px !important;
+        min-height: 32px !important;
         justify-content: space-between !important;
-        padding: 0 !important;
+        gap: 8px !important;
+        padding: 0 12px !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        border-radius: 8px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        box-shadow: none !important;
     }
 
     .CatalogUtilityControls .SSSortTriggerText {
-        font-size: 13px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+    }
+
+    .CatalogUtilityControls .SSSortChevron {
+        width: 8px !important;
+        height: 8px !important;
     }
 
     #Viewer:has(> .product) {
@@ -7092,6 +7119,10 @@
         flex: 0 0 auto !important;
     }
 
+    .product-sold-count__suffix {
+        display: none !important;
+    }
+
     .quantity-container {
         grid-area: actions !important;
         display: grid !important;
@@ -7140,9 +7171,14 @@
         padding: 0 8px !important;
         font-size: 11px !important;
         white-space: nowrap !important;
+        overflow: hidden !important;
     }
 
     .product-card__cart-label {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
         gap: 4px !important;
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
@@ -7152,5 +7188,6 @@
         width: 12px !important;
         height: 12px !important;
         flex: 0 0 auto !important;
+        display: block !important;
     }
 }

@@ -160,10 +160,13 @@
 
   function formatSoldCountLabel(value) {
     const soldCount = normalizeSoldCount(value);
-    if (!(soldCount > 0)) return '';
+    if (!(soldCount > 0)) return null;
     const compact = soldCount >= 1000 ? Math.floor(soldCount / 100) * 100 : soldCount;
     const formatted = new Intl.NumberFormat('en-US').format(compact);
-    return `${formatted}${soldCount >= 1000 ? '+' : ''} sold`;
+    return {
+      value: `${formatted}${soldCount >= 1000 ? '+' : ''}`,
+      suffix: ' sold'
+    };
   }
 
   function buildRatingStars(ratingValue) {
@@ -204,7 +207,7 @@
       }
       const sold = document.createElement('span');
       sold.className = 'product-sold-count';
-      sold.textContent = soldLabel;
+      sold.innerHTML = `<span class="product-sold-count__value">${soldLabel.value}</span><span class="product-sold-count__suffix">${soldLabel.suffix}</span>`;
       meta.appendChild(sold);
     }
 
