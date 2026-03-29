@@ -7316,27 +7316,27 @@
         display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 3px !important;
+        gap: 4px !important;
         margin: 0 0 0 auto !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        font-size: 10px !important;
+        font-size: 11px !important;
         white-space: nowrap !important;
         overflow: visible !important;
         justify-content: flex-end !important;
     }
 
     .product-page-social-proof .product-rating-stars {
-        font-size: 10px !important;
+        font-size: 12px !important;
     }
 
     .product-page-social-proof .product-rating-value {
-        font-size: 11px !important;
+        font-size: 12px !important;
     }
 
     .product-page-social-proof .product-rating-separator,
     .product-page-social-proof .product-sold-count {
-        font-size: 10px !important;
+        font-size: 11px !important;
     }
 
     .product-page-social-proof .product-sold-count__suffix {

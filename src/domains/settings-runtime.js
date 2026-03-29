@@ -383,35 +383,42 @@
       const control = instance.control;
       const input = instance.control_input || control?.querySelector('input');
       if (!control || !input) return;
+      const syncInput = () => {
+        try {
+          input.readOnly = false;
+          input.disabled = false;
+          input.removeAttribute('readonly');
+          input.removeAttribute('disabled');
+        } catch {}
+        try {
+          input.setAttribute('placeholder', placeholder);
+          input.setAttribute('aria-label', placeholder);
+        } catch {}
+      };
       try {
         input.setAttribute('type', 'search');
         input.setAttribute('inputmode', 'search');
         input.setAttribute('autocomplete', 'off');
         input.setAttribute('autocapitalize', 'none');
         input.setAttribute('spellcheck', 'false');
-        input.setAttribute('placeholder', placeholder);
-        input.setAttribute('aria-label', placeholder);
       } catch {}
       if (control.dataset.ssSearchReady === '1') return;
-      const focusAndOpen = () => {
-        try { instance.open(); } catch {}
-        try { input.focus({ preventScroll: true }); } catch {
+      const focusInput = () => {
+        syncInput();
+        try {
+          requestAnimationFrame(() => {
+            try { input.focus({ preventScroll: true }); } catch {
+              try { input.focus(); } catch {}
+            }
+          });
+        } catch {
           try { input.focus(); } catch {}
         }
       };
-      control.addEventListener('pointerdown', () => requestAnimationFrame(focusAndOpen));
-      control.addEventListener('focusin', () => {
-        try { instance.open(); } catch {}
-      });
-      control.addEventListener('keydown', (event) => {
-        const isPrintable = typeof event.key === 'string'
-          && event.key.length === 1
-          && !event.altKey
-          && !event.ctrlKey
-          && !event.metaKey;
-        if (!isPrintable && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowDown') return;
-        requestAnimationFrame(focusAndOpen);
-      });
+      syncInput();
+      try { instance.on?.('dropdown_open', focusInput); } catch {}
+      try { instance.on?.('focus', syncInput); } catch {}
+      try { instance.on?.('type', syncInput); } catch {}
       control.dataset.ssSearchReady = '1';
     };
     attach();
