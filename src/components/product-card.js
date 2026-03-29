@@ -178,6 +178,17 @@
     return markup;
   }
 
+  function buildPreciseRatingStars(ratingValue) {
+    const normalized = normalizeRatingValue(ratingValue);
+    let markup = '';
+    for (let i = 0; i < 5; i += 1) {
+      const fill = Math.max(0, Math.min(1, normalized - i));
+      const fillPct = Math.round(fill * 100);
+      markup += `<span class="product-rating-star product-rating-star--precise" style="--star-fill:${fillPct}%;" aria-hidden="true"><span class="product-rating-star__base">★</span><span class="product-rating-star__fill">★</span></span>`;
+    }
+    return markup;
+  }
+
   function createProductSocialProof(product) {
     const ratingValue = normalizeRatingValue(product?.ratingValue ?? product?.starsRating ?? product?.rating ?? product?.ratingOutOf5);
     const soldLabel = formatSoldCountLabel(product?.soldCount ?? product?.purchasedCount ?? product?.purchasesCount ?? product?.purchaseCount);
@@ -188,7 +199,7 @@
 
     const stars = document.createElement('span');
     stars.className = 'product-rating-stars';
-    stars.innerHTML = buildRatingStars(ratingValue);
+    stars.innerHTML = buildPreciseRatingStars(ratingValue);
     meta.appendChild(stars);
 
     if (ratingValue > 0) {
