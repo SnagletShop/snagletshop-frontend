@@ -6925,3 +6925,91 @@
         font-size: 13px !important;
     }
 }
+
+@media (max-width: 680px) {
+    #Viewer:has(> .product) {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+        padding: 8px 0 24px !important;
+    }
+
+    .product {
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        padding: 12px !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .product-card {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        grid-template-areas:
+            "name"
+            "media"
+            "price"
+            "meta"
+            "actions" !important;
+        gap: 8px !important;
+        width: 100% !important;
+        height: auto !important;
+        align-content: start !important;
+    }
+
+    .product-name {
+        grid-area: name !important;
+        margin: 0 !important;
+    }
+
+    .product-media-frame {
+        grid-area: media !important;
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .Clickable_Image {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        aspect-ratio: auto !important;
+        object-fit: contain !important;
+    }
+
+    .product-price {
+        grid-area: price !important;
+        margin: 0 !important;
+    }
+
+    .product-rating-meta {
+        grid-area: meta !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 5px !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+    }
+
+    .product-rating-stars,
+    .product-rating-value,
+    .product-rating-separator,
+    .product-sold-count {
+        white-space: nowrap !important;
+        flex: 0 0 auto !important;
+    }
+
+    .quantity-container {
+        grid-area: actions !important;
+        width: 100% !important;
+        margin: 2px 0 0 !important;
+        padding: 0 !important;
+    }
+}
