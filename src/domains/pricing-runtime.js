@@ -298,7 +298,7 @@
     const code = String(currencyCode || 'EUR').toUpperCase();
     const symbol = String(currencySymbol || code).trim() || code;
     const text = String(amountText == null ? '0.00' : amountText).trim() || '0.00';
-    return shouldUseSuffixCurrency(code) ? `${text} ${symbol}` : `${symbol}${text}`;
+    return shouldUseSuffixCurrency(code) ? `${text}\u00A0${symbol}` : `${symbol}${text}`;
   }
 
   function convertPriceNumber(ctxOrPrice, maybePrice) {
