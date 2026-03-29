@@ -6074,13 +6074,27 @@
 
 @media (min-width: 681px) {
     body {
+        --desktop-panel-bg: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, var(--body_Background_Colour) 8%);
+        --desktop-panel-bg-soft: color-mix(in srgb, var(--SideBar_Background_Colour) 86%, var(--TopBar_Background_Colour) 14%);
+        --desktop-control-bg: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--TopBar_Background_Colour) 8%);
+        --desktop-control-bg-strong: color-mix(in srgb, var(--SearchBar_Background_Colour) 86%, var(--SideBar_Background_Colour) 14%);
+        --desktop-card-bg: color-mix(in srgb, var(--SideBar_Background_Colour) 88%, var(--TopBar_Background_Colour) 12%);
+        --desktop-card-bg-hover: color-mix(in srgb, var(--SideBar_Background_Colour) 76%, var(--SearchBar_Background_Colour) 24%);
+        --desktop-border-soft: color-mix(in srgb, var(--Option_Button_Border) 30%, var(--TopBar_Background_Colour) 70%);
+        --desktop-border-strong: color-mix(in srgb, var(--Option_Button_Border) 46%, var(--TopBar_Background_Colour) 54%);
+        --desktop-text-primary: var(--Default_Text_Colour);
+        --desktop-text-secondary: color-mix(in srgb, var(--Default_Text_Colour) 62%, var(--Muted_Text_Colour) 38%);
+        --desktop-text-muted: color-mix(in srgb, var(--Default_Text_Colour) 30%, var(--Muted_Text_Colour) 70%);
+        --desktop-accent: var(--Primary_Button_Colour);
+        --desktop-accent-hover: var(--Primary_Button_Hover);
+        --desktop-accent-focus: color-mix(in srgb, var(--Primary_Button_Colour) 26%, var(--TopBar_Background_Colour) 74%);
         display: block !important;
         min-height: 100vh;
         overflow-x: hidden;
         background:
-            radial-gradient(circle at 14% -8%, rgba(18, 32, 51, 0.52), transparent 34%),
-            radial-gradient(circle at 84% 0%, rgba(47, 128, 255, 0.12), transparent 22%),
-            linear-gradient(180deg, #0B0F14 0%, #0D1219 100%) !important;
+            radial-gradient(circle at 16% -4%, color-mix(in srgb, var(--Primary_Button_Colour) 14%, transparent), transparent 34%),
+            radial-gradient(circle at 78% 8%, color-mix(in srgb, var(--TopBar_Background_Colour) 72%, transparent), transparent 42%),
+            linear-gradient(180deg, color-mix(in srgb, var(--body_Background_Colour) 100%, #000 0%) 0%, color-mix(in srgb, var(--body_Background_Colour) 88%, #000 12%) 100%) !important;
     }
 
     .DesktopShell {
@@ -6102,11 +6116,11 @@
         height: auto !important;
         margin: 0 !important;
         padding: 15px 30px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-bottom: 0 !important;
         border-radius: 30px 30px 0 0 !important;
-        background: linear-gradient(180deg, rgba(16, 21, 29, 0.97), rgba(14, 19, 26, 0.94)) !important;
-        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-panel-bg) 92%, white 8%), var(--desktop-panel-bg)) !important;
+        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.18), inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 5%, transparent) !important;
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
     }
@@ -6136,7 +6150,7 @@
         font-weight: 760;
         line-height: 1;
         letter-spacing: -0.045em;
-        color: #f3f4f7;
+        color: var(--desktop-text-primary);
     }
 
     .DesktopBrandSubline {
@@ -6145,7 +6159,7 @@
         font-size: 11px;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        color: rgba(215, 220, 230, 0.45);
+        color: var(--desktop-text-muted);
     }
 
     .DesktopHeaderSearch {
@@ -6162,23 +6176,23 @@
         max-height: none !important;
         margin: 0 !important;
         padding: 0 22px !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-radius: 20px !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.018)) !important;
-        color: #f6f7fb !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 92%, white 8%), var(--desktop-control-bg)) !important;
+        color: var(--desktop-text-primary) !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 16px !important;
         font-weight: 500 !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.12) !important;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 4%, transparent), 0 10px 22px rgba(0, 0, 0, 0.08) !important;
     }
 
     .Search_Bar::placeholder {
-        color: rgba(211, 216, 226, 0.52) !important;
+        color: var(--desktop-text-muted) !important;
     }
 
     .Search_Bar:focus {
-        border-color: rgba(47, 128, 255, 0.22) !important;
-        box-shadow: 0 0 0 4px rgba(47, 128, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+        border-color: color-mix(in srgb, var(--desktop-accent) 36%, var(--desktop-border-soft) 64%) !important;
+        box-shadow: 0 0 0 4px var(--desktop-accent-focus), inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 4%, transparent) !important;
         outline: none !important;
     }
 
@@ -6192,18 +6206,18 @@
     .currency-select,
     .BasketButton,
     .SettingsButton {
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-radius: 18px !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.016)) !important;
-        color: #f1f4fb !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 22px rgba(0, 0, 0, 0.12) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg-strong) 90%, white 10%), var(--desktop-control-bg-strong)) !important;
+        color: var(--desktop-text-primary) !important;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 4%, transparent), 0 10px 22px rgba(0, 0, 0, 0.08) !important;
     }
 
     .currency-select:hover,
     .BasketButton:hover,
     .SettingsButton:hover {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.022)) !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg-strong) 84%, white 16%), color-mix(in srgb, var(--desktop-control-bg-strong) 94%, var(--desktop-panel-bg) 6%)) !important;
+        border-color: var(--desktop-border-strong) !important;
     }
 
     .currency-select {
@@ -6217,7 +6231,7 @@
         font-family: 'Inter', sans-serif !important;
         font-size: 13px !important;
         font-weight: 600 !important;
-        color: rgba(242, 245, 252, 0.92) !important;
+        color: var(--desktop-text-primary) !important;
     }
 
     .BasketButton,
@@ -6235,11 +6249,11 @@
         min-height: 0 !important;
         margin: 0 !important;
         padding: 0 30px 18px !important;
-        background: linear-gradient(180deg, rgba(14, 19, 26, 0.97), rgba(16, 21, 29, 0.94)) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.035) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-panel-bg-soft) 94%, white 6%), var(--desktop-panel-bg-soft)) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
+        border-top: 1px solid color-mix(in srgb, var(--desktop-border-soft) 74%, transparent) !important;
         border-radius: 0 0 30px 30px !important;
-        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.24) !important;
+        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.16) !important;
     }
 
     .desktop-category-ribbon {
@@ -6250,7 +6264,7 @@
         gap: 12px !important;
         overflow: visible !important;
         padding: 14px 0 0 !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-top: 1px solid var(--desktop-border-soft) !important;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -6268,27 +6282,29 @@
         margin: 0 !important;
         padding: 0 20px !important;
         border-radius: 999px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.012)) !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+        border: 1px solid color-mix(in srgb, var(--Sidebar_Button_Border) 82%, var(--TopBar_Background_Colour) 18%) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--Sidebar_Button_BG) 86%, white 14%), var(--Sidebar_Button_BG)) !important;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 3%, transparent) !important;
         white-space: nowrap !important;
     }
 
     .Category_Button_Heading,
     .Category_Button_Heading h3,
     .category-label {
-        color: rgba(242, 245, 252, 0.94) !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em !important;
+        color: var(--Category_Button_Text_Colour) !important;
     }
 
     .Category_Button:hover {
-        border-color: rgba(255, 255, 255, 0.08) !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)) !important;
+        border-color: color-mix(in srgb, var(--Sidebar_Button_Border) 90%, var(--TopBar_Background_Colour) 10%) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--Sidebar_Button_BG_Hover) 84%, white 16%), var(--Sidebar_Button_BG_Hover)) !important;
     }
 
     .Category_Button.Active {
-        background: linear-gradient(180deg, #4C93FF 0%, #2F80FF 100%) !important;
-        border-color: rgba(76, 147, 255, 0.6) !important;
-        box-shadow: 0 14px 28px rgba(47, 128, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--Sidebar_Button_BG_Active) 86%, white 14%), var(--Sidebar_Button_BG_Active)) !important;
+        border-color: color-mix(in srgb, var(--Sidebar_Button_BG_Active) 72%, var(--TopBar_Background_Colour) 28%) !important;
+        box-shadow: 0 12px 26px color-mix(in srgb, var(--Sidebar_Button_BG_Active) 18%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 16%, transparent) !important;
     }
 
     .Category_Button.Active .category-label,
@@ -6332,7 +6348,7 @@
         font-weight: 700 !important;
         letter-spacing: 0.14em !important;
         text-transform: uppercase !important;
-        color: #7D8796 !important;
+        color: var(--desktop-text-muted) !important;
     }
 
     .CatalogUtilityTitleRow {
@@ -6349,7 +6365,7 @@
         font-weight: 800 !important;
         line-height: 1.04 !important;
         letter-spacing: -0.05em !important;
-        color: #F5F7FA !important;
+        color: var(--desktop-text-primary) !important;
     }
 
     .CatalogUtilityMeta {
@@ -6357,7 +6373,7 @@
         font-family: 'Inter', sans-serif !important;
         font-size: 16px !important;
         font-weight: 600 !important;
-        color: #AAB4C3 !important;
+        color: var(--desktop-text-secondary) !important;
     }
 
     .CatalogUtilityControls {
@@ -6376,16 +6392,16 @@
         min-width: 248px !important;
         gap: 10px !important;
         padding: 9px 14px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-radius: 18px !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.012)) !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 88%, white 12%), var(--desktop-control-bg)) !important;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 3%, transparent) !important;
     }
 
     .CatalogUtilityControls .SSSortLabel {
         font-size: 14px !important;
         font-weight: 600 !important;
-        color: #AAB4C3 !important;
+        color: var(--desktop-text-secondary) !important;
     }
 
     .CatalogUtilityControls .SSSortTrigger {
@@ -6420,19 +6436,19 @@
         max-height: none !important;
         min-height: 0 !important;
         padding: 22px 22px 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-radius: 22px !important;
-        background: linear-gradient(180deg, rgba(19, 25, 34, 0.98), rgba(18, 24, 33, 0.96)) !important;
-        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-card-bg) 92%, white 8%), var(--desktop-card-bg)) !important;
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.13), inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 2.5%, transparent) !important;
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
     }
 
     .product:hover,
     .product:focus-within {
         transform: translateY(-2px) !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
-        background: linear-gradient(180deg, rgba(21, 29, 40, 0.99), rgba(20, 29, 40, 0.97)) !important;
-        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(47, 128, 255, 0.06) !important;
+        border-color: var(--desktop-border-strong) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-card-bg-hover) 90%, white 10%), var(--desktop-card-bg-hover)) !important;
+        box-shadow: 0 20px 36px rgba(0, 0, 0, 0.16), 0 0 0 1px color-mix(in srgb, var(--desktop-accent) 10%, transparent) !important;
     }
 
     .product-card {
@@ -6457,8 +6473,8 @@
         margin: 0 !important;
         object-fit: cover !important;
         border-radius: 16px !important;
-        background: linear-gradient(180deg, rgba(25, 33, 44, 0.9), rgba(18, 24, 33, 0.98)) !important;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, white 8%), color-mix(in srgb, var(--desktop-card-bg) 92%, var(--SearchBar_Background_Colour) 8%)) !important;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--Option_Button_Border) 32%, transparent) !important;
     }
 
     .product-name {
@@ -6467,10 +6483,10 @@
         height: auto !important;
         min-height: calc(1.36em * 2) !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 17px !important;
-        font-weight: 600 !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
         line-height: 1.36 !important;
-        color: #F5F7FA !important;
+        color: var(--desktop-text-primary) !important;
         display: -webkit-box !important;
         -webkit-box-orient: vertical !important;
         -webkit-line-clamp: 2 !important;
@@ -6481,11 +6497,11 @@
         grid-area: price !important;
         margin: 0 !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: clamp(21px, 1.45vw, 26px) !important;
-        font-weight: 800 !important;
+        font-size: clamp(19px, 1.35vw, 23px) !important;
+        font-weight: 700 !important;
         line-height: 1 !important;
         letter-spacing: -0.04em !important;
-        color: #F5F7FA !important;
+        color: var(--desktop-text-primary) !important;
     }
 
     .quantity-container {
@@ -6506,25 +6522,25 @@
         grid-template-columns: 42px 1fr 42px !important;
         gap: 6px !important;
         padding: 4px !important;
-        border: 1px solid rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-radius: 16px !important;
-        background: rgba(255, 255, 255, 0.015) !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 88%, white 12%), color-mix(in srgb, var(--desktop-control-bg) 96%, var(--desktop-panel-bg) 4%)) !important;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 3%, transparent) !important;
     }
 
     .quantity-controls .Button {
         width: 42px !important;
         min-width: 42px !important;
         border-radius: 13px !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018)) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, white 10%), var(--SearchBar_Background_Colour)) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         font-size: 20px !important;
         font-weight: 700 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         height: 50px !important;
-        color: #F5F7FA !important;
+        color: var(--desktop-text-primary) !important;
     }
 
     .quantity-controls .WhiteText {
@@ -6535,10 +6551,10 @@
         align-items: center !important;
         justify-content: center !important;
         height: 50px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--desktop-border-soft) !important;
         border-radius: 13px !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018)) !important;
-        color: #F5F7FA !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, white 10%), var(--SearchBar_Background_Colour)) !important;
+        color: var(--desktop-text-primary) !important;
     }
 
     .add-to-cart {
@@ -6556,9 +6572,9 @@
         align-items: center !important;
         justify-content: center !important;
         white-space: nowrap !important;
-        border: 1px solid rgba(76, 147, 255, 0.36) !important;
-        background: linear-gradient(180deg, #4C93FF 0%, #2F80FF 100%) !important;
-        box-shadow: 0 12px 24px rgba(47, 128, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+        border: 1px solid color-mix(in srgb, var(--desktop-accent) 54%, var(--TopBar_Background_Colour) 46%) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-accent) 84%, white 16%) 0%, var(--desktop-accent) 100%) !important;
+        box-shadow: 0 10px 22px color-mix(in srgb, var(--desktop-accent) 20%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 14%, transparent) !important;
         color: #ffffff !important;
     }
 
@@ -6572,8 +6588,8 @@
     }
 
     .add-to-cart:hover {
-        background: linear-gradient(180deg, #5A9DFF 0%, #3A86FF 100%) !important;
-        box-shadow: 0 14px 28px rgba(47, 128, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-accent-hover) 70%, white 30%) 0%, var(--desktop-accent-hover) 100%) !important;
+        box-shadow: 0 12px 24px color-mix(in srgb, var(--desktop-accent) 26%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent) !important;
     }
 
     .add-to-cart:focus-visible,
@@ -6583,32 +6599,32 @@
     .SettingsButton:focus-visible,
     .Category_Button:focus-visible {
         outline: none !important;
-        box-shadow: 0 0 0 4px rgba(47, 128, 255, 0.28) !important;
+        box-shadow: 0 0 0 4px var(--desktop-accent-focus) !important;
     }
 
     .dark-mode .TopBar {
-        box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32) !important;
+        box-shadow: 0 24px 56px rgba(0, 0, 0, 0.26) !important;
     }
 
     .dark-mode .quantity-controls {
-        background: transparent !important;
-        border-color: transparent !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 86%, white 14%), color-mix(in srgb, var(--desktop-control-bg) 96%, var(--desktop-panel-bg) 4%)) !important;
+        border-color: var(--desktop-border-soft) !important;
     }
 
     .dark-mode .Clickable_Image {
-        background: linear-gradient(180deg, rgba(40, 40, 40, 0.92), rgba(24, 24, 24, 0.98)) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, #2a2a2a 8%), color-mix(in srgb, var(--SearchBar_Background_Colour) 78%, var(--SideBar_Background_Colour) 22%)) !important;
     }
 
     .dark-mode .CatalogUtilityEyebrow,
     .dark-mode .CatalogUtilityMeta,
     .dark-mode .DesktopBrandSubline {
-        color: rgba(220, 223, 228, 0.7) !important;
+        color: var(--desktop-text-secondary) !important;
     }
 
     .light-mode .TopBar,
     .light-mode .SideBar {
-        background: rgba(255, 252, 247, 0.94) !important;
-        border-color: rgba(42, 42, 42, 0.08) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--TopBar_Background_Colour) 96%, white 4%), color-mix(in srgb, var(--SideBar_Background_Colour) 90%, var(--TopBar_Background_Colour) 10%)) !important;
+        border-color: color-mix(in srgb, var(--Input_Border) 62%, white 38%) !important;
         box-shadow: 0 26px 52px rgba(55, 44, 22, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.42) !important;
     }
 
@@ -6629,8 +6645,8 @@
     .light-mode .product,
     .light-mode .quantity-controls .Button,
     .light-mode .quantity-controls .WhiteText {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 248, 244, 0.94)) !important;
-        border-color: rgba(42, 42, 42, 0.08) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 30%, white 70%), color-mix(in srgb, var(--SideBar_Background_Colour) 68%, var(--TopBar_Background_Colour) 32%)) !important;
+        border-color: color-mix(in srgb, var(--Input_Border) 62%, white 38%) !important;
         color: var(--Default_Text_Colour) !important;
         box-shadow: none !important;
     }
@@ -6640,11 +6656,11 @@
     }
 
     .light-mode .Search_Bar::placeholder {
-        color: rgba(88, 94, 110, 0.52) !important;
+        color: color-mix(in srgb, var(--Muted_Text_Colour) 86%, white 14%) !important;
     }
 
     .light-mode .desktop-category-ribbon {
-        border-top-color: rgba(42, 42, 42, 0.08) !important;
+        border-top-color: color-mix(in srgb, var(--Input_Border) 58%, white 42%) !important;
     }
 
     .light-mode .Category_Button_Heading,
@@ -6654,12 +6670,12 @@
     }
 
     .light-mode .CatalogUtilityEyebrow {
-        color: rgba(112, 126, 153, 0.74) !important;
+        color: color-mix(in srgb, var(--Muted_Text_Colour) 84%, white 16%) !important;
     }
 
     .light-mode .CatalogUtilityMeta,
     .light-mode .CatalogUtilityControls .SSSortLabel {
-        color: rgba(88, 94, 110, 0.8) !important;
+        color: color-mix(in srgb, var(--Default_Text_Colour) 54%, var(--Muted_Text_Colour) 46%) !important;
     }
 
     .light-mode .product {
@@ -6667,10 +6683,10 @@
     }
 
     .light-mode .add-to-cart {
-        border-color: rgba(76, 147, 255, 0.36) !important;
-        background: linear-gradient(180deg, #4C93FF 0%, #2F80FF 100%) !important;
+        border-color: color-mix(in srgb, var(--Primary_Button_Colour) 56%, white 44%) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--Primary_Button_Colour) 82%, white 18%) 0%, var(--Primary_Button_Colour) 100%) !important;
         color: #ffffff !important;
-        box-shadow: 0 12px 22px rgba(47, 128, 255, 0.18) !important;
+        box-shadow: 0 12px 22px color-mix(in srgb, var(--Primary_Button_Colour) 22%, transparent) !important;
     }
 }
 
