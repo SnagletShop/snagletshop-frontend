@@ -367,8 +367,10 @@
           <div class="CatalogUtilityRow">
             <div class="CatalogUtilityCopy">
               <p class="CatalogUtilityEyebrow">Catalog</p>
-              <h1 class="CatalogUtilityTitle">${escapeHtml(categoryLabel)}</h1>
-              <p class="CatalogUtilityMeta">${escapeHtml(productCountLabel)}</p>
+              <div class="CatalogUtilityTitleRow">
+                <h1 class="CatalogUtilityTitle">${escapeHtml(categoryLabel)}</h1>
+                <p class="CatalogUtilityMeta">${escapeHtml(productCountLabel)}</p>
+              </div>
             </div>
             <div class="CatalogUtilityControls">
               <div class="SSSort" id="SSSort">
