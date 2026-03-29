@@ -6074,55 +6074,37 @@
 
 @media (min-width: 681px) {
     body {
-        --desktop-panel-bg: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, var(--body_Background_Colour) 8%);
-        --desktop-panel-bg-soft: color-mix(in srgb, var(--SideBar_Background_Colour) 86%, var(--TopBar_Background_Colour) 14%);
-        --desktop-control-bg: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--TopBar_Background_Colour) 8%);
-        --desktop-control-bg-strong: color-mix(in srgb, var(--SearchBar_Background_Colour) 86%, var(--SideBar_Background_Colour) 14%);
-        --desktop-card-bg: color-mix(in srgb, var(--SideBar_Background_Colour) 88%, var(--TopBar_Background_Colour) 12%);
-        --desktop-card-bg-hover: color-mix(in srgb, var(--SideBar_Background_Colour) 76%, var(--SearchBar_Background_Colour) 24%);
-        --desktop-border-soft: color-mix(in srgb, var(--Option_Button_Border) 30%, var(--TopBar_Background_Colour) 70%);
-        --desktop-border-strong: color-mix(in srgb, var(--Option_Button_Border) 46%, var(--TopBar_Background_Colour) 54%);
-        --desktop-text-primary: var(--Default_Text_Colour);
-        --desktop-text-secondary: color-mix(in srgb, var(--Default_Text_Colour) 62%, var(--Muted_Text_Colour) 38%);
-        --desktop-text-muted: color-mix(in srgb, var(--Default_Text_Colour) 30%, var(--Muted_Text_Colour) 70%);
-        --desktop-accent: var(--Primary_Button_Colour);
-        --desktop-accent-hover: var(--Primary_Button_Hover);
-        --desktop-accent-focus: color-mix(in srgb, var(--Primary_Button_Colour) 26%, var(--TopBar_Background_Colour) 74%);
         display: block !important;
         min-height: 100vh;
         overflow-x: hidden;
         background:
-            radial-gradient(circle at 16% -4%, color-mix(in srgb, var(--Primary_Button_Colour) 14%, transparent), transparent 34%),
-            radial-gradient(circle at 78% 8%, color-mix(in srgb, var(--TopBar_Background_Colour) 72%, transparent), transparent 42%),
-            linear-gradient(180deg, color-mix(in srgb, var(--body_Background_Colour) 100%, #000 0%) 0%, color-mix(in srgb, var(--body_Background_Colour) 88%, #000 12%) 100%) !important;
+            linear-gradient(180deg, var(--body_Background_Colour) 0%, var(--TopBar_Background_Colour) 100%) !important;
     }
 
     .DesktopShell {
-        width: min(1720px, calc(100vw - 112px)) !important;
-        margin: 0 auto 76px !important;
-        padding-top: 24px !important;
+        width: min(1730px, calc(100vw - 96px)) !important;
+        margin: 0 auto 72px !important;
+        padding-top: 18px !important;
     }
 
     .TopBar {
         position: sticky !important;
-        top: 12px !important;
+        top: 10px !important;
         z-index: 50 !important;
         display: grid !important;
-        grid-template-columns: minmax(240px, auto) minmax(440px, 1fr) auto !important;
-        gap: 24px !important;
+        grid-template-columns: minmax(240px, auto) minmax(480px, 1fr) auto !important;
+        gap: 18px !important;
         align-items: center !important;
         width: 100% !important;
-        min-height: 88px !important;
+        min-height: 78px !important;
         height: auto !important;
         margin: 0 !important;
-        padding: 15px 30px !important;
-        border: 1px solid var(--desktop-border-soft) !important;
+        padding: 14px 22px !important;
+        border: 1px solid var(--Borders_Colour) !important;
         border-bottom: 0 !important;
-        border-radius: 30px 30px 0 0 !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-panel-bg) 92%, white 8%), var(--desktop-panel-bg)) !important;
-        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.18), inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 5%, transparent) !important;
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
+        border-radius: 26px 26px 0 0 !important;
+        background: var(--TopBar_Background_Colour) !important;
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16) !important;
     }
 
     .DesktopHeaderBrand {
@@ -6150,16 +6132,17 @@
         font-weight: 760;
         line-height: 1;
         letter-spacing: -0.045em;
-        color: var(--desktop-text-primary);
+        color: var(--Default_Text_Colour);
     }
 
     .DesktopBrandSubline {
         display: block;
         font-family: 'Afacad', sans-serif;
-        font-size: 11px;
-        letter-spacing: 0.05em;
+        font-size: 10px;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--desktop-text-muted);
+        color: var(--Muted_Text_Colour);
+        opacity: 0.68;
     }
 
     .DesktopHeaderSearch {
@@ -6176,23 +6159,24 @@
         max-height: none !important;
         margin: 0 !important;
         padding: 0 22px !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-radius: 20px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 92%, white 8%), var(--desktop-control-bg)) !important;
-        color: var(--desktop-text-primary) !important;
+        border: 1px solid var(--Input_Border) !important;
+        border-radius: 16px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        color: var(--Default_Text_Colour) !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 16px !important;
         font-weight: 500 !important;
-        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 4%, transparent), 0 10px 22px rgba(0, 0, 0, 0.08) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
     }
 
     .Search_Bar::placeholder {
-        color: var(--desktop-text-muted) !important;
+        color: var(--Muted_Text_Colour) !important;
+        opacity: 1 !important;
     }
 
     .Search_Bar:focus {
-        border-color: color-mix(in srgb, var(--desktop-accent) 36%, var(--desktop-border-soft) 64%) !important;
-        box-shadow: 0 0 0 4px var(--desktop-accent-focus), inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 4%, transparent) !important;
+        border-color: var(--Primary_Button_Colour) !important;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.18) !important;
         outline: none !important;
     }
 
@@ -6206,18 +6190,18 @@
     .currency-select,
     .BasketButton,
     .SettingsButton {
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-radius: 18px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg-strong) 90%, white 10%), var(--desktop-control-bg-strong)) !important;
-        color: var(--desktop-text-primary) !important;
-        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 4%, transparent), 0 10px 22px rgba(0, 0, 0, 0.08) !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        border-radius: 14px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        color: var(--Default_Text_Colour) !important;
+        box-shadow: none !important;
     }
 
     .currency-select:hover,
     .BasketButton:hover,
     .SettingsButton:hover {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg-strong) 84%, white 16%), color-mix(in srgb, var(--desktop-control-bg-strong) 94%, var(--desktop-panel-bg) 6%)) !important;
-        border-color: var(--desktop-border-strong) !important;
+        border-color: var(--Input_Border) !important;
+        background: var(--TopBar_Background_Colour) !important;
     }
 
     .currency-select {
@@ -6231,13 +6215,13 @@
         font-family: 'Inter', sans-serif !important;
         font-size: 13px !important;
         font-weight: 600 !important;
-        color: var(--desktop-text-primary) !important;
+        color: var(--Default_Text_Colour) !important;
     }
 
     .BasketButton,
     .SettingsButton {
-        width: 52px !important;
-        height: 52px !important;
+        width: 48px !important;
+        height: 48px !important;
         max-width: none !important;
     }
 
@@ -6248,12 +6232,12 @@
         max-width: none !important;
         min-height: 0 !important;
         margin: 0 !important;
-        padding: 0 30px 18px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-panel-bg-soft) 94%, white 6%), var(--desktop-panel-bg-soft)) !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-top: 1px solid color-mix(in srgb, var(--desktop-border-soft) 74%, transparent) !important;
-        border-radius: 0 0 30px 30px !important;
-        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.16) !important;
+        padding: 0 22px 14px !important;
+        background: var(--TopBar_Background_Colour) !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        border-top: 1px solid var(--Borders_Colour) !important;
+        border-radius: 0 0 26px 26px !important;
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16) !important;
     }
 
     .desktop-category-ribbon {
@@ -6261,10 +6245,10 @@
         align-items: center !important;
         align-content: flex-start !important;
         flex-wrap: wrap !important;
-        gap: 12px !important;
+        gap: 12px 14px !important;
         overflow: visible !important;
-        padding: 14px 0 0 !important;
-        border-top: 1px solid var(--desktop-border-soft) !important;
+        padding: 10px 0 0 !important;
+        border-top: 1px solid var(--Borders_Colour) !important;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -6277,14 +6261,14 @@
         width: auto !important;
         flex: 0 0 auto !important;
         min-width: max-content !important;
-        height: 50px !important;
-        min-height: 50px !important;
+        height: 46px !important;
+        min-height: 46px !important;
         margin: 0 !important;
-        padding: 0 20px !important;
+        padding: 0 18px !important;
         border-radius: 999px !important;
-        border: 1px solid color-mix(in srgb, var(--Sidebar_Button_Border) 82%, var(--TopBar_Background_Colour) 18%) !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--Sidebar_Button_BG) 86%, white 14%), var(--Sidebar_Button_BG)) !important;
-        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 3%, transparent) !important;
+        border: 1px solid var(--Sidebar_Button_Border) !important;
+        background: var(--Sidebar_Button_BG) !important;
+        box-shadow: none !important;
         white-space: nowrap !important;
     }
 
@@ -6293,18 +6277,19 @@
     .category-label {
         font-weight: 600 !important;
         letter-spacing: -0.02em !important;
+        font-size: 16px !important;
         color: var(--Category_Button_Text_Colour) !important;
     }
 
     .Category_Button:hover {
-        border-color: color-mix(in srgb, var(--Sidebar_Button_Border) 90%, var(--TopBar_Background_Colour) 10%) !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--Sidebar_Button_BG_Hover) 84%, white 16%), var(--Sidebar_Button_BG_Hover)) !important;
+        border-color: var(--Input_Border) !important;
+        background: var(--Sidebar_Button_BG_Hover) !important;
     }
 
     .Category_Button.Active {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--Sidebar_Button_BG_Active) 86%, white 14%), var(--Sidebar_Button_BG_Active)) !important;
-        border-color: color-mix(in srgb, var(--Sidebar_Button_BG_Active) 72%, var(--TopBar_Background_Colour) 28%) !important;
-        box-shadow: 0 12px 26px color-mix(in srgb, var(--Sidebar_Button_BG_Active) 18%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 16%, transparent) !important;
+        background: linear-gradient(180deg, var(--Primary_Button_Colour) 0%, var(--Primary_Button_Hover) 100%) !important;
+        border-color: var(--Primary_Button_Colour) !important;
+        box-shadow: 0 10px 22px rgba(0, 123, 255, 0.2) !important;
     }
 
     .Category_Button.Active .category-label,
@@ -6324,7 +6309,7 @@
         width: 100% !important;
         height: auto !important;
         max-height: none !important;
-        padding: 18px 6px 20px !important;
+        padding: 10px 6px 20px !important;
         background: transparent !important;
     }
 
@@ -6337,7 +6322,7 @@
     }
 
     .CatalogUtilityCopy {
-        max-width: 920px !important;
+        max-width: 980px !important;
     }
 
     .CatalogUtilityEyebrow {
@@ -6348,7 +6333,8 @@
         font-weight: 700 !important;
         letter-spacing: 0.14em !important;
         text-transform: uppercase !important;
-        color: var(--desktop-text-muted) !important;
+        color: var(--Muted_Text_Colour) !important;
+        opacity: 0.85 !important;
     }
 
     .CatalogUtilityTitleRow {
@@ -6361,19 +6347,19 @@
     .CatalogUtilityTitle {
         margin: 0 !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: clamp(34px, 2.5vw, 46px) !important;
-        font-weight: 800 !important;
-        line-height: 1.04 !important;
+        font-size: clamp(30px, 2.4vw, 40px) !important;
+        font-weight: 700 !important;
+        line-height: 1.06 !important;
         letter-spacing: -0.05em !important;
-        color: var(--desktop-text-primary) !important;
+        color: var(--Default_Text_Colour) !important;
     }
 
     .CatalogUtilityMeta {
-        margin: 0 0 8px !important;
+        margin: 0 0 6px !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 16px !important;
-        font-weight: 600 !important;
-        color: var(--desktop-text-secondary) !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        color: var(--Muted_Text_Colour) !important;
     }
 
     .CatalogUtilityControls {
@@ -6389,19 +6375,19 @@
         align-items: center !important;
         justify-content: flex-end !important;
         flex-wrap: nowrap !important;
-        min-width: 248px !important;
-        gap: 10px !important;
-        padding: 9px 14px !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-radius: 18px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 88%, white 12%), var(--desktop-control-bg)) !important;
-        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 3%, transparent) !important;
+        min-width: 224px !important;
+        gap: 8px !important;
+        padding: 8px 12px !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        border-radius: 14px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        box-shadow: none !important;
     }
 
     .CatalogUtilityControls .SSSortLabel {
         font-size: 14px !important;
-        font-weight: 600 !important;
-        color: var(--desktop-text-secondary) !important;
+        font-weight: 500 !important;
+        color: var(--Muted_Text_Colour) !important;
     }
 
     .CatalogUtilityControls .SSSortTrigger {
@@ -6423,7 +6409,7 @@
         margin: 0 !important;
         padding: 8px 0 64px !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: 34px 26px !important;
+        gap: 22px 22px !important;
         background: transparent !important;
         justify-items: stretch !important;
         align-content: start !important;
@@ -6435,20 +6421,20 @@
         height: 100% !important;
         max-height: none !important;
         min-height: 0 !important;
-        padding: 22px 22px 20px !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-radius: 22px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-card-bg) 92%, white 8%), var(--desktop-card-bg)) !important;
-        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.13), inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 2.5%, transparent) !important;
+        padding: 16px 16px 16px !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        border-radius: 18px !important;
+        background: var(--SideBar_Background_Colour) !important;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.10) !important;
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
     }
 
     .product:hover,
     .product:focus-within {
         transform: translateY(-2px) !important;
-        border-color: var(--desktop-border-strong) !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-card-bg-hover) 90%, white 10%), var(--desktop-card-bg-hover)) !important;
-        box-shadow: 0 20px 36px rgba(0, 0, 0, 0.16), 0 0 0 1px color-mix(in srgb, var(--desktop-accent) 10%, transparent) !important;
+        border-color: var(--Input_Border) !important;
+        background: var(--TopBar_Background_Colour) !important;
+        box-shadow: 0 16px 28px rgba(0, 0, 0, 0.14) !important;
     }
 
     .product-card {
@@ -6459,7 +6445,7 @@
             "media"
             "price"
             "actions" !important;
-        gap: 14px !important;
+        gap: 12px !important;
         width: 100% !important;
         height: 100% !important;
         align-content: start !important;
@@ -6472,9 +6458,9 @@
         aspect-ratio: 1 / 1 !important;
         margin: 0 !important;
         object-fit: cover !important;
-        border-radius: 16px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, white 8%), color-mix(in srgb, var(--desktop-card-bg) 92%, var(--SearchBar_Background_Colour) 8%)) !important;
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--Option_Button_Border) 32%, transparent) !important;
+        border-radius: 14px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        box-shadow: none !important;
     }
 
     .product-name {
@@ -6483,10 +6469,10 @@
         height: auto !important;
         min-height: calc(1.36em * 2) !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 16px !important;
+        font-size: 15px !important;
         font-weight: 500 !important;
         line-height: 1.36 !important;
-        color: var(--desktop-text-primary) !important;
+        color: var(--Default_Text_Colour) !important;
         display: -webkit-box !important;
         -webkit-box-orient: vertical !important;
         -webkit-line-clamp: 2 !important;
@@ -6497,84 +6483,85 @@
         grid-area: price !important;
         margin: 0 !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: clamp(19px, 1.35vw, 23px) !important;
-        font-weight: 700 !important;
+        font-size: clamp(17px, 1.2vw, 20px) !important;
+        font-weight: 500 !important;
         line-height: 1 !important;
-        letter-spacing: -0.04em !important;
-        color: var(--desktop-text-primary) !important;
+        letter-spacing: -0.02em !important;
+        color: var(--Default_Text_Colour) !important;
+        opacity: 0.92 !important;
     }
 
     .quantity-container {
         grid-area: actions !important;
         display: flex !important;
         flex-wrap: nowrap !important;
-        gap: 12px !important;
+        gap: 10px !important;
         align-items: center !important;
         width: 100% !important;
         margin-top: auto !important;
-        padding: 8px 0 0 !important;
+        padding: 6px 0 0 !important;
     }
 
     .quantity-controls {
-        flex: 0 0 146px !important;
-        width: 146px !important;
+        flex: 0 0 118px !important;
+        width: 118px !important;
         display: grid !important;
-        grid-template-columns: 42px 1fr 42px !important;
+        grid-template-columns: 34px 1fr 34px !important;
         gap: 6px !important;
-        padding: 4px !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-radius: 16px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 88%, white 12%), color-mix(in srgb, var(--desktop-control-bg) 96%, var(--desktop-panel-bg) 4%)) !important;
-        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--Default_Text_Colour) 3%, transparent) !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
     .quantity-controls .Button {
-        width: 42px !important;
-        min-width: 42px !important;
-        border-radius: 13px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, white 10%), var(--SearchBar_Background_Colour)) !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        font-size: 20px !important;
+        width: 34px !important;
+        min-width: 34px !important;
+        border-radius: 10px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        font-size: 18px !important;
         font-weight: 700 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 50px !important;
-        color: var(--desktop-text-primary) !important;
+        height: 42px !important;
+        color: var(--Default_Text_Colour) !important;
     }
 
     .quantity-controls .WhiteText {
         font-family: 'Inter', sans-serif !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 50px !important;
-        border: 1px solid var(--desktop-border-soft) !important;
-        border-radius: 13px !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, white 10%), var(--SearchBar_Background_Colour)) !important;
-        color: var(--desktop-text-primary) !important;
+        height: 42px !important;
+        border: 1px solid var(--Borders_Colour) !important;
+        border-radius: 10px !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        color: var(--Default_Text_Colour) !important;
     }
 
     .add-to-cart {
         flex: 1 1 auto !important;
         width: auto !important;
-        min-width: 176px !important;
-        min-height: 50px !important;
+        min-width: 158px !important;
+        min-height: 42px !important;
         aspect-ratio: auto !important;
-        border-radius: 13px !important;
+        border-radius: 10px !important;
         padding: 0 18px !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         white-space: nowrap !important;
-        border: 1px solid color-mix(in srgb, var(--desktop-accent) 54%, var(--TopBar_Background_Colour) 46%) !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-accent) 84%, white 16%) 0%, var(--desktop-accent) 100%) !important;
-        box-shadow: 0 10px 22px color-mix(in srgb, var(--desktop-accent) 20%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 14%, transparent) !important;
+        border: 1px solid var(--Primary_Button_Colour) !important;
+        background: linear-gradient(180deg, var(--Primary_Button_Colour) 0%, var(--Primary_Button_Hover) 100%) !important;
+        box-shadow: none !important;
         color: #ffffff !important;
     }
 
@@ -6588,8 +6575,8 @@
     }
 
     .add-to-cart:hover {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-accent-hover) 70%, white 30%) 0%, var(--desktop-accent-hover) 100%) !important;
-        box-shadow: 0 12px 24px color-mix(in srgb, var(--desktop-accent) 26%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent) !important;
+        background: var(--Primary_Button_Hover) !important;
+        border-color: var(--Primary_Button_Hover) !important;
     }
 
     .add-to-cart:focus-visible,
@@ -6599,33 +6586,26 @@
     .SettingsButton:focus-visible,
     .Category_Button:focus-visible {
         outline: none !important;
-        box-shadow: 0 0 0 4px var(--desktop-accent-focus) !important;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.18) !important;
     }
 
     .dark-mode .TopBar {
-        box-shadow: 0 24px 56px rgba(0, 0, 0, 0.26) !important;
-    }
-
-    .dark-mode .quantity-controls {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--desktop-control-bg) 86%, white 14%), color-mix(in srgb, var(--desktop-control-bg) 96%, var(--desktop-panel-bg) 4%)) !important;
-        border-color: var(--desktop-border-soft) !important;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18) !important;
     }
 
     .dark-mode .Clickable_Image {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, #2a2a2a 8%), color-mix(in srgb, var(--SearchBar_Background_Colour) 78%, var(--SideBar_Background_Colour) 22%)) !important;
+        background: var(--SearchBar_Background_Colour) !important;
     }
 
     .dark-mode .CatalogUtilityEyebrow,
     .dark-mode .CatalogUtilityMeta,
     .dark-mode .DesktopBrandSubline {
-        color: var(--desktop-text-secondary) !important;
+        color: var(--Muted_Text_Colour) !important;
     }
 
     .light-mode .TopBar,
     .light-mode .SideBar {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--TopBar_Background_Colour) 96%, white 4%), color-mix(in srgb, var(--SideBar_Background_Colour) 90%, var(--TopBar_Background_Colour) 10%)) !important;
-        border-color: color-mix(in srgb, var(--Input_Border) 62%, white 38%) !important;
-        box-shadow: 0 26px 52px rgba(55, 44, 22, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.42) !important;
+        box-shadow: 0 18px 34px rgba(55, 44, 22, 0.08) !important;
     }
 
     .light-mode .DesktopBrandWordmark {
@@ -6633,7 +6613,8 @@
     }
 
     .light-mode .DesktopBrandSubline {
-        color: rgba(88, 94, 110, 0.58) !important;
+        color: var(--Muted_Text_Colour) !important;
+        opacity: 0.8 !important;
     }
 
     .light-mode .Search_Bar,
@@ -6645,22 +6626,22 @@
     .light-mode .product,
     .light-mode .quantity-controls .Button,
     .light-mode .quantity-controls .WhiteText {
-        background: linear-gradient(180deg, color-mix(in srgb, var(--SearchBar_Background_Colour) 30%, white 70%), color-mix(in srgb, var(--SideBar_Background_Colour) 68%, var(--TopBar_Background_Colour) 32%)) !important;
-        border-color: color-mix(in srgb, var(--Input_Border) 62%, white 38%) !important;
+        background: var(--Input_Background) !important;
+        border-color: var(--Input_Border) !important;
         color: var(--Default_Text_Colour) !important;
         box-shadow: none !important;
     }
 
     .light-mode .Search_Bar {
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+        box-shadow: none !important;
     }
 
     .light-mode .Search_Bar::placeholder {
-        color: color-mix(in srgb, var(--Muted_Text_Colour) 86%, white 14%) !important;
+        color: var(--Muted_Text_Colour) !important;
     }
 
     .light-mode .desktop-category-ribbon {
-        border-top-color: color-mix(in srgb, var(--Input_Border) 58%, white 42%) !important;
+        border-top-color: var(--Input_Border) !important;
     }
 
     .light-mode .Category_Button_Heading,
@@ -6670,12 +6651,12 @@
     }
 
     .light-mode .CatalogUtilityEyebrow {
-        color: color-mix(in srgb, var(--Muted_Text_Colour) 84%, white 16%) !important;
+        color: var(--Muted_Text_Colour) !important;
     }
 
     .light-mode .CatalogUtilityMeta,
     .light-mode .CatalogUtilityControls .SSSortLabel {
-        color: color-mix(in srgb, var(--Default_Text_Colour) 54%, var(--Muted_Text_Colour) 46%) !important;
+        color: var(--Muted_Text_Colour) !important;
     }
 
     .light-mode .product {
@@ -6683,10 +6664,10 @@
     }
 
     .light-mode .add-to-cart {
-        border-color: color-mix(in srgb, var(--Primary_Button_Colour) 56%, white 44%) !important;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--Primary_Button_Colour) 82%, white 18%) 0%, var(--Primary_Button_Colour) 100%) !important;
+        border-color: var(--Primary_Button_Colour) !important;
+        background: linear-gradient(180deg, var(--Primary_Button_Colour) 0%, var(--Primary_Button_Hover) 100%) !important;
         color: #ffffff !important;
-        box-shadow: 0 12px 22px color-mix(in srgb, var(--Primary_Button_Colour) 22%, transparent) !important;
+        box-shadow: none !important;
     }
 }
 
