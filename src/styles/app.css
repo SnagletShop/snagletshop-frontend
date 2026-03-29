@@ -6953,13 +6953,13 @@
     .CatalogUtilityRow {
         display: flex !important;
         flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 10px !important;
+        align-items: stretch !important;
+        gap: 0 !important;
         width: 100% !important;
     }
 
     .CatalogUtilityCopy {
-        width: 100% !important;
+        display: none !important;
     }
 
     .CatalogUtilityEyebrow {
@@ -6985,13 +6985,21 @@
     }
 
     .CatalogUtilityControls .SSSort {
-        width: auto !important;
+        width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
+        justify-content: space-between !important;
     }
 
     .CatalogUtilityControls .SSSortLabel {
         font-size: 12px !important;
+    }
+
+    .CatalogUtilityControls .SSSortTrigger {
+        width: 100% !important;
+        min-height: 38px !important;
+        justify-content: space-between !important;
+        padding: 0 !important;
     }
 
     .CatalogUtilityControls .SSSortTriggerText {
@@ -7086,8 +7094,63 @@
 
     .quantity-container {
         grid-area: actions !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        align-items: center !important;
+        gap: 8px !important;
         width: 100% !important;
         margin: 2px 0 0 !important;
         padding: 0 !important;
+    }
+
+    .quantity-controls {
+        display: grid !important;
+        grid-template-columns: 28px 1fr 28px !important;
+        align-items: center !important;
+        justify-items: center !important;
+        width: 100% !important;
+        gap: 6px !important;
+        padding: 0 !important;
+    }
+
+    .quantity-controls .Button {
+        width: 28px !important;
+        min-width: 28px !important;
+        height: 28px !important;
+        font-size: 16px !important;
+    }
+
+    .quantity-controls .WhiteText {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 28px !important;
+        text-align: center !important;
+        line-height: 1 !important;
+    }
+
+    .add-to-cart {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        min-height: 28px !important;
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 11px !important;
+        white-space: nowrap !important;
+    }
+
+    .product-card__cart-label {
+        gap: 4px !important;
+        flex-wrap: nowrap !important;
+        white-space: nowrap !important;
+    }
+
+    .add-to-cart .cart-icon {
+        width: 12px !important;
+        height: 12px !important;
+        flex: 0 0 auto !important;
     }
 }
