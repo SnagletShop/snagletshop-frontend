@@ -6991,7 +6991,7 @@
 }
 
 .product-page-social-proof .product-rating-stars {
-    font-size: 16px;
+    font-size: 17px;
 }
 
 .product-page-social-proof .product-rating-star {
@@ -7114,6 +7114,10 @@
         padding-top: 16px !important;
     }
 
+    #ProductWrapper:has(#Basket_Viewer) {
+        padding: 0 !important;
+    }
+
     .Product_Viewer {
         margin-top: 0 !important;
     }
@@ -7130,6 +7134,10 @@
         padding: 60px 4px 18px !important;
         box-sizing: border-box !important;
         background: transparent !important;
+    }
+
+    #ProductWrapper:has(#Basket_Viewer) {
+        padding: 0 !important;
     }
 
     .SortContainer {
@@ -7431,7 +7439,7 @@
         min-width: 0 !important;
         gap: 0 !important;
         letter-spacing: -0.02em !important;
-        font-size: clamp(10px, 2.9vw, 12px) !important;
+        font-size: clamp(11px, 3.2vw, 13px) !important;
     }
 
     .product-page-social-proof .product-rating-value {
