@@ -1,4 +1,4 @@
-/* Extracted from index.html */
+﻿/* Extracted from index.html */
 
 /* style block 1 */
 @keyframes appLoaderSpin {
@@ -1101,7 +1101,7 @@
         background-color: var(--body_Background_Colour);
         overflow-x: hidden;
         min-height: 100vh;
-        /* ← add this */
+        /* â† add this */
     }
 
 
@@ -1198,7 +1198,7 @@
         appearance: none;
         -webkit-appearance: none;
         cursor: pointer;
-        /* still shows it’s clickable */
+        /* still shows itâ€™s clickable */
     }
 
 
@@ -1537,9 +1537,9 @@
         font-size: 20px;
         color: var(--Default_Text_Colour);
         line-height: 1.2em;
-        /* 👈 Controls line height */
+        /* ðŸ‘ˆ Controls line height */
         height: calc(1.2em * 6);
-        /* 👈 Ensures 6-line height */
+        /* ðŸ‘ˆ Ensures 6-line height */
         font-family: 'Rubik', sans-serif;
         overflow: hidden;
         display: -webkit-box;
@@ -1549,7 +1549,7 @@
         text-overflow: ellipsis;
     }
 
-    /* Restore “old” basket +/- look: slightly angular + horizontal row */
+    /* Restore â€œoldâ€ basket +/- look: slightly angular + horizontal row */
     .Quantity-Controls-Basket {
         display: flex !important;
         flex-direction: row !important;
@@ -1816,9 +1816,9 @@
         top: 0;
         left: 0;
         width: 100%;
-        /* ✅ Full width */
+        /* âœ… Full width */
         height: 100%;
-        /* ✅ Full height */
+        /* âœ… Full height */
         object-fit: contain;
         transition: none;
     }
@@ -1949,7 +1949,7 @@
         align-items: center;
         width: 100%;
         height: 100%;
-        /* ✅ Ensures proper centering */
+        /* âœ… Ensures proper centering */
         aspect-ratio: 1/1;
     }
 
@@ -1959,7 +1959,7 @@
         align-items: center;
         width: 100%;
         height: 100%;
-        /* ✅ Ensures proper centering */
+        /* âœ… Ensures proper centering */
         margin-top: 12.5px;
         aspect-ratio: 1/1;
     }
@@ -1989,7 +1989,7 @@
         height: 500px;
         aspect-ratio: 1 / 1;
         border: 1px solid var(--Borders_Colour);
-        /* 0.1rem ≈ 1.6px */
+        /* 0.1rem â‰ˆ 1.6px */
         box-sizing: border-box;
     }
 
@@ -2257,13 +2257,13 @@
         color: var(--Default_Text_Colour);
         box-shadow: none;
         border: none;
-        /* ✅ Removes any border */
+        /* âœ… Removes any border */
         outline: none;
-        /* ✅ Removes any focus outline */
+        /* âœ… Removes any focus outline */
         appearance: none;
-        /* ✅ Prevents browser default styling (especially in Safari) */
+        /* âœ… Prevents browser default styling (especially in Safari) */
         background-image: none;
-        /* ✅ Disables any gradient or highlight layer */
+        /* âœ… Disables any gradient or highlight layer */
     }
 
 
@@ -2596,14 +2596,14 @@
         color: var(--Default_Text_Colour);
         background-color: var(--Input_Background);
         border: var(--Borders_Colour);
-        border: 1px;
+        border: 0.278vw;
     }
 
     .ts-dropdown.single {
         color: var(--Default_Text_Colour);
         background-color: var(--Input_Background);
         border: var(--Borders_Colour);
-        border: 1px;
+        border: 0.278vw;
     }
 
     .ts-control,
@@ -2611,21 +2611,21 @@
         color: var(--Default_Text_Colour);
         background-color: var(--Input_Background);
         border: var(--Borders_Colour);
-        border: 1px;
+        border: 0.278vw;
     }
 
     .option.active {
         color: var(--Default_Text_Colour);
         background-color: var(--Input_Background);
         border: var(--Borders_Colour);
-        border: 1px;
+        border: 0.278vw;
     }
 
     .ts-wrapper.active {
         color: var(--Default_Text_Colour);
         background-color: var(--Input_Background);
         border: var(--Borders_Colour);
-        border: 1px;
+        border: 0.278vw;
     }
 
     html,
@@ -2642,9 +2642,9 @@
         top: 0;
         left: 0;
         width: 100%;
-        /* ✅ Full width */
+        /* âœ… Full width */
         height: 100%;
-        /* ✅ Full height */
+        /* âœ… Full height */
         object-fit: contain;
         transition: none;
     }
@@ -2679,7 +2679,7 @@
     }
 
     .ts-dropdown {
-        max-height: 240px;
+        max-height: 66.667vw;
         /* Adjust based on item height. ~10 items */
         overflow-y: auto;
     }
@@ -2857,8 +2857,8 @@
         overflow-x: auto;
         white-space: nowrap;
         background-color: var(--TopBar_Background_Colour);
-        padding: 8px;
-        gap: 10px;
+        padding: 2.222vw;
+        gap: 2.778vw;
         width: 100vw;
         position: relative;
         /* Added this to enable z-index */
@@ -2875,7 +2875,7 @@
         /* Proper vertical alignment */
         justify-content: flex-end;
         /* Align children to the right */
-        gap: 5px;
+        gap: 1.389vw;
         margin-right: 2vw;
         margin-left: auto;
         /* Push div itself to the right */
@@ -2904,16 +2904,16 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 6px;
+        padding: 1.667vw;
     }
 
-    /* 🔧 Target the actual <svg> inside */
+    /* ðŸ”§ Target the actual <svg> inside */
     .mobileSettingsButton .Icon,
     .mobileBasketButton .Icon {
         width: 1.9rem;
         height: 1.9rem;
         color: inherit;
-        /* ← uses the button's text color */
+        /* â† uses the button's text color */
     }
 
     .mobileLogo h1 {
@@ -2925,16 +2925,16 @@
     }
 
     .mobileSearch_Bar {
-        padding: 4px;
+        padding: 1.111vw;
         width: 94vw;
         font-size: 1rem;
         background-color: var(--SearchBar_Background_Colour);
-        min-width: 20px;
+        min-width: 5.556vw;
         font-family: 'Rubik', sans-serif;
     }
 
     .mobileCurrencySelect {
-        padding: 4px;
+        padding: 1.111vw;
         color: var(--Default_Text_Colour);
         font-size: 1rem;
         background-color: var(--SearchBar_Background_Colour);
@@ -2946,12 +2946,12 @@
 
     .ss-cart-inc {
         background-color: var(--Modal_Background_Colour);
-        margin: 12px 0 8px;
+        margin: 3.333vw 0 2.222vw;
         padding: 4%;
         padding-top: 5% !important;
-        border-radius: 14px;
+        border-radius: 3.889vw;
         font-family: 'Afacad', sans-serif;
-        border: 1px solid rgba(0, 0, 0, .10);
+        border: 0.278vw solid rgba(0, 0, 0, .10);
         background: rgba(0, 0, 0, .02);
     }
 
@@ -2968,12 +2968,12 @@
         background-color: var(--SideBar_Background_Colour);
         /* <-- applied always */
         color: var(--Default_Text_Colour);
-        font-size: clamp(14px, 2.2vw, 18px);
+        font-size: clamp(3.889vw, 2.2vw, 5vw);
         font-weight: bold;
 
         box-sizing: border-box;
-        border: 1px solid var(--Borders_Colour);
-        border-radius: 5px;
+        border: 0.278vw solid var(--Borders_Colour);
+        border-radius: 1.389vw;
 
     }
 
@@ -2994,7 +2994,7 @@
 
         border: 0.15em solid var(--Borders_Colour);
         /* Same as logo */
-        border-radius: 5px;
+        border-radius: 1.389vw;
 
         box-sizing: border-box;
         font-weight: bold;
@@ -3014,9 +3014,9 @@
         max-height: 100%;
         aspect-ratio: 1 / 0.75;
         height: 100%;
-        font-size: clamp(14px, 2.2vw, 18px);
-        border: 1px solid var(--Borders_Colour);
-        border-radius: 5px;
+        font-size: clamp(3.889vw, 2.2vw, 5vw);
+        border: 0.278vw solid var(--Borders_Colour);
+        border-radius: 1.389vw;
         background-color: var(--SearchBar_Background_Colour);
         color: var(--Default_Text_Colour);
         margin-left: 1%;
@@ -3053,7 +3053,7 @@
         overflow-y: auto;
         z-index: 990;
         padding: 1rem 1rem 5rem;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        box-shadow: 0.556vw 0 1.389vw rgba(0, 0, 0, 0.1);
     }
 
     .category-icon-wrapper {
@@ -3082,9 +3082,9 @@
 
     .sidebar {
         position: fixed;
-        left: -250px;
+        left: -69.444vw;
         top: 0;
-        width: 250px;
+        width: 69.444vw;
         height: 100%;
         background: var(--Input_Background);
         color: var(--Default_Text_Colour);
@@ -3099,20 +3099,20 @@
 
 
     .main-content.SideBar-open {
-        margin-left: 250px;
+        margin-left: 69.444vw;
         transition: margin 0.3s ease;
     }
 
     .SideBar button {
         display: block;
         width: 100%;
-        padding: 10px 15px;
+        padding: 2.778vw 4.167vw;
         background: none;
         border: none;
         text-align: left;
         color: #ddd;
-        font-size: 14px;
-        border-bottom: 1px solid var(--Input_Background);
+        font-size: 3.889vw;
+        border-bottom: 0.278vw solid var(--Input_Background);
         cursor: pointer;
     }
 
@@ -3129,13 +3129,13 @@
         grid-row-gap: 3vw;
         /* or row-gap */
         background-color: var(--body_Background_Colour);
-        padding: 0px;
+        padding: 0;
         width: 98%;
         max-width: 98%;
         margin: 0 2vw;
         justify-content: center;
         min-height: 100vh;
-        /* 👈 Ensures background fills full viewport height */
+        /* ðŸ‘ˆ Ensures background fills full viewport height */
     }
 
 
@@ -3147,7 +3147,7 @@
         width: 50%;
         height: 50%;
         font-size: 2vh;
-        border-radius: 5px;
+        border-radius: 1.389vw;
         border: 0.05em solid var(--Borders_Colour);
         border-color: var(--Borders_Colour);
         padding-left: 1%;
@@ -3165,7 +3165,7 @@
 
         color: var(--Danger_Colour);
         font-weight: bold;
-        border-radius: 5px;
+        border-radius: 1.389vw;
 
     }
 
@@ -3180,10 +3180,10 @@
         /* Scales with button height */
         display: flex;
         align-items: flex-start;
-        border-radius: 5px;
+        border-radius: 1.389vw;
         justify-content: left;
         box-sizing: border-box;
-        border: 0px solid var(--Borders_Colour);
+        border: 0 solid var(--Borders_Colour);
         /* Scales with font size */
     }
 
@@ -3191,7 +3191,7 @@
         font-size: 5vw;
         /* Ensures text scales with button */
         white-space: nowrap;
-        border-radius: 5px;
+        border-radius: 1.389vw;
         margin-left: 0;
 
     }
@@ -3199,17 +3199,17 @@
     .product {
         background-color: var(--SearchBar_Background_Colour);
         color: var(--Default_Text_Colour);
-        border: 1px solid var(--Input_Background);
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        padding: 10px;
+        border: 0.278vw solid var(--Input_Background);
+        border-radius: 2.222vw;
+        box-shadow: 0 1.111vw 2.222vw rgba(0, 0, 0, 0.1);
+        padding: 2.778vw;
         width: 40vw;
         aspect-ratio: 1 /1.867;
         /* Allow grid to define width */
-        max-width: 300px;
+        max-width: 83.333vw;
         /* Ensures uniform width */
         height: fit-content;
-        max-height: 450px;
+        max-height: 125vw;
         display: flex;
         justify-content: center;
     }
@@ -3226,9 +3226,9 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        gap: 2.222vw;
         width: 100%;
-        padding-bottom: 15px;
+        padding-bottom: 4.167vw;
     }
 
     .quantity-controls {
@@ -3251,7 +3251,7 @@
         font-family: 'Afacad', sans-serif;
         padding-bottom: 2vw;
         margin-left: 2vw;
-        border: 1px solid var(--Option_Button_Border);
+        border: 0.278vw solid var(--Option_Button_Border);
         background-color: white;
         cursor: pointer;
         border-radius: 1vw;
@@ -3302,7 +3302,7 @@
         aspect-ratio: 1/0.4;
         width: 50%;
         min-width: max-content;
-        border-radius: 4px;
+        border-radius: 1.111vw;
         cursor: pointer;
         transition: background-color 0.3s;
         font-size: 2.4vw;
@@ -3330,7 +3330,7 @@
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 5px;
+        gap: 1.389vw;
 
         /* Remove fixed positioning */
         position: static;
@@ -3345,12 +3345,12 @@
         height: 100%;
         width: auto;
         max-width: 100%;
-        border-radius: 5px;
+        border-radius: 1.389vw;
 
         background-color: var(--SearchBar_Background_Colour);
         color: var(--Default_Text_Colour);
-        border: 1px solid var(--Borders_Colour);
-        font-size: clamp(14px, 2.2vw, 18px);
+        border: 0.278vw solid var(--Borders_Colour);
+        font-size: clamp(3.889vw, 2.2vw, 5vw);
         font-weight: bold;
         display: flex;
         align-items: center;
@@ -3374,7 +3374,7 @@
     .Item-Details {
         display: grid;
 
-        gap: 0px;
+        gap: 0;
         grid-template-rows: 0fr 0fr;
         width: 50%;
         height: 140%
@@ -3385,9 +3385,9 @@
         aspect-ratio: 7/1;
         width: 85vw;
         max-width: 90vw;
-        border-radius: 5px;
+        border-radius: 1.389vw;
         background-color: var(--body_Background_Colour);
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         margin-top: auto;
         margin-bottom: auto;
 
@@ -3417,16 +3417,16 @@
         color: var(--Default_Text_Colour);
         line-height: 1.2em;
         font-family: 'Afacad', sans-serif;
-        /* 👈 Controls line height */
+        /* ðŸ‘ˆ Controls line height */
         height: calc(1.2em * 3);
-        /* 👈 Ensures 6-line height */
+        /* ðŸ‘ˆ Ensures 6-line height */
         font-family: 'Rubik', sans-serif;
         overflow: hidden;
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 3;
         text-overflow: ellipsis;
-        /* margin-top: -5px; */
+        /* margin-top: -1.389vw; */
     }
 
 
@@ -3448,8 +3448,8 @@
         aspect-ratio: 1 / 1;
 
         background-color: var(--body_Background_Colour);
-        border: 1px solid var(--Borders_Colour);
-        margin-top: 0px;
+        border: 0.278vw solid var(--Borders_Colour);
+        margin-top: 0;
         cursor: pointer;
         transition: background-color 0.3s;
     }
@@ -3479,7 +3479,7 @@
         max-width: 100%;
         max-height: 5vh;
         color: var(--Default_Text_Colour);
-        font-size: clamp(14px, 2.2vw, 18px);
+        font-size: clamp(3.889vw, 2.2vw, 5vw);
         font-weight: 600;
     }
 
@@ -3506,7 +3506,7 @@
 
         background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M5%207.5l5%205%205-5%22%20stroke%3D%22rgba%280%2C0%2C0%2C0.65%29%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E");
         background-repeat: no-repeat;
-        background-position: right 12px center;
+        background-position: right 3.333vw center;
 
 
         box-shadow: var(--DefaultBoxShadow);
@@ -3517,14 +3517,14 @@
 
     #sortSelect:focus {
         border-color: rgba(60, 130, 246, 0.55);
-        box-shadow: 0 0 0 4px rgba(60, 130, 246, 0.18);
+        box-shadow: 0 0 0 1.111vw rgba(60, 130, 246, 0.18);
     }
 
     .dark-mode #sortSelect {
         border-color: rgba(255, 255, 255, 0.14);
         background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M5%207.5l5%205%205-5%22%20stroke%3D%22rgba%28255%2C255%2C255%2C0.70%29%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E");
-        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35),
-            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        box-shadow: 0 2.778vw 6.111vw rgba(0, 0, 0, 0.35),
+            inset 0 0.278vw 0 rgba(255, 255, 255, 0.06);
     }
 
     .SortSelectLabel {
@@ -3538,7 +3538,7 @@
         position: relative;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 2.778vw;
         width: 100%;
     }
 
@@ -3549,7 +3549,7 @@
 
     .SSSortLabel {
         font-weight: 700;
-        font-size: clamp(14px, 2.2vw, 18px);
+        font-size: clamp(3.889vw, 2.2vw, 5vw);
         line-height: 1;
         color: var(--Default_Text_Colour);
         white-space: nowrap;
@@ -3567,7 +3567,7 @@
         align-items: center;
         gap: 2vw;
         font-family: 'Afacad', sans-serif;
-        font-size: clamp(14px, 2.2vw, 18px);
+        font-size: clamp(3.889vw, 2.2vw, 5vw);
         line-height: 1;
         cursor: pointer;
         box-shadow: var(--DefaultBoxShadow);
@@ -3575,7 +3575,7 @@
     }
 
     .SSSortTrigger:active {
-        transform: translateY(1px);
+        transform: translateY(0.278vw);
     }
 
     .SSSortTriggerText {
@@ -3583,13 +3583,13 @@
     }
 
     .SSSortChevron {
-        width: 10px;
-        height: 10px;
+        width: 2.778vw;
+        height: 2.778vw;
         display: inline-block;
-        border-right: 2px solid rgba(0, 0, 0, 0.55);
-        border-bottom: 2px solid rgba(0, 0, 0, 0.55);
+        border-right: 0.556vw solid rgba(0, 0, 0, 0.55);
+        border-bottom: 0.556vw solid rgba(0, 0, 0, 0.55);
         transform: rotate(45deg);
-        margin-top: -2px;
+        margin-top: -0.556vw;
     }
 
     .dark-mode .SSSortChevron {
@@ -3600,15 +3600,15 @@
     .SSSortMenu {
         position: absolute;
         left: 0;
-        top: calc(100% + 8px);
-        min-width: 260px;
-        max-width: min(90vw, 360px);
+        top: calc(100% + 2.222vw);
+        min-width: 72.222vw;
+        max-width: min(90vw, 100vw);
         background: rgba(255, 255, 255, 0.96);
-        border-radius: 14px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-radius: 3.889vw;
+        box-shadow: 0 5.556vw 16.667vw rgba(0, 0, 0, 0.18), 0 0.556vw 2.222vw rgba(0, 0, 0, 0.08);
         overflow: hidden;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(2.778vw);
+        -webkit-backdrop-filter: blur(2.778vw);
         z-index: 9999;
     }
 
@@ -3619,10 +3619,10 @@
     .SSSortMenu::before {
         content: "Sort by:";
         display: block;
-        padding: 12px 14px;
+        padding: 3.333vw 3.889vw;
         font-weight: 700;
         color: #222;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        border-bottom: 0.278vw solid rgba(0, 0, 0, 0.08);
     }
 
     .dark-mode .SSSortMenu::before {
@@ -3634,11 +3634,11 @@
         width: 100%;
         border: 0;
         background: transparent;
-        padding: 12px 14px;
+        padding: 3.333vw 3.889vw;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 16px;
+        font-size: 4.444vw;
         color: #222;
         cursor: pointer;
     }
@@ -3648,7 +3648,7 @@
     }
 
     .SSSortItem+.SSSortItem {
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        border-top: 0.278vw solid rgba(0, 0, 0, 0.08);
     }
 
     .dark-mode .SSSortItem+.SSSortItem {
@@ -3664,10 +3664,10 @@
     }
 
     .SSSortCheck {
-        width: 10px;
-        height: 18px;
-        border-right: 3px solid #2f80ed;
-        border-bottom: 3px solid #2f80ed;
+        width: 2.778vw;
+        height: 5vw;
+        border-right: 0.833vw solid #2f80ed;
+        border-bottom: 0.833vw solid #2f80ed;
         transform: rotate(45deg);
         opacity: 0;
     }
@@ -3677,7 +3677,7 @@
     }
 
     /* Mobile sizing so it looks like your reference screenshot */
-    @media (max-width: 680px) {
+    @media (max-width: 188.889vw) {
         .SSSortLabel {
             font-size: 100%;
             font-family: 'Afacad', sans-serif;
@@ -3694,10 +3694,10 @@
         justify-content: space-between;
         align-items: center;
         grid-template-columns: 1fr 5fr;
-        width: 1000px;
-        height: 350px;
+        width: 277.778vw;
+        height: 97.222vw;
         box-sizing: border-box;
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         /* Scales with font size */
     }
 
@@ -3707,11 +3707,11 @@
         align-items: center;
         grid-template-columns: 1fr 5fr;
         width: 95vw;
-        max-width: 2000px;
+        max-width: 555.556vw;
         aspect-ratio: 5.75/1;
         height: auto;
         box-sizing: border-box;
-        border: 0px solid var(--Borders_Colour);
+        border: 0 solid var(--Borders_Colour);
     }
 
     .Basket_Item_Container {
@@ -3721,10 +3721,10 @@
         grid-template-columns: 1fr 5fr;
         width: 95vw;
         margin-top: 1vw;
-        max-width: 2000px;
+        max-width: 555.556vw;
         aspect-ratio: 5.25/1;
         box-sizing: border-box;
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         /* Scales with font size */
         max-height: fit-content !important;
     }
@@ -3748,7 +3748,7 @@
         height: 6vw;
         width: 6vw;
         align-items: center;
-        margin-left: 5px;
+        margin-left: 1.389vw;
     }
 
     .Basket_Viewer {
@@ -3783,9 +3783,9 @@
         height: auto;
         display: -webkit-box;
         -webkit-line-clamp: 2;
-        /* 👈 Allow up to 2 lines */
+        /* ðŸ‘ˆ Allow up to 2 lines */
         -webkit-box-orient: vertical;
-        /* 👈 Set box direction */
+        /* ðŸ‘ˆ Set box direction */
         overflow: hidden;
         text-overflow: ellipsis;
         font-family: 'Rubik', sans-serif;
@@ -3800,7 +3800,7 @@
 
     .Product_Details {
         display: flex;
-        gap: 20px;
+        gap: 5.556vw;
         width: 100%;
         height: fit-content;
     }
@@ -3868,7 +3868,7 @@
         justify-content: center;
         margin-left: auto;
         margin-right: auto;
-        /* ✅ centers the thumbnails */
+        /* âœ… centers the thumbnails */
     }
 
     .Thumbnail {
@@ -3893,9 +3893,9 @@
     .Product_Info {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 2.778vw;
         width: 85vw;
-        max-width: 520px;
+        max-width: 144.444vw;
         color: var(--Default_Text_Colour);
 
         margin: 0 auto;
@@ -3921,7 +3921,7 @@
         align-items: center;
         width: 100%;
         height: 100%;
-        /* ✅ Ensures proper centering */
+        /* âœ… Ensures proper centering */
         aspect-ratio: 1/1;
     }
 
@@ -3939,7 +3939,7 @@
         /* Optional if you want it square */
         text-align: center;
         pointer-events: none;
-        /* So text doesn’t block button clicks */
+        /* So text doesnâ€™t block button clicks */
     }
 
 
@@ -3955,8 +3955,8 @@
         width: 99%;
         height: 99%;
         aspect-ratio: 1 / 1;
-        border: 1.6px solid var(--Borders_Colour);
-        /* 0.1rem ≈ 1.6px */
+        border: 0.444vw solid var(--Borders_Colour);
+        /* 0.1rem â‰ˆ 0.444vw */
         box-sizing: border-box;
 
         border-radius: 0.3rem;
@@ -3988,7 +3988,7 @@
         align-items: center;
         gap: 5vw;
         width: 85vw;
-        padding-bottom: 15px;
+        padding-bottom: 4.167vw;
 
     }
 
@@ -4004,14 +4004,14 @@
 
     .ReceiptTable {
         width: 95vw;
-        max-width: 1000px;
+        max-width: 277.778vw;
         margin-top: 2vw;
         border-collapse: collapse;
         background-color: rgba(255, 255, 255, 0);
         filter: none !important;
         text-shadow: none !important;
         opacity: 1 !important;
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         height: 5vw;
     }
 
@@ -4019,7 +4019,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        /* ✅ Vertically center it */
+        /* âœ… Vertically center it */
         position: fixed;
         z-index: 1000;
         top: 0;
@@ -4035,7 +4035,7 @@
         padding-bottom: 1vw;
         margin-top: 1vw;
         margin-bottom: 1vw;
-        border-bottom: 1px solid var(--Borders_Colour);
+        border-bottom: 0.278vw solid var(--Borders_Colour);
         /* Keep individual row borders */
         font-size: 3vw;
     }
@@ -4070,10 +4070,10 @@
         justify-content: space-between;
         align-items: center;
 
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         gap: 20%;
         height: auto;
-        max-width: 2000px;
+        max-width: 555.556vw;
 
         aspect-ratio: 15/1;
     }
@@ -4120,7 +4120,7 @@
         text-align: right;
         font-family: 'Afacad', sans-serif;
         font-size: 5vw;
-        margin-right: 15px;
+        margin-right: 4.167vw;
         max-height: auto;
         height: auto;
         width: 40%;
@@ -4131,9 +4131,9 @@
         justify-content: space-between;
         align-items: center;
         grid-template-columns: 1fr 5fr;
-        width: 1000px;
+        width: 277.778vw;
         box-sizing: border-box;
-        border: 1px var(--Borders_Colour);
+        border: 0.278vw var(--Borders_Colour);
     }
 
     .basket-item-price {
@@ -4155,7 +4155,7 @@
         font-size: 5vw;
         width: 90vw;
         color: var(--Muted_Text_Colour);
-        padding: 10px;
+        padding: 2.778vw;
     }
 
 
@@ -4166,10 +4166,10 @@
         width: 100%;
         background: var(--Input_Background);
         /* Dark input background */
-        border: 1px solid var(--Input_Border);
+        border: 0.278vw solid var(--Input_Border);
         /* Subtle border */
         color: var(--Default_Text_Colour);
-        border-radius: 5px;
+        border-radius: 1.389vw;
         outline: none;
     }
 
@@ -4177,23 +4177,23 @@
     .modal-content {
         position: relative;
         width: 90vw;
-        max-width: 500px;
+        max-width: 138.889vw;
         background-color: var(--Modal_Background_Colour);
-        border-radius: 10px;
-        padding: 20px;
+        border-radius: 2.778vw;
+        padding: 5.556vw;
         overflow-y: auto;
         max-height: 90vh;
-        /* ✅ Avoids going off screen */
+        /* âœ… Avoids going off screen */
     }
 
 
 
     .modal-content input {
         width: 90%;
-        padding: 10px;
-        margin: 5px;
-        border: 1px solid #272626;
-        border-radius: 5px;
+        padding: 2.778vw;
+        margin: 1.389vw;
+        border: 0.278vw solid #272626;
+        border-radius: 1.389vw;
     }
 
     .card-details {
@@ -4215,8 +4215,8 @@
         aspect-ratio: 1/1;
         width: 50%;
         background-color: var(--body_Background_Colour);
-        border: 1px solid var(--Borders_Colour);
-        margin-top: 0px;
+        border: 0.278vw solid var(--Borders_Colour);
+        margin-top: 0;
         cursor: pointer;
         transition: background-color 0.3s;
     }
@@ -4228,23 +4228,23 @@
         width: 100%;
         height: 10%;
         aspect-ratio: 5 / 1;
-        margin-top: 15px;
+        margin-top: 4.167vw;
         color: var(--Default_Text_Colour);
         box-shadow: none;
         border: none;
-        /* ✅ Removes any border */
+        /* âœ… Removes any border */
         outline: none;
-        /* ✅ Removes any focus outline */
+        /* âœ… Removes any focus outline */
         appearance: none;
-        /* ✅ Prevents browser default styling (especially in Safari) */
+        /* âœ… Prevents browser default styling (especially in Safari) */
         background-image: none;
     }
 
     .close {
         position: absolute;
-        top: 10px;
-        right: 15px;
-        font-size: 24px;
+        top: 2.778vw;
+        right: 4.167vw;
+        font-size: 6.667vw;
         cursor: pointer;
         color: var(--Default_Text_Colour);
 
@@ -4254,19 +4254,19 @@
     .dark-mode-toggle {
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-size: 16px;
+        gap: 2.778vw;
+        font-size: 4.444vw;
         font-weight: bold;
-        margin-bottom: 20px;
+        margin-bottom: 5.556vw;
     }
 
     .switch {
         position: relative;
-        width: 40px;
-        height: 20px;
+        width: 11.111vw;
+        height: 5.556vw;
         display: inline-block;
         vertical-align: middle;
-        margin-left: 10px;
+        margin-left: 2.778vw;
     }
 
     .switch input {
@@ -4280,7 +4280,7 @@
         right: 0;
         bottom: 0;
         background: black;
-        border-radius: 20px;
+        border-radius: 5.556vw;
         cursor: pointer;
         transition: 0.4s;
     }
@@ -4288,10 +4288,10 @@
     .slider::before {
         content: "";
         position: absolute;
-        width: 14px;
-        height: 14px;
-        left: 3px;
-        bottom: 3px;
+        width: 3.889vw;
+        height: 3.889vw;
+        left: 0.833vw;
+        bottom: 0.833vw;
         background: white;
         border-radius: 50%;
         transition: 0.3s;
@@ -4302,7 +4302,7 @@
     }
 
     input:checked+.slider::before {
-        transform: translateX(20px);
+        transform: translateX(5.556vw);
         background: black;
     }
 
@@ -4315,12 +4315,12 @@
 
     /* Settings Container */
     #Settings_Viewer {
-        width: 350px;
-        padding: 20px;
+        width: 97.222vw;
+        padding: 5.556vw;
         background: white;
-        border: 2px solid black;
-        border-radius: 10px;
-        box-shadow: 5px 5px 0px black;
+        border: 0.556vw solid black;
+        border-radius: 2.778vw;
+        box-shadow: 1.389vw 1.389vw 0 black;
         font-family: Arial, sans-serif;
     }
 
@@ -4328,26 +4328,26 @@
         background: var(--Input_Background);
         color: var(--Default_Text_Colour);
         border-color: white;
-        box-shadow: 5px 5px 0px white;
+        box-shadow: 1.389vw 1.389vw 0 white;
     }
 
     /* Settings Panel */
     .settings-panel {
         background-color: var(--SearchBar_Background_Colour);
         color: var(--Default_Text_Colour);
-        max-width: 700px;
+        max-width: 194.444vw;
         width: 80vw;
         margin-left: auto;
         margin-right: auto;
-        margin-top: 40px;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 0 15px #00000066;
+        margin-top: 11.111vw;
+        border-radius: 3.333vw;
+        padding: 8.333vw;
+        box-shadow: 0 0 4.167vw #00000066;
         font-family: Arial, sans-serif;
     }
 
     body {
-        padding-top: 85px;
+        padding-top: 23.611vw;
         /* Adjust based on actual header height */
         width: 100vw;
     }
@@ -4355,37 +4355,37 @@
     /* Individual section */
     .settings-section {
 
-        border-bottom: 1px solid var(--Borders_Colour);
+        border-bottom: 0.278vw solid var(--Borders_Colour);
 
     }
 
     .settings-section h3 {
-        font-size: 22px;
-        margin-bottom: 12px;
+        font-size: 6.111vw;
+        margin-bottom: 3.333vw;
     }
 
     .settings-section label {
-        font-size: 16px;
+        font-size: 4.444vw;
         font-weight: bold;
-        margin-top: 10px;
-        margin-bottom: 5px;
+        margin-top: 2.778vw;
+        margin-bottom: 1.389vw;
         display: block;
         background-color: transparent;
         /* Fixes "input-like" look */
     }
 
     .MessageTextArea {
-        font-size: 16px;
-        margin-top: 10px;
+        font-size: 4.444vw;
+        margin-top: 2.778vw;
         display: block;
         width: 100%;
         background-color: var(--Input_Background);
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         color: var(--Default_Text_Colour);
-        border-radius: 5px;
-        padding: 10px;
+        border-radius: 1.389vw;
+        padding: 2.778vw;
         box-sizing: border-box;
-        min-height: 500px;
+        min-height: 138.889vw;
         height: fit-content;
         overflow-y: auto;
     }
@@ -4400,15 +4400,15 @@
     }
 
     .settings-section input {
-        font-size: 16px;
-        margin-top: 10px;
+        font-size: 4.444vw;
+        margin-top: 2.778vw;
         display: block;
         width: 100%;
         background-color: var(--Input_Background);
-        border: 1px solid var(--Borders_Colour);
+        border: 0.278vw solid var(--Borders_Colour);
         color: var(--Default_Text_Colour);
-        border-radius: 5px;
-        padding: 10px;
+        border-radius: 1.389vw;
+        padding: 2.778vw;
         box-sizing: border-box;
     }
 
@@ -4416,11 +4416,11 @@
 
     /* Buttons */
     .settings-section button {
-        margin-top: 10px;
-        padding: 12px;
+        margin-top: 2.778vw;
+        padding: 3.333vw;
         background-color: var(--ButtonHoverState_Background_Colour);
         border: none;
-        border-radius: 5px;
+        border-radius: 1.389vw;
         color: var(--Default_Text_Colour);
         font-weight: bold;
         cursor: pointer;
@@ -4429,8 +4429,8 @@
 
     .settings-section {
         width: auto;
-        padding: 10px;
-        padding-bottom: 30px;
+        padding: 2.778vw;
+        padding-bottom: 8.333vw;
     }
 
     .clearDataButton {
@@ -4445,8 +4445,8 @@
 
     /* Info message */
     .contact-note {
-        font-size: 14px;
-        margin-top: 10px;
+        font-size: 3.889vw;
+        margin-top: 2.778vw;
     }
 
     .contact-note a {
@@ -4466,7 +4466,7 @@
         /* or 600, 500, etc. */
         font-size: 5vw;
         color: var(--Default_Text_Colour);
-        margin-bottom: 10px;
+        margin-bottom: 2.778vw;
         width: 80vw;
         text-align: center;
     }
@@ -4480,7 +4480,7 @@
         aspect-ratio: 1/0.4;
         padding-left: 6vw;
         width: 50%;
-        border-radius: 4px;
+        border-radius: 1.111vw;
         cursor: pointer;
         transition: background-color 0.3s;
         font-size: 4vw;
@@ -4511,7 +4511,7 @@
     .Product_Price_Label {
         font-size: 4vw;
         color: var(--accent-color);
-        margin-top: 10px;
+        margin-top: 2.778vw;
         text-align: left;
         /* Aligns text to the left */
         align-self: flex-start;
@@ -4527,7 +4527,7 @@
         width: auto;
         display: inline-block;
 
-        font-size: 30px;
+        font-size: 8.333vw;
         background-color: var(--SearchBar_Background_Colour);
         color: var(--Default_Text_Colour);
 
@@ -4537,7 +4537,7 @@
         -webkit-appearance: none;
         -moz-appearance: none;
         text-align: left;
-        width: 175px;
+        width: 48.611vw;
     }
 
     .mobileHeaderWrapper {
@@ -4558,7 +4558,7 @@
 
 }
 
-/* === PAYMENT MODAL – OVERLAY, LAYOUT, TYPOGRAPHY ======================= */
+/* === PAYMENT MODAL â€“ OVERLAY, LAYOUT, TYPOGRAPHY ======================= */
 
 #paymentModal {
     position: fixed;
@@ -4585,7 +4585,7 @@
     background: rgba(15, 23, 42, 0.30);
 }
 
-/* dark overlay – tuned to match reference */
+/* dark overlay â€“ tuned to match reference */
 .dark-mode #paymentModal {
     background: #00000087;
 }
@@ -4605,7 +4605,7 @@
     /* box-shadow: 0 24px 60px rgba(15, 23, 42, 0.65); */
 }
 
-/* dark card – deep navy, soft highlight like screenshot */
+/* dark card â€“ deep navy, soft highlight like screenshot */
 .dark-mode #paymentModal .modal-content {
     background: #14161E;
     border: 1px solid #282839;
@@ -4681,7 +4681,7 @@
         transform 0.07s ease;
 }
 
-/* dark fields – slightly lighter than card, bluish tint */
+/* dark fields â€“ slightly lighter than card, bluish tint */
 .dark-mode #paymentModal input[type="text"],
 .dark-mode #paymentModal input[type="email"],
 .dark-mode #paymentModal input[type="tel"],
@@ -4738,7 +4738,7 @@
     box-shadow: none !important;
 }
 
-/* dark version – same tone as inputs */
+/* dark version â€“ same tone as inputs */
 .dark-mode #paymentModal .ts-wrapper.single .ts-control {
 
 
@@ -4827,7 +4827,7 @@
     cursor: default;
 }
 
-/* === SIDE BAR REFINEMENT – DESKTOP (>= 680px) ======================= */
+/* === SIDE BAR REFINEMENT â€“ DESKTOP (>= 680px) ======================= */
 
 :root {
     /* extra tokens just for sidebar buttons */
@@ -4912,7 +4912,7 @@
         transform: translateY(-1px);
     }
 
-    /* active category → blue pill from mock */
+    /* active category â†’ blue pill from mock */
 
 
 
@@ -4959,9 +4959,9 @@
 @media (max-width: 680px) {
     .mobileSideBar {
         background-color: var(--SideBar_Background_Colour);
-        padding-top: 16px;
-        padding-bottom: 32px;
-        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.14);
+        padding-top: 4.444vw;
+        padding-bottom: 8.889vw;
+        box-shadow: 1.111vw 0 3.333vw rgba(0, 0, 0, 0.14);
     }
 
 
@@ -5078,7 +5078,7 @@
         cursor: pointer !important;
         box-shadow:
             var(--DefaultBoxShadow);
-        /* IMPORTANT: remove “button look” / focus outlines that cause the boxed UI in your screenshot */
+        /* IMPORTANT: remove â€œbutton lookâ€ / focus outlines that cause the boxed UI in your screenshot */
         outline: none !important;
     }
 
@@ -5119,7 +5119,7 @@
         background: rgba(255, 255, 255, 0.96) !important;
         border-radius: 14px !important;
 
-        /* This prevents the “stretched/boxed” look */
+        /* This prevents the â€œstretched/boxedâ€ look */
         border: 0 !important;
         outline: none !important;
 
@@ -5227,9 +5227,9 @@
     .ss-chip,
     .BasketOptionChip,
     .basket-option-chip {
-        font-size: 10px !important;
-        padding: 4px 8px !important;
-        border-radius: 999px !important;
+        font-size: 2.778vw !important;
+        padding: 1.111vw 2.222vw !important;
+        border-radius: 277.5vw !important;
         line-height: 1.15 !important;
         max-width: 70vw !important;
         white-space: nowrap !important;
@@ -5243,15 +5243,15 @@
 
     .RecoCard {
         scroll-snap-align: start;
-        border: 1px solid rgba(255, 255, 255, .12);
-        border-radius: 14px;
-        padding: 10px;
+        border: 0.278vw solid rgba(255, 255, 255, .12);
+        border-radius: 3.889vw;
+        padding: 2.778vw;
         background: rgba(255, 255, 255, .04);
         cursor: pointer;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        min-height: 220px;
+        gap: 2.222vw;
+        min-height: 61.111vw;
     }
 }
 
@@ -5276,7 +5276,7 @@
     }
 }
 
-/* IMPORTANT: you currently have margin-left:-5vw which shifts everything and causes “off-center” */
+/* IMPORTANT: you currently have margin-left:-5vw which shifts everything and causes â€œoff-centerâ€ */
 .Product_Images {
     width: 100% !important;
     max-width: 100% !important;
@@ -5284,7 +5284,7 @@
     align-items: center !important;
 }
 
-/* stop the “thin text column” effect */
+/* stop the â€œthin text columnâ€ effect */
 .Product_Info {
     width: 100% !important;
     max-width: 100% !important;
@@ -5298,7 +5298,7 @@
     overflow-wrap: anywhere !important;
 }
 
-/* thumbnails: wrap, don’t force weird widths */
+/* thumbnails: wrap, donâ€™t force weird widths */
 .ThumbnailsHolder {
 
     display: grid !important;
@@ -6745,7 +6745,7 @@
         min-height: 0 !important;
         display: block !important;
         overflow: hidden !important;
-        padding: 11px !important;
+        padding: 3.056vw !important;
         box-sizing: border-box !important;
     }
 
@@ -6758,7 +6758,7 @@
             "price"
             "meta"
             "actions" !important;
-        gap: 8px !important;
+        gap: 2.222vw !important;
         width: 100% !important;
         height: auto !important;
         align-content: start !important;
@@ -6809,17 +6809,17 @@
 
     .product-rating-meta {
         grid-area: meta !important;
-        margin: -1px 0 4px !important;
+        margin: -0.278vw 0 1.111vw !important;
         font-size: 3.25vw !important;
-        gap: 5px !important;
+        gap: 1.389vw !important;
     }
 
     .quantity-container {
         grid-area: actions !important;
         display: grid !important;
-        grid-template-columns: minmax(74px, auto) minmax(0, 1fr) !important;
+        grid-template-columns: minmax(20.556vw, auto) minmax(0, 1fr) !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 2.222vw !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -6830,7 +6830,7 @@
         width: auto !important;
         justify-content: flex-start !important;
         align-items: center !important;
-        gap: 4px !important;
+        gap: 1.111vw !important;
         padding: 0 !important;
         border: 0 !important;
         background: transparent !important;
@@ -6838,29 +6838,29 @@
     }
 
     .quantity-controls .Button {
-        width: clamp(24px, 7.4vw, 31px) !important;
-        min-width: clamp(24px, 7.4vw, 31px) !important;
-        height: clamp(24px, 7.4vw, 31px) !important;
-        border-radius: 4px !important;
-        font-size: clamp(14px, 4vw, 17px) !important;
+        width: clamp(6.667vw, 7.4vw, 8.611vw) !important;
+        min-width: clamp(6.667vw, 7.4vw, 8.611vw) !important;
+        height: clamp(6.667vw, 7.4vw, 8.611vw) !important;
+        border-radius: 1.111vw !important;
+        font-size: clamp(3.889vw, 4vw, 4.722vw) !important;
     }
 
     .quantity-controls .WhiteText {
-        min-width: 14px !important;
-        height: clamp(24px, 7.4vw, 31px) !important;
-        font-size: clamp(13px, 3.8vw, 16px) !important;
+        min-width: 3.889vw !important;
+        height: clamp(6.667vw, 7.4vw, 8.611vw) !important;
+        font-size: clamp(3.611vw, 3.8vw, 4.444vw) !important;
     }
 
     .add-to-cart {
         width: 100% !important;
         min-width: 0 !important;
         max-width: none !important;
-        min-height: clamp(28px, 8vw, 34px) !important;
-        height: clamp(28px, 8vw, 34px) !important;
+        min-height: clamp(7.778vw, 8vw, 9.444vw) !important;
+        height: clamp(7.778vw, 8vw, 9.444vw) !important;
         aspect-ratio: auto !important;
-        border-radius: 4px !important;
-        padding: 0 10px !important;
-        font-size: clamp(12px, 3.2vw, 14px) !important;
+        border-radius: 1.111vw !important;
+        padding: 0 2.778vw !important;
+        font-size: clamp(3.333vw, 3.2vw, 3.889vw) !important;
         line-height: 1 !important;
     }
 }
@@ -7043,8 +7043,8 @@
         display: grid !important;
         grid-template-columns: auto minmax(0, 1fr) !important;
         align-items: center !important;
-        gap: 6px !important;
-        margin-top: 8px !important;
+        gap: 1.667vw !important;
+        margin-top: 2.222vw !important;
     }
 
     .Product_Price_Meta_Row .Product_Price_Label {
@@ -7060,31 +7060,31 @@
     }
 
     .product-rating-meta {
-        margin: 4px 0 8px;
-        font-size: 14px;
+        margin: 1.111vw 0 2.222vw;
+        font-size: 3.889vw;
     }
 
     .product-page-social-proof {
-        gap: 3px;
+        gap: 0.833vw;
         margin: 0 0 0 auto;
         min-width: 0 !important;
         max-width: 100% !important;
-        font-size: 10px;
+        font-size: 2.778vw;
         overflow: visible !important;
         white-space: nowrap !important;
     }
 
     .product-page-social-proof .product-rating-stars {
-        font-size: 10px;
+        font-size: 2.778vw;
     }
 
     .product-page-social-proof .product-rating-value {
-        font-size: 11px;
+        font-size: 3.056vw;
     }
 
     .product-page-social-proof .product-rating-separator,
     .product-page-social-proof .product-sold-count {
-        font-size: 10px;
+        font-size: 2.778vw;
     }
 }
 
@@ -7107,11 +7107,11 @@
 
 @media (max-width: 680px) {
     #ProductWrapper:has(#Product_Viewer) {
-        padding-top: 16px !important;
+        padding-top: 4.444vw !important;
     }
 
     #ProductWrapper:has(#ProductPageSkeleton) {
-        padding-top: 16px !important;
+        padding-top: 4.444vw !important;
     }
 
     #ProductWrapper:has(#Basket_Viewer) {
@@ -7124,14 +7124,14 @@
 
     .Product_Detail_Page .Product_Details {
         margin-top: 0 !important;
-        gap: 12px !important;
+        gap: 3.333vw !important;
     }
 
     #ProductWrapper {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 60px 4px 18px !important;
+        padding: 16.667vw 1.111vw 5vw !important;
         box-sizing: border-box !important;
         background: transparent !important;
     }
@@ -7148,7 +7148,7 @@
         width: 96vw !important;
         max-width: 96vw !important;
         margin: 0 auto !important;
-        padding: 6px 0 10px !important;
+        padding: 1.667vw 0 2.778vw !important;
         box-sizing: border-box !important;
         background: var(--TopBar_Background_Colour) !important;
         border-top: 0 !important;
@@ -7168,8 +7168,8 @@
     }
 
     .CatalogUtilityEyebrow {
-        margin: 0 0 4px !important;
-        font-size: 10px !important;
+        margin: 0 0 1.111vw !important;
+        font-size: 2.778vw !important;
     }
 
     .CatalogUtilityTitle {
@@ -7179,21 +7179,21 @@
     }
 
     .CatalogUtilityMeta {
-        margin: 4px 0 0 !important;
-        font-size: 14px !important;
+        margin: 1.111vw 0 0 !important;
+        font-size: 3.889vw !important;
     }
 
     .CatalogUtilityControls {
         width: 100% !important;
         margin-left: 0 !important;
         justify-content: flex-start !important;
-        padding-top: 2px !important;
+        padding-top: 0.556vw !important;
     }
 
     .CatalogUtilityControls .SSSort {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 2.222vw !important;
         width: auto !important;
         min-width: 0 !important;
         max-width: 100% !important;
@@ -7204,7 +7204,7 @@
     }
 
     .CatalogUtilityControls .SSSortLabel {
-        font-size: 12px !important;
+        font-size: 3.333vw !important;
         font-weight: 700 !important;
         color: var(--Default_Text_Colour) !important;
         line-height: 1 !important;
@@ -7212,32 +7212,32 @@
 
     .CatalogUtilityControls .SSSortTrigger {
         width: auto !important;
-        min-width: 104px !important;
-        min-height: 32px !important;
+        min-width: 28.889vw !important;
+        min-height: 8.889vw !important;
         justify-content: space-between !important;
-        gap: 8px !important;
-        padding: 0 12px !important;
-        border: 1px solid var(--Borders_Colour) !important;
-        border-radius: 8px !important;
+        gap: 2.222vw !important;
+        padding: 0 3.333vw !important;
+        border: 0.278vw solid var(--Borders_Colour) !important;
+        border-radius: 2.222vw !important;
         background: var(--SearchBar_Background_Colour) !important;
         box-shadow: none !important;
     }
 
     .CatalogUtilityControls .SSSortTriggerText {
-        font-size: 12px !important;
+        font-size: 3.333vw !important;
         font-weight: 500 !important;
         line-height: 1 !important;
     }
 
     .CatalogUtilityControls .SSSortChevron {
-        width: 8px !important;
-        height: 8px !important;
+        width: 2.222vw !important;
+        height: 2.222vw !important;
     }
 
     #Viewer:has(> .product) {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 8px !important;
-        padding: 8px 0 24px !important;
+        gap: 2.222vw !important;
+        padding: 2.222vw 0 6.667vw !important;
     }
 
     .product {
@@ -7246,7 +7246,7 @@
         height: auto !important;
         max-height: none !important;
         min-height: 0 !important;
-        padding: 10px !important;
+        padding: 2.778vw !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
     }
@@ -7260,7 +7260,7 @@
             "price"
             "meta"
             "actions" !important;
-        gap: 8px !important;
+        gap: 2.222vw !important;
         width: 100% !important;
         height: auto !important;
         align-content: start !important;
@@ -7306,9 +7306,9 @@
         display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 4px !important;
+        gap: 1.111vw !important;
         margin: 0 !important;
-        font-size: 13px !important;
+        font-size: 3.611vw !important;
         white-space: nowrap !important;
         overflow: hidden !important;
     }
@@ -7322,16 +7322,16 @@
     }
 
     .product-rating-stars {
-        font-size: 13px !important;
+        font-size: 3.611vw !important;
     }
 
     .product-rating-value {
-        font-size: 13px !important;
+        font-size: 3.611vw !important;
     }
 
     .product-rating-separator,
     .product-sold-count {
-        font-size: 12px !important;
+        font-size: 3.333vw !important;
     }
 
     .product-sold-count__suffix {
@@ -7343,27 +7343,27 @@
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 2.222vw !important;
         width: 100% !important;
-        margin: 2px 0 0 !important;
+        margin: 0.556vw 0 0 !important;
         padding: 0 !important;
     }
 
     .quantity-controls {
         display: grid !important;
-        grid-template-columns: 28px 1fr 28px !important;
+        grid-template-columns: 7.778vw 1fr 7.778vw !important;
         align-items: center !important;
         justify-items: center !important;
         width: 100% !important;
-        gap: 6px !important;
+        gap: 1.667vw !important;
         padding: 0 !important;
     }
 
     .quantity-controls .Button {
-        width: 28px !important;
-        min-width: 28px !important;
-        height: 28px !important;
-        font-size: 16px !important;
+        width: 7.778vw !important;
+        min-width: 7.778vw !important;
+        height: 7.778vw !important;
+        font-size: 4.444vw !important;
     }
 
     .quantity-controls .WhiteText {
@@ -7372,7 +7372,7 @@
         justify-content: center !important;
         width: 100% !important;
         min-width: 0 !important;
-        height: 28px !important;
+        height: 7.778vw !important;
         text-align: center !important;
         line-height: 1 !important;
     }
@@ -7381,10 +7381,10 @@
         width: 100% !important;
         min-width: 0 !important;
         max-width: none !important;
-        min-height: 28px !important;
-        height: 28px !important;
-        padding: 0 8px !important;
-        font-size: 11px !important;
+        min-height: 7.778vw !important;
+        height: 7.778vw !important;
+        padding: 0 2.222vw !important;
+        font-size: 3.056vw !important;
         white-space: nowrap !important;
         overflow: hidden !important;
     }
@@ -7394,14 +7394,14 @@
         align-items: center !important;
         justify-content: center !important;
         width: 100% !important;
-        gap: 4px !important;
+        gap: 1.111vw !important;
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
     }
 
     .add-to-cart .cart-icon {
-        width: 12px !important;
-        height: 12px !important;
+        width: 3.333vw !important;
+        height: 3.333vw !important;
         flex: 0 0 auto !important;
         display: block !important;
     }
@@ -7424,11 +7424,11 @@
         display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 4px !important;
+        gap: 1.111vw !important;
         margin: 0 0 0 auto !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        font-size: 12px !important;
+        font-size: 3.333vw !important;
         white-space: nowrap !important;
         overflow: visible !important;
         justify-content: flex-end !important;
@@ -7439,18 +7439,18 @@
         min-width: 0 !important;
         gap: 0 !important;
         letter-spacing: -0.02em !important;
-        font-size: clamp(11px, 3.2vw, 13px) !important;
+        font-size: clamp(3.056vw, 3.2vw, 3.611vw) !important;
     }
 
     .product-page-social-proof .product-rating-value {
         flex: 0 0 auto !important;
-        font-size: 13px !important;
+        font-size: 3.611vw !important;
     }
 
     .product-page-social-proof .product-rating-separator,
     .product-page-social-proof .product-sold-count {
         flex: 0 0 auto !important;
-        font-size: 12px !important;
+        font-size: 3.333vw !important;
     }
 
     .product-page-social-proof .product-sold-count__suffix {
@@ -7459,9 +7459,9 @@
 
     .Product_Detail_Page .Product_Price_Meta_Row {
         width: 100% !important;
-        padding-inline: 12px !important;
+        padding-inline: 3.333vw !important;
         box-sizing: border-box !important;
-        margin-top: 10px !important;
+        margin-top: 2.778vw !important;
     }
 }
 
