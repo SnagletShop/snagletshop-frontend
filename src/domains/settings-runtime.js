@@ -377,6 +377,50 @@
     };
   }
 
+  function enhanceTomSelectSearch(instance, { placeholder = 'Type to search...' } = {}) {
+    if (!instance || typeof instance !== 'object') return instance;
+    const attach = () => {
+      const control = instance.control;
+      const input = instance.control_input || control?.querySelector('input');
+      if (!control || !input) return;
+      try {
+        input.setAttribute('type', 'search');
+        input.setAttribute('inputmode', 'search');
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocapitalize', 'none');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('placeholder', placeholder);
+        input.setAttribute('aria-label', placeholder);
+      } catch {}
+      if (control.dataset.ssSearchReady === '1') return;
+      const focusAndOpen = () => {
+        try { instance.open(); } catch {}
+        try { input.focus({ preventScroll: true }); } catch {
+          try { input.focus(); } catch {}
+        }
+      };
+      control.addEventListener('pointerdown', () => requestAnimationFrame(focusAndOpen));
+      control.addEventListener('focusin', () => {
+        try { instance.open(); } catch {}
+      });
+      control.addEventListener('keydown', (event) => {
+        const isPrintable = typeof event.key === 'string'
+          && event.key.length === 1
+          && !event.altKey
+          && !event.ctrlKey
+          && !event.metaKey;
+        if (!isPrintable && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowDown') return;
+        requestAnimationFrame(focusAndOpen);
+      });
+      control.dataset.ssSearchReady = '1';
+    };
+    attach();
+    try { requestAnimationFrame(attach); } catch {}
+    try { setTimeout(attach, 0); } catch {}
+    try { setTimeout(attach, 80); } catch {}
+    return instance;
+  }
+
   function getCountryAliases(ctx = {}, code = '') {
     const cc = String(code || '').trim().toUpperCase();
     if (!cc) return [];
@@ -638,7 +682,7 @@
     if (currencySelect) {
       if (typeof TomSelect === 'function') {
         const currencyOptions = buildCurrencySearchOptions(ctx, buildCurrencyCodeList(ctx));
-        new TomSelect('#currencySelect', {
+        const currencyTom = new TomSelect('#currencySelect', {
           options: currencyOptions,
           items: [localStorage.getItem('selectedCurrency') || ctx.getSelectedCurrency?.() || 'EUR'],
           valueField: 'value',
@@ -649,6 +693,16 @@
           sortField: [{ field: '$score', direction: 'desc' }, { field: 'text', direction: 'asc' }],
           placeholder: 'Select a currency…',
           closeAfterSelect: true,
+          openOnFocus: true,
+          onInitialize: function () {
+            enhanceTomSelectSearch(this, { placeholder: 'Type to search currency...' });
+          },
+          onFocus: function () {
+            this.open();
+          },
+          onType: function () {
+            this.open();
+          },
           onChange: (val) => {
             if (!val) return;
             ctx.setSelectedCurrency?.(val);
@@ -659,6 +713,7 @@
             ctx.updateAllPrices?.();
           }
         });
+        enhanceTomSelectSearch(currencyTom, { placeholder: 'Type to search currency...' });
       }
       currencySelect.classList.remove('tom-hidden');
     }
@@ -666,7 +721,7 @@
     if (countrySelect) {
       if (typeof TomSelect === 'function') {
         const countryOptions = buildCountrySearchOptions(ctx, countriesList);
-        new TomSelect('#countrySelect', {
+        const countryTom = new TomSelect('#countrySelect', {
           options: countryOptions,
           items: [detectedCountry],
           valueField: 'value',
@@ -677,6 +732,16 @@
           sortField: [{ field: '$score', direction: 'desc' }, { field: 'text', direction: 'asc' }],
           placeholder: 'Select a country…',
           closeAfterSelect: true,
+          openOnFocus: true,
+          onInitialize: function () {
+            enhanceTomSelectSearch(this, { placeholder: 'Type to search country...' });
+          },
+          onFocus: function () {
+            this.open();
+          },
+          onType: function () {
+            this.open();
+          },
           onChange: (val) => {
             if (!val) return;
             const newCountry = String(val).toUpperCase();
@@ -694,6 +759,7 @@
             ctx.updateAllPrices?.();
           }
         });
+        enhanceTomSelectSearch(countryTom, { placeholder: 'Type to search country...' });
       }
       countrySelect.classList.remove('tom-hidden');
     }

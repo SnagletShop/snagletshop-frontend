@@ -7342,4 +7342,38 @@
     .product-page-social-proof .product-sold-count__suffix {
         display: inline !important;
     }
+
+    .Product_Detail_Page .Product_Price_Meta_Row {
+        width: 100% !important;
+        padding-inline: 12px !important;
+        box-sizing: border-box !important;
+        margin-top: 10px !important;
+    }
+}
+
+.settings-panel .ts-wrapper.single .ts-control {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+}
+
+.settings-panel .ts-wrapper.single .ts-control .item {
+    flex: 0 1 auto !important;
+    max-width: calc(100% - 120px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.settings-panel .ts-wrapper.single .ts-control input {
+    flex: 1 1 120px !important;
+    min-width: 120px !important;
+    width: auto !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+}
+
+.settings-panel .ts-dropdown {
+    z-index: 1400 !important;
 }
