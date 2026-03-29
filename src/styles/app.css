@@ -6493,11 +6493,11 @@
         grid-area: name !important;
         margin: 0 !important;
         height: auto !important;
-        min-height: calc(1.24em * 2) !important;
+        min-height: calc(1.28em * 2) !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 15px !important;
+        font-size: 16px !important;
         font-weight: 600 !important;
-        line-height: 1.24 !important;
+        line-height: 1.28 !important;
         color: var(--Default_Text_Colour) !important;
         display: -webkit-box !important;
         -webkit-box-orient: vertical !important;
@@ -6507,9 +6507,9 @@
 
     .product-price {
         grid-area: price !important;
-        margin: 2px 0 0 !important;
+        margin: 3px 0 0 !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 15px !important;
+        font-size: 16px !important;
         font-weight: 600 !important;
         line-height: 1 !important;
         letter-spacing: -0.02em !important;
@@ -6522,10 +6522,10 @@
         display: flex !important;
         flex-wrap: nowrap !important;
         justify-content: flex-start !important;
-        gap: 10px !important;
+        gap: 12px !important;
         align-items: center !important;
         width: 100% !important;
-        margin-top: 2px !important;
+        margin-top: 4px !important;
         padding: 0 !important;
     }
 
@@ -6535,7 +6535,7 @@
         display: flex !important;
         justify-content: flex-start !important;
         align-items: center !important;
-        gap: 3px !important;
+        gap: 4px !important;
         padding: 0 !important;
         border: 0 !important;
         border-radius: 0 !important;
@@ -6544,29 +6544,29 @@
     }
 
     .quantity-controls .Button {
-        width: 30px !important;
-        min-width: 30px !important;
-        border-radius: 4px !important;
+        width: 34px !important;
+        min-width: 34px !important;
+        border-radius: 5px !important;
         background: var(--SearchBar_Background_Colour) !important;
         border: 1px solid var(--Borders_Colour) !important;
-        font-size: 17px !important;
+        font-size: 18px !important;
         font-weight: 700 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 30px !important;
+        height: 34px !important;
         color: var(--Default_Text_Colour) !important;
     }
 
     .quantity-controls .WhiteText {
         font-family: 'Inter', sans-serif !important;
-        min-width: 16px !important;
-        font-size: 14px !important;
+        min-width: 18px !important;
+        font-size: 15px !important;
         font-weight: 600 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 30px !important;
+        height: 34px !important;
         border: 0 !important;
         border-radius: 0 !important;
         background: transparent !important;
@@ -6576,13 +6576,13 @@
     .add-to-cart {
         flex: 0 0 auto !important;
         width: auto !important;
-        min-width: 122px !important;
-        min-height: 30px !important;
+        min-width: 138px !important;
+        min-height: 34px !important;
         aspect-ratio: auto !important;
-        border-radius: 4px !important;
-        padding: 0 16px !important;
+        border-radius: 5px !important;
+        padding: 0 18px !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         font-weight: 600 !important;
         display: inline-flex !important;
         align-items: center !important;
@@ -6599,7 +6599,7 @@
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 4px !important;
+        gap: 6px !important;
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
     }
