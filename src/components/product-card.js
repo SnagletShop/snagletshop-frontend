@@ -129,6 +129,88 @@
     return `${window.location.origin}/?product=${encodeURIComponent(product?.name || '')}`;
   }
 
+  function parseLooseNumber(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value !== 'string') return 0;
+    let text = value.trim();
+    if (!text) return 0;
+    text = text.replace(/\/\s*5\b/gi, '');
+    text = text.replace(/[^\d.,+\-]/g, '');
+    if (!text) return 0;
+    if (text.includes(',') && text.includes('.')) {
+      if (text.lastIndexOf(',') > text.lastIndexOf('.')) text = text.replace(/\./g, '').replace(/,/g, '.');
+      else text = text.replace(/,/g, '');
+    } else if (text.includes(',')) {
+      text = text.replace(/,/g, '.');
+    }
+    text = text.replace(/\+/g, '');
+    const parsed = Number.parseFloat(text);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function normalizeRatingValue(value) {
+    const parsed = parseLooseNumber(value);
+    return Math.max(0, Math.min(5, Math.round(parsed * 10) / 10));
+  }
+
+  function normalizeSoldCount(value) {
+    const parsed = parseLooseNumber(value);
+    return Math.max(0, Math.round(parsed));
+  }
+
+  function formatSoldCountLabel(value) {
+    const soldCount = normalizeSoldCount(value);
+    if (!(soldCount > 0)) return '';
+    const compact = soldCount >= 1000 ? Math.floor(soldCount / 100) * 100 : soldCount;
+    const formatted = new Intl.NumberFormat('en-US').format(compact);
+    return `${formatted}${soldCount >= 1000 ? '+' : ''} sold`;
+  }
+
+  function buildRatingStars(ratingValue) {
+    const fullStars = Math.max(0, Math.min(5, Math.floor(normalizeRatingValue(ratingValue))));
+    let markup = '';
+    for (let i = 0; i < 5; i += 1) {
+      markup += `<span class="product-rating-star${i < fullStars ? ' is-filled' : ''}" aria-hidden="true">${i < fullStars ? '★' : '☆'}</span>`;
+    }
+    return markup;
+  }
+
+  function createProductSocialProof(product) {
+    const ratingValue = normalizeRatingValue(product?.ratingValue ?? product?.starsRating ?? product?.rating ?? product?.ratingOutOf5);
+    const soldLabel = formatSoldCountLabel(product?.soldCount ?? product?.purchasedCount ?? product?.purchasesCount ?? product?.purchaseCount);
+    if (!(ratingValue > 0) && !soldLabel) return null;
+
+    const meta = document.createElement('div');
+    meta.className = 'product-rating-meta';
+
+    const stars = document.createElement('span');
+    stars.className = 'product-rating-stars';
+    stars.innerHTML = buildRatingStars(ratingValue);
+    meta.appendChild(stars);
+
+    if (ratingValue > 0) {
+      const rating = document.createElement('span');
+      rating.className = 'product-rating-value';
+      rating.textContent = ratingValue.toFixed(1);
+      meta.appendChild(rating);
+    }
+
+    if (soldLabel) {
+      if (ratingValue > 0) {
+        const separator = document.createElement('span');
+        separator.className = 'product-rating-separator';
+        separator.textContent = '|';
+        meta.appendChild(separator);
+      }
+      const sold = document.createElement('span');
+      sold.className = 'product-sold-count';
+      sold.textContent = soldLabel;
+      meta.appendChild(sold);
+    }
+
+    return meta;
+  }
+
   function shouldHandleInAppNavigation(event) {
     return !(event?.defaultPrevented || event?.button !== 0 || event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey);
   }
@@ -190,11 +272,14 @@
       onDecrease: opts.onDecrease,
       onIncrease: opts.onIncrease,
     });
+    const socialProof = createProductSocialProof(product);
 
     const addToCartBtn = createCartButton(window.TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || 'Add to cart', () => opts.onAddToCart?.(product));
     qtyUi?.quantityContainer?.appendChild(addToCartBtn);
 
-    card.append(nameLink, mediaFrame, priceP, qtyUi?.quantityContainer || document.createElement('div'));
+    card.append(nameLink, mediaFrame, priceP);
+    if (socialProof) card.appendChild(socialProof);
+    card.append(qtyUi?.quantityContainer || document.createElement('div'));
     productDiv.appendChild(card);
     return productDiv;
   }

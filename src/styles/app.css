@@ -6737,3 +6737,64 @@
         width: 100% !important;
     }
 }
+
+.product-rating-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 2px 0 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.2;
+    color: var(--Muted_Text_Colour);
+}
+
+.product-rating-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    letter-spacing: 0.02em;
+}
+
+.product-rating-star {
+    color: rgba(255, 196, 87, 0.42);
+}
+
+.product-rating-star.is-filled {
+    color: #ffc457;
+}
+
+.product-rating-value {
+    font-weight: 600;
+    color: var(--Default_Text_Colour);
+}
+
+.product-rating-separator,
+.product-sold-count {
+    color: var(--Muted_Text_Colour);
+}
+
+@media (max-width: 680px) {
+    .product-rating-meta {
+        margin: 4px 0 8px;
+        font-size: 13px;
+    }
+}
+
+@media (min-width: 681px) {
+    .product-card {
+        grid-template-areas:
+            "media"
+            "name"
+            "price"
+            "meta"
+            "actions" !important;
+    }
+
+    .product-rating-meta {
+        grid-area: meta !important;
+        margin: -4px 0 2px !important;
+        font-size: 13px !important;
+    }
+}
