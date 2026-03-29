@@ -6407,10 +6407,10 @@
         width: 100% !important;
         max-width: none !important;
         margin: 0 !important;
-        padding: 8px 0 64px !important;
+        padding: 12px 4px 72px !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-auto-rows: auto !important;
-        gap: 22px 22px !important;
+        gap: 30px 28px !important;
         background: transparent !important;
         justify-items: stretch !important;
         align-items: start !important;
@@ -6426,11 +6426,11 @@
         aspect-ratio: auto !important;
         align-self: start !important;
         overflow: hidden !important;
-        padding: 16px 16px 16px !important;
+        padding: 18px 18px 18px !important;
         border: 1px solid var(--Borders_Colour) !important;
-        border-radius: 18px !important;
+        border-radius: 20px !important;
         background: var(--SideBar_Background_Colour) !important;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.10) !important;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.10) !important;
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
     }
 
@@ -6451,7 +6451,7 @@
             "price"
             "actions" !important;
         grid-template-rows: auto auto auto auto !important;
-        gap: 14px !important;
+        gap: 16px !important;
         width: 100% !important;
         height: auto !important;
         align-content: start !important;
@@ -6518,11 +6518,11 @@
         grid-area: actions !important;
         display: flex !important;
         flex-wrap: nowrap !important;
-        gap: 10px !important;
+        gap: 12px !important;
         align-items: center !important;
         width: 100% !important;
         margin-top: 0 !important;
-        padding: 0 !important;
+        padding: 2px 0 0 !important;
     }
 
     .quantity-controls {
