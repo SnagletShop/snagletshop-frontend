@@ -6409,9 +6409,11 @@
         margin: 0 !important;
         padding: 8px 0 64px !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-rows: auto !important;
         gap: 22px 22px !important;
         background: transparent !important;
         justify-items: stretch !important;
+        align-items: start !important;
         align-content: start !important;
     }
 
@@ -6422,6 +6424,8 @@
         max-height: none !important;
         min-height: 0 !important;
         aspect-ratio: auto !important;
+        align-self: start !important;
+        overflow: hidden !important;
         padding: 16px 16px 16px !important;
         border: 1px solid var(--Borders_Colour) !important;
         border-radius: 18px !important;
@@ -6453,19 +6457,33 @@
         align-content: start !important;
     }
 
-    .Clickable_Image {
+    .product-media-frame {
         grid-area: media !important;
         display: block !important;
         width: 100% !important;
-        height: auto !important;
         aspect-ratio: 1 / 1 !important;
+        overflow: hidden !important;
         margin: 0 !important;
-        object-fit: cover !important;
         border-radius: 14px !important;
         background: var(--SearchBar_Background_Colour) !important;
         box-shadow: none !important;
         align-self: start !important;
-        justify-self: stretch !important;
+        cursor: pointer !important;
+    }
+
+    .Clickable_Image {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        aspect-ratio: auto !important;
+        margin: 0 !important;
+        object-fit: cover !important;
+        object-position: center center !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
     .product-name {

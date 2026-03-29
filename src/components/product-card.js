@@ -156,6 +156,10 @@
       opts.onOpenProduct?.(product);
     });
 
+    const mediaFrame = document.createElement('div');
+    mediaFrame.className = 'product-media-frame';
+    mediaFrame.addEventListener('click', () => opts.onOpenProduct?.(product));
+
     const img = document.createElement('img');
     img.className = 'Clickable_Image';
     const resolvedPrice = getResolvedPrice(product, opts);
@@ -166,6 +170,7 @@
     img.dataset.imageurl = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
     img.dataset.description = opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '';
     img.addEventListener('click', () => opts.onOpenProduct?.(product));
+    mediaFrame.appendChild(img);
 
     const priceP = document.createElement('p');
     priceP.className = 'product-price';
@@ -189,7 +194,7 @@
     const addToCartBtn = createCartButton(window.TEXTS?.PRODUCT_SECTION?.ADD_TO_CART || 'Add to cart', () => opts.onAddToCart?.(product));
     qtyUi?.quantityContainer?.appendChild(addToCartBtn);
 
-    card.append(nameLink, img, priceP, qtyUi?.quantityContainer || document.createElement('div'));
+    card.append(nameLink, mediaFrame, priceP, qtyUi?.quantityContainer || document.createElement('div'));
     productDiv.appendChild(card);
     return productDiv;
   }
