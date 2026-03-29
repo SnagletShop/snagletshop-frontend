@@ -139,6 +139,20 @@
     return ctx || {};
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatCategoryLabel(category) {
+    if (!category || category === 'Default_Page') return 'Browse products';
+    return String(category).replace(/_/g, ' ').trim();
+  }
+
   function scheduleCategoryButtonsRetry(ctx = {}) {
     if (categoryRetryTimer) return;
     categoryRetryTimer = window.setTimeout(() => {
@@ -339,6 +353,9 @@
       }
       const resolvePrice = (product) => resolveCatalogProductPrice(product, ctx);
       const productList = sortProducts([...(catalogProducts[category] || [])], sortBy, sortOrder, resolvePrice);
+      const categoryLabel = formatCategoryLabel(category);
+      const productCount = productList.length;
+      const productCountLabel = `${productCount} ${productCount === 1 ? 'product' : 'products'}`;
       ctx.removeSortContainer?.();
       let sortContainer = document.getElementById('SortContainer');
       if (!sortContainer && wrapper) {
@@ -358,6 +375,29 @@
               <button class="SSSortItem" type="button" role="option" data-value="NameLast" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.NAME_DESC || 'Name Z–A'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
               <button class="SSSortItem" type="button" role="option" data-value="Cheapest" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.PRICE_ASC || 'Price low–high'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
               <button class="SSSortItem" type="button" role="option" data-value="Priciest" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.PRICE_DESC || 'Price high–low'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
+            </div>
+          </div>`;
+        sortContainer.innerHTML = `
+          <div class="CatalogUtilityRow">
+            <div class="CatalogUtilityCopy">
+              <p class="CatalogUtilityEyebrow">Catalog</p>
+              <h1 class="CatalogUtilityTitle">${escapeHtml(categoryLabel)}</h1>
+              <p class="CatalogUtilityMeta">${escapeHtml(productCountLabel)}</p>
+            </div>
+            <div class="CatalogUtilityControls">
+              <div class="SSSort" id="SSSort">
+                <div class="SSSortLabel">${TEXTS?.SORTING?.LABEL || 'Sort by'}</div>
+                <button class="SSSortTrigger" id="SSSortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                  <span class="SSSortTriggerText" id="SSSortTriggerText">${TEXTS?.SORTING?.OPTIONS?.NAME_ASC || 'Name A-Z'}</span>
+                  <span class="SSSortChevron" aria-hidden="true"></span>
+                </button>
+                <div class="SSSortMenu" id="SSSortMenu" role="listbox" tabindex="-1" hidden>
+                  <button class="SSSortItem" type="button" role="option" data-value="NameFirst" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.NAME_ASC || 'Name A-Z'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
+                  <button class="SSSortItem" type="button" role="option" data-value="NameLast" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.NAME_DESC || 'Name Z-A'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
+                  <button class="SSSortItem" type="button" role="option" data-value="Cheapest" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.PRICE_ASC || 'Price low-high'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
+                  <button class="SSSortItem" type="button" role="option" data-value="Priciest" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.PRICE_DESC || 'Price high-low'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
+                </div>
+              </div>
             </div>
           </div>`;
         wrapper.insertBefore(sortContainer, viewer);
