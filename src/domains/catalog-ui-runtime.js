@@ -358,7 +358,7 @@
       const productCountLabel = `${productCount} ${productCount === 1 ? 'product' : 'products'}`;
       ctx.removeSortContainer?.();
       let sortContainer = document.getElementById('SortContainer');
-      if (!sortContainer && wrapper) {
+      if (!sortContainer) {
         sortContainer = document.createElement('div');
         sortContainer.id = 'SortContainer';
         sortContainer.className = 'SortContainer';
@@ -388,7 +388,14 @@
               </div>
             </div>
           </div>`;
-        wrapper.insertBefore(sortContainer, viewer);
+        const isMobileViewport = !!window.matchMedia?.('(max-width: 680px)')?.matches;
+        const mobileHeaderWrapper = document.querySelector('.mobileHeaderWrapper');
+        const mobileSearchRow = mobileHeaderWrapper?.querySelector?.('.mobileSearchRow') || null;
+        if (isMobileViewport && mobileHeaderWrapper) {
+          mobileHeaderWrapper.insertBefore(sortContainer, mobileSearchRow ? mobileSearchRow.nextSibling : null);
+        } else if (wrapper) {
+          wrapper.insertBefore(sortContainer, viewer);
+        }
       }
       try { api.setupSortDropdown(ctx, sortBy); } catch (e) { console.warn('Sort dropdown setup failed:', e); }
       productList.forEach(product => {
