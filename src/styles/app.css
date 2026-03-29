@@ -6299,14 +6299,14 @@
     }
 
     #ProductWrapper {
-        width: min(1320px, calc(100vw - 72px)) !important;
+        width: min(1440px, calc(100vw - 64px)) !important;
         margin: 0 auto !important;
         background: transparent !important;
     }
 
     .SortContainer {
         display: block !important;
-        width: min(1320px, calc(100vw - 72px)) !important;
+        width: min(1440px, calc(100vw - 64px)) !important;
         margin: 0 auto !important;
         height: auto !important;
         max-height: none !important;
@@ -6323,7 +6323,7 @@
     }
 
     .CatalogUtilityCopy {
-        max-width: 1080px !important;
+        max-width: 1160px !important;
     }
 
     .CatalogUtilityEyebrow {
@@ -6408,10 +6408,10 @@
         width: 100% !important;
         max-width: none !important;
         margin: 0 !important;
-        padding: 8px 0 56px !important;
+        padding: 10px 0 72px !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-auto-rows: auto !important;
-        gap: 22px 20px !important;
+        gap: 34px 24px !important;
         background: transparent !important;
         justify-items: stretch !important;
         align-items: start !important;
@@ -6428,7 +6428,7 @@
         align-self: start !important;
         overflow: hidden !important;
         justify-self: stretch !important;
-        padding: 14px 14px 16px !important;
+        padding: 16px 16px 18px !important;
         border: 1px solid var(--Borders_Colour) !important;
         border-radius: 10px !important;
         background: var(--SideBar_Background_Colour) !important;
