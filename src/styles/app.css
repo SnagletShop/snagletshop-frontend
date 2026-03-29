@@ -6299,14 +6299,14 @@
     }
 
     #ProductWrapper {
-        width: min(1180px, calc(100vw - 56px)) !important;
+        width: min(1320px, calc(100vw - 72px)) !important;
         margin: 0 auto !important;
         background: transparent !important;
     }
 
     .SortContainer {
         display: block !important;
-        width: min(1180px, calc(100vw - 56px)) !important;
+        width: min(1320px, calc(100vw - 72px)) !important;
         margin: 0 auto !important;
         height: auto !important;
         max-height: none !important;
@@ -6323,7 +6323,7 @@
     }
 
     .CatalogUtilityCopy {
-        max-width: 980px !important;
+        max-width: 1080px !important;
     }
 
     .CatalogUtilityEyebrow {
@@ -6411,7 +6411,7 @@
         padding: 8px 0 56px !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-auto-rows: auto !important;
-        gap: 20px 18px !important;
+        gap: 22px 20px !important;
         background: transparent !important;
         justify-items: stretch !important;
         align-items: start !important;
@@ -6428,7 +6428,7 @@
         align-self: start !important;
         overflow: hidden !important;
         justify-self: stretch !important;
-        padding: 12px 12px 14px !important;
+        padding: 14px 14px 16px !important;
         border: 1px solid var(--Borders_Colour) !important;
         border-radius: 10px !important;
         background: var(--SideBar_Background_Colour) !important;
@@ -6453,7 +6453,7 @@
             "price"
             "actions" !important;
         grid-template-rows: auto auto auto auto !important;
-        gap: 8px !important;
+        gap: 10px !important;
         width: 100% !important;
         height: auto !important;
         align-content: start !important;
@@ -6495,7 +6495,7 @@
         height: auto !important;
         min-height: calc(1.24em * 2) !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 14px !important;
+        font-size: 15px !important;
         font-weight: 600 !important;
         line-height: 1.24 !important;
         color: var(--Default_Text_Colour) !important;
@@ -6507,10 +6507,10 @@
 
     .product-price {
         grid-area: price !important;
-        margin: 1px 0 0 !important;
+        margin: 2px 0 0 !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 14px !important;
-        font-weight: 500 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
         line-height: 1 !important;
         letter-spacing: -0.02em !important;
         color: var(--Default_Text_Colour) !important;
@@ -6522,9 +6522,9 @@
         display: flex !important;
         flex-wrap: nowrap !important;
         justify-content: flex-start !important;
-        gap: 8px !important;
+        gap: 10px !important;
         align-items: center !important;
-        width: auto !important;
+        width: 100% !important;
         margin-top: 0 !important;
         padding: 0 !important;
     }
@@ -6544,29 +6544,29 @@
     }
 
     .quantity-controls .Button {
-        width: 24px !important;
-        min-width: 24px !important;
-        border-radius: 3px !important;
+        width: 30px !important;
+        min-width: 30px !important;
+        border-radius: 4px !important;
         background: var(--SearchBar_Background_Colour) !important;
         border: 1px solid var(--Borders_Colour) !important;
-        font-size: 15px !important;
+        font-size: 17px !important;
         font-weight: 700 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 24px !important;
+        height: 30px !important;
         color: var(--Default_Text_Colour) !important;
     }
 
     .quantity-controls .WhiteText {
         font-family: 'Inter', sans-serif !important;
-        min-width: 12px !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
+        min-width: 16px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 24px !important;
+        height: 30px !important;
         border: 0 !important;
         border-radius: 0 !important;
         background: transparent !important;
@@ -6576,22 +6576,23 @@
     .add-to-cart {
         flex: 0 0 auto !important;
         width: auto !important;
-        min-width: 86px !important;
-        min-height: 24px !important;
+        min-width: 122px !important;
+        min-height: 30px !important;
         aspect-ratio: auto !important;
-        border-radius: 3px !important;
-        padding: 0 10px !important;
+        border-radius: 4px !important;
+        padding: 0 16px !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 11px !important;
+        font-size: 13px !important;
         font-weight: 600 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         white-space: nowrap !important;
         border: 1px solid var(--Primary_Button_Colour) !important;
-        background: linear-gradient(180deg, var(--Primary_Button_Colour) 0%, var(--Primary_Button_Hover) 100%) !important;
+        background: var(--Primary_Button_Colour) !important;
         box-shadow: none !important;
         color: #ffffff !important;
+        margin-left: auto !important;
     }
 
     .product-card__cart-label {
