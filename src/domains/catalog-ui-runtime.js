@@ -364,20 +364,6 @@
         sortContainer.className = 'SortContainer';
         const TEXTS = ctx.TEXTS || {};
         sortContainer.innerHTML = `
-          <div class="SSSort" id="SSSort">
-            <div class="SSSortLabel">${TEXTS?.SORTING?.LABEL || 'Sort by'}</div>
-            <button class="SSSortTrigger" id="SSSortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-              <span class="SSSortTriggerText" id="SSSortTriggerText">${TEXTS?.SORTING?.OPTIONS?.NAME_ASC || 'Name A–Z'}</span>
-              <span class="SSSortChevron" aria-hidden="true"></span>
-            </button>
-            <div class="SSSortMenu" id="SSSortMenu" role="listbox" tabindex="-1" hidden>
-              <button class="SSSortItem" type="button" role="option" data-value="NameFirst" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.NAME_ASC || 'Name A–Z'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
-              <button class="SSSortItem" type="button" role="option" data-value="NameLast" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.NAME_DESC || 'Name Z–A'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
-              <button class="SSSortItem" type="button" role="option" data-value="Cheapest" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.PRICE_ASC || 'Price low–high'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
-              <button class="SSSortItem" type="button" role="option" data-value="Priciest" aria-selected="false"><span class="SSSortItemLabel">${TEXTS?.SORTING?.OPTIONS?.PRICE_DESC || 'Price high–low'}</span><span class="SSSortCheck" aria-hidden="true"></span></button>
-            </div>
-          </div>`;
-        sortContainer.innerHTML = `
           <div class="CatalogUtilityRow">
             <div class="CatalogUtilityCopy">
               <p class="CatalogUtilityEyebrow">Catalog</p>
