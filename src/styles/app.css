@@ -6956,8 +6956,20 @@
 
 @media (max-width: 680px) {
     .Product_Price_Meta_Row {
-        gap: 10px;
-        margin-top: 8px;
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-top: 8px !important;
+    }
+
+    .Product_Price_Meta_Row .Product_Price_Label {
+        min-width: 0 !important;
+        font-size: 4vw !important;
+    }
+
+    .Product_Price_Meta_Row .Product_Price_Label strong {
+        display: none !important;
     }
 
     .product-rating-meta {
@@ -6966,19 +6978,26 @@
     }
 
     .product-page-social-proof {
-        gap: 4px;
+        gap: 3px;
         margin: 0 0 0 auto;
-        font-size: 11px;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        font-size: 10px;
         overflow: visible !important;
         white-space: nowrap !important;
     }
 
     .product-page-social-proof .product-rating-stars {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .product-page-social-proof .product-rating-value {
-        font-size: 12px;
+        font-size: 11px;
+    }
+
+    .product-page-social-proof .product-rating-separator,
+    .product-page-social-proof .product-sold-count {
+        font-size: 10px;
     }
 }
 
@@ -7001,7 +7020,11 @@
 
 @media (max-width: 680px) {
     #ProductWrapper:has(#Product_Viewer) {
-        padding-top: 8px !important;
+        padding-top: 16px !important;
+    }
+
+    #ProductWrapper:has(#ProductPageSkeleton) {
+        padding-top: 16px !important;
     }
 
     .Product_Viewer {
@@ -7293,12 +7316,27 @@
         display: flex !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 4px !important;
+        gap: 3px !important;
         margin: 0 0 0 auto !important;
-        font-size: 11px !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        font-size: 10px !important;
         white-space: nowrap !important;
         overflow: visible !important;
         justify-content: flex-end !important;
+    }
+
+    .product-page-social-proof .product-rating-stars {
+        font-size: 10px !important;
+    }
+
+    .product-page-social-proof .product-rating-value {
+        font-size: 11px !important;
+    }
+
+    .product-page-social-proof .product-rating-separator,
+    .product-page-social-proof .product-sold-count {
+        font-size: 10px !important;
     }
 
     .product-page-social-proof .product-sold-count__suffix {
