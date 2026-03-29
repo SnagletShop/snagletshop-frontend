@@ -6420,7 +6420,8 @@
         max-width: none !important;
         height: 100% !important;
         max-height: none !important;
-        min-height: 0 !important;
+        min-height: 430px !important;
+        aspect-ratio: 0.78 / 1 !important;
         padding: 16px 16px 16px !important;
         border: 1px solid var(--Borders_Colour) !important;
         border-radius: 18px !important;
@@ -6444,8 +6445,10 @@
             "name"
             "media"
             "price"
+            "."
             "actions" !important;
-        gap: 12px !important;
+        grid-template-rows: auto auto auto 1fr auto !important;
+        gap: 13px !important;
         width: 100% !important;
         height: 100% !important;
         align-content: start !important;
@@ -6461,6 +6464,7 @@
         border-radius: 14px !important;
         background: var(--SearchBar_Background_Colour) !important;
         box-shadow: none !important;
+        align-self: start !important;
     }
 
     .product-name {
@@ -6498,8 +6502,8 @@
         gap: 10px !important;
         align-items: center !important;
         width: 100% !important;
-        margin-top: auto !important;
-        padding: 6px 0 0 !important;
+        margin-top: 0 !important;
+        padding: 2px 0 0 !important;
     }
 
     .quantity-controls {
