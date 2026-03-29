@@ -6299,14 +6299,14 @@
     }
 
     #ProductWrapper {
-        width: min(1040px, 100%) !important;
+        width: min(1180px, calc(100vw - 56px)) !important;
         margin: 0 auto !important;
         background: transparent !important;
     }
 
     .SortContainer {
         display: block !important;
-        width: min(1040px, 100%) !important;
+        width: min(1180px, calc(100vw - 56px)) !important;
         margin: 0 auto !important;
         height: auto !important;
         max-height: none !important;
@@ -6411,26 +6411,26 @@
         padding: 8px 0 56px !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-auto-rows: auto !important;
-        gap: 18px 18px !important;
+        gap: 20px 18px !important;
         background: transparent !important;
-        justify-items: center !important;
+        justify-items: stretch !important;
         align-items: start !important;
         align-content: start !important;
     }
 
     .product {
         width: 100% !important;
-        max-width: 222px !important;
+        max-width: none !important;
         height: auto !important;
         max-height: none !important;
         min-height: 0 !important;
         aspect-ratio: auto !important;
         align-self: start !important;
         overflow: hidden !important;
-        justify-self: center !important;
-        padding: 10px 10px 12px !important;
+        justify-self: stretch !important;
+        padding: 12px 12px 14px !important;
         border: 1px solid var(--Borders_Colour) !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         background: var(--SideBar_Background_Colour) !important;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
         transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
@@ -6453,7 +6453,7 @@
             "price"
             "actions" !important;
         grid-template-rows: auto auto auto auto !important;
-        gap: 7px !important;
+        gap: 8px !important;
         width: 100% !important;
         height: auto !important;
         align-content: start !important;
@@ -6462,15 +6462,15 @@
     .product-media-frame {
         grid-area: media !important;
         display: block !important;
-        width: min(100%, 146px) !important;
+        width: 100% !important;
         aspect-ratio: 1 / 1 !important;
         overflow: hidden !important;
         margin: 2px 0 0 !important;
-        border-radius: 4px !important;
+        border-radius: 5px !important;
         background: var(--SearchBar_Background_Colour) !important;
         box-shadow: none !important;
         align-self: start !important;
-        justify-self: start !important;
+        justify-self: stretch !important;
         cursor: pointer !important;
     }
 
@@ -6484,7 +6484,7 @@
         margin: 0 !important;
         object-fit: contain !important;
         object-position: center center !important;
-        border-radius: 4px !important;
+        border-radius: 5px !important;
         background: transparent !important;
         box-shadow: none !important;
     }
@@ -6493,11 +6493,11 @@
         grid-area: name !important;
         margin: 0 !important;
         height: auto !important;
-        min-height: calc(1.22em * 2) !important;
+        min-height: calc(1.24em * 2) !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         font-weight: 600 !important;
-        line-height: 1.22 !important;
+        line-height: 1.24 !important;
         color: var(--Default_Text_Colour) !important;
         display: -webkit-box !important;
         -webkit-box-orient: vertical !important;
@@ -6509,7 +6509,7 @@
         grid-area: price !important;
         margin: 1px 0 0 !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         font-weight: 500 !important;
         line-height: 1 !important;
         letter-spacing: -0.02em !important;
