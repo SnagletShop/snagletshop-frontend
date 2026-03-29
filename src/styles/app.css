@@ -6907,10 +6907,55 @@
     white-space: nowrap;
 }
 
+.product-page-social-proof {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: -2px 0 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.25;
+    color: var(--Muted_Text_Colour);
+}
+
+.product-page-social-proof .product-rating-stars {
+    font-size: 15px;
+}
+
+.product-page-social-proof .product-rating-value {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.product-page-social-proof .product-sold-count {
+    font-weight: 500;
+}
+
+.product-page-social-proof .product-sold-count__suffix {
+    display: inline !important;
+}
+
 @media (max-width: 680px) {
     .product-rating-meta {
         margin: 4px 0 8px;
         font-size: 13px;
+    }
+
+    .product-page-social-proof {
+        margin: -2px 0 8px;
+        gap: 6px;
+        font-size: 13px;
+        overflow: visible !important;
+        white-space: normal !important;
+    }
+
+    .product-page-social-proof .product-rating-stars {
+        font-size: 13px;
+    }
+
+    .product-page-social-proof .product-rating-value {
+        font-size: 14px;
     }
 }
 
@@ -7192,5 +7237,34 @@
         height: 12px !important;
         flex: 0 0 auto !important;
         display: block !important;
+    }
+}
+
+@media (min-width: 681px) {
+    .product-page-social-proof {
+        grid-area: auto !important;
+        margin: -2px 0 10px !important;
+        font-size: 15px !important;
+        gap: 7px !important;
+        white-space: normal !important;
+        overflow: visible !important;
+    }
+}
+
+@media (max-width: 680px) {
+    .product-page-social-proof {
+        grid-area: auto !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin: -2px 0 8px !important;
+        font-size: 13px !important;
+        white-space: normal !important;
+        overflow: visible !important;
+    }
+
+    .product-page-social-proof .product-sold-count__suffix {
+        display: inline !important;
     }
 }

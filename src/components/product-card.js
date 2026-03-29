@@ -287,6 +287,6 @@
     return productDiv;
   }
 
-  const api = { createProductCard };
+  const api = { createProductCard, createProductSocialProof };
   try { getResolver()?.expose?.('component.productCard', api, ['__SS_PRODUCT_CARD__']); } catch { window.__SS_PRODUCT_CARD__ = api; }
 })(window, document);

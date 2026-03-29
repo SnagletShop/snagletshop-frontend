@@ -314,6 +314,19 @@ function __ssResolveProductForPdp(productName, pidArg = '', imgArg = '') {
     return best;
 }
 
+function __ssCreatePdpSocialProof(product) {
+    try {
+        const factory = window.__SS_PRODUCT_CARD__?.createProductSocialProof;
+        if (typeof factory !== 'function') return null;
+        const node = factory(product);
+        if (!node) return null;
+        node.classList.add('product-page-social-proof');
+        return node;
+    } catch {
+        return null;
+    }
+}
+
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
 
     const qtyEl = document.getElementById(`quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`);
@@ -740,6 +753,9 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     priceLabel.append(pStrong, pSpan);
     infoCol.appendChild(priceLabel);
+
+    const socialProof = __ssCreatePdpSocialProof(product);
+    if (socialProof) infoCol.appendChild(socialProof);
 
     // Quantity + Add to cart
     const qtyWrap = document.createElement("div");
