@@ -327,6 +327,14 @@ function __ssCreatePdpSocialProof(product) {
     }
 }
 
+function __ssScrollToTopForProductOpen(behavior = "auto") {
+    try {
+        window.scrollTo({ top: 0, left: 0, behavior });
+    } catch {}
+    try { document.documentElement.scrollTop = 0; } catch {}
+    try { document.body.scrollTop = 0; } catch {}
+}
+
 function buyNow(productName, productPrice, imageUrl, expectedPurchasePrice, productLink, productDescription, selectedOption = "", selectedOptions = null, productIdHint = null) {
 
     const qtyEl = document.getElementById(`quantity-${__ssGetQtyKey(window.__ssCurrentProductId || productName)}`);
@@ -424,6 +432,12 @@ function GoToProductPage(productName, productPrice, productDescription) {
         console.error(TEXTS?.ERRORS?.PRODUCTS_NOT_LOADED || "Viewer not found.");
         return;
     }
+
+    try {
+        if (window.matchMedia && window.matchMedia("(max-width: 680px)").matches) {
+            __ssScrollToTopForProductOpen("auto");
+        }
+    } catch {}
 
     try { window.__ssPrimePriceCacheFromDom?.(viewer); } catch {}
     try { if (typeof window.__ssShowProductPageSkeleton === 'function') window.__ssShowProductPageSkeleton(); } catch {}
@@ -752,10 +766,15 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     } catch { }
 
     priceLabel.append(pStrong, pSpan);
-    infoCol.appendChild(priceLabel);
+
+    const priceMetaRow = document.createElement("div");
+    priceMetaRow.className = "Product_Price_Meta_Row";
+    priceMetaRow.appendChild(priceLabel);
 
     const socialProof = __ssCreatePdpSocialProof(product);
-    if (socialProof) infoCol.appendChild(socialProof);
+    if (socialProof) priceMetaRow.appendChild(socialProof);
+
+    infoCol.appendChild(priceMetaRow);
 
     // Quantity + Add to cart
     const qtyWrap = document.createElement("div");
@@ -894,7 +913,12 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     try {
         const __isPhoneAfterRender = !!(window.matchMedia && window.matchMedia("(max-width: 680px)").matches);
-        window.scrollTo({ top: 0, behavior: __isPhoneAfterRender ? "auto" : "smooth" });
+        __ssScrollToTopForProductOpen(__isPhoneAfterRender ? "auto" : "smooth");
+        if (__isPhoneAfterRender) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => __ssScrollToTopForProductOpen("auto"));
+            });
+        }
     } catch { }
     try { updateAllPrices(); } catch { }
     try { updateImage(); } catch { }
