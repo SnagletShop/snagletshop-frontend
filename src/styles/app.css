@@ -7303,14 +7303,20 @@
 
     .product-rating-meta {
         grid-area: meta !important;
-        display: flex !important;
-        flex-wrap: nowrap !important;
+        display: grid !important;
+        grid-template-columns: auto auto !important;
+        grid-template-areas:
+            "stars rating"
+            "sold sold" !important;
         align-items: center !important;
-        gap: 1.111vw !important;
+        justify-content: start !important;
+        justify-items: start !important;
+        row-gap: 0.556vw !important;
+        column-gap: 1.111vw !important;
         margin: 0 !important;
         font-size: 3.611vw !important;
         white-space: nowrap !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
 
     .product-rating-stars,
@@ -7322,15 +7328,21 @@
     }
 
     .product-rating-stars {
+        grid-area: stars !important;
         font-size: 3.611vw !important;
     }
 
     .product-rating-value {
+        grid-area: rating !important;
         font-size: 3.611vw !important;
     }
 
-    .product-rating-separator,
+    .product-rating-separator {
+        display: none !important;
+    }
+
     .product-sold-count {
+        grid-area: sold !important;
         font-size: 3.333vw !important;
     }
 
@@ -7384,7 +7396,7 @@
         min-height: 7.778vw !important;
         height: 7.778vw !important;
         padding: 0 2.222vw !important;
-        font-size: 3.056vw !important;
+        font-size: 2.5vw !important;
         white-space: nowrap !important;
         overflow: hidden !important;
     }
