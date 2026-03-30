@@ -190,40 +190,49 @@
   }
 
   function createProductSocialProof(product) {
-    const ratingValue = normalizeRatingValue(product?.ratingValue ?? product?.starsRating ?? product?.rating ?? product?.ratingOutOf5);
-    const soldLabel = formatSoldCountLabel(product?.soldCount ?? product?.purchasedCount ?? product?.purchasesCount ?? product?.purchaseCount);
-    if (!(ratingValue > 0) && !soldLabel) return null;
+      const ratingValue = normalizeRatingValue(product?.ratingValue ?? product?.starsRating ?? product?.rating ?? product?.ratingOutOf5);
+      const soldLabel = formatSoldCountLabel(product?.soldCount ?? product?.purchasedCount ?? product?.purchasesCount ?? product?.purchaseCount);
+      if (!(ratingValue > 0) && !soldLabel) return null;
 
-    const meta = document.createElement('div');
-    meta.className = 'product-rating-meta';
+      const meta = document.createElement('div');
+      meta.className = 'product-rating-meta';
 
-    const stars = document.createElement('span');
-    stars.className = 'product-rating-stars';
-    stars.innerHTML = buildPreciseRatingStars(ratingValue);
-    meta.appendChild(stars);
+      const primary = document.createElement('span');
+      primary.className = 'product-rating-primary';
 
-    if (ratingValue > 0) {
-      const rating = document.createElement('span');
-      rating.className = 'product-rating-value';
-      rating.textContent = ratingValue.toFixed(1);
-      meta.appendChild(rating);
-    }
+      const secondary = document.createElement('span');
+      secondary.className = 'product-rating-secondary';
 
-    if (soldLabel) {
+      const stars = document.createElement('span');
+      stars.className = 'product-rating-stars';
+      stars.innerHTML = buildPreciseRatingStars(ratingValue);
+      primary.appendChild(stars);
+
       if (ratingValue > 0) {
-        const separator = document.createElement('span');
-        separator.className = 'product-rating-separator';
-        separator.textContent = '|';
-        meta.appendChild(separator);
+        const rating = document.createElement('span');
+        rating.className = 'product-rating-value';
+        rating.textContent = ratingValue.toFixed(1);
+        primary.appendChild(rating);
       }
-      const sold = document.createElement('span');
-      sold.className = 'product-sold-count';
-      sold.innerHTML = `<span class="product-sold-count__value">${soldLabel.value}</span><span class="product-sold-count__suffix">${soldLabel.suffix}</span>`;
-      meta.appendChild(sold);
-    }
 
-    return meta;
-  }
+      if (soldLabel) {
+        if (ratingValue > 0) {
+          const separator = document.createElement('span');
+          separator.className = 'product-rating-separator';
+          separator.textContent = '|';
+          secondary.appendChild(separator);
+        }
+        const sold = document.createElement('span');
+        sold.className = 'product-sold-count';
+        sold.innerHTML = `<span class="product-sold-count__value">${soldLabel.value}</span><span class="product-sold-count__suffix">${soldLabel.suffix}</span>`;
+        secondary.appendChild(sold);
+      }
+
+      if (primary.childNodes.length) meta.appendChild(primary);
+      if (secondary.childNodes.length) meta.appendChild(secondary);
+
+      return meta;
+    }
 
   function shouldHandleInAppNavigation(event) {
     return !(event?.defaultPrevented || event?.button !== 0 || event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey);

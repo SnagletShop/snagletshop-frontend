@@ -321,6 +321,16 @@ function __ssCreatePdpSocialProof(product) {
         const node = factory(product);
         if (!node) return null;
         node.classList.add('product-page-social-proof');
+        node.querySelector('.product-rating-primary')?.classList.add('product-page-rating-primary');
+        node.querySelector('.product-rating-secondary')?.classList.add('product-page-rating-secondary');
+        node.querySelector('.product-rating-stars')?.classList.add('product-page-rating-stars');
+        node.querySelectorAll('.product-rating-star').forEach((el) => el.classList.add('product-page-rating-star'));
+        node.querySelectorAll('.product-rating-star--precise').forEach((el) => el.classList.add('product-page-rating-star--precise'));
+        node.querySelector('.product-rating-value')?.classList.add('product-page-rating-value');
+        node.querySelector('.product-rating-separator')?.classList.add('product-page-rating-separator');
+        node.querySelector('.product-sold-count')?.classList.add('product-page-sold-count');
+        node.querySelector('.product-sold-count__value')?.classList.add('product-page-sold-count__value');
+        node.querySelector('.product-sold-count__suffix')?.classList.add('product-page-sold-count__suffix');
         return node;
     } catch {
         return null;
