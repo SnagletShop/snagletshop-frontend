@@ -7421,36 +7421,54 @@
 @media (max-width: 680px) {
     .product-page-social-proof {
         grid-area: auto !important;
-        display: flex !important;
-        flex-wrap: nowrap !important;
+        display: grid !important;
+        grid-template-columns: auto auto !important;
+        grid-template-areas:
+            "sold sold"
+            "stars rating" !important;
         align-items: center !important;
-        gap: 1.111vw !important;
+        justify-content: end !important;
+        justify-items: end !important;
+        row-gap: 0.556vw !important;
+        column-gap: 1.111vw !important;
         margin: 0 0 0 auto !important;
         min-width: 0 !important;
         max-width: 100% !important;
         font-size: 3.333vw !important;
-        white-space: nowrap !important;
         overflow: visible !important;
-        justify-content: flex-end !important;
+        white-space: nowrap !important;
+        text-align: right !important;
     }
 
     .product-page-social-proof .product-rating-stars {
+        grid-area: stars !important;
         flex: 0 1 auto !important;
         min-width: 0 !important;
         gap: 0 !important;
         letter-spacing: -0.02em !important;
         font-size: clamp(3.056vw, 3.2vw, 3.611vw) !important;
+        justify-self: end !important;
     }
 
     .product-page-social-proof .product-rating-value {
+        grid-area: rating !important;
         flex: 0 0 auto !important;
         font-size: 3.611vw !important;
+        justify-self: start !important;
     }
 
-    .product-page-social-proof .product-rating-separator,
     .product-page-social-proof .product-sold-count {
         flex: 0 0 auto !important;
         font-size: 3.333vw !important;
+    }
+
+    .product-page-social-proof .product-rating-separator {
+        display: none !important;
+    }
+
+    .product-page-social-proof .product-sold-count {
+        grid-area: sold !important;
+        justify-self: end !important;
     }
 
     .product-page-social-proof .product-sold-count__suffix {
@@ -7462,6 +7480,7 @@
         padding-inline: 3.333vw !important;
         box-sizing: border-box !important;
         margin-top: 2.778vw !important;
+        align-items: start !important;
     }
 }
 
