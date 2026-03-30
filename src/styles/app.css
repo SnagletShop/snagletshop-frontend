@@ -7167,6 +7167,93 @@
         gap: 3.333vw !important;
     }
 
+    .mobileHeaderWrapper {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1000 !important;
+        background: var(--TopBar_Background_Colour) !important;
+        border-bottom: 0.278vw solid var(--Borders_Colour) !important;
+        box-shadow: 0 1.111vw 3.333vw rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .mobileTopBar {
+        display: grid !important;
+        grid-template-columns: auto 1fr auto auto !important;
+        align-items: center !important;
+        gap: 2.5vw !important;
+        width: 100% !important;
+        padding: 3.333vw 4vw 2.222vw !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+        overflow: visible !important;
+        white-space: normal !important;
+    }
+
+    .mobileLogo {
+        min-width: 0 !important;
+    }
+
+    .mobileLogo h1 {
+        margin: 0 !important;
+        font-size: 8.5vw !important;
+        line-height: 0.95 !important;
+        color: var(--Default_Text_Colour) !important;
+    }
+
+    .mobileHamburgerMenu,
+    .mobileBasketButton,
+    .mobileSettingsButton {
+        width: 10vw !important;
+        height: 10vw !important;
+        min-width: 10vw !important;
+        min-height: 10vw !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        color: var(--Default_Text_Colour) !important;
+        background: transparent !important;
+        border: 0 !important;
+    }
+
+    .mobileHamburgerMenu {
+        font-size: 9vw !important;
+        line-height: 1 !important;
+    }
+
+    .mobileBasketButton .Icon,
+    .mobileSettingsButton .Icon {
+        width: 7.222vw !important;
+        height: 7.222vw !important;
+    }
+
+    .mobileSearchRow {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 4vw 2.222vw !important;
+        box-sizing: border-box !important;
+    }
+
+    .mobileSearch_Bar,
+    #Mobile_Search_Bar {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 10.556vw !important;
+        height: 10.556vw !important;
+        margin: 0 !important;
+        padding: 0 3.611vw !important;
+        box-sizing: border-box !important;
+        border: 0.278vw solid var(--Borders_Colour) !important;
+        border-radius: 2.222vw !important;
+        background: var(--SearchBar_Background_Colour) !important;
+        color: var(--Default_Text_Colour) !important;
+        box-shadow: none !important;
+        font-size: 4.444vw !important;
+        line-height: 1 !important;
+    }
+
     #ProductWrapper {
         width: 100% !important;
         max-width: 100% !important;
@@ -7174,6 +7261,10 @@
         padding: 16.667vw 1.111vw 5vw !important;
         box-sizing: border-box !important;
         background: transparent !important;
+    }
+
+    #ProductWrapper:has(#Viewer:has(> .product)) {
+        padding-top: 35.556vw !important;
     }
 
     #ProductWrapper:has(#Basket_Viewer) {
@@ -7185,12 +7276,12 @@
         position: static !important;
         grid-row: auto !important;
         grid-column: auto !important;
-        width: 96vw !important;
-        max-width: 96vw !important;
-        margin: 0 auto !important;
-        padding: 1.667vw 0 2.778vw !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 4vw 3.333vw !important;
         box-sizing: border-box !important;
-        background: var(--TopBar_Background_Colour) !important;
+        background: transparent !important;
         border-top: 0 !important;
         z-index: auto !important;
     }
@@ -7227,7 +7318,7 @@
         width: 100% !important;
         margin-left: 0 !important;
         justify-content: flex-start !important;
-        padding-top: 0.556vw !important;
+        padding-top: 0 !important;
     }
 
     .CatalogUtilityControls .SSSort {
@@ -7244,7 +7335,7 @@
     }
 
     .CatalogUtilityControls .SSSortLabel {
-        font-size: 3.333vw !important;
+        font-size: 4.444vw !important;
         font-weight: 700 !important;
         color: var(--Default_Text_Colour) !important;
         line-height: 1 !important;
@@ -7252,11 +7343,11 @@
 
     .CatalogUtilityControls .SSSortTrigger {
         width: auto !important;
-        min-width: 28.889vw !important;
-        min-height: 8.889vw !important;
+        min-width: 31.111vw !important;
+        min-height: 10vw !important;
         justify-content: space-between !important;
         gap: 2.222vw !important;
-        padding: 0 3.333vw !important;
+        padding: 0 3.611vw !important;
         border: 0.278vw solid var(--Borders_Colour) !important;
         border-radius: 2.222vw !important;
         background: var(--SearchBar_Background_Colour) !important;
@@ -7264,20 +7355,20 @@
     }
 
     .CatalogUtilityControls .SSSortTriggerText {
-        font-size: 3.333vw !important;
+        font-size: 4.444vw !important;
         font-weight: 500 !important;
         line-height: 1 !important;
     }
 
     .CatalogUtilityControls .SSSortChevron {
-        width: 2.222vw !important;
-        height: 2.222vw !important;
+        width: 2.778vw !important;
+        height: 2.778vw !important;
     }
 
     #Viewer:has(> .product) {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 2.222vw !important;
-        padding: 2.222vw 0 6.667vw !important;
+        padding: 3.333vw 0 6.667vw !important;
     }
 
     .product {
