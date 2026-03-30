@@ -7654,6 +7654,95 @@
     }
 }
 
+@media (max-width: 680px) {
+    .Product_Detail_Page .Product_Price_Meta_Row {
+        width: 100% !important;
+        padding-inline: 4.444vw !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+    }
+
+    .Product_Detail_Page .ProductPageQuantityContainer {
+        width: 100% !important;
+        padding-inline: 4.444vw !important;
+        box-sizing: border-box !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 3.333vw !important;
+    }
+
+    .Product_Detail_Page .Quantity_Controls_ProductPage {
+        width: auto !important;
+        min-width: 27.778vw !important;
+        gap: 2.222vw !important;
+    }
+
+    .Product_Detail_Page .ProductPageBuyButton {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        flex: 1 1 auto !important;
+    }
+
+    .Product_Detail_Page .product-page-social-proof {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        flex-wrap: nowrap !important;
+        grid-template-columns: none !important;
+        grid-template-areas: none !important;
+        row-gap: 0 !important;
+        column-gap: 1.111vw !important;
+        gap: 1.111vw !important;
+        margin: 0 0 0 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        text-align: right !important;
+        white-space: nowrap !important;
+    }
+
+    .Product_Detail_Page .product-page-rating-primary,
+    .Product_Detail_Page .product-page-rating-secondary {
+        display: inline-flex !important;
+        align-items: center !important;
+        width: auto !important;
+        min-width: 0 !important;
+        justify-self: auto !important;
+    }
+
+    .Product_Detail_Page .product-page-rating-primary {
+        gap: 0.833vw !important;
+    }
+
+    .Product_Detail_Page .product-page-rating-secondary {
+        gap: 0.556vw !important;
+    }
+
+    .Product_Detail_Page .product-page-rating-stars {
+        font-size: clamp(3.82vw, 4vw, 4.514vw) !important;
+        gap: 0 !important;
+        letter-spacing: -0.02em !important;
+    }
+
+    .Product_Detail_Page .product-page-rating-value {
+        font-size: 4.514vw !important;
+        font-weight: 700 !important;
+    }
+
+    .Product_Detail_Page .product-page-sold-count {
+        font-size: 4.166vw !important;
+        font-weight: 500 !important;
+    }
+
+    .Product_Detail_Page .product-page-rating-separator {
+        display: none !important;
+    }
+
+    .Product_Detail_Page .product-page-sold-count__suffix {
+        display: inline !important;
+    }
+}
+
 .settings-panel .ts-wrapper.single .ts-control {
     display: flex !important;
     align-items: center !important;
