@@ -6889,7 +6889,20 @@
 }
 
 .product-rating-secondary {
+    position: relative;
     gap: 4px;
+    padding-left: 8px;
+}
+
+.product-rating-secondary::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 0.95em;
+    background: var(--Borders_Colour);
 }
 
 .product-rating-stars {
@@ -6897,7 +6910,7 @@
     align-items: center;
     gap: 1px;
     letter-spacing: 0.02em;
-    font-size: 14px;
+    font-size: 11px;
 }
 
 .product-rating-star {
@@ -6948,6 +6961,11 @@
 .product-sold-count {
     color: var(--Muted_Text_Colour);
     font-size: 13px;
+}
+
+.product-rating-separator,
+.product-page-rating-separator {
+    display: none !important;
 }
 
 .product-sold-count__value,
@@ -7006,6 +7024,22 @@
     display: inline-flex;
     align-items: center;
     min-width: 0;
+}
+
+.product-page-rating-secondary {
+    position: relative;
+    padding-left: 8px;
+}
+
+.product-page-rating-secondary::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 0.95em;
+    background: var(--Borders_Colour);
 }
 
 .product-page-social-proof .product-rating-stars,
@@ -7460,6 +7494,7 @@
     .product-rating-secondary {
         justify-content: flex-end !important;
         gap: 0.833vw !important;
+        padding-left: 2.222vw !important;
     }
 
     .product-rating-stars,
@@ -7471,7 +7506,7 @@
     }
 
     .product-rating-stars {
-        font-size: 3.611vw !important;
+        font-size: 2.708vw !important;
     }
 
     .product-rating-value {
@@ -7612,6 +7647,7 @@
         grid-area: sold !important;
         gap: 0.833vw !important;
         justify-self: end !important;
+        padding-left: 2.222vw !important;
     }
 
     .product-page-social-proof .product-rating-stars,
@@ -7716,6 +7752,7 @@
 
     .Product_Detail_Page .product-page-rating-secondary {
         gap: 0.556vw !important;
+        padding-left: 1.944vw !important;
     }
 
     .Product_Detail_Page .product-page-rating-stars {
