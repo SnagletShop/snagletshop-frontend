@@ -7934,7 +7934,7 @@
         width: 0.278vw !important;
         min-width: 0.278vw !important;
         height: 3.611vw !important;
-        margin: 0 1.111vw 0 0 !important;
+        margin: 0 0 0 0.25vw !important;
         background: var(--Muted_Text_Colour) !important;
         color: transparent !important;
         font-size: 0 !important;
@@ -7948,6 +7948,7 @@
         display: inline-flex !important;
         align-items: center !important;
         min-width: 0 !important;
+        font-size: 3vw !important;
     }
 }
 
