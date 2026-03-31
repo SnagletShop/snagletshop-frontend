@@ -7528,9 +7528,9 @@
     .product-rating-secondary {
         justify-content: flex-end !important;
         gap: 0.833vw !important;
-        padding-left: 2.222vw !important;
+        padding-left: 0 !important;
         padding-right: 1.111vw !important;
-        border-left: 0.278vw solid var(--Muted_Text_Colour) !important;
+        border-left: 0 !important;
     }
 
     .product-rating-secondary::before {
@@ -7688,8 +7688,8 @@
         grid-area: sold !important;
         gap: 0.833vw !important;
         justify-self: end !important;
-        padding-left: 2.222vw !important;
-        border-left: 0.278vw solid var(--Muted_Text_Colour) !important;
+        padding-left: 0 !important;
+        border-left: 0 !important;
     }
 
     .product-page-social-proof .product-rating-secondary::before,
