@@ -7141,6 +7141,8 @@
     .Product_Options_Container {
         grid-template-columns: max-content minmax(0, 1fr) !important;
         column-gap: 2.222vw !important;
+        padding-inline: 4.444vw !important;
+        box-sizing: border-box !important;
         margin: 0 0 3.333vw !important;
     }
 
