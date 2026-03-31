@@ -875,6 +875,12 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     // Assemble
     details.append(imagesCol, infoCol);
     productDiv.appendChild(details);
+    try {
+        const reviewsSection = document.createElement("section");
+        reviewsSection.className = "Product_Reviews_Section";
+        productDiv.appendChild(reviewsSection);
+        Promise.resolve(window.__SS_PRODUCT_REVIEWS__?.mount?.(reviewsSection, { product })).catch(() => {});
+    } catch {}
     Product_Viewer.appendChild(productDiv);
     try { viewer.replaceChildren(Product_Viewer); } catch { viewer.innerHTML = ''; viewer.appendChild(Product_Viewer); }
 

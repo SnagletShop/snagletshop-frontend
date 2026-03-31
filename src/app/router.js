@@ -126,6 +126,8 @@
       route?.categorySlug ||
       route?.view === 'cart' ||
       route?.view === 'settings' ||
+      route?.view === 'login' ||
+      route?.view === 'register' ||
       route?.orderId ||
       route?.path?.startsWith('/p/') ||
       route?.path?.startsWith('/product/') ||
@@ -216,6 +218,14 @@
       return { action: 'GoToSettings', data: [] };
     }
 
+    if (route.view === 'login') {
+      return { action: 'GoToLogin', data: [] };
+    }
+
+    if (route.view === 'register') {
+      return { action: 'GoToRegister', data: [] };
+    }
+
     if (route.category) {
       return buildCatalogState(route.category, route.sortBy || getDefaultSort(), route.sortOrder || getDefaultSortOrder());
     }
@@ -260,6 +270,14 @@
 
       if (state?.action === 'GoToSettings') {
         return '/?view=settings';
+      }
+
+      if (state?.action === 'GoToLogin') {
+        return '/?view=login';
+      }
+
+      if (state?.action === 'GoToRegister') {
+        return '/?view=register';
       }
 
       if (state?.action === 'loadProducts') {
