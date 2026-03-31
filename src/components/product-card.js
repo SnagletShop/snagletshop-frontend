@@ -198,19 +198,19 @@
       meta.className = 'product-rating-meta';
 
       const primary = document.createElement('span');
-      primary.className = 'product-rating-primary';
+      primary.className = 'product-rating-primary product-card-rating-primary';
 
       const secondary = document.createElement('span');
-      secondary.className = 'product-rating-secondary';
+      secondary.className = 'product-rating-secondary product-card-rating-secondary';
 
       const stars = document.createElement('span');
-      stars.className = 'product-rating-stars';
+      stars.className = 'product-rating-stars product-card-rating-stars';
       stars.innerHTML = buildPreciseRatingStars(ratingValue);
       primary.appendChild(stars);
 
       if (ratingValue > 0) {
         const rating = document.createElement('span');
-        rating.className = 'product-rating-value';
+        rating.className = 'product-rating-value product-card-rating-value';
         rating.textContent = ratingValue.toFixed(1);
         primary.appendChild(rating);
       }
@@ -218,13 +218,13 @@
       if (soldLabel) {
         if (ratingValue > 0) {
           const separator = document.createElement('span');
-          separator.className = 'product-rating-separator';
+          separator.className = 'product-rating-separator product-card-rating-separator';
           separator.textContent = '|';
           secondary.appendChild(separator);
         }
         const sold = document.createElement('span');
-        sold.className = 'product-sold-count';
-        sold.innerHTML = `<span class="product-sold-count__value">${soldLabel.value}</span><span class="product-sold-count__suffix">${soldLabel.suffix}</span>`;
+        sold.className = 'product-sold-count product-card-sold-count';
+        sold.innerHTML = `<span class="product-sold-count__value product-card-sold-count__value">${soldLabel.value}</span><span class="product-sold-count__suffix product-card-sold-count__suffix">${soldLabel.suffix}</span>`;
         secondary.appendChild(sold);
       }
 
