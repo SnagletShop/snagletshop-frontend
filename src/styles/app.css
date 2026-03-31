@@ -7914,6 +7914,12 @@
         padding-right: 0 !important;
     }
 
+    .product-card-rating-value {
+        font-size: 3vw !important;
+        font-variant-numeric: tabular-nums !important;
+        font-feature-settings: "tnum" 1, "lnum" 1 !important;
+    }
+
     .product-card-rating-secondary {
         justify-content: flex-end !important;
         gap: 0.833vw !important;
