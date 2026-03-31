@@ -6889,21 +6889,14 @@
 }
 
 .product-rating-secondary {
-    position: relative;
     gap: 4px;
     padding-left: 8px;
+    border-left: 1px solid var(--Muted_Text_Colour);
 }
 
 .product-rating-secondary::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 1.05em;
-    background: var(--Muted_Text_Colour);
-    opacity: 0.75;
+    content: none;
+    display: none;
 }
 
 .product-rating-stars {
@@ -7055,20 +7048,13 @@
 }
 
 .product-page-rating-secondary {
-    position: relative;
     padding-left: 8px;
+    border-left: 1px solid var(--Muted_Text_Colour);
 }
 
 .product-page-rating-secondary::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 1.05em;
-    background: var(--Muted_Text_Colour);
-    opacity: 0.75;
+    content: none;
+    display: none;
 }
 
 .product-page-social-proof .product-rating-stars,
@@ -7544,16 +7530,12 @@
         gap: 0.833vw !important;
         padding-left: 2.222vw !important;
         padding-right: 1.111vw !important;
+        border-left: 0.278vw solid var(--Muted_Text_Colour) !important;
     }
 
     .product-rating-secondary::before {
-        content: "" !important;
-        display: block !important;
-        width: 0.556vw !important;
-        min-width: 0.556vw !important;
-        height: 3.889vw !important;
-        background: var(--Muted_Text_Colour) !important;
-        opacity: 0.9 !important;
+        content: none !important;
+        display: none !important;
     }
 
     .product-rating-stars,
@@ -7707,17 +7689,13 @@
         gap: 0.833vw !important;
         justify-self: end !important;
         padding-left: 2.222vw !important;
+        border-left: 0.278vw solid var(--Muted_Text_Colour) !important;
     }
 
     .product-page-social-proof .product-rating-secondary::before,
     .product-page-rating-secondary::before {
-        content: "" !important;
-        display: block !important;
-        width: 0.556vw !important;
-        min-width: 0.556vw !important;
-        height: 3.889vw !important;
-        background: var(--Muted_Text_Colour) !important;
-        opacity: 0.9 !important;
+        content: none !important;
+        display: none !important;
     }
 
     .product-page-social-proof .product-rating-stars,
@@ -7823,16 +7801,12 @@
     .Product_Detail_Page .product-page-rating-secondary {
         gap: 0.556vw !important;
         padding-left: 1.944vw !important;
+        border-left: 0.278vw solid var(--Muted_Text_Colour) !important;
     }
 
     .Product_Detail_Page .product-page-rating-secondary::before {
-        content: "" !important;
-        display: block !important;
-        width: 0.556vw !important;
-        min-width: 0.556vw !important;
-        height: 4.166vw !important;
-        background: var(--Muted_Text_Colour) !important;
-        opacity: 0.9 !important;
+        content: none !important;
+        display: none !important;
     }
 
     .Product_Detail_Page .product-page-rating-stars {
