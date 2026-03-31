@@ -7547,8 +7547,13 @@
     }
 
     .product-rating-secondary::before {
-        width: 0.278vw !important;
-        height: 3.611vw !important;
+        content: "" !important;
+        display: block !important;
+        width: 0.556vw !important;
+        min-width: 0.556vw !important;
+        height: 3.889vw !important;
+        background: var(--Muted_Text_Colour) !important;
+        opacity: 0.9 !important;
     }
 
     .product-rating-stars,
@@ -7706,8 +7711,13 @@
 
     .product-page-social-proof .product-rating-secondary::before,
     .product-page-rating-secondary::before {
-        width: 0.278vw !important;
-        height: 3.611vw !important;
+        content: "" !important;
+        display: block !important;
+        width: 0.556vw !important;
+        min-width: 0.556vw !important;
+        height: 3.889vw !important;
+        background: var(--Muted_Text_Colour) !important;
+        opacity: 0.9 !important;
     }
 
     .product-page-social-proof .product-rating-stars,
@@ -7816,8 +7826,13 @@
     }
 
     .Product_Detail_Page .product-page-rating-secondary::before {
-        width: 0.278vw !important;
+        content: "" !important;
+        display: block !important;
+        width: 0.556vw !important;
+        min-width: 0.556vw !important;
         height: 4.166vw !important;
+        background: var(--Muted_Text_Colour) !important;
+        opacity: 0.9 !important;
     }
 
     .Product_Detail_Page .product-page-rating-stars {
