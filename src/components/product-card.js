@@ -195,7 +195,7 @@
       if (!(ratingValue > 0) && !soldLabel) return null;
 
       const meta = document.createElement('div');
-      meta.className = 'product-rating-meta';
+      meta.className = 'product-rating-meta product-card-rating-meta';
 
       const primary = document.createElement('span');
       primary.className = 'product-rating-primary product-card-rating-primary';

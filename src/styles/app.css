@@ -7887,6 +7887,15 @@
 }
 
 @media (max-width: 680px) {
+    .product-card-rating-meta {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 1.667vw !important;
+        padding-inline: 1.389vw !important;
+        box-sizing: border-box !important;
+    }
+
     .product-card-rating-primary,
     .product-card-rating-secondary {
         display: inline-flex !important;
@@ -7897,12 +7906,16 @@
     .product-card-rating-primary {
         justify-content: flex-start !important;
         gap: 1.111vw !important;
-        padding-right: 1.111vw !important;
+        width: auto !important;
+        flex: 0 1 auto !important;
+        padding-right: 0 !important;
     }
 
     .product-card-rating-secondary {
         justify-content: flex-start !important;
         gap: 0.833vw !important;
+        width: auto !important;
+        flex: 0 0 auto !important;
         border-left: 0 !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
