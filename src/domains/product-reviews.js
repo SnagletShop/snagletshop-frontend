@@ -149,6 +149,12 @@
       </div>`;
   }
 
+  function reviewCountOf(payload) {
+    const explicit = Number(payload?.summary?.reviewCount || 0) || 0;
+    if (explicit > 0) return explicit;
+    return Array.isArray(payload?.reviews) ? payload.reviews.length : 0;
+  }
+
   function reviewCardMarkup(review) {
     const images = Array.isArray(review?.images) ? review.images : [];
     return `
@@ -526,6 +532,10 @@
         loadReviews(productId),
         mode === 'public' ? Promise.resolve(null) : (auth()?.isLoggedIn?.() ? loadEligibility(productId).catch(() => null) : Promise.resolve(null)),
       ]);
+      if (mode === 'public' && reviewCountOf(reviews) < 1) {
+        try { section.remove(); } catch { try { section.innerHTML = ''; section.style.display = 'none'; } catch {} }
+        return true;
+      }
       if (!options?.force && !section.dataset.reviewVisibleCount) {
         section.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
       }
