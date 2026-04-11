@@ -122,11 +122,30 @@
   function reviewSummaryMarkup(summary) {
     const count = Math.max(0, Number(summary?.reviewCount || 0) || 0);
     const avg = Math.max(0, Math.min(5, Number(summary?.avgRating || 0) || 0));
+    if (count < 1 || avg <= 0) {
+      return `
+      <div class="ss-review-summary ss-review-summary--empty">
+        <div class="ss-review-summary-kicker">Verified reviews</div>
+        <div class="ss-review-summary-empty-title">No reviews yet</div>
+        <div class="ss-review-summary-count">The first verified customer review will appear here.</div>
+      </div>`;
+    }
     return `
       <div class="ss-review-summary">
         <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : '—'}</div>
         <div class="ss-review-summary-stars">${createStars(avg)}</div>
         <div class="ss-review-summary-count">${count.toLocaleString()} review${count === 1 ? '' : 's'}</div>
+      </div>`;
+  }
+
+  function emptyReviewsMarkup(message) {
+    return `
+      <div class="ss-review-empty">
+        <div class="ss-review-empty-icon" aria-hidden="true">☆</div>
+        <div class="ss-review-empty-body">
+          <div class="ss-review-empty-title">No published reviews yet</div>
+          <div class="ss-review-empty-copy">${esc(message || 'Once verified customers share feedback on this item, it will show up here.')}</div>
+        </div>
       </div>`;
   }
 
@@ -482,7 +501,7 @@
           ${!account ? authPromptMarkup() : canReview ? formMarkup(eligibility) : eligibilityListMarkup(eligibility)}
         </div>`}
         <div class="ss-product-reviews-list ${reviews.length ? '' : 'is-empty'}">
-          ${reviews.length ? visibleReviews.map(reviewCardMarkup).join('') : '<div class="ss-review-empty">No published reviews yet.</div>'}
+          ${reviews.length ? visibleReviews.map(reviewCardMarkup).join('') : emptyReviewsMarkup()}
         </div>
         ${reviews.length > visibleCount ? `<div class="ss-review-more"><button class="ss-review-btn" data-review-load-more="1" type="button">Load 3 more reviews</button></div>` : ''}
       </section>`;
@@ -517,7 +536,7 @@
       section.dataset.reviewReady = '1';
       return true;
     } catch (error) {
-      section.innerHTML = `<div class="ss-review-empty">Reviews are temporarily unavailable.</div>`;
+      section.innerHTML = emptyReviewsMarkup('Reviews are temporarily unavailable. Please try again in a moment.');
       return false;
     }
   }

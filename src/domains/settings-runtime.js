@@ -625,8 +625,18 @@
         </div>
         <div class="settings-inline-setting">
           <div class="settings-inline-copy">
+            <label for="themeAutoToggle">Use device theme</label>
+            <div class="settings-inline-help">Automatically follows the browser or operating-system appearance preference when available.</div>
+          </div>
+          <label class="switch settings-switch">
+            <input type="checkbox" id="themeAutoToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settings-inline-setting">
+          <div class="settings-inline-copy">
             <label for="themeToggle">${TEXTS?.GENERAL?.DARK_MODE_LABEL || 'Dark Mode'}</label>
-            <div class="settings-inline-help">Keeps the same storefront style, just tuned for your preferred lighting.</div>
+            <div class="settings-inline-help">Use this only when you want to override the device preference manually.</div>
           </div>
           <label class="switch settings-switch">
             <input type="checkbox" id="themeToggle">
@@ -754,18 +764,44 @@
     });
 
     const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-      themeToggle.checked = localStorage.getItem('themeMode') === 'dark';
-      const themeSummary = document.getElementById('settingsThemeSummary');
-      if (themeSummary) themeSummary.textContent = themeToggle.checked ? 'Dark' : 'Light';
-      themeToggle.addEventListener('change', (e) => {
-        const darkMode = !!e.target.checked;
-        document.documentElement.classList.toggle('dark-mode', darkMode);
-        document.documentElement.classList.toggle('light-mode', !darkMode);
-        localStorage.setItem('themeMode', darkMode ? 'dark' : 'light');
-        if (themeSummary) themeSummary.textContent = darkMode ? 'Dark' : 'Light';
+    const themeAutoToggle = document.getElementById('themeAutoToggle');
+    const themeSummary = document.getElementById('settingsThemeSummary');
+    const themeRuntime = window.__SS_THEME__ || null;
+    const syncThemeControls = () => {
+      const storedMode = String(themeRuntime?.getStoredMode?.() || localStorage.getItem('themeMode') || 'auto').trim().toLowerCase() || 'auto';
+      const resolvedMode = String(themeRuntime?.getResolvedMode?.() || (document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light')).trim().toLowerCase();
+      const isAuto = storedMode === 'auto';
+      if (themeAutoToggle) themeAutoToggle.checked = isAuto;
+      if (themeToggle) {
+        themeToggle.checked = resolvedMode === 'dark';
+        themeToggle.disabled = isAuto;
+      }
+      if (themeSummary) {
+        themeSummary.textContent = isAuto
+          ? `Auto (${resolvedMode === 'dark' ? 'Dark' : 'Light'})`
+          : (resolvedMode === 'dark' ? 'Dark' : 'Light');
+      }
+    };
+
+    if (themeAutoToggle) {
+      themeAutoToggle.addEventListener('change', (e) => {
+        const useAuto = !!e.target.checked;
+        themeRuntime?.apply?.(useAuto ? 'auto' : (themeToggle?.checked ? 'dark' : 'light'), { persist: true });
+        syncThemeControls();
       });
     }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('change', (e) => {
+        const darkMode = !!e.target.checked;
+        themeRuntime?.apply?.(darkMode ? 'dark' : 'light', { persist: true });
+        syncThemeControls();
+      });
+    }
+    try {
+      window.addEventListener('ss:theme-mode-changed', syncThemeControls);
+    } catch {}
+    syncThemeControls();
 
     const currencySelect = document.getElementById('currencySelect');
     const countrySelect = document.getElementById('countrySelect');

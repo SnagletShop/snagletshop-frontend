@@ -295,13 +295,17 @@ async function createPaymentModal() {
     // Ensure texts/theme data exist (safe even if initPaymentModalLogic calls it again)
     try { if (typeof window.preloadSettingsData === "function") await window.preloadSettingsData(); } catch { }
 
-    const savedTheme = localStorage.getItem("themeMode");
-    if (savedTheme === "dark") {
-        document.documentElement.classList.add("dark-mode");
-        document.documentElement.classList.remove("light-mode");
-    } else {
-        document.documentElement.classList.add("light-mode");
-        document.documentElement.classList.remove("dark-mode");
+    try {
+        window.__SS_THEME__?.apply?.(window.__SS_THEME__?.getStoredMode?.() || 'auto', { persist: false });
+    } catch {
+        const savedTheme = localStorage.getItem("themeMode");
+        if (savedTheme === "dark") {
+            document.documentElement.classList.add("dark-mode");
+            document.documentElement.classList.remove("light-mode");
+        } else {
+            document.documentElement.classList.add("light-mode");
+            document.documentElement.classList.remove("dark-mode");
+        }
     }
 
     const modal = document.createElement("div");

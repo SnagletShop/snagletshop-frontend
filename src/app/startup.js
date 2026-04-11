@@ -1,6 +1,85 @@
 (function (window, document) {
+  const THEME_STORAGE_KEY = 'themeMode';
+
   function onReady(fn) {
     try { window.__SS_BOOT__?.onReady(fn); } catch (err) { console.error('[ss startup] register failed', err); }
+  }
+
+  function getSystemPrefersDark() {
+    try { return !!window.matchMedia?.('(prefers-color-scheme: dark)')?.matches; } catch {}
+    return false;
+  }
+
+  function getStoredThemeMode() {
+    try {
+      const raw = String(localStorage.getItem(THEME_STORAGE_KEY) || '').trim().toLowerCase();
+      if (raw === 'dark' || raw === 'light' || raw === 'auto') return raw;
+    } catch {}
+    return 'auto';
+  }
+
+  function resolveThemeMode(mode) {
+    const next = String(mode || '').trim().toLowerCase();
+    if (next === 'dark' || next === 'light') return next;
+    return getSystemPrefersDark() ? 'dark' : 'light';
+  }
+
+  function applyThemeMode(mode, options = {}) {
+    const persist = options.persist === true;
+    const requested = String(mode || '').trim().toLowerCase() || 'auto';
+    const storedMode = (requested === 'dark' || requested === 'light' || requested === 'auto') ? requested : 'auto';
+    const resolved = resolveThemeMode(storedMode);
+    const isDarkMode = resolved === 'dark';
+    try {
+      document.documentElement.classList.toggle('dark-mode', isDarkMode);
+      document.documentElement.classList.toggle('light-mode', !isDarkMode);
+      document.documentElement.dataset.themeMode = storedMode;
+      document.documentElement.dataset.themeResolved = resolved;
+    } catch {}
+    if (persist) {
+      try { localStorage.setItem(THEME_STORAGE_KEY, storedMode); } catch {}
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('ss:theme-mode-changed', {
+        detail: { mode: storedMode, resolved }
+      }));
+    } catch {}
+    return { mode: storedMode, resolved };
+  }
+
+  function installThemeWatcher() {
+    if (window.__ssThemeWatcherInstalled) return;
+    window.__ssThemeWatcherInstalled = true;
+    try {
+      const media = window.matchMedia?.('(prefers-color-scheme: dark)');
+      if (!media) return;
+      const onChange = () => {
+        if (getStoredThemeMode() !== 'auto') return;
+        applyThemeMode('auto', { persist: false });
+      };
+      if (typeof media.addEventListener === 'function') media.addEventListener('change', onChange);
+      else if (typeof media.addListener === 'function') media.addListener(onChange);
+    } catch {}
+  }
+
+  function initThemeRuntime() {
+    installThemeWatcher();
+    const state = applyThemeMode(getStoredThemeMode(), { persist: false });
+    window.__SS_THEME__ = {
+      getStoredMode: getStoredThemeMode,
+      getSystemPrefersDark,
+      resolveMode: resolveThemeMode,
+      apply(mode, options = {}) {
+        return applyThemeMode(mode, options);
+      },
+      getResolvedMode() {
+        return resolveThemeMode(getStoredThemeMode());
+      },
+      isAuto() {
+        return getStoredThemeMode() === 'auto';
+      }
+    };
+    return state;
   }
 
   function initTurnstile() {
@@ -119,17 +198,11 @@
 
   function initThemeAndCatalogSync() {
     try {
-      const savedTheme = localStorage.getItem('themeMode');
-      const isDarkMode = savedTheme === 'dark';
-      if (savedTheme) {
-        document.documentElement.classList.toggle('dark-mode', isDarkMode);
-        document.documentElement.classList.toggle('light-mode', !isDarkMode);
-      } else {
-        document.documentElement.classList.add('light-mode');
-        localStorage.setItem('themeMode', 'light');
-      }
+      const themeState = initThemeRuntime();
       const themeToggle = document.getElementById('themeToggle');
-      if (themeToggle) themeToggle.checked = isDarkMode;
+      if (themeToggle) themeToggle.checked = themeState?.resolved === 'dark';
+      const themeAutoToggle = document.getElementById('themeAutoToggle');
+      if (themeAutoToggle) themeAutoToggle.checked = themeState?.mode === 'auto';
     } catch {}
     try { if (typeof window.syncCurrencySelects === 'function') syncCurrencySelects(typeof selectedCurrency !== 'undefined' ? selectedCurrency : window.selectedCurrency); } catch {}
 
