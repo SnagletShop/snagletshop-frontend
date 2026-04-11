@@ -183,6 +183,39 @@
       </div>`;
   }
 
+  function collectReviewGalleryImages(reviews, maxItems = 4) {
+    const out = [];
+    const list = Array.isArray(reviews) ? reviews : [];
+    for (const review of list) {
+      const images = Array.isArray(review?.images) ? review.images : [];
+      for (const image of images) {
+        const url = String(image?.url || '').trim();
+        if (!url) continue;
+        out.push({
+          url,
+          filename: String(image?.filename || 'Review image').trim() || 'Review image',
+          reviewerName: String(review?.reviewerName || 'Reviewer').trim() || 'Reviewer'
+        });
+        if (out.length >= maxItems) return out;
+      }
+    }
+    return out;
+  }
+
+  function reviewGalleryMarkup(reviews) {
+    const images = collectReviewGalleryImages(reviews, 4);
+    if (!images.length) return '';
+    return `
+      <section class="ss-review-gallery">
+        <div class="ss-review-gallery-head">
+          <div class="ss-review-gallery-title">Review gallery</div>
+        </div>
+        <div class="ss-review-gallery-strip">
+          ${images.map((image) => `<a class="ss-review-gallery-item" href="${esc(image.url)}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image.filename || image.reviewerName || 'Review image')}" src="${esc(image.url)}"/></a>`).join('')}
+        </div>
+      </section>`;
+  }
+
   function visibleCountOf(section, total) {
     const raw = Number(section?.dataset?.reviewVisibleCount || REVIEWS_PAGE_SIZE) || REVIEWS_PAGE_SIZE;
     return Math.max(REVIEWS_PAGE_SIZE, Math.min(Math.max(0, Number(total || 0) || 0), raw));
@@ -427,25 +460,27 @@
   async function renderInto(section, product, state) {
     const summary = state.reviews?.summary || { reviewCount: 0, avgRating: 0 };
     const reviews = Array.isArray(state.reviews?.reviews) ? state.reviews.reviews : [];
+    const mode = String(state.mode || 'public').trim().toLowerCase();
     const account = auth()?.getAccount?.() || null;
     const eligibility = state.eligibility || null;
     const canReview = !!eligibility?.canReview;
     const visibleCount = visibleCountOf(section, reviews.length);
     const visibleReviews = reviews.slice(0, visibleCount);
-    section.__reviewRenderState = { product, reviews: state.reviews, eligibility };
+    section.__reviewRenderState = { product, reviews: state.reviews, eligibility, mode };
 
     section.innerHTML = `
-      <section class="ss-product-reviews-shell">
+      <section class="ss-product-reviews-shell ss-product-reviews-shell--${esc(mode)}">
         <div class="ss-product-reviews-head">
           <div>
-            <h3 class="ss-product-reviews-title">Customer reviews</h3>
-            <div class="ss-review-muted">Only verified customers with completed orders can leave a review for this product.</div>
+            <h3 class="ss-product-reviews-title">${mode === 'public' ? 'Reviews' : 'Customer reviews'}</h3>
+            <div class="ss-review-muted">${mode === 'public' ? 'All from verified purchases' : 'Only verified customers with completed orders can leave a review for this product.'}</div>
           </div>
           ${reviewSummaryMarkup(summary)}
         </div>
-        <div class="ss-product-reviews-compose">
+        ${mode === 'public' ? reviewGalleryMarkup(reviews) : ''}
+        ${mode === 'public' ? '' : `<div class="ss-product-reviews-compose">
           ${!account ? authPromptMarkup() : canReview ? formMarkup(eligibility) : eligibilityListMarkup(eligibility)}
-        </div>
+        </div>`}
         <div class="ss-product-reviews-list ${reviews.length ? '' : 'is-empty'}">
           ${reviews.length ? visibleReviews.map(reviewCardMarkup).join('') : '<div class="ss-review-empty">No published reviews yet.</div>'}
         </div>
@@ -457,18 +492,20 @@
   async function mount(section, options = {}) {
     const product = options?.product || null;
     const productId = productIdOf(product);
+    const mode = String(options?.mode || 'public').trim().toLowerCase();
     if (!section || !productId) return false;
-    if (!options?.force && lastProductKey === productId && section.dataset.reviewReady === '1') return true;
+    if (!options?.force && lastProductKey === `${productId}:${mode}` && section.dataset.reviewReady === '1') return true;
 
     section.classList.add('ss-product-reviews');
     section.innerHTML = `<div class="ss-review-loading">Loading reviews…</div>`;
     section.dataset.reviewReady = '0';
-    lastProductKey = productId;
+    section.dataset.reviewMode = mode;
+    lastProductKey = `${productId}:${mode}`;
 
     try {
       const [reviews, eligibility] = await Promise.all([
         loadReviews(productId),
-        auth()?.isLoggedIn?.() ? loadEligibility(productId).catch(() => null) : Promise.resolve(null),
+        mode === 'public' ? Promise.resolve(null) : (auth()?.isLoggedIn?.() ? loadEligibility(productId).catch(() => null) : Promise.resolve(null)),
       ]);
       if (!options?.force && !section.dataset.reviewVisibleCount) {
         section.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
@@ -476,7 +513,7 @@
       if (options?.force) {
         section.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
       }
-      await renderInto(section, product, { reviews, eligibility });
+      await renderInto(section, product, { reviews, eligibility, mode });
       section.dataset.reviewReady = '1';
       return true;
     } catch (error) {
