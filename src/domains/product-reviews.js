@@ -7,6 +7,10 @@
 
   function api() { return window.__SS_API__ || null; }
   function auth() { return window.__SS_CUSTOMER_AUTH__ || null; }
+  function viewer() { return document.getElementById('Viewer'); }
+  function clearSort() {
+    try { window.removeSortContainer?.(); } catch {}
+  }
   function esc(value) {
     try { return window.__ssSafeEscHtml?.(value) || ''; } catch {}
     return String(value == null ? '' : value).replace(/[&<>"]/g, (m) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[m]));
@@ -33,6 +37,77 @@
 
   function productIdOf(product) {
     return String(product?.productId || product?.id || window.__ssCurrentProductId || '').trim();
+  }
+
+  function reviewRouteUrl(product) {
+    const productId = productIdOf(product);
+    if (productId) return `/?view=review&productId=${encodeURIComponent(productId)}`;
+    const productName = String(product?.name || product?.productName || '').trim();
+    if (productName) return `/?view=review&product=${encodeURIComponent(productName)}`;
+    return '/?view=review';
+  }
+
+  function openProductRoute(product) {
+    const payload = [
+      String(product?.name || '').trim(),
+      Number(product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0) || 0,
+      String(product?.description || '').trim(),
+      String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(),
+      String(product?.productId || product?.id || '').trim() || null,
+      null
+    ];
+    try {
+      if (typeof window.navigate === 'function') {
+        window.navigate('GoToProductPage', payload);
+        return;
+      }
+    } catch {}
+    try {
+      const pid = String(product?.productId || product?.id || '').trim();
+      if (pid) {
+        window.location.assign(`/?p=${encodeURIComponent(pid)}`);
+        return;
+      }
+    } catch {}
+    try { window.location.assign('/'); } catch {}
+  }
+
+  function catalogProducts() {
+    try {
+      if (typeof window.getAllProductsFlatSafe === 'function') return window.getAllProductsFlatSafe() || [];
+    } catch {}
+    try {
+      if (typeof window.__ssGetCatalogFlat === 'function') return window.__ssGetCatalogFlat() || [];
+    } catch {}
+    return [];
+  }
+
+  function resolveReviewProduct(payload = {}) {
+    const data = Array.isArray(payload?.data) ? payload.data : [];
+    const candidate = data[0] && typeof data[0] === 'object' ? data[0] : (payload?.product && typeof payload.product === 'object' ? payload.product : null);
+    const routeProductId = String(candidate?.productId || candidate?.id || payload?.productId || '').trim();
+    const routeProductName = String(candidate?.name || payload?.productName || '').trim();
+    const eq = typeof window.__ssIdEq === 'function'
+      ? window.__ssIdEq
+      : ((a, b) => String(a ?? '').trim() === String(b ?? '').trim());
+    if (routeProductId) {
+      const found = catalogProducts().find((entry) => eq(entry?.productId, routeProductId));
+      if (found) return { ...found, ...(candidate || {}) };
+      return {
+        ...(candidate || {}),
+        productId: routeProductId,
+        ...(routeProductName ? { name: routeProductName } : {})
+      };
+    }
+    if (routeProductName) {
+      const foundByName = catalogProducts().find((entry) => String(entry?.name || '').trim() === routeProductName);
+      if (foundByName) return { ...foundByName, ...(candidate || {}) };
+    }
+    return candidate;
+  }
+
+  function productImageOf(product) {
+    return String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim();
   }
 
   function createStars(value) {
@@ -78,6 +153,34 @@
         <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
         ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
       </article>`;
+  }
+
+  function reviewEntryProductMarkup(product) {
+    const socialNode = productCard()?.createProductSocialProof?.(product) || null;
+    const socialMarkup = socialNode ? socialNode.outerHTML.replace('product-card-rating-meta', 'product-card-rating-meta ss-review-entry-social-proof') : '';
+    const imageUrl = productImageOf(product);
+    return `
+      <div class="ss-review-entry-product">
+        ${imageUrl ? `<div class="ss-review-entry-product-media"><img alt="${esc(product?.name || 'Product')}" src="${esc(imageUrl)}"/></div>` : ''}
+        <div class="ss-review-entry-product-body">
+          <div class="ss-review-entry-product-kicker">Product</div>
+          <div class="ss-review-entry-product-name">${esc(product?.name || 'Selected product')}</div>
+          ${socialMarkup}
+        </div>
+      </div>`;
+  }
+
+  function reviewEntryEmptyMarkup(message, title) {
+    return `
+      <div class="ss-auth-page ss-review-entry-page">
+        <div class="ss-auth-card ss-review-entry-card">
+          <div class="ss-auth-copy">
+            <div class="ss-auth-kicker">Verified review</div>
+            <h2>${esc(title || 'Review this product')}</h2>
+            <p>${esc(message || 'This review page is temporarily unavailable.')}</p>
+          </div>
+        </div>
+      </div>`;
   }
 
   function visibleCountOf(section, total) {
@@ -258,6 +361,10 @@
       });
       status.textContent = 'Review submitted. Thank you!';
       status.dataset.tone = 'success';
+      if (host?.dataset?.reviewUiMode === 'entry') {
+        await mountReviewPageInto(host, { product: host.__reviewRenderState?.product || { productId }, force: true });
+        return;
+      }
       await mount(host.closest('.ss-product-reviews'), { product: { productId }, force: true });
     } catch (error) {
       status.textContent = String(error?.message || 'Review submission failed');
@@ -268,6 +375,9 @@
   function bindForm(host, productId, eligibility) {
     host.querySelectorAll('[data-review-auth]').forEach((button) => {
       button.addEventListener('click', () => openAuthRoute(button.getAttribute('data-review-auth')));
+    });
+    host.querySelectorAll('[data-review-open-product]').forEach((button) => {
+      button.addEventListener('click', () => openProductRoute(host.__reviewRenderState?.product || { productId }));
     });
     const fileInput = host.querySelector('#ssReviewImages');
     if (fileInput) fileInput.addEventListener('change', () => updateUploadMeta(host));
@@ -287,6 +397,31 @@
         renderInto(shell, shell.__reviewRenderState.product, shell.__reviewRenderState);
       });
     });
+  }
+
+  function renderEntryInto(section, product, state) {
+    const eligibility = state.eligibility || null;
+    const canReview = !!eligibility?.canReview;
+    section.dataset.reviewUiMode = 'entry';
+    section.__reviewRenderState = { product, eligibility };
+    section.innerHTML = `
+      <div class="ss-auth-page ss-review-entry-page">
+        <div class="ss-auth-card ss-review-entry-card">
+          <div class="ss-review-entry-head">
+            <div class="ss-auth-copy">
+              <div class="ss-auth-kicker">Verified review</div>
+              <h2 class="ss-review-entry-title">Review your purchase</h2>
+              <p>Only customers who ordered this product with the same account email can leave a review. Reviews open 5 days after purchase and only the variants you actually bought can be selected.</p>
+            </div>
+            <button class="ss-review-btn" data-review-open-product="1" type="button">Back to product</button>
+          </div>
+          ${reviewEntryProductMarkup(product)}
+          <div class="ss-review-entry-body">
+            ${canReview ? formMarkup(eligibility) : eligibilityListMarkup(eligibility)}
+          </div>
+        </div>
+      </div>`;
+    bindForm(section, productIdOf(product), eligibility);
   }
 
   async function renderInto(section, product, state) {
@@ -350,6 +485,48 @@
     }
   }
 
-  const service = { mount };
+  async function mountReviewPageInto(section, options = {}) {
+    const product = options?.product || null;
+    const productId = productIdOf(product);
+    if (!section || !productId) {
+      if (section) section.innerHTML = reviewEntryEmptyMarkup('Open the product again and use its rating block to start the review flow.', 'Product not found');
+      return false;
+    }
+
+    clearSort();
+    section.dataset.reviewUiMode = 'entry';
+    section.__reviewRenderState = { product, eligibility: null };
+
+    if (!auth()?.isLoggedIn?.()) {
+      section.innerHTML = reviewEntryEmptyMarkup('You need to log in with the same email you used for your order. Redirecting you now…', 'Login required');
+      try { auth()?.rememberRedirect?.(reviewRouteUrl(product)); } catch {}
+      try {
+        window.setTimeout(() => {
+          try { window.navigate?.('GoToLogin', []); } catch {}
+        }, 80);
+      } catch {}
+      return true;
+    }
+
+    section.innerHTML = reviewEntryEmptyMarkup('Loading your purchased variants…', 'Review your purchase');
+    try {
+      const eligibility = await loadEligibility(productId);
+      renderEntryInto(section, product, { eligibility });
+      return true;
+    } catch {
+      section.innerHTML = reviewEntryEmptyMarkup('We could not load your review eligibility right now. Please try again in a moment.', 'Review unavailable');
+      return false;
+    }
+  }
+
+  function mountReviewPage(payload = {}) {
+    const node = viewer();
+    if (!node) return function cleanupReviewPage() {};
+    const product = resolveReviewProduct(payload);
+    void mountReviewPageInto(node, { product, force: payload?.force });
+    return function cleanupReviewPage() {};
+  }
+
+  const service = { mount, mountReviewPage, mountReviewPageInto };
   window.__SS_PRODUCT_REVIEWS__ = service;
 })(window, document);

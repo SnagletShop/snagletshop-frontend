@@ -320,7 +320,52 @@ function __ssCreatePdpSocialProof(product) {
         if (typeof factory !== 'function') return null;
         const node = factory(product);
         if (!node) return null;
+        const reviewPayload = {
+            productId: String(product?.productId || product?.id || '').trim(),
+            name: String(product?.name || '').trim(),
+            image: String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '').trim(),
+            price: Number(product?.price ?? product?.priceEUR ?? product?.basePrice ?? product?.sellPrice ?? 0) || 0,
+            ratingValue: product?.ratingValue ?? product?.starsRating ?? product?.rating ?? product?.ratingOutOf5,
+            soldCount: product?.soldCount ?? product?.purchasedCount ?? product?.purchasesCount ?? product?.purchaseCount
+        };
+        const openReviewPage = () => {
+            try {
+                if (typeof window.navigate === 'function') {
+                    window.navigate('GoToReviewProduct', [reviewPayload]);
+                    return;
+                }
+            } catch {}
+            try {
+                const pid = encodeURIComponent(String(reviewPayload.productId || '').trim());
+                if (pid) {
+                    window.location.assign(`/?view=review&productId=${pid}`);
+                    return;
+                }
+            } catch {}
+            try { window.location.assign('/?view=review'); } catch {}
+        };
         node.classList.add('product-page-social-proof');
+        node.classList.add('is-review-link');
+        node.setAttribute('role', 'link');
+        node.setAttribute('tabindex', '0');
+        node.setAttribute('title', 'Review this product');
+        node.setAttribute('aria-label', 'Review this product');
+        node.addEventListener('click', (event) => {
+            try {
+                event.preventDefault();
+                event.stopPropagation();
+            } catch {}
+            openReviewPage();
+        });
+        node.addEventListener('keydown', (event) => {
+            const key = String(event?.key || '');
+            if (key !== 'Enter' && key !== ' ') return;
+            try {
+                event.preventDefault();
+                event.stopPropagation();
+            } catch {}
+            openReviewPage();
+        });
         node.querySelector('.product-rating-primary')?.classList.add('product-page-rating-primary');
         node.querySelector('.product-rating-secondary')?.classList.add('product-page-rating-secondary');
         node.querySelector('.product-rating-stars')?.classList.add('product-page-rating-stars');
@@ -876,12 +921,6 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     details.append(imagesCol, infoCol);
     productDiv.appendChild(details);
     Product_Viewer.appendChild(productDiv);
-    try {
-        const reviewsSection = document.createElement("section");
-        reviewsSection.className = "Product_Reviews_Section";
-        Product_Viewer.appendChild(reviewsSection);
-        Promise.resolve(window.__SS_PRODUCT_REVIEWS__?.mount?.(reviewsSection, { product })).catch(() => {});
-    } catch {}
     try { viewer.replaceChildren(Product_Viewer); } catch { viewer.innerHTML = ''; viewer.appendChild(Product_Viewer); }
 
     // Ensure product.productId is sane for recommendations + discount matching

@@ -128,6 +128,7 @@
       route?.view === 'settings' ||
       route?.view === 'login' ||
       route?.view === 'register' ||
+      route?.view === 'review' ||
       route?.orderId ||
       route?.path?.startsWith('/p/') ||
       route?.path?.startsWith('/product/') ||
@@ -194,11 +195,26 @@
     };
   }
 
+  function createReviewState(product, route = {}) {
+    const candidate = (product && typeof product === 'object') ? product : null;
+    const productId = String(candidate?.productId || candidate?.id || route?.productId || '').trim();
+    const productName = String(candidate?.name || route?.productName || '').trim();
+    if (!productId && !productName) return null;
+    return {
+      action: 'GoToReviewProduct',
+      data: [{
+        ...(candidate || {}),
+        ...(productId ? { productId } : {}),
+        ...(productName ? { name: productName } : {})
+      }]
+    };
+  }
+
   function resolveStateFromRoute(route, options = {}) {
     if (!route || typeof route !== 'object') return null;
     const allowDefaultCatalog = options.allowDefaultCatalog === true;
 
-    if (route.productId || route.productName || route.productSlug || route.path.startsWith('/p/') || route.path.startsWith('/product/')) {
+    if ((route.productId || route.productName || route.productSlug || route.path.startsWith('/p/') || route.path.startsWith('/product/')) && route.view !== 'review') {
       return createProductState(findProductForRoute(route), route);
     }
 
@@ -224,6 +240,10 @@
 
     if (route.view === 'register') {
       return { action: 'GoToRegister', data: [] };
+    }
+
+    if (route.view === 'review') {
+      return createReviewState(findProductForRoute(route), route);
     }
 
     if (route.category) {
@@ -278,6 +298,15 @@
 
       if (state?.action === 'GoToRegister') {
         return '/?view=register';
+      }
+
+      if (state?.action === 'GoToReviewProduct') {
+        const candidate = state?.data?.[0] && typeof state.data[0] === 'object' ? state.data[0] : {};
+        const pid = String(candidate?.productId || candidate?.id || '').trim();
+        if (pid) return `/?view=review&productId=${encodeURIComponent(pid)}`;
+        const name = String(candidate?.name || candidate?.productName || '').trim();
+        if (name) return `/?view=review&product=${encodeURIComponent(name)}`;
+        return '/?view=review';
       }
 
       if (state?.action === 'loadProducts') {
