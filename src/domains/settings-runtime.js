@@ -579,49 +579,113 @@
 
     if (typeof ctx.removeSortContainer === 'function') ctx.removeSortContainer();
     viewer.innerHTML = '';
+    const detectedCountry = getPreferredCountryCode();
 
     const wrapper = document.createElement('div');
-    wrapper.classList.add('settings-panel');
+    wrapper.classList.add('settings-panel', 'settings-panel--modern');
+    wrapper.innerHTML = `
+      <section class="settings-hero">
+        <div class="settings-hero-copy">
+          <div class="settings-eyebrow">Store settings</div>
+          <h2>Personalize the storefront the way a real store account should feel.</h2>
+          <p>Adjust appearance, shopping region, saved data, and support details from one clean settings space.</p>
+        </div>
+        <div class="settings-hero-summary">
+          <div class="settings-summary-card">
+            <span class="settings-summary-label">Theme</span>
+            <strong id="settingsThemeSummary">Light</strong>
+          </div>
+          <div class="settings-summary-card">
+            <span class="settings-summary-label">Currency</span>
+            <strong id="settingsCurrencySummary">EUR</strong>
+          </div>
+          <div class="settings-summary-card">
+            <span class="settings-summary-label">Country</span>
+            <strong id="settingsCountrySummary">${detectedCountry}</strong>
+          </div>
+        </div>
+      </section>
+      <div class="settings-grid settings-grid--top"></div>
+      <div class="settings-stack"></div>
+    `;
+
+    const topGrid = wrapper.querySelector('.settings-grid--top');
+    const stack = wrapper.querySelector('.settings-stack');
 
     const TEXTS = ctx.TEXTS || {};
     const themeSection = document.createElement('div');
-    themeSection.classList.add('settings-section');
+    themeSection.classList.add('settings-section', 'settings-card', 'settings-card--theme');
     themeSection.innerHTML = `
-        <h3>Theme</h3>
-        <label for="themeToggle">${TEXTS?.GENERAL?.DARK_MODE_LABEL || 'Dark Mode'}</label>
-        <label class="switch">
-          <input type="checkbox" id="themeToggle">
-          <span class="slider"></span>
-        </label>
+        <div class="settings-card-head">
+          <div>
+            <div class="settings-card-kicker">Appearance</div>
+            <h3>Theme</h3>
+            <p>Switch the storefront between light and dark without changing anything else.</p>
+          </div>
+        </div>
+        <div class="settings-inline-setting">
+          <div class="settings-inline-copy">
+            <label for="themeToggle">${TEXTS?.GENERAL?.DARK_MODE_LABEL || 'Dark Mode'}</label>
+            <div class="settings-inline-help">Keeps the same storefront style, just tuned for your preferred lighting.</div>
+          </div>
+          <label class="switch settings-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
       `;
 
     const currencySection = document.createElement('div');
-    currencySection.classList.add('settings-section');
+    currencySection.classList.add('settings-section', 'settings-card', 'settings-card--currency');
     currencySection.innerHTML = `
-        <h3>Currency</h3>
-        <label for="currencySelect">Preferred currency:</label>
+        <div class="settings-card-head">
+          <div>
+            <div class="settings-card-kicker">Shopping region</div>
+            <h3>Currency</h3>
+            <p>Choose how prices should be displayed throughout the storefront.</p>
+          </div>
+        </div>
+        <label for="currencySelect">Preferred currency</label>
         <select id="currencySelect" class="currencySelect tom-hidden ss-select-fullwidth"></select>
       `;
 
     const countrySection = document.createElement('div');
-    countrySection.classList.add('settings-section');
+    countrySection.classList.add('settings-section', 'settings-card', 'settings-card--country');
     countrySection.innerHTML = `
-        <h3>Shipping Country</h3>
-        <label for="countrySelect">Detected: <span id="detected-country"></span></label>
+        <div class="settings-card-head">
+          <div>
+            <div class="settings-card-kicker">Shopping region</div>
+            <h3>Shipping country</h3>
+            <p>Set the country we should use for tariffs, shipping context, and regional pricing logic.</p>
+          </div>
+        </div>
+        <label for="countrySelect">Detected country <span class="settings-inline-value" id="detected-country"></span></label>
         <select id="countrySelect" class="tom-hidden ss-select-fullwidth"></select>
       `;
 
     const clearSection = document.createElement('div');
-    clearSection.classList.add('settings-section');
+    clearSection.classList.add('settings-section', 'settings-card', 'settings-card--danger');
     clearSection.innerHTML = `
-        <h3>Reset</h3>
-        <button class="clearDataButton" id="clearDataButton">Clear all saved data (cart, preferences, etc.)</button>
+        <div class="settings-card-head">
+          <div>
+            <div class="settings-card-kicker">Reset</div>
+            <h3>Clear saved storefront data</h3>
+            <p>Use this if you want to reset local preferences, cart contents, and temporary browsing state on this device.</p>
+          </div>
+        </div>
+        <button class="clearDataButton" id="clearDataButton">Clear saved data</button>
       `;
 
     const contactSection = document.createElement('div');
-    contactSection.classList.add('settings-section');
+    contactSection.classList.add('settings-section', 'settings-card', 'settings-card--contact');
     contactSection.innerHTML = `
-    <h3>${TEXTS?.CONTACT_FORM?.TITLE || 'Send us a Message!'}</h3>
+    <div class="settings-card-head">
+      <div>
+        <div class="settings-card-kicker">Support</div>
+        <h3>${TEXTS?.CONTACT_FORM?.TITLE || 'Send us a message'}</h3>
+        <p>Reach us directly from the storefront if you need help with a product, order, or general question.</p>
+      </div>
+    </div>
     <form id="contact-form" autocomplete="off">
       <label for="contact-email">${TEXTS?.CONTACT_FORM?.FIELDS?.EMAIL || 'Your Email'}</label>
       <input type="email" id="contact-email" name="email" autocomplete="email" required>
@@ -636,9 +700,15 @@
     <p class="contact-note">If the form doesn't work, email us at <a href="mailto:snagletshophelp@gmail.com">snagletshophelp@gmail.com</a></p>`;
 
     const legalSection = document.createElement('div');
-    legalSection.classList.add('settings-section');
+    legalSection.classList.add('settings-section', 'settings-card', 'settings-card--legal');
     legalSection.innerHTML = `
-        <h3>Legal Notice &amp; Store Policies</h3>
+        <div class="settings-card-head">
+          <div>
+            <div class="settings-card-kicker">Policies</div>
+            <h3>Legal notice &amp; store policies</h3>
+            <p>The essentials for shipping, returns, delivery issues, and customer rights, kept in one place.</p>
+          </div>
+        </div>
         <p><strong>Legal Notice:</strong><br>
         Unauthorized scraping, reproduction, or copying of this website, its design, content, or data is prohibited and may result in legal action and claims for damages.</p>
         <h4>Shipping Policy</h4>
@@ -667,7 +737,8 @@
         <p>To exercise your rights or request help with an order, contact us at the email address shown on the checkout or confirmation email.</p>
         <p><em>Nothing in these policies is intended to exclude or limit any non-waivable rights you may have under applicable consumer protection or e-commerce law.</em></p>`;
 
-    wrapper.append(themeSection, currencySection, countrySection, clearSection, contactSection, legalSection);
+    topGrid?.append(themeSection, currencySection, countrySection);
+    stack?.append(clearSection, contactSection, legalSection);
     viewer.appendChild(wrapper);
 
     document.getElementById('clearDataButton')?.addEventListener('click', () => {
@@ -685,19 +756,24 @@
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
       themeToggle.checked = localStorage.getItem('themeMode') === 'dark';
+      const themeSummary = document.getElementById('settingsThemeSummary');
+      if (themeSummary) themeSummary.textContent = themeToggle.checked ? 'Dark' : 'Light';
       themeToggle.addEventListener('change', (e) => {
         const darkMode = !!e.target.checked;
         document.documentElement.classList.toggle('dark-mode', darkMode);
         document.documentElement.classList.toggle('light-mode', !darkMode);
         localStorage.setItem('themeMode', darkMode ? 'dark' : 'light');
+        if (themeSummary) themeSummary.textContent = darkMode ? 'Dark' : 'Light';
       });
     }
 
     const currencySelect = document.getElementById('currencySelect');
     const countrySelect = document.getElementById('countrySelect');
-    const detectedCountry = getPreferredCountryCode();
     const detectedSpan = document.getElementById('detected-country');
     if (detectedSpan) detectedSpan.textContent = detectedCountry;
+    const currencySummary = document.getElementById('settingsCurrencySummary');
+    const countrySummary = document.getElementById('settingsCountrySummary');
+    if (countrySummary) countrySummary.textContent = detectedCountry;
     const countriesList = buildCountriesList(ctx);
     if (countriesList.length) {
       window.preloadedData = window.preloadedData || {};
@@ -721,6 +797,7 @@
       ctx.setSelectedCurrency?.(restoredCurrency);
       ctx.syncCentralState?.('currency-restore', { selectedCurrency: restoredCurrency });
       currencySelect.value = restoredCurrency;
+      if (currencySummary) currencySummary.textContent = restoredCurrency;
     }
 
     if (countrySelect) {
@@ -771,6 +848,7 @@
             ctx.syncCentralState?.('currency-select-tom', { selectedCurrency: val });
             localStorage.setItem('manualCurrencyOverride', 'true');
             ctx.syncCurrencySelects?.(val);
+            if (currencySummary) currencySummary.textContent = String(val || '').toUpperCase();
             ctx.updateAllPrices?.();
           }
         });
@@ -809,6 +887,7 @@
             const newCountry = String(val).toUpperCase();
             setPreferredCountryCode(newCountry);
             if (detectedSpan) detectedSpan.textContent = newCountry;
+            if (countrySummary) countrySummary.textContent = newCountry;
             if (ctx.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem('manualCurrencyOverride')) {
               const newCurrency = ctx.countryToCurrency?.[newCountry];
               if (newCurrency) {
@@ -816,6 +895,7 @@
                 localStorage.setItem('selectedCurrency', newCurrency);
                 ctx.syncCentralState?.('country-auto-currency', { selectedCurrency: newCurrency });
                 ctx.syncCurrencySelects?.(newCurrency);
+                if (currencySummary) currencySummary.textContent = String(newCurrency || '').toUpperCase();
               }
             }
             ctx.updateAllPrices?.();
