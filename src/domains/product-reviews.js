@@ -2,6 +2,7 @@
   'use strict';
 
   const MAX_IMAGE_BYTES_TOTAL = 10 * 1024 * 1024;
+  const REVIEWS_PAGE_SIZE = 3;
   let lastProductKey = '';
 
   function api() { return window.__SS_API__ || null; }
@@ -64,7 +65,7 @@
             <div>
               <div class="ss-review-card-name">${esc(review?.reviewerName || 'Verified customer')}</div>
               <div class="ss-review-card-meta">
-                <span>${formatDate(review?.createdAt)}</span>
+                <span>${formatDate(review?.reviewDate || review?.createdAt)}</span>
                 ${review?.selectedPurchaseLabel ? `<span>•</span><span>${esc(review.selectedPurchaseLabel)}</span>` : ''}
               </div>
             </div>
@@ -77,6 +78,11 @@
         <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
         ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
       </article>`;
+  }
+
+  function visibleCountOf(section, total) {
+    const raw = Number(section?.dataset?.reviewVisibleCount || REVIEWS_PAGE_SIZE) || REVIEWS_PAGE_SIZE;
+    return Math.max(REVIEWS_PAGE_SIZE, Math.min(Math.max(0, Number(total || 0) || 0), raw));
   }
 
   function authPromptMarkup() {
@@ -272,6 +278,15 @@
         submitReview(productId, host, eligibility);
       });
     }
+    host.querySelectorAll('[data-review-load-more]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const shell = host.closest('.ss-product-reviews');
+        if (!shell || !shell.__reviewRenderState) return;
+        const current = visibleCountOf(shell, shell.__reviewRenderState.reviews?.reviews?.length || 0);
+        shell.dataset.reviewVisibleCount = String(current + REVIEWS_PAGE_SIZE);
+        renderInto(shell, shell.__reviewRenderState.product, shell.__reviewRenderState);
+      });
+    });
   }
 
   async function renderInto(section, product, state) {
@@ -280,6 +295,9 @@
     const account = auth()?.getAccount?.() || null;
     const eligibility = state.eligibility || null;
     const canReview = !!eligibility?.canReview;
+    const visibleCount = visibleCountOf(section, reviews.length);
+    const visibleReviews = reviews.slice(0, visibleCount);
+    section.__reviewRenderState = { product, reviews: state.reviews, eligibility };
 
     section.innerHTML = `
       <section class="ss-product-reviews-shell">
@@ -294,8 +312,9 @@
           ${!account ? authPromptMarkup() : canReview ? formMarkup(eligibility) : eligibilityListMarkup(eligibility)}
         </div>
         <div class="ss-product-reviews-list ${reviews.length ? '' : 'is-empty'}">
-          ${reviews.length ? reviews.map(reviewCardMarkup).join('') : '<div class="ss-review-empty">No published reviews yet.</div>'}
+          ${reviews.length ? visibleReviews.map(reviewCardMarkup).join('') : '<div class="ss-review-empty">No published reviews yet.</div>'}
         </div>
+        ${reviews.length > visibleCount ? `<div class="ss-review-more"><button class="ss-review-btn" data-review-load-more="1" type="button">Load 3 more reviews</button></div>` : ''}
       </section>`;
     bindForm(section, productIdOf(product), eligibility);
   }
@@ -316,6 +335,12 @@
         loadReviews(productId),
         auth()?.isLoggedIn?.() ? loadEligibility(productId).catch(() => null) : Promise.resolve(null),
       ]);
+      if (!options?.force && !section.dataset.reviewVisibleCount) {
+        section.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
+      }
+      if (options?.force) {
+        section.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
+      }
       await renderInto(section, product, { reviews, eligibility });
       section.dataset.reviewReady = '1';
       return true;

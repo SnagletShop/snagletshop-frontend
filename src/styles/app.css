@@ -8143,6 +8143,23 @@
     padding: 22px;
 }
 
+.Product_Reviews_Section {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+}
+
+.Product_Detail_Page + .Product_Reviews_Section {
+    margin-top: 18px;
+}
+
+#RecoSection + .Product_Reviews_Section {
+    margin-top: 28px;
+}
+
+.Product_Reviews_Section .ss-product-reviews-shell {
+    margin-top: 0;
+}
+
 .ss-product-reviews-head {
     display: flex;
     align-items: flex-start;
@@ -8229,17 +8246,21 @@
     border-radius: 20px;
     padding: 16px;
     background: rgba(255,255,255,.015);
+    box-shadow: 0 10px 24px rgba(0,0,0,.12);
 }
 
 .ss-review-card-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 14px 18px;
 }
 
 .ss-review-card-author {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: 12px;
+    align-items: start;
 }
 
 .ss-review-card-avatar {
@@ -8275,6 +8296,10 @@
 }
 
 .ss-review-card-rating {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
     text-align: right;
 }
 
@@ -8294,6 +8319,7 @@
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 14px;
+    justify-content: flex-start;
 }
 
 .ss-review-card-image {
@@ -8308,6 +8334,16 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.ss-review-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+.ss-review-more .ss-review-btn {
+    min-width: 190px;
 }
 
 @media (max-width: 680px) {
@@ -8347,6 +8383,22 @@
         border-radius: 5vw;
     }
 
+    .Product_Reviews_Section {
+        width: 100%;
+    }
+
+    .Product_Detail_Page + .Product_Reviews_Section {
+        margin-top: 4.444vw;
+    }
+
+    #RecoSection + .Product_Reviews_Section {
+        margin-top: 5.556vw;
+    }
+
+    .Product_Reviews_Section .ss-product-reviews-shell {
+        margin-top: 0;
+    }
+
     .ss-product-reviews-head {
         flex-direction: column;
         gap: 4.444vw;
@@ -8377,11 +8429,12 @@
     }
 
     .ss-review-card-head {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         gap: 3.333vw;
     }
 
     .ss-review-card-rating {
+        align-items: flex-start;
         text-align: left;
     }
 
@@ -8392,5 +8445,14 @@
     .ss-review-card-image {
         width: 22.222vw;
         border-radius: 3.333vw;
+    }
+
+    .ss-review-more {
+        margin-top: 4.444vw;
+    }
+
+    .ss-review-more .ss-review-btn {
+        width: 100%;
+        min-width: 0;
     }
 }
