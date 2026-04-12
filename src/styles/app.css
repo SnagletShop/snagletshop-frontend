@@ -11906,13 +11906,13 @@ body.ss-pdp-lightbox-open {
 @media (min-width: 681px) {
     .DesktopShell {
         width: min(1650px, calc(100vw - 64px)) !important;
-        padding-top: 22px !important;
+        padding-top: 0 !important;
         position: relative !important;
         z-index: 20 !important;
     }
 
     .TopBar {
-        top: 14px !important;
+        top: 0 !important;
         grid-template-columns: minmax(240px, 0.78fr) minmax(560px, 1.8fr) auto !important;
         gap: 28px !important;
         min-height: 106px !important;
