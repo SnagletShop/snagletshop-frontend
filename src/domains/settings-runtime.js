@@ -815,7 +815,7 @@
       if (themeAutoToggle) themeAutoToggle.checked = isAuto;
       if (themeToggle) {
         themeToggle.checked = resolvedMode === 'dark';
-        themeToggle.disabled = isAuto;
+        themeToggle.disabled = false;
       }
       if (themeSummary) {
         themeSummary.textContent = isAuto
@@ -837,6 +837,10 @@
     if (themeToggle) {
       themeToggle.addEventListener('change', (e) => {
         const darkMode = !!e.target.checked;
+        if (themeAutoToggle?.checked) {
+          themeAutoToggle.checked = false;
+          syncToggleVisualState(themeAutoToggle);
+        }
         themeRuntime?.apply?.(darkMode ? 'dark' : 'light', { persist: true });
         syncThemeControls();
       });
