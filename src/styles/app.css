@@ -11907,6 +11907,8 @@ body.ss-pdp-lightbox-open {
     .DesktopShell {
         width: min(1650px, calc(100vw - 64px)) !important;
         padding-top: 22px !important;
+        position: relative !important;
+        z-index: 20 !important;
     }
 
     .TopBar {
@@ -11920,6 +11922,7 @@ body.ss-pdp-lightbox-open {
         border-radius: 30px 30px 0 0 !important;
         background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
         box-shadow: 0 12px 32px color-mix(in srgb, #000000 9%, transparent), 0 1px 0 color-mix(in srgb, #ffffff 4%, transparent) inset !important;
+        isolation: isolate !important;
     }
 
     .DesktopHeaderBrand {
@@ -12088,6 +12091,8 @@ body.ss-pdp-lightbox-open {
         border-radius: 0 0 30px 30px !important;
         background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
         box-shadow: 0 16px 34px color-mix(in srgb, #000000 9%, transparent) !important;
+        position: relative !important;
+        z-index: 19 !important;
     }
 
     .desktop-category-ribbon {
