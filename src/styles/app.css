@@ -11538,7 +11538,8 @@
     opacity: 0 !important;
     display: block !important;
     cursor: pointer !important;
-    z-index: 2 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
 }
 
 .settings-panel--modern .settings-switch.switch .slider {
@@ -11570,22 +11571,23 @@
     transition: transform 160ms ease, box-shadow 160ms ease !important;
 }
 
-.settings-panel--modern .settings-switch.switch input:checked + .slider {
+.settings-panel--modern .settings-switch.switch.is-on .slider {
     background: var(--Primary_Button_Colour) !important;
     border-color: color-mix(in srgb, var(--Primary_Button_Hover) 70%, var(--Primary_Button_Colour)) !important;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent), 0 0 0 4px color-mix(in srgb, var(--Primary_Button_Colour) 16%, transparent) !important;
 }
 
-.settings-panel--modern .settings-switch.switch input:checked + .slider::before {
+.settings-panel--modern .settings-switch.switch.is-on .slider::before {
     transform: translate(20px, -50%) !important;
 }
 
-.settings-panel--modern .settings-switch.switch input:focus-visible + .slider {
+.settings-panel--modern .settings-switch.switch:focus-visible .slider,
+.settings-panel--modern .settings-switch.switch:focus-within .slider {
     outline: none !important;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent), 0 0 0 4px color-mix(in srgb, var(--Primary_Button_Colour) 18%, transparent) !important;
 }
 
-.settings-panel--modern .settings-switch.switch input:disabled + .slider {
+.settings-panel--modern .settings-switch.switch.is-disabled .slider {
     opacity: 0.58 !important;
     filter: saturate(0.82) !important;
     cursor: not-allowed !important;
@@ -11603,7 +11605,7 @@
         height: 5.278vw !important;
     }
 
-    .settings-panel--modern .settings-switch.switch input:checked + .slider::before {
+    .settings-panel--modern .settings-switch.switch.is-on .slider::before {
         transform: translate(5.833vw, -50%) !important;
     }
 
@@ -11686,5 +11688,202 @@
         margin-left: 0 !important;
         margin-right: 0 !important;
         box-sizing: border-box !important;
+    }
+}
+
+/* PDP image zoom + mobile lightbox */
+.Product_Detail_Page .image-slider-wrapper {
+    cursor: zoom-in;
+    overflow: hidden;
+    isolation: isolate;
+    touch-action: manipulation;
+}
+
+.Product_Detail_Page .image-slider-wrapper .mainImage {
+    transition: opacity 180ms ease, transform 0.4s ease;
+}
+
+.Product_Detail_Page .image-slider-wrapper .ss-pdp-desktop-zoom-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-size: 220%;
+    transition: opacity 180ms ease;
+}
+
+.Product_Detail_Page .image-slider-wrapper.is-desktop-zoom-active {
+    cursor: zoom-out;
+}
+
+.Product_Detail_Page .image-slider-wrapper.is-desktop-zoom-active .ss-pdp-desktop-zoom-layer {
+    opacity: 1;
+}
+
+.Product_Detail_Page .image-slider-wrapper.is-desktop-zoom-active .mainImage {
+    opacity: 0;
+}
+
+html.ss-pdp-lightbox-open,
+body.ss-pdp-lightbox-open {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+.ss-pdp-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 95000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 20px max(96px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+}
+
+.ss-pdp-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(7, 10, 14, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.ss-pdp-lightbox-close {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 88%, transparent);
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ss-pdp-lightbox-stage {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: min(92vw, 760px);
+    height: min(74vh, 820px);
+    overflow: hidden;
+    touch-action: none;
+}
+
+.ss-pdp-lightbox-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: none;
+    will-change: transform;
+}
+
+.ss-pdp-lightbox-bottom {
+    position: absolute;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+    align-items: center;
+    gap: 14px;
+    width: min(92vw, 460px);
+}
+
+.ss-pdp-lightbox-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border: 1px solid color-mix(in srgb, #ffffff 10%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 88%, transparent);
+    color: #fff;
+    font-size: 34px;
+    line-height: 1;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ss-pdp-lightbox-counter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 82%, transparent);
+    border: 1px solid color-mix(in srgb, #ffffff 10%, transparent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+@media (max-width: 680px) {
+    .Product_Detail_Page .image-slider-wrapper {
+        cursor: default;
+    }
+
+    .Product_Detail_Page .image-slider-wrapper .ss-pdp-desktop-zoom-layer {
+        display: none;
+    }
+
+    .ss-pdp-lightbox {
+        padding: 4.444vw 4.444vw max(20vw, env(safe-area-inset-bottom));
+    }
+
+    .ss-pdp-lightbox-close {
+        top: max(3.889vw, env(safe-area-inset-top));
+        right: max(3.889vw, env(safe-area-inset-right));
+        width: 11.667vw;
+        height: 11.667vw;
+        font-size: 7.778vw;
+    }
+
+    .ss-pdp-lightbox-stage {
+        width: 91.111vw;
+        height: 67vh;
+    }
+
+    .ss-pdp-lightbox-bottom {
+        width: 90vw;
+        gap: 3.333vw;
+        grid-template-columns: minmax(26.667vw, 1fr) auto minmax(26.667vw, 1fr);
+        bottom: max(4.444vw, env(safe-area-inset-bottom));
+    }
+
+    .ss-pdp-lightbox-nav-btn {
+        min-height: 12.222vw;
+        font-size: 8.889vw;
+        border-radius: 999vw;
+    }
+
+    .ss-pdp-lightbox-counter {
+        min-height: 11.111vw;
+        padding: 0 4.444vw;
+        font-size: 3.611vw;
+        border-radius: 999vw;
     }
 }

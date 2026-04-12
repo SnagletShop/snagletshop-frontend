@@ -767,6 +767,47 @@
     const themeAutoToggle = document.getElementById('themeAutoToggle');
     const themeSummary = document.getElementById('settingsThemeSummary');
     const themeRuntime = window.__SS_THEME__ || null;
+    const syncToggleVisualState = (input) => {
+      const toggleInput = input instanceof HTMLInputElement ? input : null;
+      const toggleLabel = toggleInput?.closest?.('.settings-switch.switch');
+      if (!toggleInput || !toggleLabel) return;
+      const isDisabled = !!toggleInput.disabled;
+      const isOn = !!toggleInput.checked;
+      toggleLabel.classList.toggle('is-on', isOn);
+      toggleLabel.classList.toggle('is-disabled', isDisabled);
+      toggleLabel.setAttribute('role', 'switch');
+      toggleLabel.setAttribute('aria-checked', isOn ? 'true' : 'false');
+      toggleLabel.setAttribute('aria-disabled', isDisabled ? 'true' : 'false');
+      toggleLabel.tabIndex = isDisabled ? -1 : 0;
+    };
+    const bindToggleLabel = (input) => {
+      const toggleInput = input instanceof HTMLInputElement ? input : null;
+      const toggleLabel = toggleInput?.closest?.('.settings-switch.switch');
+      if (!toggleInput || !toggleLabel || toggleLabel.dataset.toggleBound === 'yes') return;
+      const toggleFromShell = () => {
+        if (toggleInput.disabled) return;
+        toggleInput.checked = !toggleInput.checked;
+        toggleInput.dispatchEvent(new Event('change', { bubbles: true }));
+        syncToggleVisualState(toggleInput);
+      };
+      toggleLabel.dataset.toggleBound = 'yes';
+      toggleLabel.addEventListener('click', (event) => {
+        if (toggleInput.disabled) {
+          event.preventDefault();
+          return;
+        }
+        event.preventDefault();
+        toggleFromShell();
+      });
+      toggleLabel.addEventListener('keydown', (event) => {
+        const key = String(event?.key || '');
+        if (key !== 'Enter' && key !== ' ') return;
+        event.preventDefault();
+        toggleFromShell();
+      });
+      toggleInput.addEventListener('change', () => syncToggleVisualState(toggleInput));
+      syncToggleVisualState(toggleInput);
+    };
     const syncThemeControls = () => {
       const storedMode = String(themeRuntime?.getStoredMode?.() || localStorage.getItem('themeMode') || 'auto').trim().toLowerCase() || 'auto';
       const resolvedMode = String(themeRuntime?.getResolvedMode?.() || (document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light')).trim().toLowerCase();
@@ -781,6 +822,8 @@
           ? `Auto (${resolvedMode === 'dark' ? 'Dark' : 'Light'})`
           : (resolvedMode === 'dark' ? 'Dark' : 'Light');
       }
+      syncToggleVisualState(themeAutoToggle);
+      syncToggleVisualState(themeToggle);
     };
 
     if (themeAutoToggle) {
@@ -801,6 +844,8 @@
     try {
       window.addEventListener('ss:theme-mode-changed', syncThemeControls);
     } catch {}
+    bindToggleLabel(themeAutoToggle);
+    bindToggleLabel(themeToggle);
     syncThemeControls();
 
     const currencySelect = document.getElementById('currencySelect');

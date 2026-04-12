@@ -196,6 +196,499 @@ function handleSwipeGesture(startX, endX, threshold = 50) {
     return diff > 0 ? -1 : 1;
 }
 
+const PDP_IMAGE_VIEWER_HISTORY_KEY = '__ssPdpImageViewerOpen';
+
+function __ssClamp(value, min, max) {
+    const num = Number(value || 0);
+    if (!Number.isFinite(num)) return min;
+    return Math.min(max, Math.max(min, num));
+}
+
+function __ssIsMobileViewport() {
+    try { return !!window.matchMedia?.('(max-width: 680px)')?.matches; } catch {}
+    return false;
+}
+
+function __ssGetCurrentPdpImages() {
+    const images = Array.isArray(window.currentProductImages) ? window.currentProductImages.filter(Boolean) : [];
+    return images.length ? images : ['/favicon.png'];
+}
+
+function __ssGetCurrentPdpImageIndex() {
+    const images = __ssGetCurrentPdpImages();
+    return __ssClamp(Number(window.currentProductImageIndex || 0), 0, Math.max(0, images.length - 1));
+}
+
+function __ssGetCurrentPdpImageSrc() {
+    const images = __ssGetCurrentPdpImages();
+    return images[__ssGetCurrentPdpImageIndex()] || images[0] || '/favicon.png';
+}
+
+function __ssSetCurrentPdpImageIndex(nextIndex, direction = "none") {
+    const images = __ssGetCurrentPdpImages();
+    if (!images.length) return;
+    const total = images.length;
+    const normalized = ((Number(nextIndex || 0) % total) + total) % total;
+    window.currentProductImageIndex = normalized;
+    updateImage(direction);
+}
+
+function nextImage() {
+    const images = __ssGetCurrentPdpImages();
+    if (!images.length) return;
+    __ssSetCurrentPdpImageIndex(__ssGetCurrentPdpImageIndex() + 1, "left");
+}
+
+function prevImage() {
+    const images = __ssGetCurrentPdpImages();
+    if (!images.length) return;
+    __ssSetCurrentPdpImageIndex(__ssGetCurrentPdpImageIndex() - 1, "right");
+}
+
+function __ssGetProductImageExperienceState() {
+    if (!window.__ssProductImageExperience) {
+        window.__ssProductImageExperience = {
+            open: false,
+            mode: '',
+            historyPushed: false,
+            overlayEl: null,
+            overlayImageEl: null,
+            overlayCounterEl: null,
+            overlayStageEl: null,
+            desktopWrapper: null,
+            desktopZoomLayer: null,
+            scale: 1,
+            translateX: 0,
+            translateY: 0,
+            startScale: 1,
+            startTranslateX: 0,
+            startTranslateY: 0,
+            pinchStartDistance: 0,
+            pinchStartMidpoint: null,
+            gestureMode: '',
+            gestureStartX: 0,
+            gestureStartY: 0,
+            swipeDeltaX: 0
+        };
+    }
+    return window.__ssProductImageExperience;
+}
+
+function __ssGetCurrentRouteSnapshot() {
+    try {
+        const currentState = (history.state && typeof history.state === 'object') ? history.state : {};
+        if (currentState.route) return currentState;
+        if (Array.isArray(window.userHistoryStack) && Number.isInteger(window.currentIndex) && window.userHistoryStack[window.currentIndex]) {
+            return {
+                ...currentState,
+                route: window.userHistoryStack[window.currentIndex],
+                index: window.currentIndex
+            };
+        }
+        return currentState;
+    } catch {}
+    return {};
+}
+
+function __ssPushProductImageViewerState() {
+    const state = __ssGetProductImageExperienceState();
+    if (state.historyPushed || window.__ssHandlingPopstate) return;
+    try {
+        const currentState = __ssGetCurrentRouteSnapshot();
+        history.pushState({ ...currentState, [PDP_IMAGE_VIEWER_HISTORY_KEY]: true }, '', window.location.href);
+        state.historyPushed = true;
+    } catch {}
+}
+
+function __ssResetMobileLightboxTransform() {
+    const state = __ssGetProductImageExperienceState();
+    state.scale = 1;
+    state.translateX = 0;
+    state.translateY = 0;
+    state.startScale = 1;
+    state.startTranslateX = 0;
+    state.startTranslateY = 0;
+    state.pinchStartDistance = 0;
+    state.pinchStartMidpoint = null;
+    state.gestureMode = '';
+    state.gestureStartX = 0;
+    state.gestureStartY = 0;
+    state.swipeDeltaX = 0;
+    __ssApplyMobileLightboxTransform();
+}
+
+function __ssApplyMobileLightboxTransform() {
+    const state = __ssGetProductImageExperienceState();
+    const imageEl = state.overlayImageEl;
+    if (!imageEl) return;
+    imageEl.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+}
+
+function __ssSyncDesktopZoomLayer() {
+    const state = __ssGetProductImageExperienceState();
+    const src = __ssGetCurrentPdpImageSrc();
+    if (state.desktopZoomLayer) {
+        state.desktopZoomLayer.style.backgroundImage = `url("${String(src || '').replace(/"/g, '\\"')}")`;
+    }
+}
+
+function __ssUpdateDesktopZoomPointer(clientX, clientY) {
+    const state = __ssGetProductImageExperienceState();
+    const wrapper = state.desktopWrapper;
+    if (!wrapper || !state.desktopZoomLayer || !state.open || state.mode !== 'desktop') return;
+    const rect = wrapper.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const xPct = __ssClamp(((clientX - rect.left) / rect.width) * 100, 0, 100);
+    const yPct = __ssClamp(((clientY - rect.top) / rect.height) * 100, 0, 100);
+    state.desktopZoomLayer.style.backgroundPosition = `${xPct}% ${yPct}%`;
+}
+
+function __ssActivateDesktopZoom(wrapper, sourceEvent = null, options = {}) {
+    const state = __ssGetProductImageExperienceState();
+    if (!wrapper) return;
+    const zoomLayer = wrapper.querySelector('.ss-pdp-desktop-zoom-layer');
+    if (!zoomLayer) return;
+    state.open = true;
+    state.mode = 'desktop';
+    state.desktopWrapper = wrapper;
+    state.desktopZoomLayer = zoomLayer;
+    __ssSyncDesktopZoomLayer();
+    wrapper.classList.add('is-desktop-zoom-active');
+    wrapper.setAttribute('aria-pressed', 'true');
+    if (sourceEvent?.clientX && sourceEvent?.clientY) {
+        __ssUpdateDesktopZoomPointer(sourceEvent.clientX, sourceEvent.clientY);
+    } else {
+        zoomLayer.style.backgroundPosition = '50% 50%';
+    }
+    if (options.fromHistory !== true) __ssPushProductImageViewerState();
+    else state.historyPushed = true;
+}
+
+function __ssSyncMobileLightboxImage() {
+    const state = __ssGetProductImageExperienceState();
+    if (!state.overlayEl || !state.overlayImageEl) return;
+    const images = __ssGetCurrentPdpImages();
+    const idx = __ssGetCurrentPdpImageIndex();
+    const src = images[idx] || images[0] || '/favicon.png';
+    state.overlayImageEl.src = src;
+    state.overlayImageEl.alt = `Product image ${idx + 1}`;
+    if (state.overlayCounterEl) {
+        state.overlayCounterEl.textContent = `${idx + 1} / ${images.length}`;
+    }
+}
+
+function __ssEnsureProductImageViewerBinding() {
+    if (window.__ssProductImageViewerBindingReady) return;
+    window.__ssProductImageViewerBindingReady = true;
+    try {
+        window.addEventListener('popstate', (event) => {
+            const state = __ssGetProductImageExperienceState();
+            const wantsViewer = !!(event?.state && event.state[PDP_IMAGE_VIEWER_HISTORY_KEY] === true);
+            if (state.open && !wantsViewer) {
+                window.__ssSuppressNextProductRerender = true;
+                __ssCloseProductImageExperience({ fromHistory: true, force: true });
+                return;
+            }
+            if (!state.open && wantsViewer) {
+                const wrapper = document.querySelector('#Product_Viewer .image-slider-wrapper');
+                const mainImage = document.getElementById('mainImage');
+                if (!wrapper || !mainImage) return;
+                window.__ssSuppressNextProductRerender = true;
+                __ssOpenProductImageExperience({ wrapper, mainImage, fromHistory: true });
+            }
+        }, true);
+    } catch {}
+    try {
+        window.addEventListener('keydown', (event) => {
+            if (String(event?.key || '') !== 'Escape') return;
+            const state = __ssGetProductImageExperienceState();
+            if (!state.open) return;
+            event.preventDefault();
+            __ssCloseProductImageExperience({});
+        });
+    } catch {}
+}
+
+function __ssOpenMobileLightbox(options = {}) {
+    const state = __ssGetProductImageExperienceState();
+    if (state.overlayEl) {
+        state.open = true;
+        state.mode = 'mobile';
+        __ssSyncMobileLightboxImage();
+        __ssResetMobileLightboxTransform();
+        if (options.fromHistory !== true) __ssPushProductImageViewerState();
+        else state.historyPushed = true;
+        document.documentElement.classList.add('ss-pdp-lightbox-open');
+        document.body.classList.add('ss-pdp-lightbox-open');
+        return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ss-pdp-lightbox';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Product image gallery');
+
+    const backdrop = document.createElement('button');
+    backdrop.type = 'button';
+    backdrop.className = 'ss-pdp-lightbox-backdrop';
+    backdrop.setAttribute('aria-label', 'Close image gallery');
+    backdrop.addEventListener('click', (event) => {
+        event.preventDefault();
+        __ssCloseProductImageExperience({});
+    });
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'ss-pdp-lightbox-close';
+    closeBtn.setAttribute('aria-label', 'Close image gallery');
+    closeBtn.innerHTML = '<span aria-hidden="true">&times;</span>';
+    closeBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        __ssCloseProductImageExperience({});
+    });
+
+    const stage = document.createElement('div');
+    stage.className = 'ss-pdp-lightbox-stage';
+
+    const image = document.createElement('img');
+    image.className = 'ss-pdp-lightbox-image';
+    image.alt = 'Product image preview';
+    image.draggable = false;
+    stage.appendChild(image);
+
+    const bottomBar = document.createElement('div');
+    bottomBar.className = 'ss-pdp-lightbox-bottom';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'ss-pdp-lightbox-nav-btn is-prev';
+    prevBtn.setAttribute('aria-label', 'Previous image');
+    prevBtn.innerHTML = '<span aria-hidden="true">&#8249;</span>';
+    prevBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        prevImage();
+        __ssResetMobileLightboxTransform();
+    });
+
+    const counter = document.createElement('div');
+    counter.className = 'ss-pdp-lightbox-counter';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'ss-pdp-lightbox-nav-btn is-next';
+    nextBtn.setAttribute('aria-label', 'Next image');
+    nextBtn.innerHTML = '<span aria-hidden="true">&#8250;</span>';
+    nextBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        nextImage();
+        __ssResetMobileLightboxTransform();
+    });
+
+    bottomBar.append(prevBtn, counter, nextBtn);
+    overlay.append(backdrop, closeBtn, stage, bottomBar);
+    document.body.appendChild(overlay);
+
+    state.overlayEl = overlay;
+    state.overlayImageEl = image;
+    state.overlayCounterEl = counter;
+    state.overlayStageEl = stage;
+    state.open = true;
+    state.mode = 'mobile';
+
+    const getTouchDistance = (touchA, touchB) => Math.hypot(
+        Number(touchA?.clientX || 0) - Number(touchB?.clientX || 0),
+        Number(touchA?.clientY || 0) - Number(touchB?.clientY || 0)
+    );
+    const getTouchMidpoint = (touchA, touchB) => ({
+        x: ((Number(touchA?.clientX || 0) + Number(touchB?.clientX || 0)) / 2),
+        y: ((Number(touchA?.clientY || 0) + Number(touchB?.clientY || 0)) / 2)
+    });
+
+    stage.addEventListener('touchstart', (event) => {
+        if (!event.touches?.length) return;
+        if (event.touches.length >= 2) {
+            const [touchA, touchB] = event.touches;
+            state.gestureMode = 'pinch';
+            state.pinchStartDistance = getTouchDistance(touchA, touchB);
+            state.pinchStartMidpoint = getTouchMidpoint(touchA, touchB);
+            state.startScale = state.scale;
+            state.startTranslateX = state.translateX;
+            state.startTranslateY = state.translateY;
+            return;
+        }
+        const touch = event.touches[0];
+        state.gestureStartX = Number(touch?.clientX || 0);
+        state.gestureStartY = Number(touch?.clientY || 0);
+        state.startTranslateX = state.translateX;
+        state.startTranslateY = state.translateY;
+        state.swipeDeltaX = 0;
+        state.gestureMode = state.scale > 1.01 ? 'pan' : 'swipe';
+    }, { passive: true });
+
+    stage.addEventListener('touchmove', (event) => {
+        if (!event.touches?.length) return;
+        if (event.touches.length >= 2) {
+            const [touchA, touchB] = event.touches;
+            const nextDistance = getTouchDistance(touchA, touchB);
+            const nextMidpoint = getTouchMidpoint(touchA, touchB);
+            const safeStartDistance = state.pinchStartDistance || nextDistance || 1;
+            const nextScale = __ssClamp((state.startScale || 1) * (nextDistance / safeStartDistance), 1, 4);
+            state.scale = nextScale;
+            state.translateX = state.startTranslateX + (nextMidpoint.x - (state.pinchStartMidpoint?.x || nextMidpoint.x));
+            state.translateY = state.startTranslateY + (nextMidpoint.y - (state.pinchStartMidpoint?.y || nextMidpoint.y));
+            __ssApplyMobileLightboxTransform();
+            try { event.preventDefault(); } catch {}
+            return;
+        }
+
+        const touch = event.touches[0];
+        if (state.gestureMode === 'pan' && state.scale > 1.01) {
+            state.translateX = state.startTranslateX + (Number(touch?.clientX || 0) - state.gestureStartX);
+            state.translateY = state.startTranslateY + (Number(touch?.clientY || 0) - state.gestureStartY);
+            __ssApplyMobileLightboxTransform();
+            try { event.preventDefault(); } catch {}
+            return;
+        }
+
+        if (state.gestureMode === 'swipe') {
+            state.swipeDeltaX = Number(touch?.clientX || 0) - state.gestureStartX;
+        }
+    }, { passive: false });
+
+    stage.addEventListener('touchend', () => {
+        if (state.gestureMode === 'swipe' && Math.abs(state.swipeDeltaX) > 48) {
+            if (state.swipeDeltaX < 0) nextImage();
+            else prevImage();
+        }
+        state.gestureMode = '';
+        state.pinchStartDistance = 0;
+        state.pinchStartMidpoint = null;
+        state.swipeDeltaX = 0;
+    }, { passive: true });
+
+    stage.addEventListener('dblclick', () => {
+        if (state.scale > 1.01) __ssResetMobileLightboxTransform();
+        else {
+            state.scale = 2;
+            state.translateX = 0;
+            state.translateY = 0;
+            __ssApplyMobileLightboxTransform();
+        }
+    });
+
+    __ssSyncMobileLightboxImage();
+    __ssResetMobileLightboxTransform();
+    document.documentElement.classList.add('ss-pdp-lightbox-open');
+    document.body.classList.add('ss-pdp-lightbox-open');
+    if (options.fromHistory !== true) __ssPushProductImageViewerState();
+    else state.historyPushed = true;
+}
+
+function __ssOpenProductImageExperience(options = {}) {
+    const wrapper = options.wrapper || document.querySelector('#Product_Viewer .image-slider-wrapper');
+    const mainImage = options.mainImg || options.mainImage || document.getElementById('mainImage');
+    if (!wrapper || !mainImage) return;
+    __ssEnsureProductImageViewerBinding();
+    if (__ssIsMobileViewport()) {
+        __ssOpenMobileLightbox(options);
+        return;
+    }
+    __ssActivateDesktopZoom(wrapper, options.sourceEvent || null, options);
+}
+
+function __ssCloseProductImageExperience(options = {}) {
+    const state = __ssGetProductImageExperienceState();
+    const fromHistory = options.fromHistory === true;
+    const force = options.force === true;
+
+    if (!fromHistory && !force && !window.__ssHandlingPopstate && history.state?.[PDP_IMAGE_VIEWER_HISTORY_KEY]) {
+        try { history.back(); return; } catch {}
+    }
+
+    if (state.desktopWrapper) {
+        state.desktopWrapper.classList.remove('is-desktop-zoom-active');
+        state.desktopWrapper.setAttribute('aria-pressed', 'false');
+    }
+    if (state.desktopZoomLayer) {
+        state.desktopZoomLayer.style.backgroundPosition = '50% 50%';
+    }
+
+    if (state.overlayEl) {
+        try { state.overlayEl.remove(); } catch {}
+    }
+
+    document.documentElement.classList.remove('ss-pdp-lightbox-open');
+    document.body.classList.remove('ss-pdp-lightbox-open');
+
+    state.open = false;
+    state.mode = '';
+    state.historyPushed = false;
+    state.overlayEl = null;
+    state.overlayImageEl = null;
+    state.overlayCounterEl = null;
+    state.overlayStageEl = null;
+    state.desktopWrapper = null;
+    state.desktopZoomLayer = null;
+    __ssResetMobileLightboxTransform();
+}
+
+function __ssSyncProductImageExperience() {
+    __ssSyncDesktopZoomLayer();
+    __ssSyncMobileLightboxImage();
+}
+
+function __ssBindProductImageInteractions(wrapper, mainImage) {
+    if (!wrapper || !mainImage || wrapper.dataset.ssImageExperienceBound === 'yes') return;
+    wrapper.dataset.ssImageExperienceBound = 'yes';
+    wrapper.addEventListener('mousemove', (event) => {
+        __ssUpdateDesktopZoomPointer(event.clientX, event.clientY);
+    });
+    wrapper.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const state = __ssGetProductImageExperienceState();
+        if (__ssIsMobileViewport()) {
+            __ssOpenProductImageExperience({ wrapper, mainImage });
+            return;
+        }
+        if (state.open && state.mode === 'desktop' && state.desktopWrapper === wrapper) {
+            __ssCloseProductImageExperience({});
+            return;
+        }
+        __ssOpenProductImageExperience({ wrapper, mainImage, sourceEvent: event });
+    });
+    mainImage.addEventListener('dragstart', (event) => event.preventDefault());
+    wrapper.setAttribute('role', 'button');
+    wrapper.setAttribute('tabindex', '0');
+    wrapper.setAttribute('aria-label', 'Open product image viewer');
+    wrapper.addEventListener('keydown', (event) => {
+        const key = String(event?.key || '');
+        if (key !== 'Enter' && key !== ' ') return;
+        event.preventDefault();
+        const state = __ssGetProductImageExperienceState();
+        if (state.open && state.mode === 'desktop' && state.desktopWrapper === wrapper) {
+            __ssCloseProductImageExperience({});
+            return;
+        }
+        __ssOpenProductImageExperience({ wrapper, mainImage });
+    });
+}
+
+function __ssShouldSuppressProductRerender(productName, pidArg = '') {
+    if (!window.__ssSuppressNextProductRerender) return false;
+    try {
+        const activeViewer = document.getElementById('Product_Viewer');
+        if (!activeViewer) return false;
+        const currentPid = String(window.__ssCurrentProductId || '').trim();
+        const incomingPid = String(pidArg || '').trim();
+        if (currentPid && incomingPid && currentPid === incomingPid) return true;
+        const currentName = String(activeViewer.querySelector('.Product_Name_Heading')?.dataset?.canonicalName || '').trim();
+        if (currentName && __ssNormalizeNameKey(currentName) === __ssNormalizeNameKey(productName)) return true;
+    } catch {}
+    return false;
+}
+
 function __ssSafeCatalogFlat() {
     try {
         if (typeof window.__ssGetCatalogFlat === 'function') {
@@ -455,9 +948,17 @@ function updateImage(direction = "none") {
     const thumbs = document.querySelectorAll(".Thumbnail");
     thumbs.forEach(t => t.classList.remove("active"));
     if (thumbs[idx]) thumbs[idx].classList.add("active");
+    __ssSyncProductImageExperience();
 }
 
 function GoToProductPage(productName, productPrice, productDescription) {
+    const incomingPidArg = String(arguments[4] || '').trim();
+    if (__ssShouldSuppressProductRerender(productName, incomingPidArg)) {
+        window.__ssSuppressNextProductRerender = false;
+        return;
+    }
+    window.__ssSuppressNextProductRerender = false;
+    __ssCloseProductImageExperience({ force: true, fromHistory: true });
     console.log("Product clicked:", productName);
     try {
         __ssEndProductViewSessionSend(window.__ssCurrentViewedProductName, window.__ssCurrentViewedProductLink, { endReason: "navigate_product" });
@@ -562,6 +1063,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const viewer = document.getElementById("Viewer");
     if (!viewer) return;
 
+    __ssCloseProductImageExperience({ force: true, fromHistory: true });
     const existing = document.getElementById("Product_Viewer");
     if (existing) existing.remove();
 
@@ -609,7 +1111,12 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     mainImg.alt = productName || "";
     mainImg.style.transition = "transform 0.4s ease";
     mainImg.style.willChange = "transform";
+    mainImg.draggable = false;
     wrapper.appendChild(mainImg);
+
+    const zoomLayer = document.createElement("div");
+    zoomLayer.className = "ss-pdp-desktop-zoom-layer";
+    wrapper.appendChild(zoomLayer);
 
     const nextBtn = document.createElement("button");
     nextBtn.className = "ImageControlButtonNext";
@@ -983,6 +1490,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     } catch { }
     try { updateAllPrices(); } catch { }
     try { updateImage(); } catch { }
+    try { __ssBindProductImageInteractions(wrapper, mainImg); } catch {}
     try { if (typeof window.__ssHideProductPageSkeleton === 'function') window.__ssHideProductPageSkeleton(); } catch {}
 }
 
@@ -1001,11 +1509,15 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     window.__ssShowProductPageSkeleton = __ssShowProductPageSkeleton;
     window.__ssHideProductPageSkeleton = __ssHideProductPageSkeleton;
     window.handleSwipeGesture = handleSwipeGesture;
+    window.nextImage = nextImage;
+    window.prevImage = prevImage;
   } catch {}
 
   window.__SS_PRODUCT__ = {
     buyNow,
     updateImage,
+    nextImage,
+    prevImage,
     GoToProductPage,
     renderProductPage,
     __ssResolveProductForPdp,
