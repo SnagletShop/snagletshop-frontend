@@ -6590,6 +6590,8 @@
         white-space: nowrap !important;
         border: 1px solid var(--Primary_Button_Colour) !important;
         background: var(--Primary_Button_Colour) !important;
+        background-color: var(--Primary_Button_Colour) !important;
+        background-image: none !important;
         box-shadow: none !important;
         color: #ffffff !important;
         margin-left: auto !important;
@@ -6606,6 +6608,8 @@
 
     .add-to-cart:hover {
         background: var(--Primary_Button_Hover) !important;
+        background-color: var(--Primary_Button_Hover) !important;
+        background-image: none !important;
         border-color: var(--Primary_Button_Hover) !important;
     }
 
@@ -6696,6 +6700,8 @@
     .light-mode .add-to-cart {
         border-color: var(--Primary_Button_Colour) !important;
         background: var(--Primary_Button_Colour) !important;
+        background-color: var(--Primary_Button_Colour) !important;
+        background-image: none !important;
         color: #ffffff !important;
         box-shadow: none !important;
     }
