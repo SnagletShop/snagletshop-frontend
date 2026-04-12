@@ -11617,3 +11617,74 @@
         box-sizing: border-box !important;
     }
 }
+
+@media (max-width: 680px) {
+    #ProductWrapper:has(#Viewer:has(> .settings-panel.settings-panel--modern)) {
+        padding: 16.667vw 1.111vw 5vw !important;
+        box-sizing: border-box !important;
+        overflow-x: clip !important;
+    }
+
+    html:has(#Viewer > .settings-panel.settings-panel--modern),
+    body:has(#Viewer > .settings-panel.settings-panel--modern) {
+        overflow-x: hidden !important;
+    }
+
+    .mobileHeaderWrapper {
+        overflow-x: clip !important;
+    }
+
+    #Viewer:has(> .settings-panel.settings-panel--modern) {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: clip !important;
+    }
+
+    #Viewer > .settings-panel.settings-panel--modern {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        justify-self: stretch !important;
+        box-sizing: border-box !important;
+    }
+
+    .settings-panel.settings-panel--modern {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 0 7.222vw !important;
+        box-sizing: border-box !important;
+        overflow-x: clip !important;
+    }
+
+    .settings-panel--modern .settings-hero,
+    .settings-panel--modern .settings-grid,
+    .settings-panel--modern .settings-grid--top,
+    .settings-panel--modern .settings-stack {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .settings-panel--modern .settings-card,
+    .settings-panel--modern .settings-inline-setting,
+    .settings-panel--modern .ts-wrapper,
+    .settings-panel--modern .ts-wrapper.single .ts-control {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .settings-panel--modern .settings-card button,
+    .settings-panel--modern .clearDataButton {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+}
