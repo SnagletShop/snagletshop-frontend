@@ -7377,6 +7377,24 @@
         padding: 0 !important;
     }
 
+    #Viewer:has(> .settings-panel.settings-panel--modern),
+    #Viewer:has(> .ss-auth-page),
+    #Viewer:has(> .ss-review-entry-page) {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    #Viewer > .settings-panel.settings-panel--modern,
+    #Viewer > .ss-auth-page,
+    #Viewer > .ss-review-entry-page {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-self: stretch !important;
+    }
+
     .SortContainer {
         display: block !important;
         position: static !important;
