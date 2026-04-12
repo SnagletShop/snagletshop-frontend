@@ -132,9 +132,11 @@
     }
     return `
       <div class="ss-review-summary">
-        <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : '—'}</div>
-        <div class="ss-review-summary-stars">${createStars(avg)}</div>
-        <div class="ss-review-summary-count">${count.toLocaleString()} review${count === 1 ? '' : 's'}</div>
+        <div class="ss-review-summary-inline">
+          <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : '—'}</div>
+          <div class="ss-review-summary-stars">${createStars(avg)}</div>
+          <div class="ss-review-summary-count">${count.toLocaleString()} rating${count === 1 ? '' : 's'}</div>
+        </div>
       </div>`;
   }
 
@@ -157,27 +159,29 @@
 
   function reviewCardMarkup(review) {
     const images = Array.isArray(review?.images) ? review.images : [];
+    const reviewDate = formatDate(review?.reviewDate || review?.createdAt);
+    const reviewerName = esc(review?.reviewerName || 'Verified customer');
+    const selectedPurchaseLabel = String(review?.selectedPurchaseLabel || '').trim();
     return `
       <article class="ss-review-card">
         <header class="ss-review-card-head">
-          <div class="ss-review-card-author">
-            <div class="ss-review-card-avatar">${review?.reviewerAvatarUrl ? `<img alt="${esc(review.reviewerName || 'Reviewer')}" src="${esc(review.reviewerAvatarUrl)}"/>` : `<span>${esc(String(review?.reviewerName || 'A').slice(0, 1).toUpperCase())}</span>`}</div>
-            <div>
-              <div class="ss-review-card-name">${esc(review?.reviewerName || 'Verified customer')}</div>
-              <div class="ss-review-card-meta">
-                <span>${formatDate(review?.reviewDate || review?.createdAt)}</span>
-                ${review?.selectedPurchaseLabel ? `<span>•</span><span>${esc(review.selectedPurchaseLabel)}</span>` : ''}
-              </div>
+          <div class="ss-review-card-topline">
+            <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
+            <div class="ss-review-card-identity">
+              <span class="ss-review-card-name">${reviewerName}</span>
+              ${reviewDate ? `<span class="ss-review-card-dot">•</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
             </div>
           </div>
-          <div class="ss-review-card-rating">
-            <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
-            <div class="ss-review-card-score">${Number(review?.starRating || 0).toFixed(1)}</div>
-          </div>
+          ${selectedPurchaseLabel ? `<div class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</div>` : ''}
         </header>
         <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
         ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
       </article>`;
+  }
+
+  function reviewGalleryCount(reviews) {
+    const list = Array.isArray(reviews) ? reviews : [];
+    return list.reduce((sum, review) => sum + (Array.isArray(review?.images) ? review.images.length : 0), 0);
   }
 
   function reviewEntryProductMarkup(product) {
@@ -230,10 +234,12 @@
   function reviewGalleryMarkup(reviews) {
     const images = collectReviewGalleryImages(reviews, 4);
     if (!images.length) return '';
+    const imageCount = reviewGalleryCount(reviews);
     return `
       <section class="ss-review-gallery">
         <div class="ss-review-gallery-head">
           <div class="ss-review-gallery-title">Review gallery</div>
+          <div class="ss-review-gallery-meta">See all (${imageCount.toLocaleString()})</div>
         </div>
         <div class="ss-review-gallery-strip">
           ${images.map((image) => `<a class="ss-review-gallery-item" href="${esc(image.url)}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image.filename || image.reviewerName || 'Review image')}" src="${esc(image.url)}"/></a>`).join('')}
