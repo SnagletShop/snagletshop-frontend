@@ -12114,10 +12114,22 @@ body.ss-pdp-lightbox-open {
         border-radius: 999px !important;
         background: color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, var(--body_Background_Colour)) !important;
         color: var(--Default_Text_Colour) !important;
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.01em;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        letter-spacing: -0.01em !important;
+        line-height: 1.1 !important;
         box-shadow: none !important;
+    }
+
+    .Category_Button_Heading,
+    .Category_Button_Heading h3,
+    .category-label {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        letter-spacing: -0.01em !important;
+        line-height: 1.1 !important;
     }
 
     .Category_Button:hover {
