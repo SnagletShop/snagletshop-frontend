@@ -7962,11 +7962,11 @@
 
     .product-card-rating-secondary {
         justify-content: flex-start !important;
-        gap: 0.556vw !important;
+        gap: 0.833vw !important;
         width: 100% !important;
         flex: none !important;
         border-left: 0 !important;
-        padding-left: 0.556vw !important;
+        padding-left: 0.833vw !important;
         padding-right: 0 !important;
     }
 
@@ -7980,7 +7980,7 @@
         width: 0.278vw !important;
         min-width: 0.278vw !important;
         height: 3.611vw !important;
-        margin: 0 0 0 0.25vw !important;
+        margin: 0 0.417vw 0 0.417vw !important;
         background: var(--Muted_Text_Colour) !important;
         color: transparent !important;
         font-size: 0 !important;
@@ -7993,7 +7993,7 @@
     .product-card-sold-count {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 0.278vw !important;
+        gap: 0.417vw !important;
         min-width: 0 !important;
         font-size: 3vw !important;
     }
@@ -10778,5 +10778,93 @@
     .ss-review-empty {
         padding: 4.444vw !important;
         border-radius: 4.167vw !important;
+    }
+}
+
+@media (max-width: 680px) {
+    .Product_Detail_Page .ProductPageQuantityContainer {
+        display: grid !important;
+        grid-template-columns: minmax(28.889vw, auto) minmax(0, 1fr) !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        padding-inline: 4.444vw !important;
+        box-sizing: border-box !important;
+        gap: 3.333vw !important;
+    }
+
+    .Product_Detail_Page .Quantity_Controls_ProductPage {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 1.667vw !important;
+    }
+
+    .Product_Detail_Page .Quantity_Controls_ProductPage .Button,
+    .Product_Detail_Page .Quantity_Controls_ProductPage .WhiteText {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 11.111vw !important;
+        min-height: 11.111vw !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .Product_Detail_Page .Quantity_Controls_ProductPage .Button {
+        font-size: 4.444vw !important;
+        border-radius: 1.389vw !important;
+    }
+
+    .Product_Detail_Page .Quantity_Controls_ProductPage .WhiteText {
+        font-size: 4.722vw !important;
+        line-height: 1 !important;
+    }
+
+    .Product_Detail_Page .add-to-cart-product {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: 11.111vw !important;
+        min-height: 11.111vw !important;
+        aspect-ratio: auto !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 3.333vw !important;
+        border-radius: 1.389vw !important;
+        box-sizing: border-box !important;
+        font-size: 3.889vw !important;
+    }
+
+    .Product_Detail_Page .add-to-cart-product .product-name-inline {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 1.667vw !important;
+        width: 100% !important;
+        white-space: nowrap !important;
+    }
+
+    .Product_Detail_Page .cart-icon-product {
+        width: 4.444vw !important;
+        height: 4.444vw !important;
+        margin-left: 0 !important;
+        flex: 0 0 auto !important;
+    }
+
+    .Product_Detail_Page .ProductPageBuyButton {
+        display: block !important;
+        width: calc(100% - 8.888vw) !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: 11.111vw !important;
+        min-height: 11.111vw !important;
+        margin: 2.778vw 4.444vw 0 !important;
+        border-radius: 1.389vw !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
     }
 }
