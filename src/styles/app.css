@@ -10700,6 +10700,8 @@
 
 @media (max-width: 680px) {
     .settings-panel.settings-panel--modern {
+        width: 100% !important;
+        max-width: 100% !important;
         padding: 0 3.611vw 7.222vw !important;
     }
 
@@ -10861,6 +10863,14 @@
 
     .settings-panel--modern .settings-card ul {
         margin: 2.222vw 0 0 4.444vw;
+    }
+}
+
+@media (max-width: 680px) {
+    .settings-panel.settings-panel--modern {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 1.111vw 7.222vw !important;
     }
 }
 
