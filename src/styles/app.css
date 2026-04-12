@@ -11710,6 +11710,7 @@
     opacity: 0;
     pointer-events: none;
     border-radius: inherit;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--Borders_Colour) 52%, transparent);
     background-repeat: no-repeat;
     background-position: 50% 50%;
     background-size: 220%;
@@ -11749,7 +11750,7 @@ body.ss-pdp-lightbox-open {
     position: absolute;
     inset: 0;
     border: 0;
-    background: rgba(7, 10, 14, 0.88);
+    background: color-mix(in srgb, #000000 76%, var(--body_Background_Colour) 24%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
@@ -11766,12 +11767,13 @@ body.ss-pdp-lightbox-open {
     height: 46px;
     border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 88%, transparent);
-    color: #fff;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, transparent);
+    color: var(--Default_Text_Colour);
     font-size: 28px;
     line-height: 1;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 10px 26px color-mix(in srgb, #000000 18%, transparent);
 }
 
 .ss-pdp-lightbox-stage {
@@ -11815,10 +11817,10 @@ body.ss-pdp-lightbox-open {
     align-items: center;
     justify-content: center;
     min-height: 48px;
-    border: 1px solid color-mix(in srgb, #ffffff 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 88%, transparent);
-    color: #fff;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, transparent);
+    color: var(--Default_Text_Colour);
     font-size: 34px;
     line-height: 1;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
@@ -11833,12 +11835,25 @@ body.ss-pdp-lightbox-open {
     min-height: 44px;
     padding: 0 18px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 82%, transparent);
-    border: 1px solid color-mix(in srgb, #ffffff 10%, transparent);
-    color: #fff;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+    color: var(--Default_Text_Colour);
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.01em;
+    box-shadow: 0 10px 24px color-mix(in srgb, #000000 16%, transparent);
+}
+
+.ss-pdp-lightbox-close:hover,
+.ss-pdp-lightbox-nav-btn:hover {
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 18%, var(--TopBar_Background_Colour));
+    border-color: color-mix(in srgb, var(--Primary_Button_Colour) 56%, var(--Borders_Colour));
+}
+
+.ss-pdp-lightbox-close:focus-visible,
+.ss-pdp-lightbox-nav-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--Primary_Button_Colour) 24%, transparent), 0 10px 26px color-mix(in srgb, #000000 18%, transparent);
 }
 
 @media (max-width: 680px) {
