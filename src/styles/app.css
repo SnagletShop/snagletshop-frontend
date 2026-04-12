@@ -11942,6 +11942,7 @@ body.ss-pdp-lightbox-open {
     }
 
     .TopBar {
+        position: sticky !important;
         top: 0 !important;
         grid-template-columns: minmax(240px, 0.78fr) minmax(560px, 1.8fr) auto !important;
         gap: 28px !important;
@@ -11953,6 +11954,7 @@ body.ss-pdp-lightbox-open {
         background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
         box-shadow: 0 12px 32px color-mix(in srgb, #000000 9%, transparent), 0 1px 0 color-mix(in srgb, #ffffff 4%, transparent) inset !important;
         isolation: isolate !important;
+        z-index: 22 !important;
     }
 
     .DesktopHeaderBrand {
@@ -12411,27 +12413,37 @@ body.ss-pdp-lightbox-open {
     }
 
     .SideBar {
-        padding: 18px 26px 22px !important;
+        position: sticky !important;
+        top: 105px !important;
+        padding: 12px 18px 14px !important;
         border: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
         border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 48%, transparent) !important;
-        border-radius: 0 0 30px 30px !important;
+        border-radius: 0 0 24px 24px !important;
         background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
-        box-shadow: 0 16px 34px color-mix(in srgb, #000000 9%, transparent) !important;
-        position: relative !important;
-        z-index: 19 !important;
+        box-shadow: 0 12px 24px color-mix(in srgb, #000000 8%, transparent) !important;
+        margin-top: -1px !important;
+        z-index: 21 !important;
     }
 
     .desktop-category-ribbon {
-        gap: 14px !important;
-        padding-top: 6px !important;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)) !important;
+        gap: 10px !important;
+        padding-top: 2px !important;
         border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 44%, transparent) !important;
+        align-items: stretch !important;
     }
 
     .Category_Button {
-        height: 54px !important;
-        padding: 0 22px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
+        min-height: 58px !important;
+        height: auto !important;
+        padding: 10px 14px !important;
         border: 1px solid color-mix(in srgb, var(--Borders_Colour) 52%, transparent) !important;
-        border-radius: 999px !important;
+        border-radius: 18px !important;
         background: color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, var(--body_Background_Colour)) !important;
         color: var(--Default_Text_Colour) !important;
         font-family: 'Inter', sans-serif !important;
@@ -12450,6 +12462,49 @@ body.ss-pdp-lightbox-open {
         font-weight: 500 !important;
         letter-spacing: -0.01em !important;
         line-height: 1.1 !important;
+    }
+
+    .Category_Button_Heading {
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .category-label {
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        white-space: normal !important;
+        text-align: left !important;
+    }
+
+    .category-icon-wrapper {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 12px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: hidden !important;
+        flex: 0 0 auto !important;
+        background: color-mix(in srgb, var(--Primary_Button_Colour) 10%, var(--SearchBar_Background_Colour)) !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 54%, transparent) !important;
+    }
+
+    .category-icon-img,
+    .category-icon-svg {
+        width: 20px !important;
+        height: 20px !important;
+        object-fit: contain !important;
+        display: block !important;
+    }
+
+    .category-icon-svg {
+        fill: currentColor !important;
     }
 
     .Category_Button:hover {
@@ -12476,6 +12531,13 @@ body.ss-pdp-lightbox-open {
 .Category_Button[aria-current="page"] .category-label {
     color: var(--Default_Text_Colour) !important;
 }
+
+    .Category_Button.Active .category-icon-wrapper,
+    .Category_Button.active .category-icon-wrapper,
+    .Category_Button[aria-current="page"] .category-icon-wrapper {
+        background: color-mix(in srgb, var(--Primary_Button_Colour) 20%, var(--body_Background_Colour)) !important;
+        border-color: color-mix(in srgb, var(--Primary_Button_Colour) 40%, var(--Borders_Colour)) !important;
+    }
 }
 
 /* Review section polish: closer to marketplace review feeds while staying on-brand */

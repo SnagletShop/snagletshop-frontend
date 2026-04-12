@@ -148,6 +148,25 @@
       .replace(/'/g, '&#39;');
   }
 
+  function resolveCategoryIcon(categoryRows = [], ctx = {}) {
+    const first = Array.isArray(categoryRows) && categoryRows.length ? categoryRows[0] : null;
+    let iconPath = first ? (first.iconPng || first.iconPngUrl || first.iconUrl || first.icon || null) : null;
+    if (typeof iconPath === 'string') {
+      const s = iconPath.trim();
+      if (s.startsWith('{') && s.endsWith('}')) {
+        try {
+          const obj = JSON.parse(s);
+          if (obj && typeof obj === 'object') {
+            const light = String(obj.light || obj.l || obj.url || obj.icon || '').trim();
+            const dark = String(obj.dark || obj.d || '').trim();
+            iconPath = (ctx.isDarkModeEnabled?.() ? (dark || light) : (light || dark)) || '';
+          }
+        } catch {}
+      }
+    }
+    return String(iconPath || '').trim();
+  }
+
   function formatCategoryLabel(category) {
     if (!category || category === 'Default_Page') return 'Browse products';
     return String(category).replace(/_/g, ' ').trim();
@@ -184,7 +203,11 @@
           if (category === 'Default_Page' || !Array.isArray(catArray)) return;
           const button = document.createElement('button');
           button.className = 'Category_Button';
-          if (category === ctx.getCurrentCategory?.()) button.classList.add('Active');
+          const isActive = category === ctx.getCurrentCategory?.();
+          if (isActive) button.classList.add('Active');
+          button.setAttribute('aria-current', isActive ? 'page' : 'false');
+          button.setAttribute('type', 'button');
+          button.title = String(category || '').replace(/_/g, ' ');
           button.onclick = () => {
             ctx.setCurrentCategory?.(category);
             ctx.syncCentralState?.('category-selected', { currentCategory: category });
@@ -194,28 +217,14 @@
           };
           const heading = document.createElement('h3');
           heading.classList.add('Category_Button_Heading');
-          const iconValue = (catArray.length > 0) ? (catArray[0].iconPng || catArray[0].iconPngUrl || catArray[0].iconUrl || catArray[0].icon || null) : null;
-          let iconPath = iconValue;
-          if (typeof iconPath === 'string') {
-            const s = iconPath.trim();
-            if (s.startsWith('{') && s.endsWith('}')) {
-              try {
-                const obj = JSON.parse(s);
-                if (obj && typeof obj === 'object') {
-                  const light = String(obj.light || obj.l || obj.url || obj.icon || '').trim();
-                  const dark = String(obj.dark || obj.d || '').trim();
-                  iconPath = (ctx.isDarkModeEnabled?.() ? (dark || light) : (light || dark)) || iconPath;
-                }
-              } catch {}
-            }
-          }
+          const iconPath = resolveCategoryIcon(catArray, ctx);
           const displayName = String(category || '').replace(/_/g, ' ');
           if (iconPath) {
             const isImageIcon = typeof iconPath === 'string' && (
               iconPath.startsWith('http://') || iconPath.startsWith('https://') || iconPath.startsWith('data:image/') || /\.(png|jpg|jpeg|webp|gif|svg)(\?.*)?$/i.test(iconPath)
             );
             heading.innerHTML = isImageIcon ? `
-              <span class="category-icon-wrapper"><img class="category-icon-img" src="${iconPath}" alt="${displayName} icon" /></span>
+              <span class="category-icon-wrapper"><img class="category-icon-img" src="${escapeHtml(iconPath)}" alt="${escapeHtml(displayName)} icon" onerror="this.closest('.category-icon-wrapper')?.remove()" /></span>
               <span class="category-label">${displayName}</span>
             ` : `
               <span class="category-icon-wrapper"><svg viewBox="0 0 24 24" class="category-icon-svg"><path d="${iconPath}" /></svg></span>
