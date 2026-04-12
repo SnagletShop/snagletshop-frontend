@@ -567,6 +567,433 @@
     return countries.sort((a, b) => String(a.code || '').localeCompare(String(b.code || '')));
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function buildDesktopRegionCtx(overrides = {}) {
+    const pricingRuntime = window.__SS_PRICING__ || {};
+    return {
+      preloadSettingsData: overrides.preloadSettingsData || window.preloadSettingsData || (() => Promise.resolve()),
+      currencySymbols: overrides.currencySymbols || window.currencySymbols || {},
+      countryNames: overrides.countryNames || window.countryNames || {},
+      countryToCurrency: overrides.countryToCurrency || window.countryToCurrency || {},
+      getSelectedCurrency: overrides.getSelectedCurrency || (() => String(window.selectedCurrency || localStorage.getItem('selectedCurrency') || 'EUR').trim().toUpperCase() || 'EUR'),
+      setSelectedCurrency: overrides.setSelectedCurrency || ((value) => {
+        try { window.selectedCurrency = String(value || 'EUR').trim().toUpperCase() || 'EUR'; } catch {}
+      }),
+      syncCurrencySelects: overrides.syncCurrencySelects || window.syncCurrencySelects || (() => {}),
+      updateAllPrices: overrides.updateAllPrices || window.updateAllPrices || (() => {}),
+      getTariffMultipliers: overrides.getTariffMultipliers || (() => window.tariffMultipliers || {}),
+      AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE: typeof overrides.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE === 'boolean'
+        ? overrides.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE
+        : (window.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE !== false),
+      fetchCountriesFromServer: overrides.fetchCountriesFromServer || pricingRuntime.fetchCountriesFromServer || null
+    };
+  }
+
+  function getCountryLabel(ctx = {}, code = '') {
+    const cc = String(code || '').trim().toUpperCase();
+    return String(ctx.countryNames?.[cc] || cc).trim() || cc;
+  }
+
+  function getCurrencyLongLabel(ctx = {}, code = '') {
+    const currencyCode = String(code || '').trim().toUpperCase();
+    if (!currencyCode) return '';
+    const englishName = collectIntlDisplayNames('currency', currencyCode, ['en'])[0] || currencyCode;
+    return `${currencyCode} (${englishName})`;
+  }
+
+  function getCurrencyCompactLabel(ctx = {}, code = '') {
+    const currencyCode = String(code || '').trim().toUpperCase();
+    if (!currencyCode) return '';
+    const symbol = String(ctx.currencySymbols?.[currencyCode] || '').trim();
+    return `${currencyCode}${symbol ? ` ${symbol}` : ''}`;
+  }
+
+  function normalizeFlagSource(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^<svg[\s>]/i.test(raw)) {
+      return `data:image/svg+xml;utf8,${encodeURIComponent(raw)}`;
+    }
+    return raw;
+  }
+
+  function resolveCountryFlagSource(entry = {}, code = '') {
+    const explicit = [
+      entry?.flagSvg,
+      entry?.flagUrl,
+      entry?.flagImage,
+      entry?.flag,
+      entry?.svg,
+      entry?.image,
+      entry?.imageUrl
+    ].map(normalizeFlagSource).find(Boolean);
+    if (explicit) return explicit;
+
+    const cc = String(code || entry?.code || '').trim().toLowerCase();
+    if (/^[a-z]{2}$/.test(cc)) {
+      return `https://flagcdn.com/24x18/${cc}.png`;
+    }
+    return '';
+  }
+
+  function buildFlagMarkup(flagSrc = '', alt = '') {
+    if (!flagSrc) return '';
+    return `
+      <span class="ss-desktop-region-flag">
+        <img src="${escapeHtml(flagSrc)}" alt="${escapeHtml(alt)}" loading="lazy" onerror="this.closest('.ss-desktop-region-flag')?.remove();">
+      </span>
+    `;
+  }
+
+  function rankSearchOptions(options = [], query = '') {
+    const list = Array.isArray(options) ? options.slice() : [];
+    const q = String(query || '').trim();
+    if (!q) return list;
+    const scorer = buildTomSelectScore()({ query: q });
+    return list
+      .map((option) => ({ option, score: Number(scorer(option) || 0) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return String(a.option?.displayText || a.option?.text || '').localeCompare(String(b.option?.displayText || b.option?.text || ''));
+      })
+      .map((entry) => entry.option);
+  }
+
+  function syncDesktopRegionLauncher(payload = {}) {
+    const launcher = document.getElementById('desktopRegionLauncher');
+    if (!launcher) return;
+    const ctx = buildDesktopRegionCtx();
+    const currentCurrency = String(payload.currency || document.getElementById('currency-select')?.value || ctx.getSelectedCurrency?.() || 'EUR').trim().toUpperCase() || 'EUR';
+    const label = launcher.querySelector('.ss-desktop-region-launcher__label');
+    if (label) label.textContent = getCurrencyCompactLabel(ctx, currentCurrency) || currentCurrency;
+  }
+
+  function initDesktopRegionModal(overrides = {}) {
+    if (window.innerWidth <= 680) return null;
+    const nativeSelect = document.getElementById('currency-select');
+    if (!nativeSelect) return null;
+
+    let launcher = document.getElementById('desktopRegionLauncher');
+    if (!launcher) {
+      launcher = document.createElement('button');
+      launcher.type = 'button';
+      launcher.id = 'desktopRegionLauncher';
+      launcher.className = 'currency-select currency-select--launcher';
+      launcher.setAttribute('aria-haspopup', 'dialog');
+      launcher.setAttribute('aria-expanded', 'false');
+      launcher.innerHTML = `
+        <span class="ss-desktop-region-launcher__label"></span>
+        <span class="ss-desktop-region-launcher__chevron" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      `;
+      nativeSelect.insertAdjacentElement('beforebegin', launcher);
+    }
+    nativeSelect.classList.add('currency-select-native');
+    nativeSelect.setAttribute('aria-hidden', 'true');
+    nativeSelect.tabIndex = -1;
+    syncDesktopRegionLauncher();
+
+    if (launcher.dataset.regionModalBound === '1') return launcher;
+    launcher.dataset.regionModalBound = '1';
+
+    const modal = document.createElement('div');
+    modal.id = 'ssDesktopRegionModal';
+    modal.className = 'ss-desktop-region-modal';
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="ss-desktop-region-modal__backdrop" data-close="true"></div>
+      <div class="ss-desktop-region-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ssDesktopRegionModalTitle">
+        <div class="ss-desktop-region-modal__body">
+          <section class="ss-desktop-region-field" data-kind="country">
+            <div class="ss-desktop-region-field__title" id="ssDesktopRegionModalTitle">Ship to</div>
+            <button type="button" class="ss-desktop-region-field__trigger" data-trigger="country">
+              <span class="ss-desktop-region-field__value" data-field-value="country"></span>
+              <span class="ss-desktop-region-field__chevron" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+            <div class="ss-desktop-region-field__panel" data-panel="country"></div>
+          </section>
+
+          <section class="ss-desktop-region-field" data-kind="currency">
+            <div class="ss-desktop-region-field__title">Currency</div>
+            <button type="button" class="ss-desktop-region-field__trigger" data-trigger="currency">
+              <span class="ss-desktop-region-field__value" data-field-value="currency"></span>
+              <span class="ss-desktop-region-field__chevron" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+            <div class="ss-desktop-region-field__panel" data-panel="currency"></div>
+          </section>
+
+          <button type="button" class="ss-desktop-region-save" data-save="true">Save</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const recommendedCountryCodes = ['US', 'ES', 'FR', 'GB', 'BR', 'KR', 'DE', 'SK'];
+    const state = {
+      open: false,
+      activePanel: '',
+      stagedCountry: getPreferredCountryCode(),
+      stagedCurrency: String(nativeSelect.value || localStorage.getItem('selectedCurrency') || 'EUR').trim().toUpperCase() || 'EUR',
+      countryQuery: '',
+      currencyQuery: '',
+      currencyTouched: false
+    };
+
+    const getCtx = () => buildDesktopRegionCtx(overrides);
+    const getCountryOptions = () => {
+      const ctx = getCtx();
+      const countries = buildCountriesList(ctx);
+      return buildCountrySearchOptions(ctx, countries).map((option) => ({
+        ...option,
+        displayText: getCountryLabel(ctx, option.code),
+        flagSrc: resolveCountryFlagSource(countries.find((entry) => String(entry?.code || '').toUpperCase() === String(option.code || '').toUpperCase()) || {}, option.code)
+      }));
+    };
+    const getCurrencyOptions = () => {
+      const ctx = getCtx();
+      return buildCurrencySearchOptions(ctx, buildCurrencyCodeList(ctx)).map((option) => ({
+        ...option,
+        displayText: getCurrencyLongLabel(ctx, option.code)
+      }));
+    };
+
+    const renderFieldValue = (kind) => {
+      const ctx = getCtx();
+      const target = modal.querySelector(`[data-field-value="${kind}"]`);
+      if (!target) return;
+      if (kind === 'country') {
+        const options = getCountryOptions();
+        const current = options.find((option) => option.code === state.stagedCountry);
+        const label = current?.displayText || getCountryLabel(ctx, state.stagedCountry);
+        target.innerHTML = `${buildFlagMarkup(current?.flagSrc || '', `${label} flag`)}<span class="ss-desktop-region-field__text">${escapeHtml(label)}</span>`;
+        return;
+      }
+      target.innerHTML = `<span class="ss-desktop-region-field__text">${escapeHtml(getCurrencyLongLabel(ctx, state.stagedCurrency) || state.stagedCurrency)}</span>`;
+    };
+
+    const renderCountryPanel = () => {
+      const panel = modal.querySelector('[data-panel="country"]');
+      if (!panel) return;
+      const query = state.countryQuery;
+      const allOptions = getCountryOptions();
+      const filtered = rankSearchOptions(allOptions, query);
+      const preferredCodes = new Set([state.stagedCountry, ...recommendedCountryCodes]);
+      const recommended = !query ? allOptions.filter((option) => preferredCodes.has(option.code)) : [];
+      const recommendedCodes = new Set(recommended.map((option) => option.code));
+      const rest = filtered.filter((option) => !recommendedCodes.has(option.code));
+      const optionMarkup = (option) => `
+        <button type="button" class="ss-desktop-region-option${option.code === state.stagedCountry ? ' is-selected' : ''}" data-option-kind="country" data-option-value="${escapeHtml(option.code)}">
+          ${buildFlagMarkup(option.flagSrc || '', `${option.displayText} flag`)}
+          <span class="ss-desktop-region-option__label">${escapeHtml(option.displayText)}</span>
+        </button>
+      `;
+      panel.innerHTML = `
+        <div class="ss-desktop-region-panel__search">
+          <input type="search" class="ss-desktop-region-search" data-search-kind="country" placeholder="Search country" value="${escapeHtml(query)}">
+        </div>
+        <div class="ss-desktop-region-panel__scroll">
+          ${recommended.length ? `
+            <div class="ss-desktop-region-panel__section-title">Recommend</div>
+            <div class="ss-desktop-region-panel__list">${recommended.map(optionMarkup).join('')}</div>
+          ` : ''}
+          ${rest.length ? `
+            ${recommended.length ? '<div class="ss-desktop-region-panel__section-title">All countries</div>' : ''}
+            <div class="ss-desktop-region-panel__list">${rest.map(optionMarkup).join('')}</div>
+          ` : (!recommended.length ? '<div class="ss-desktop-region-panel__empty">No countries found.</div>' : '')}
+        </div>
+      `;
+    };
+
+    const renderCurrencyPanel = () => {
+      const panel = modal.querySelector('[data-panel="currency"]');
+      if (!panel) return;
+      const query = state.currencyQuery;
+      const options = rankSearchOptions(getCurrencyOptions(), query);
+      panel.innerHTML = `
+        <div class="ss-desktop-region-panel__search">
+          <input type="search" class="ss-desktop-region-search" data-search-kind="currency" placeholder="Search currency" value="${escapeHtml(query)}">
+        </div>
+        <div class="ss-desktop-region-panel__scroll">
+          ${options.length ? `<div class="ss-desktop-region-panel__list">
+            ${options.map((option) => `
+              <button type="button" class="ss-desktop-region-option${option.code === state.stagedCurrency ? ' is-selected' : ''}" data-option-kind="currency" data-option-value="${escapeHtml(option.code)}">
+                <span class="ss-desktop-region-option__label">${escapeHtml(option.displayText)}</span>
+              </button>
+            `).join('')}
+          </div>` : '<div class="ss-desktop-region-panel__empty">No currencies found.</div>'}
+        </div>
+      `;
+    };
+
+    const renderPanels = () => {
+      renderFieldValue('country');
+      renderFieldValue('currency');
+      renderCountryPanel();
+      renderCurrencyPanel();
+      modal.querySelectorAll('.ss-desktop-region-field').forEach((field) => {
+        field.classList.toggle('is-open', field.dataset.kind === state.activePanel);
+      });
+    };
+
+    const focusActiveSearch = () => {
+      if (!state.activePanel) return;
+      const input = modal.querySelector(`.ss-desktop-region-field[data-kind="${state.activePanel}"] [data-search-kind="${state.activePanel}"]`);
+      try { input?.focus({ preventScroll: true }); } catch { try { input?.focus(); } catch {} }
+      try { input?.select?.(); } catch {}
+    };
+
+    const openModal = async () => {
+      state.stagedCountry = getPreferredCountryCode();
+      state.stagedCurrency = String(nativeSelect.value || localStorage.getItem('selectedCurrency') || getCtx().getSelectedCurrency?.() || 'EUR').trim().toUpperCase() || 'EUR';
+      state.countryQuery = '';
+      state.currencyQuery = '';
+      state.currencyTouched = false;
+      state.activePanel = '';
+      try { await getCtx().preloadSettingsData?.(); } catch {}
+      renderPanels();
+      modal.hidden = false;
+      modal.classList.add('is-open');
+      launcher.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('ss-desktop-region-modal-open');
+      state.open = true;
+    };
+
+    const closeModal = () => {
+      modal.classList.remove('is-open');
+      modal.hidden = true;
+      launcher.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('ss-desktop-region-modal-open');
+      state.activePanel = '';
+      state.countryQuery = '';
+      state.currencyQuery = '';
+      state.open = false;
+    };
+
+    const saveModal = () => {
+      const ctx = getCtx();
+      const currentCountry = getPreferredCountryCode();
+      const currentCurrency = String(nativeSelect.value || localStorage.getItem('selectedCurrency') || ctx.getSelectedCurrency?.() || 'EUR').trim().toUpperCase() || 'EUR';
+      if (state.stagedCountry && state.stagedCountry !== currentCountry) {
+        setPreferredCountryCode(state.stagedCountry);
+        const liveCountrySelect = document.getElementById('countrySelect');
+        try {
+          if (liveCountrySelect?.tomselect) liveCountrySelect.tomselect.setValue(state.stagedCountry, true);
+          else if (liveCountrySelect) liveCountrySelect.value = state.stagedCountry;
+        } catch {}
+      }
+      if (!state.currencyTouched && state.stagedCountry !== currentCountry && ctx.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem('manualCurrencyOverride')) {
+        const autoCurrency = String(ctx.countryToCurrency?.[state.stagedCountry] || '').trim().toUpperCase();
+        if (autoCurrency) state.stagedCurrency = autoCurrency;
+      }
+      if (state.stagedCurrency && state.stagedCurrency !== currentCurrency) {
+        try { localStorage.setItem('manualCurrencyOverride', 'true'); } catch {}
+        try {
+          if (typeof window.handleCurrencyChange === 'function') window.handleCurrencyChange(state.stagedCurrency);
+          else {
+            ctx.setSelectedCurrency?.(state.stagedCurrency);
+            localStorage.setItem('selectedCurrency', state.stagedCurrency);
+            ctx.syncCurrencySelects?.(state.stagedCurrency);
+            ctx.updateAllPrices?.();
+          }
+        } catch {}
+      } else if (state.stagedCountry !== currentCountry) {
+        try { ctx.updateAllPrices?.(); } catch {}
+      }
+      syncDesktopRegionLauncher({ currency: state.stagedCurrency });
+      closeModal();
+    };
+
+    launcher.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (state.open) {
+        closeModal();
+        return;
+      }
+      openModal();
+    });
+
+    nativeSelect.addEventListener('change', () => syncDesktopRegionLauncher({ currency: nativeSelect.value }));
+    modal.addEventListener('click', (event) => {
+      if (event.target.closest('[data-close="true"]')) {
+        closeModal();
+        return;
+      }
+      const trigger = event.target.closest('[data-trigger]');
+      if (trigger) {
+        const nextPanel = String(trigger.dataset.trigger || '');
+        state.activePanel = state.activePanel === nextPanel ? '' : nextPanel;
+        renderPanels();
+        requestAnimationFrame(focusActiveSearch);
+        return;
+      }
+      const option = event.target.closest('[data-option-kind]');
+      if (option) {
+        const kind = String(option.dataset.optionKind || '');
+        const value = String(option.dataset.optionValue || '').trim().toUpperCase();
+        if (kind === 'country' && value) {
+          state.stagedCountry = value;
+          state.countryQuery = '';
+          state.activePanel = '';
+          if (!state.currencyTouched && getCtx().AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem('manualCurrencyOverride')) {
+            const autoCurrency = String(getCtx().countryToCurrency?.[value] || '').trim().toUpperCase();
+            if (autoCurrency) state.stagedCurrency = autoCurrency;
+          }
+        }
+        if (kind === 'currency' && value) {
+          state.stagedCurrency = value;
+          state.currencyTouched = true;
+          state.currencyQuery = '';
+          state.activePanel = '';
+        }
+        renderPanels();
+        return;
+      }
+      if (event.target.closest('[data-save="true"]')) {
+        saveModal();
+      }
+    });
+
+    modal.addEventListener('input', (event) => {
+      const search = event.target.closest('[data-search-kind]');
+      if (!search) return;
+      const kind = String(search.dataset.searchKind || '');
+      if (kind === 'country') state.countryQuery = search.value || '';
+      if (kind === 'currency') state.currencyQuery = search.value || '';
+      renderPanels();
+      requestAnimationFrame(focusActiveSearch);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!state.open) return;
+      if (String(event.key || '') === 'Escape') {
+        event.preventDefault();
+        closeModal();
+      }
+    });
+
+    return launcher;
+  }
+
   async function goToSettings(ctx = {}) {
     await ctx.preloadSettingsData?.();
     ctx.clearCategoryHighlight?.();
@@ -1030,5 +1457,24 @@
     if (currencySelect) ctx.syncCurrencySelects?.(currencySelect.value || ctx.getSelectedCurrency?.() || 'EUR');
   }
 
-  window.__SS_SETTINGS_RUNTIME__ = { preloadSettingsData, clearSettingsCache, goToSettings };
+  window.__SS_SETTINGS_RUNTIME__ = {
+    preloadSettingsData,
+    clearSettingsCache,
+    goToSettings,
+    initDesktopRegionModal,
+    syncDesktopRegionLauncher
+  };
+
+  const bootDesktopRegionModal = () => {
+    try { initDesktopRegionModal(); } catch (error) {
+      console.warn('desktop region modal init failed:', error?.message || error);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootDesktopRegionModal, { once: true });
+  } else {
+    setTimeout(bootDesktopRegionModal, 0);
+  }
+  window.addEventListener('load', bootDesktopRegionModal, { once: true });
 })(window, document);

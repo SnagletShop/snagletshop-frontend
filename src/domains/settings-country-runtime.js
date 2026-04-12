@@ -36,8 +36,30 @@
   function syncCurrencySelects(newCurrency) {
     const selects = document.querySelectorAll('#currency-select, #currencySelect');
     selects.forEach((select) => {
-      if (select && select.value !== newCurrency) select.value = newCurrency;
+      if (!select) return;
+      const nextCurrency = String(newCurrency || '').trim().toUpperCase();
+      if (!nextCurrency) return;
+      if (select.tagName === 'SELECT') {
+        const nativeSelect = /** @type {HTMLSelectElement} */ (select);
+        if (![...nativeSelect.options].some((option) => String(option.value || '').trim().toUpperCase() === nextCurrency)) {
+          const option = document.createElement('option');
+          option.value = nextCurrency;
+          option.textContent = nextCurrency;
+          nativeSelect.appendChild(option);
+        }
+        if (nativeSelect.tomselect) {
+          try {
+            nativeSelect.tomselect.addOption({ value: nextCurrency, text: nextCurrency });
+          } catch {}
+          try {
+            nativeSelect.tomselect.setValue(nextCurrency, true);
+            return;
+          } catch {}
+        }
+      }
+      if (select.value !== nextCurrency) select.value = nextCurrency;
     });
+    try { window.__SS_SETTINGS_RUNTIME__?.syncDesktopRegionLauncher?.({ currency: newCurrency }); } catch {}
   }
 
   function handlesTariffsDropdown(ctx = {}, countriesList = []) {
