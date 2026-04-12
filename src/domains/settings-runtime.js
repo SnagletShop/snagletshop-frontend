@@ -713,8 +713,7 @@
     modal.className = 'ss-desktop-region-modal';
     modal.hidden = true;
     modal.innerHTML = `
-      <div class="ss-desktop-region-modal__backdrop" data-close="true"></div>
-      <div class="ss-desktop-region-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ssDesktopRegionModalTitle">
+      <div class="ss-desktop-region-modal__dialog" role="dialog" aria-labelledby="ssDesktopRegionModalTitle">
         <div class="ss-desktop-region-modal__body">
           <section class="ss-desktop-region-field" data-kind="country">
             <div class="ss-desktop-region-field__title" id="ssDesktopRegionModalTitle">Ship to</div>
@@ -758,6 +757,7 @@
       currencyQuery: '',
       currencyTouched: false
     };
+    let popupFrame = 0;
 
     const getCtx = () => buildDesktopRegionCtx(overrides);
     const getCountryOptions = () => {
@@ -862,6 +862,36 @@
       try { input?.select?.(); } catch {}
     };
 
+    const positionPopup = () => {
+      const dialog = modal.querySelector('.ss-desktop-region-modal__dialog');
+      if (!dialog || !launcher) return;
+      const launcherRect = launcher.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      const dialogRect = dialog.getBoundingClientRect();
+      const dialogWidth = Math.min(Math.max(dialogRect.width || 430, 320), Math.max(320, viewportWidth - 24));
+      const dialogHeight = dialogRect.height || 0;
+      let left = launcherRect.right - dialogWidth;
+      left = Math.max(12, Math.min(left, viewportWidth - dialogWidth - 12));
+      let top = launcherRect.bottom + 12;
+      const fitsBelow = top + dialogHeight <= viewportHeight - 12;
+      if (!fitsBelow) {
+        const aboveTop = launcherRect.top - dialogHeight - 12;
+        if (aboveTop >= 12) top = aboveTop;
+        else top = Math.max(12, viewportHeight - dialogHeight - 12);
+      }
+      dialog.style.left = `${Math.round(left)}px`;
+      dialog.style.top = `${Math.round(top)}px`;
+    };
+
+    const queuePositionPopup = () => {
+      if (popupFrame) cancelAnimationFrame(popupFrame);
+      popupFrame = requestAnimationFrame(() => {
+        popupFrame = 0;
+        positionPopup();
+      });
+    };
+
     const openModal = async () => {
       state.stagedCountry = getPreferredCountryCode();
       state.stagedCurrency = String(nativeSelect.value || localStorage.getItem('selectedCurrency') || getCtx().getSelectedCurrency?.() || 'EUR').trim().toUpperCase() || 'EUR';
@@ -874,15 +904,16 @@
       modal.hidden = false;
       modal.classList.add('is-open');
       launcher.setAttribute('aria-expanded', 'true');
-      document.body.classList.add('ss-desktop-region-modal-open');
       state.open = true;
+      queuePositionPopup();
+      setTimeout(queuePositionPopup, 0);
+      setTimeout(queuePositionPopup, 80);
     };
 
     const closeModal = () => {
       modal.classList.remove('is-open');
       modal.hidden = true;
       launcher.setAttribute('aria-expanded', 'false');
-      document.body.classList.remove('ss-desktop-region-modal-open');
       state.activePanel = '';
       state.countryQuery = '';
       state.currencyQuery = '';
@@ -934,10 +965,6 @@
 
     nativeSelect.addEventListener('change', () => syncDesktopRegionLauncher({ currency: nativeSelect.value }));
     modal.addEventListener('click', (event) => {
-      if (event.target.closest('[data-close="true"]')) {
-        closeModal();
-        return;
-      }
       const trigger = event.target.closest('[data-trigger]');
       if (trigger) {
         const nextPanel = String(trigger.dataset.trigger || '');
@@ -983,6 +1010,13 @@
       requestAnimationFrame(focusActiveSearch);
     });
 
+    document.addEventListener('mousedown', (event) => {
+      if (!state.open) return;
+      if (event.target.closest('#desktopRegionLauncher')) return;
+      if (event.target.closest('#ssDesktopRegionModal .ss-desktop-region-modal__dialog')) return;
+      closeModal();
+    });
+
     document.addEventListener('keydown', (event) => {
       if (!state.open) return;
       if (String(event.key || '') === 'Escape') {
@@ -990,6 +1024,16 @@
         closeModal();
       }
     });
+
+    window.addEventListener('resize', () => {
+      if (!state.open) return;
+      queuePositionPopup();
+    });
+
+    window.addEventListener('scroll', () => {
+      if (!state.open) return;
+      queuePositionPopup();
+    }, true);
 
     return launcher;
   }
