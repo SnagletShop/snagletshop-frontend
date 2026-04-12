@@ -11606,4 +11606,14 @@
     .settings-panel--modern .settings-switch.switch input:checked + .slider::before {
         transform: translate(5.833vw, -50%) !important;
     }
+
+    .settings-panel--modern .settings-card button,
+    .settings-panel--modern .clearDataButton {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box !important;
+    }
 }
