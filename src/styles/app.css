@@ -9733,9 +9733,9 @@
 
 /* Settings redesign */
 .settings-panel.settings-panel--modern {
-    width: min(1180px, calc(100vw - 48px)) !important;
+    width: min(1120px, calc(100vw - 48px)) !important;
     max-width: none !important;
-    margin: 24px auto 56px !important;
+    margin: 18px auto 48px !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -9748,18 +9748,14 @@
 .settings-panel--modern .settings-hero {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
-    gap: 24px;
+    gap: 20px;
     align-items: stretch;
-    margin-bottom: 24px;
-    padding: 28px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 82%, transparent);
-    border-radius: 28px;
-    background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--Primary_Button_Colour) 12%, transparent) 0%, transparent 40%),
-        linear-gradient(145deg,
-            color-mix(in srgb, var(--TopBar_Background_Colour) 94%, var(--body_Background_Colour)) 0%,
-            color-mix(in srgb, var(--SideBar_Background_Colour) 98%, var(--body_Background_Colour)) 100%);
-    box-shadow: 0 24px 54px rgba(0, 0, 0, 0.10);
+    margin-bottom: 20px;
+    padding: 22px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 94%, var(--SideBar_Background_Colour));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
 
 .settings-panel--modern .settings-hero-copy {
@@ -9768,7 +9764,7 @@
 }
 
 .settings-panel--modern .settings-eyebrow {
-    color: var(--Primary_Button_Colour);
+    color: var(--Muted_Text_Colour);
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -9779,34 +9775,34 @@
     margin: 0;
     color: var(--Default_Text_Colour);
     font-family: 'Inter', sans-serif;
-    font-size: clamp(34px, 3.2vw, 46px);
+    font-size: clamp(30px, 2.7vw, 40px);
     font-weight: 800;
-    line-height: 1.03;
-    letter-spacing: -0.05em;
+    line-height: 1.04;
+    letter-spacing: -0.04em;
 }
 
 .settings-panel--modern .settings-hero p {
     margin: 0;
-    max-width: 58ch;
+    max-width: 52ch;
     color: var(--Muted_Text_Colour);
-    font-size: 16px;
-    line-height: 1.65;
+    font-size: 15px;
+    line-height: 1.58;
 }
 
 .settings-panel--modern .settings-hero-summary {
     display: grid;
-    gap: 12px;
+    gap: 10px;
 }
 
 .settings-panel--modern .settings-summary-card {
     display: grid;
-    gap: 6px;
+    gap: 4px;
     align-content: center;
-    min-height: 92px;
-    padding: 18px 20px;
-    border-radius: 22px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent);
-    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 88%, var(--SideBar_Background_Colour));
+    min-height: 84px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--SearchBar_Background_Colour));
 }
 
 .settings-panel--modern .settings-summary-label {
@@ -9826,26 +9822,26 @@
 
 .settings-panel--modern .settings-grid {
     display: grid;
-    gap: 20px;
+    gap: 18px;
 }
 
 .settings-panel--modern .settings-grid--top {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .settings-panel--modern .settings-stack {
     display: grid;
-    gap: 20px;
+    gap: 18px;
 }
 
 .settings-panel--modern .settings-card {
     margin: 0 !important;
-    padding: 24px !important;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 82%, transparent) !important;
-    border-radius: 24px !important;
-    background: color-mix(in srgb, var(--SideBar_Background_Colour) 94%, var(--body_Background_Colour)) !important;
-    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.08);
+    padding: 22px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent) !important;
+    border-radius: 22px !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 
 .settings-panel--modern .settings-card:last-child {
@@ -9856,12 +9852,12 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .settings-panel--modern .settings-card-kicker {
-    color: var(--Primary_Button_Colour);
+    color: var(--Muted_Text_Colour);
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -9869,13 +9865,13 @@
 }
 
 .settings-panel--modern .settings-card h3 {
-    margin: 6px 0 8px !important;
+    margin: 4px 0 8px !important;
     color: var(--Default_Text_Colour);
     font-family: 'Inter', sans-serif;
-    font-size: 26px !important;
+    font-size: 24px !important;
     font-weight: 800;
-    line-height: 1.08;
-    letter-spacing: -0.03em;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
 }
 
 .settings-panel--modern .settings-card-head p,
@@ -9883,19 +9879,19 @@
 .settings-panel--modern .settings-card li,
 .settings-panel--modern .contact-note {
     color: var(--Muted_Text_Colour);
-    font-size: 15px;
-    line-height: 1.65;
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 .settings-panel--modern .settings-inline-setting {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 18px;
-    border-radius: 20px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 76%, transparent);
-    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, var(--SideBar_Background_Colour));
+    gap: 16px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 98%, var(--SearchBar_Background_Colour));
 }
 
 .settings-panel--modern .settings-inline-copy {
@@ -9917,7 +9913,7 @@
 .settings-panel--modern .settings-inline-help,
 .settings-panel--modern .settings-inline-value {
     color: var(--Muted_Text_Colour);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -9937,8 +9933,8 @@
 
 .settings-panel--modern .slider {
     border-radius: 999px;
-    background: color-mix(in srgb, var(--Input_Background) 82%, var(--SearchBar_Background_Colour));
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 82%, transparent);
+    background: color-mix(in srgb, var(--Input_Background) 88%, var(--SearchBar_Background_Colour));
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
     transition: background-color 160ms ease, border-color 160ms ease;
 }
 
@@ -9975,12 +9971,12 @@
     min-height: 52px;
     margin: 0 !important;
     padding: 0 16px !important;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 82%, transparent) !important;
-    border-radius: 16px !important;
-    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--SideBar_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 74%, transparent) !important;
+    border-radius: 14px !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--SearchBar_Background_Colour)) !important;
     color: var(--Default_Text_Colour) !important;
     box-sizing: border-box !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: none !important;
     font-family: 'Inter', 'Afacad', sans-serif !important;
     font-size: 15px !important;
 }
@@ -10028,10 +10024,10 @@
 
 .settings-panel--modern .ts-dropdown {
     margin-top: 8px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 86%, transparent) !important;
-    border-radius: 18px !important;
-    background: color-mix(in srgb, var(--SideBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
-    box-shadow: 0 22px 40px rgba(0, 0, 0, 0.14) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 80%, transparent) !important;
+    border-radius: 16px !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12) !important;
     overflow: hidden;
 }
 
@@ -10051,7 +10047,7 @@
     margin: 0 !important;
     padding: 0 18px !important;
     border: 1px solid transparent !important;
-    border-radius: 16px !important;
+    border-radius: 14px !important;
     background: var(--Primary_Button_Colour) !important;
     color: #ffffff !important;
     font-family: 'Inter', 'Afacad', sans-serif !important;
@@ -10059,14 +10055,14 @@
     font-weight: 800 !important;
     cursor: pointer;
     transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
-    box-shadow: 0 14px 24px color-mix(in srgb, var(--Primary_Button_Colour) 18%, transparent);
+    box-shadow: 0 10px 18px color-mix(in srgb, var(--Primary_Button_Colour) 16%, transparent);
 }
 
 .settings-panel--modern .settings-card button:hover,
 .settings-panel--modern .clearDataButton:hover {
     transform: translateY(-1px);
     background: var(--Primary_Button_Hover) !important;
-    box-shadow: 0 18px 30px color-mix(in srgb, var(--Primary_Button_Colour) 22%, transparent);
+    box-shadow: 0 14px 22px color-mix(in srgb, var(--Primary_Button_Colour) 18%, transparent);
 }
 
 .settings-panel--modern .settings-card--danger button,
@@ -10106,7 +10102,7 @@
 
 .dark-mode .settings-panel--modern .settings-hero,
 .dark-mode .settings-panel--modern .settings-card {
-    box-shadow: 0 24px 54px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
 @media (max-width: 680px) {
@@ -10118,76 +10114,98 @@
 
     .settings-panel--modern .settings-hero {
         grid-template-columns: 1fr;
-        gap: 4.444vw;
-        margin-bottom: 4.444vw;
-        padding: 5vw 4.444vw;
-        border-radius: 5.556vw;
+        gap: 3.333vw;
+        margin-bottom: 3.889vw;
+        padding: 4.444vw;
+        border-radius: 4.722vw;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour));
+        box-shadow: none;
+    }
+
+    .settings-panel--modern .settings-hero-copy {
+        gap: 2.5vw;
+    }
+
+    .settings-panel--modern .settings-eyebrow {
+        font-size: 2.5vw;
+        letter-spacing: 0.16em;
     }
 
     .settings-panel--modern .settings-hero h2 {
-        font-size: 8.333vw;
+        font-size: 6.389vw;
+        letter-spacing: -0.035em;
     }
 
     .settings-panel--modern .settings-hero p {
-        font-size: 3.889vw;
+        font-size: 3.333vw;
+        line-height: 1.55;
         max-width: none;
     }
 
     .settings-panel--modern .settings-hero-summary {
-        grid-template-columns: 1fr;
-        gap: 2.778vw;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2.5vw;
     }
 
     .settings-panel--modern .settings-summary-card {
         min-height: 0;
-        padding: 4.167vw 4.444vw;
-        border-radius: 4.722vw;
+        padding: 3.333vw 3.611vw;
+        border-radius: 3.889vw;
+        gap: 0.833vw;
+    }
+
+    .settings-panel--modern .settings-summary-label {
+        font-size: 2.222vw;
     }
 
     .settings-panel--modern .settings-summary-card strong {
-        font-size: 6.111vw;
+        font-size: 3.611vw;
+        line-height: 1.2;
     }
 
     .settings-panel--modern .settings-grid--top,
     .settings-panel--modern .settings-stack {
-        gap: 3.889vw;
+        gap: 3.333vw;
     }
 
     .settings-panel--modern .settings-grid--top {
         grid-template-columns: 1fr;
-        margin-bottom: 3.889vw;
+        margin-bottom: 3.333vw;
     }
 
     .settings-panel--modern .settings-card {
-        padding: 4.444vw !important;
-        border-radius: 5vw !important;
+        padding: 4.167vw !important;
+        border-radius: 4.444vw !important;
+        box-shadow: none !important;
     }
 
     .settings-panel--modern .settings-card-head {
-        gap: 3.333vw;
-        margin-bottom: 4.167vw;
+        gap: 2.778vw;
+        margin-bottom: 3.333vw;
     }
 
     .settings-panel--modern .settings-card-kicker {
-        font-size: 2.778vw;
+        font-size: 2.5vw;
     }
 
     .settings-panel--modern .settings-card h3 {
-        margin: 1.111vw 0 1.944vw !important;
-        font-size: 6.111vw !important;
+        margin: 0.833vw 0 1.667vw !important;
+        font-size: 5.278vw !important;
     }
 
     .settings-panel--modern .settings-card-head p,
     .settings-panel--modern .settings-card > p,
     .settings-panel--modern .settings-card li,
     .settings-panel--modern .contact-note {
-        font-size: 3.611vw;
+        font-size: 3.333vw;
+        line-height: 1.55;
     }
 
     .settings-panel--modern .settings-inline-setting {
-        gap: 3.333vw;
-        padding: 4.167vw;
-        border-radius: 4.444vw;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 3.056vw;
+        padding: 3.889vw 4.167vw;
+        border-radius: 3.889vw;
     }
 
     .settings-panel--modern .settings-inline-copy label,
@@ -10199,7 +10217,7 @@
 
     .settings-panel--modern .settings-inline-help,
     .settings-panel--modern .settings-inline-value {
-        font-size: 3.056vw;
+        font-size: 2.778vw;
     }
 
     .settings-panel--modern .switch {
@@ -10222,10 +10240,10 @@
     .settings-panel--modern .settings-card textarea,
     .settings-panel--modern .settings-card select,
     .settings-panel--modern .ts-wrapper.single .ts-control {
-        min-height: 12.778vw;
+        min-height: 12.222vw;
         padding: 0 4.167vw !important;
-        border-radius: 3.889vw !important;
-        font-size: 4.167vw !important;
+        border-radius: 3.611vw !important;
+        font-size: 3.889vw !important;
     }
 
     .settings-panel--modern .settings-card textarea,
@@ -10241,10 +10259,10 @@
     .settings-panel--modern .settings-card button,
     .settings-panel--modern .clearDataButton {
         width: 100% !important;
-        min-height: 12.222vw;
+        min-height: 11.944vw;
         padding: 0 4.444vw !important;
-        border-radius: 4.167vw !important;
-        font-size: 3.889vw !important;
+        border-radius: 3.611vw !important;
+        font-size: 3.611vw !important;
     }
 
     .settings-panel--modern .settings-card h4 {

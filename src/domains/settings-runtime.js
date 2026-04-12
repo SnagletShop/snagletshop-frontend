@@ -587,8 +587,8 @@
       <section class="settings-hero">
         <div class="settings-hero-copy">
           <div class="settings-eyebrow">Store settings</div>
-          <h2>Personalize the storefront the way a real store account should feel.</h2>
-          <p>Adjust appearance, shopping region, saved data, and support details from one clean settings space.</p>
+          <h2>Settings</h2>
+          <p>Manage theme, region, saved data, support, and store policies for this device.</p>
         </div>
         <div class="settings-hero-summary">
           <div class="settings-summary-card">
