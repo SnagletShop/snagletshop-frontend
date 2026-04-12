@@ -11935,7 +11935,7 @@ body.ss-pdp-lightbox-open {
 
 @media (min-width: 681px) {
     .DesktopShell {
-        width: min(1650px, calc(100vw - 64px)) !important;
+        width: min(1720px, calc(100vw - 24px)) !important;
         padding-top: 0 !important;
         position: relative !important;
         z-index: 20 !important;
@@ -11944,44 +11944,34 @@ body.ss-pdp-lightbox-open {
     .TopBar {
         position: sticky !important;
         top: 0 !important;
-        grid-template-columns: minmax(240px, 0.78fr) minmax(560px, 1.8fr) auto !important;
-        gap: 28px !important;
-        min-height: 106px !important;
-        padding: 18px 26px !important;
-        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
+        grid-template-columns: minmax(220px, 0.7fr) minmax(540px, 1.85fr) auto !important;
+        gap: 26px !important;
+        min-height: 92px !important;
+        padding: 16px 18px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent) !important;
         border-bottom: 0 !important;
-        border-radius: 30px 30px 0 0 !important;
-        background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
-        box-shadow: 0 12px 32px color-mix(in srgb, #000000 9%, transparent), 0 1px 0 color-mix(in srgb, #ffffff 4%, transparent) inset !important;
+        border-radius: 26px 26px 0 0 !important;
+        background: color-mix(in srgb, var(--TopBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+        box-shadow: 0 10px 24px color-mix(in srgb, #000000 8%, transparent), 0 1px 0 color-mix(in srgb, #ffffff 3%, transparent) inset !important;
         isolation: isolate !important;
         z-index: 22 !important;
     }
 
     .DesktopHeaderBrand {
         position: relative;
-        padding-right: 18px;
-        min-height: 62px;
-    }
-
-    .DesktopHeaderBrand::after {
-        content: "";
-        position: absolute;
-        top: 10%;
-        right: 0;
-        width: 1px;
-        height: 80%;
-        background: color-mix(in srgb, var(--Borders_Colour) 56%, transparent);
+        padding-right: 0;
+        min-height: 56px;
     }
 
     .DesktopHeaderBrand .MainPage {
         gap: 8px !important;
-        padding-right: 8px !important;
+        padding: 0 !important;
     }
 
     .DesktopBrandWordmark {
-        font-size: clamp(30px, 2.25vw, 42px) !important;
-        font-weight: 780 !important;
-        letter-spacing: -0.055em !important;
+        font-size: clamp(28px, 2.15vw, 40px) !important;
+        font-weight: 760 !important;
+        letter-spacing: -0.05em !important;
     }
 
     .DesktopBrandSubline {
@@ -12001,14 +11991,14 @@ body.ss-pdp-lightbox-open {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
         width: 100%;
-        min-height: 58px;
+        min-height: 62px;
         padding: 6px 8px 6px 18px;
-        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent);
-        border-radius: 22px;
-        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 94%, var(--body_Background_Colour));
-        box-shadow: 0 8px 22px color-mix(in srgb, #000000 5%, transparent), inset 0 1px 0 color-mix(in srgb, #ffffff 4%, transparent);
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 56%, transparent);
+        border-radius: 20px;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour));
+        box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 4%, transparent);
         box-sizing: border-box;
     }
 
@@ -12029,14 +12019,14 @@ body.ss-pdp-lightbox-open {
     }
 
     .DesktopHeaderSearch .Search_Bar {
-        height: 44px !important;
-        min-height: 44px !important;
+        height: 46px !important;
+        min-height: 46px !important;
         padding: 0 !important;
         border: 0 !important;
         border-radius: 0 !important;
         background: transparent !important;
         box-shadow: none !important;
-        font-size: 16px !important;
+        font-size: 15px !important;
     }
 
     .DesktopHeaderSearch .Search_Bar:focus {
@@ -12048,23 +12038,23 @@ body.ss-pdp-lightbox-open {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 108px;
-        height: 46px;
-        padding: 0 22px;
-        border: 1px solid color-mix(in srgb, var(--Primary_Button_Colour) 16%, var(--Borders_Colour));
-        border-radius: 17px;
-        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 72%, var(--body_Background_Colour));
+        min-width: 104px;
+        height: 42px;
+        padding: 0 20px;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 56%, transparent);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--body_Background_Colour) 84%, var(--SearchBar_Background_Colour));
         color: var(--Default_Text_Colour);
         font-family: 'Inter', sans-serif;
         font-size: 15px;
-        font-weight: 700;
+        font-weight: 600;
         cursor: pointer;
         transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
     }
 
     .DesktopSearchAction:hover {
-        background: color-mix(in srgb, var(--Primary_Button_Colour) 14%, var(--SearchBar_Background_Colour));
-        border-color: color-mix(in srgb, var(--Primary_Button_Colour) 40%, var(--Borders_Colour));
+        background: color-mix(in srgb, var(--Primary_Button_Colour) 8%, var(--body_Background_Colour));
+        border-color: color-mix(in srgb, var(--Primary_Button_Colour) 28%, var(--Borders_Colour));
         transform: translateY(-1px);
     }
 
@@ -12077,18 +12067,18 @@ body.ss-pdp-lightbox-open {
         display: flex !important;
         align-items: center !important;
         justify-content: flex-end !important;
-        gap: 14px !important;
+        gap: 12px !important;
         min-width: max-content !important;
     }
 
     .currency-select {
-        min-width: 108px !important;
-        height: 54px !important;
+        min-width: 102px !important;
+        height: 50px !important;
         padding: 0 18px !important;
-        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent) !important;
-        border-radius: 18px !important;
-        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--body_Background_Colour)) !important;
-        font-size: 15px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 56%, transparent) !important;
+        border-radius: 16px !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
+        font-size: 14px !important;
         font-weight: 700 !important;
     }
 
@@ -12388,11 +12378,11 @@ body.ss-pdp-lightbox-open {
 
     .BasketButton,
     .SettingsButton {
-        width: 54px !important;
-        height: 54px !important;
-        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent) !important;
-        border-radius: 18px !important;
-        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--body_Background_Colour)) !important;
+        width: 50px !important;
+        height: 50px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 56%, transparent) !important;
+        border-radius: 16px !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
         color: var(--Default_Text_Colour) !important;
         box-shadow: none !important;
     }
@@ -12406,28 +12396,28 @@ body.ss-pdp-lightbox-open {
 
     .BasketButton svg,
     .SettingsButton svg {
-        width: 23px;
-        height: 23px;
+        width: 22px;
+        height: 22px;
     }
 
     .SideBar {
         position: sticky !important;
-        top: 144px !important;
-        padding: 10px 16px 12px !important;
-        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
+        top: 92px !important;
+        padding: 10px 18px 14px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent) !important;
         border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 48%, transparent) !important;
-        border-radius: 0 0 24px 24px !important;
-        background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
-        box-shadow: 0 12px 24px color-mix(in srgb, #000000 8%, transparent) !important;
+        border-radius: 0 0 26px 26px !important;
+        background: color-mix(in srgb, var(--TopBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+        box-shadow: 0 10px 24px color-mix(in srgb, #000000 7%, transparent) !important;
         margin-top: -1px !important;
         z-index: 21 !important;
     }
 
     .desktop-category-ribbon {
         display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
-        gap: 8px !important;
-        padding-top: 0 !important;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+        gap: 8px 10px !important;
+        padding-top: 10px !important;
         border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 44%, transparent) !important;
         align-items: stretch !important;
     }
@@ -12439,12 +12429,12 @@ body.ss-pdp-lightbox-open {
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        min-height: 54px !important;
+        min-height: 46px !important;
         height: auto !important;
-        padding: 8px 12px !important;
-        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 52%, transparent) !important;
-        border-radius: 18px !important;
-        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 90%, var(--body_Background_Colour)) !important;
+        padding: 7px 12px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 48%, transparent) !important;
+        border-radius: 16px !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
         color: var(--Default_Text_Colour) !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 15px !important;
@@ -12460,7 +12450,7 @@ body.ss-pdp-lightbox-open {
     .Category_Button_Heading h3,
     .category-label {
         font-family: 'Inter', sans-serif !important;
-        font-size: 14px !important;
+        font-size: 15px !important;
         font-weight: 500 !important;
         letter-spacing: -0.01em !important;
         line-height: 1.1 !important;
@@ -12470,7 +12460,7 @@ body.ss-pdp-lightbox-open {
         display: grid !important;
         grid-template-columns: auto minmax(0, 1fr) !important;
         align-items: center !important;
-        gap: 10px !important;
+        gap: 8px !important;
         width: 100% !important;
         margin: 0 !important;
     }
