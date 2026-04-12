@@ -10888,6 +10888,8 @@
     .settings-panel.settings-panel--modern {
         width: 100% !important;
         max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: clip !important;
         padding: 0 1.111vw 7.222vw !important;
     }
 }
