@@ -10289,8 +10289,412 @@
         font-size: 3.889vw;
     }
 
+.settings-panel--modern .settings-card ul {
+    margin: 2.222vw 0 0 4.444vw;
+}
+}
+
+/* Google-like settings refinement */
+.settings-panel.settings-panel--modern {
+    width: min(1180px, calc(100vw - 56px)) !important;
+    margin: 18px auto 48px !important;
+}
+
+.settings-panel--modern .settings-hero {
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px 4px 10px;
+    border-bottom: 0 !important;
+}
+
+.settings-panel--modern .settings-eyebrow {
+    display: none;
+}
+
+.settings-panel--modern .settings-hero-copy {
+    gap: 6px;
+}
+
+.settings-panel--modern .settings-hero h2 {
+    font-size: clamp(30px, 2.6vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.settings-panel--modern .settings-hero p {
+    max-width: 60ch;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.settings-panel--modern .settings-hero-summary {
+    gap: 8px;
+}
+
+.settings-panel--modern .settings-summary-card {
+    min-width: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 54%, transparent);
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--body_Background_Colour));
+}
+
+.settings-panel--modern .settings-summary-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+.settings-panel--modern .settings-summary-card strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.settings-panel--modern .settings-grid {
+    gap: 16px;
+}
+
+.settings-panel--modern .settings-grid--top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 16px;
+}
+
+.settings-panel--modern .settings-card--theme {
+    grid-column: 1 / -1;
+}
+
+.settings-panel--modern .settings-stack {
+    gap: 16px;
+}
+
+.settings-panel--modern .settings-card {
+    padding: 22px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 50%, transparent) !important;
+    border-radius: 22px !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+    box-shadow: 0 1px 2px color-mix(in srgb, #000 7%, transparent), 0 8px 24px color-mix(in srgb, #000 4%, transparent) !important;
+}
+
+.settings-panel--modern .settings-card-head {
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.settings-panel--modern .settings-card-kicker {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+}
+
+.settings-panel--modern .settings-card h3 {
+    margin: 4px 0 4px !important;
+    font-size: 22px !important;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.settings-panel--modern .settings-card-head p,
+.settings-panel--modern .settings-card > p,
+.settings-panel--modern .settings-card li,
+.settings-panel--modern .contact-note {
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.settings-panel--modern .settings-inline-setting {
+    gap: 16px;
+    padding: 16px 0;
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 46%, transparent);
+    border-radius: 0;
+    background: transparent;
+}
+
+.settings-panel--modern .settings-inline-setting:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.settings-panel--modern .settings-inline-copy {
+    gap: 3px;
+}
+
+.settings-panel--modern .settings-inline-copy label,
+.settings-panel--modern .settings-card > label,
+.settings-panel--modern #contact-form label {
+    margin-bottom: 8px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.settings-panel--modern .settings-inline-help,
+.settings-panel--modern .settings-inline-value {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.settings-panel--modern .settings-inline-value {
+    color: var(--Default_Text_Colour);
+    opacity: 0.82;
+}
+
+.settings-panel--modern .switch {
+    width: 52px;
+    height: 32px;
+}
+
+.settings-panel--modern .slider {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--Input_Background) 70%, var(--body_Background_Colour));
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 55%, transparent);
+}
+
+.settings-panel--modern .slider::before {
+    width: 22px;
+    height: 22px;
+    left: 4px;
+    bottom: 4px;
+    box-shadow: 0 1px 3px color-mix(in srgb, #000 18%, transparent);
+}
+
+.settings-panel--modern .switch input:checked + .slider::before {
+    transform: translateX(20px);
+}
+
+.settings-panel--modern .settings-card input,
+.settings-panel--modern .settings-card textarea,
+.settings-panel--modern .settings-card select,
+.settings-panel--modern .ts-wrapper.single .ts-control {
+    min-height: 52px;
+    padding: 0 16px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 56%, transparent) !important;
+    border-radius: 16px !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, var(--body_Background_Colour)) !important;
+    font-size: 15px !important;
+}
+
+.settings-panel--modern .settings-card textarea,
+.settings-panel--modern .MessageTextArea {
+    min-height: 168px !important;
+    padding: 14px 16px !important;
+}
+
+.settings-panel--modern .settings-card input:focus-visible,
+.settings-panel--modern .settings-card textarea:focus-visible,
+.settings-panel--modern .settings-card select:focus-visible,
+.settings-panel--modern .ts-wrapper.single.focus .ts-control {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--Primary_Button_Colour) 18%, transparent);
+}
+
+.settings-panel--modern .ts-wrapper.single .ts-control {
+    gap: 8px !important;
+}
+
+.settings-panel--modern .ts-dropdown {
+    margin-top: 8px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
+    border-radius: 18px !important;
+}
+
+.settings-panel--modern .ts-dropdown .option {
+    padding: 12px 14px !important;
+}
+
+.settings-panel--modern .settings-card button,
+.settings-panel--modern .clearDataButton {
+    min-height: 46px;
+    padding: 0 18px !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.settings-panel--modern .settings-card--danger button,
+.settings-panel--modern .settings-card--danger .clearDataButton {
+    box-shadow: none !important;
+}
+
+.settings-panel--modern .settings-card h4 {
+    margin: 16px 0 6px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.settings-panel--modern .settings-card ul {
+    margin-left: 20px;
+}
+
+.light-mode .settings-panel--modern .settings-card,
+.light-mode .settings-panel--modern .settings-summary-card {
+    border-color: color-mix(in srgb, var(--Borders_Colour) 58%, transparent) !important;
+    background: color-mix(in srgb, #ffffff 92%, var(--body_Background_Colour)) !important;
+}
+
+.light-mode .settings-panel--modern .settings-inline-setting {
+    border-top-color: color-mix(in srgb, var(--Borders_Colour) 40%, transparent);
+}
+
+.light-mode .settings-panel--modern .settings-card input,
+.light-mode .settings-panel--modern .settings-card textarea,
+.light-mode .settings-panel--modern .settings-card select,
+.light-mode .settings-panel--modern .ts-wrapper.single .ts-control {
+    background: color-mix(in srgb, #ffffff 82%, var(--SearchBar_Background_Colour)) !important;
+}
+
+.dark-mode .settings-panel--modern .settings-card,
+.dark-mode .settings-panel--modern .settings-summary-card {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 12px 28px rgba(0, 0, 0, 0.14) !important;
+}
+
+@media (max-width: 900px) {
+    .settings-panel.settings-panel--modern {
+        width: min(100%, calc(100vw - 28px)) !important;
+    }
+
+    .settings-panel--modern .settings-grid--top {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 680px) {
+    .settings-panel.settings-panel--modern {
+        margin: 0 !important;
+        padding: 0 3.333vw 6.111vw !important;
+    }
+
+    .settings-panel--modern .settings-hero {
+        gap: 2.222vw;
+        margin-bottom: 3.611vw;
+        padding: 3.333vw 1.111vw 1.944vw;
+    }
+
+    .settings-panel--modern .settings-hero h2 {
+        font-size: 6.111vw;
+    }
+
+    .settings-panel--modern .settings-hero p {
+        font-size: 3.333vw;
+    }
+
+    .settings-panel--modern .settings-hero-summary {
+        gap: 1.667vw;
+    }
+
+    .settings-panel--modern .settings-summary-card {
+        min-width: 0;
+        padding: 2.5vw 3.333vw;
+        border-radius: 999px;
+    }
+
+    .settings-panel--modern .settings-summary-label {
+        font-size: 2.222vw;
+    }
+
+    .settings-panel--modern .settings-summary-card strong {
+        font-size: 3.611vw;
+    }
+
+    .settings-panel--modern .settings-grid,
+    .settings-panel--modern .settings-stack {
+        gap: 3.333vw;
+    }
+
+    .settings-panel--modern .settings-card {
+        padding: 4.444vw !important;
+        border-radius: 5vw !important;
+        box-shadow: none !important;
+    }
+
+    .settings-panel--modern .settings-card-head {
+        margin-bottom: 3.056vw;
+    }
+
+    .settings-panel--modern .settings-card-kicker {
+        font-size: 2.5vw;
+    }
+
+    .settings-panel--modern .settings-card h3 {
+        margin: 0.556vw 0 1.111vw !important;
+        font-size: 5vw !important;
+    }
+
+    .settings-panel--modern .settings-card-head p,
+    .settings-panel--modern .settings-card > p,
+    .settings-panel--modern .settings-card li,
+    .settings-panel--modern .contact-note {
+        font-size: 3.333vw;
+    }
+
+    .settings-panel--modern .settings-inline-setting {
+        gap: 2.778vw;
+        padding: 3.333vw 0;
+    }
+
+    .settings-panel--modern .settings-inline-copy label,
+    .settings-panel--modern .settings-card > label,
+    .settings-panel--modern #contact-form label {
+        font-size: 3.611vw !important;
+        margin-bottom: 1.667vw !important;
+    }
+
+    .settings-panel--modern .settings-inline-help,
+    .settings-panel--modern .settings-inline-value {
+        font-size: 2.778vw;
+    }
+
+    .settings-panel--modern .switch {
+        width: 14.444vw;
+        height: 8.333vw;
+    }
+
+    .settings-panel--modern .slider::before {
+        width: 5.556vw;
+        height: 5.556vw;
+        left: 1.111vw;
+        bottom: 1.111vw;
+    }
+
+    .settings-panel--modern .switch input:checked + .slider::before {
+        transform: translateX(5.556vw);
+    }
+
+    .settings-panel--modern .settings-card input,
+    .settings-panel--modern .settings-card textarea,
+    .settings-panel--modern .settings-card select,
+    .settings-panel--modern .ts-wrapper.single .ts-control {
+        min-height: 12.222vw;
+        padding: 0 3.611vw !important;
+        border-radius: 4.167vw !important;
+        font-size: 3.889vw !important;
+    }
+
+    .settings-panel--modern .settings-card textarea,
+    .settings-panel--modern .MessageTextArea {
+        min-height: 40vw !important;
+        padding: 3.333vw 3.611vw !important;
+    }
+
+    .settings-panel--modern .ts-dropdown {
+        border-radius: 4.167vw !important;
+    }
+
+    .settings-panel--modern .settings-card button,
+    .settings-panel--modern .clearDataButton {
+        width: 100% !important;
+        min-height: 11.667vw;
+        border-radius: 999px !important;
+        font-size: 3.611vw !important;
+    }
+
+    .settings-panel--modern .settings-card h4 {
+        margin: 3.333vw 0 1.667vw;
+        font-size: 3.889vw;
+    }
+
     .settings-panel--modern .settings-card ul {
-        margin: 2.222vw 0 0 4.444vw;
+        margin-left: 4.444vw;
     }
 }
 
@@ -10805,8 +11209,8 @@
     .Product_Detail_Page .Quantity_Controls_ProductPage .WhiteText {
         width: 100% !important;
         min-width: 0 !important;
-        height: 11.111vw !important;
-        min-height: 11.111vw !important;
+        height: 12.222vw !important;
+        min-height: 12.222vw !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -10814,12 +11218,12 @@
     }
 
     .Product_Detail_Page .Quantity_Controls_ProductPage .Button {
-        font-size: 4.444vw !important;
+        font-size: 4.722vw !important;
         border-radius: 1.389vw !important;
     }
 
     .Product_Detail_Page .Quantity_Controls_ProductPage .WhiteText {
-        font-size: 4.722vw !important;
+        font-size: 5vw !important;
         line-height: 1 !important;
     }
 
@@ -10827,8 +11231,8 @@
         width: 100% !important;
         min-width: 0 !important;
         max-width: none !important;
-        height: 11.111vw !important;
-        min-height: 11.111vw !important;
+        height: 12.222vw !important;
+        min-height: 12.222vw !important;
         aspect-ratio: auto !important;
         display: inline-flex !important;
         align-items: center !important;
@@ -10836,7 +11240,7 @@
         padding: 0 3.333vw !important;
         border-radius: 1.389vw !important;
         box-sizing: border-box !important;
-        font-size: 3.889vw !important;
+        font-size: 4.167vw !important;
     }
 
     .Product_Detail_Page .add-to-cart-product .product-name-inline {
@@ -10849,8 +11253,8 @@
     }
 
     .Product_Detail_Page .cart-icon-product {
-        width: 4.444vw !important;
-        height: 4.444vw !important;
+        width: 4.722vw !important;
+        height: 4.722vw !important;
         margin-left: 0 !important;
         flex: 0 0 auto !important;
     }
@@ -10860,8 +11264,8 @@
         width: calc(100% - 8.888vw) !important;
         min-width: 0 !important;
         max-width: none !important;
-        height: 11.111vw !important;
-        min-height: 11.111vw !important;
+        height: 12.222vw !important;
+        min-height: 12.222vw !important;
         margin: 1.389vw 4.444vw 0 !important;
         border-radius: 1.389vw !important;
         box-sizing: border-box !important;
