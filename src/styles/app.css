@@ -11499,7 +11499,7 @@
         flex: 0 0 auto !important;
     }
 
-    .Product_Detail_Page .ProductPageBuyButton {
+.Product_Detail_Page .ProductPageBuyButton {
         display: block !important;
         width: calc(100% - 8.888vw) !important;
         min-width: 0 !important;
@@ -11510,5 +11510,100 @@
         border-radius: 1.389vw !important;
         box-sizing: border-box !important;
         text-align: center !important;
+    }
+}
+
+/* Final settings toggle polish */
+.settings-panel--modern .settings-switch.switch {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: middle !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+
+.settings-panel--modern .settings-switch.switch input {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    display: block !important;
+    cursor: pointer !important;
+    z-index: 2 !important;
+}
+
+.settings-panel--modern .settings-switch.switch .slider {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--Input_Background) 88%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 4%, transparent), 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    overflow: hidden !important;
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+}
+
+.settings-panel--modern .settings-switch.switch .slider::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 50% !important;
+    bottom: auto !important;
+    left: 4px !important;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24) !important;
+    transform: translateY(-50%) !important;
+    transition: transform 160ms ease, box-shadow 160ms ease !important;
+}
+
+.settings-panel--modern .settings-switch.switch input:checked + .slider {
+    background: var(--Primary_Button_Colour) !important;
+    border-color: color-mix(in srgb, var(--Primary_Button_Hover) 70%, var(--Primary_Button_Colour)) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent), 0 0 0 4px color-mix(in srgb, var(--Primary_Button_Colour) 16%, transparent) !important;
+}
+
+.settings-panel--modern .settings-switch.switch input:checked + .slider::before {
+    transform: translate(20px, -50%) !important;
+}
+
+.settings-panel--modern .settings-switch.switch input:focus-visible + .slider {
+    outline: none !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent), 0 0 0 4px color-mix(in srgb, var(--Primary_Button_Colour) 18%, transparent) !important;
+}
+
+.settings-panel--modern .settings-switch.switch input:disabled + .slider {
+    opacity: 0.58 !important;
+    filter: saturate(0.82) !important;
+    cursor: not-allowed !important;
+}
+
+@media (max-width: 900px) {
+    .settings-panel--modern .settings-switch.switch {
+        width: 13.333vw !important;
+        height: 8.056vw !important;
+    }
+
+    .settings-panel--modern .settings-switch.switch .slider::before {
+        left: 1.111vw !important;
+        width: 5.278vw !important;
+        height: 5.278vw !important;
+    }
+
+    .settings-panel--modern .settings-switch.switch input:checked + .slider::before {
+        transform: translate(5.833vw, -50%) !important;
     }
 }
