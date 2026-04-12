@@ -474,6 +474,147 @@ html.dark-mode .ss-ci-btn {
     font-size: 15px;
 }
 
+@media (min-width: 1024px) {
+    #Basket_Viewer {
+        width: min(1280px, calc(100vw - 72px)) !important;
+        max-width: none !important;
+        margin: 0 auto !important;
+        padding: 18px 0 48px !important;
+        box-sizing: border-box !important;
+    }
+
+    .BasketLayout {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.75fr) minmax(320px, 380px) !important;
+        gap: 28px !important;
+        align-items: start !important;
+        width: 100% !important;
+    }
+
+    .BasketLayoutMain,
+    .BasketLayoutAside {
+        min-width: 0 !important;
+    }
+
+    .BasketLayoutMain {
+        display: grid !important;
+        gap: 18px !important;
+        align-content: start !important;
+    }
+
+    .BasketLayoutAside {
+        position: sticky !important;
+        top: 138px !important;
+        align-self: start !important;
+    }
+
+    .Basket_Item_Container {
+        width: 100% !important;
+        max-width: none !important;
+        margin-top: 0 !important;
+        border-radius: 24px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent) !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--body_Background_Colour)) !important;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12) !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .Basket-Item {
+        width: 100% !important;
+        max-width: none !important;
+        padding: 22px 24px !important;
+        gap: 20px !important;
+        border: 0 !important;
+        border-radius: 24px !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+    }
+
+    .Basket_Image {
+        width: 160px !important;
+        max-width: 160px !important;
+        aspect-ratio: 1 / 1 !important;
+        margin: 0 !important;
+        border-radius: 18px !important;
+        object-fit: cover !important;
+        background: color-mix(in srgb, var(--body_Background_Colour) 65%, var(--SearchBar_Background_Colour)) !important;
+    }
+
+    .BasketReceipt {
+        width: 100% !important;
+        border-radius: 24px !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 80%, transparent) !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.14) !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .Basket-Item-Pay {
+        width: 100% !important;
+    }
+
+    .ReceiptTable {
+        width: 100% !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    .ReceiptTable td {
+        padding: 14px 18px !important;
+    }
+
+    .ReceiptTable tr + tr td {
+        border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
+    }
+
+    .basket-item-price {
+        text-align: right !important;
+        white-space: nowrap !important;
+    }
+
+    .ReceiptFooter {
+        display: flex !important;
+        flex-direction: column-reverse !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        width: 100% !important;
+        max-width: none !important;
+        aspect-ratio: auto !important;
+        height: auto !important;
+        padding: 18px !important;
+        border: 0 !important;
+        border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
+        box-sizing: border-box !important;
+    }
+
+    .PayButton {
+        width: 100% !important;
+        margin: 0 !important;
+        min-height: 52px !important;
+        border-radius: 16px !important;
+    }
+
+    .PayTotalText {
+        width: 100% !important;
+        margin: 0 !important;
+        text-align: left !important;
+        font-size: clamp(1.45rem, 1.8vw, 2rem) !important;
+        line-height: 1.15 !important;
+    }
+
+    .BasketIncentivesRail {
+        min-width: 0 !important;
+    }
+
+    .BasketIncentivesRail .ss-cart-inc {
+        margin: 0 !important;
+        border-radius: 22px !important;
+    }
+}
+
 @media (max-width: 700px) {
     .Quantity-Controls-Basket .BasketChangeQuantityButton {
         width: 38px;

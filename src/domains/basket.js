@@ -417,6 +417,18 @@ function updateBasket() {
 
         basketContainer.innerHTML = "";
 
+        const basketLayout = document.createElement("div");
+        basketLayout.className = "BasketLayout";
+
+        const basketMain = document.createElement("div");
+        basketMain.className = "BasketLayoutMain";
+
+        const basketAside = document.createElement("aside");
+        basketAside.className = "BasketLayoutAside";
+
+        basketLayout.append(basketMain, basketAside);
+        basketContainer.appendChild(basketLayout);
+
         // Ensure option chips + layout overrides are available
         try { __ssEnsureOptionChipStyles(); } catch { }
 
@@ -654,11 +666,13 @@ function updateBasket() {
             const [key, item] = entries[__i];
             const product = __ssProductByName ? (__ssProductByName.get(item?.name || "") || null) : null;
             const productDiv = basketRowComponent()?.createBasketRow?.(key, item, product) || document.createElement("div");
-            basketContainer.appendChild(productDiv);
+            basketMain.appendChild(productDiv);
         }
         // -------- Receipt (checkout summary) --------
         const receiptDiv = document.createElement("div");
         receiptDiv.classList.add("BasketReceipt");
+
+        let incentivesHTML = "";
 
         let receiptContent = `<div class="Basket-Item-Pay"><table class="ReceiptTable">`;
 
@@ -721,7 +735,7 @@ function updateBasket() {
         receiptContent += `</table></div>`;
 
         // Incentive block (discount tiers / add-ons)
-        try { receiptContent += __ssRenderCartIncentivesHTML(totalSum, { inc: __ssInc, fullCart: __fullCart }); } catch { }
+        try { incentivesHTML = __ssRenderCartIncentivesHTML(totalSum, { inc: __ssInc, fullCart: __fullCart }) || ""; } catch { incentivesHTML = ""; }
 
         receiptContent += `
       <div class="ReceiptFooter">
@@ -735,7 +749,14 @@ function updateBasket() {
     `;
 
         receiptDiv.innerHTML = receiptContent;
-        basketContainer.appendChild(receiptDiv);
+        basketAside.appendChild(receiptDiv);
+
+        if (String(incentivesHTML || "").trim()) {
+            const incentivesDiv = document.createElement("div");
+            incentivesDiv.className = "BasketIncentivesRail";
+            incentivesDiv.innerHTML = incentivesHTML;
+            basketMain.appendChild(incentivesDiv);
+        }
 
         // Restore scroll position after DOM rebuild.
         // Use rAF to ensure layout is settled before restoring.
