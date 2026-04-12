@@ -11362,6 +11362,50 @@
 }
 
 @media (max-width: 680px) {
+    .ss-auth-page,
+    .ss-review-entry-page,
+    .Product_Reviews_Section {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .ss-auth-page,
+    .ss-review-entry-page {
+        padding: 4.444vw 1.111vw 6.667vw !important;
+    }
+
+    .ss-auth-card,
+    .ss-review-entry-page .ss-auth-card.ss-review-entry-card,
+    .ss-product-reviews-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .ss-auth-card {
+        border-radius: 3.889vw !important;
+    }
+
+    .ss-auth-hero,
+    .ss-auth-panel {
+        padding-left: 4.167vw !important;
+        padding-right: 4.167vw !important;
+    }
+
+    .ss-review-entry-page .ss-auth-card.ss-review-entry-card {
+        padding: 4.167vw !important;
+        border-radius: 3.889vw !important;
+    }
+
+    .ss-product-reviews-shell {
+        padding: 4.167vw !important;
+        border-radius: 3.889vw !important;
+    }
+}
+
+@media (max-width: 680px) {
     .Product_Detail_Page .ProductPageQuantityContainer {
         display: grid !important;
         grid-template-columns: minmax(28.889vw, auto) minmax(0, 1fr) !important;
