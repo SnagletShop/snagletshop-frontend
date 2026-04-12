@@ -10698,6 +10698,172 @@
     }
 }
 
+@media (max-width: 680px) {
+    .settings-panel.settings-panel--modern {
+        padding: 0 3.611vw 7.222vw !important;
+    }
+
+    .settings-panel--modern .settings-hero {
+        gap: 1.944vw;
+        margin-bottom: 2.778vw;
+        padding: 2.778vw 0 2.222vw;
+        border-bottom: 0 !important;
+    }
+
+    .settings-panel--modern .settings-hero-copy {
+        gap: 1.389vw;
+    }
+
+    .settings-panel--modern .settings-hero h2 {
+        font-size: 6.389vw;
+        line-height: 1.05;
+    }
+
+    .settings-panel--modern .settings-hero p {
+        font-size: 3.5vw;
+        line-height: 1.45;
+        max-width: none;
+    }
+
+    .settings-panel--modern .settings-hero-summary {
+        display: none;
+    }
+
+    .settings-panel--modern .settings-grid,
+    .settings-panel--modern .settings-stack,
+    .settings-panel--modern .settings-grid--top {
+        gap: 0;
+        margin-bottom: 0;
+    }
+
+    .settings-panel--modern .settings-card {
+        padding: 4.444vw 0 !important;
+        border: 0 !important;
+        border-bottom: 0.278vw solid color-mix(in srgb, var(--Borders_Colour) 44%, transparent) !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .settings-panel--modern .settings-card:last-child {
+        border-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .settings-panel--modern .settings-card-head {
+        margin-bottom: 2.5vw;
+        gap: 1.389vw;
+    }
+
+    .settings-panel--modern .settings-card-kicker {
+        font-size: 2.222vw;
+        letter-spacing: 0.02em;
+        text-transform: none;
+        opacity: 0.8;
+    }
+
+    .settings-panel--modern .settings-card h3 {
+        margin: 0.278vw 0 1.111vw !important;
+        font-size: 5.278vw !important;
+        letter-spacing: -0.02em;
+    }
+
+    .settings-panel--modern .settings-card-head p,
+    .settings-panel--modern .settings-card > p,
+    .settings-panel--modern .settings-card li,
+    .settings-panel--modern .contact-note {
+        font-size: 3.444vw;
+        line-height: 1.5;
+    }
+
+    .settings-panel--modern .settings-inline-setting {
+        gap: 3.333vw;
+        padding: 3.333vw 0;
+        border-top: 0.278vw solid color-mix(in srgb, var(--Borders_Colour) 32%, transparent);
+    }
+
+    .settings-panel--modern .settings-inline-copy {
+        gap: 1.111vw;
+    }
+
+    .settings-panel--modern .settings-inline-copy label,
+    .settings-panel--modern .settings-card > label,
+    .settings-panel--modern #contact-form label {
+        margin-bottom: 1.667vw !important;
+        font-size: 3.611vw !important;
+        font-weight: 600 !important;
+    }
+
+    .settings-panel--modern .settings-inline-help,
+    .settings-panel--modern .settings-inline-value {
+        font-size: 2.944vw;
+        line-height: 1.4;
+    }
+
+    .settings-panel--modern .switch {
+        width: 13.333vw;
+        height: 8.056vw;
+    }
+
+    .settings-panel--modern .slider {
+        border-radius: 999vw;
+    }
+
+    .settings-panel--modern .slider::before {
+        width: 5.278vw;
+        height: 5.278vw;
+        left: 1.111vw;
+        bottom: 1.111vw;
+        box-shadow: 0 0.278vw 0.833vw color-mix(in srgb, #000 16%, transparent);
+    }
+
+    .settings-panel--modern .switch input:checked + .slider::before {
+        transform: translateX(5vw);
+    }
+
+    .settings-panel--modern .settings-card input,
+    .settings-panel--modern .settings-card textarea,
+    .settings-panel--modern .settings-card select,
+    .settings-panel--modern .ts-wrapper.single .ts-control {
+        min-height: 11.667vw;
+        padding: 0 3.611vw !important;
+        border: 0.278vw solid color-mix(in srgb, var(--Borders_Colour) 52%, transparent) !important;
+        border-radius: 3.611vw !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
+        font-size: 3.611vw !important;
+        box-shadow: none !important;
+    }
+
+    .settings-panel--modern .settings-card textarea,
+    .settings-panel--modern .MessageTextArea {
+        min-height: 37vw !important;
+        padding: 3.333vw 3.611vw !important;
+    }
+
+    .settings-panel--modern .ts-dropdown {
+        border-radius: 3.611vw !important;
+        box-shadow: none !important;
+    }
+
+    .settings-panel--modern .settings-card button,
+    .settings-panel--modern .clearDataButton {
+        width: 100% !important;
+        min-height: 11.111vw;
+        border-radius: 3.611vw !important;
+        font-size: 3.5vw !important;
+        font-weight: 700 !important;
+    }
+
+    .settings-panel--modern .settings-card h4 {
+        margin: 3.333vw 0 1.667vw;
+        font-size: 3.778vw;
+    }
+
+    .settings-panel--modern .settings-card ul {
+        margin: 2.222vw 0 0 4.444vw;
+    }
+}
+
 /* Minimal review and auth surfaces */
 .ss-auth-page,
 .ss-review-entry-page,
