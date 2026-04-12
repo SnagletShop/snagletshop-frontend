@@ -22,8 +22,41 @@
     return auth()?.consumeRedirect?.() || '/';
   }
 
+  function tryResolveInternalState(urlLike) {
+    const router = getRouter();
+    if (!router?.parseRoute || !router?.resolveStateFromRoute) return null;
+    try {
+      const parsed = new URL(String(urlLike || ''), window.location.origin);
+      if (parsed.origin !== window.location.origin) return null;
+      const route = router.parseRoute(parsed.href);
+      return router.resolveStateFromRoute(route, { allowDefaultCatalog: true }) || null;
+    } catch {}
+    return null;
+  }
+
+  function sameRouteState(a, b) {
+    try { return !!a && !!b && JSON.stringify(a) === JSON.stringify(b); } catch {}
+    return false;
+  }
+
   function redirectAfterAuth() {
     const next = defaultReturnUrl();
+    const nextState = tryResolveInternalState(next);
+    if (nextState?.action) {
+      try {
+        const stack = Array.isArray(window.userHistoryStack) ? window.userHistoryStack : [];
+        const index = Number.isInteger(window.currentIndex) ? window.currentIndex : -1;
+        const previousState = index > 0 ? stack[index - 1] : null;
+        if (sameRouteState(previousState, nextState) && window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+      } catch {}
+      try {
+        window.navigate?.(nextState.action, nextState.data || [], { replaceCurrent: true });
+        return;
+      } catch {}
+    }
     try { window.location.assign(next || '/'); } catch { window.location.href = next || '/'; }
   }
 

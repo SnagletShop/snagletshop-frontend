@@ -7294,9 +7294,11 @@
         align-items: center !important;
         justify-content: flex-end !important;
         gap: 1.667vw !important;
-        margin-left: auto !important;
         justify-self: end !important;
+        width: max-content !important;
         min-width: 0 !important;
+        padding-right: 1.111vw !important;
+        box-sizing: border-box !important;
     }
 
     .mobileLogo h1 {
@@ -7930,8 +7932,8 @@
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
         align-items: center !important;
         justify-items: stretch !important;
-        gap: 1.667vw !important;
-        padding-inline: 1.389vw !important;
+        gap: 0.833vw !important;
+        padding-inline: 1.111vw !important;
         box-sizing: border-box !important;
         white-space: nowrap !important;
     }
@@ -7959,12 +7961,12 @@
     }
 
     .product-card-rating-secondary {
-        justify-content: flex-end !important;
-        gap: 0.833vw !important;
+        justify-content: flex-start !important;
+        gap: 0.556vw !important;
         width: 100% !important;
         flex: none !important;
         border-left: 0 !important;
-        padding-left: 0 !important;
+        padding-left: 0.556vw !important;
         padding-right: 0 !important;
     }
 
@@ -7991,8 +7993,18 @@
     .product-card-sold-count {
         display: inline-flex !important;
         align-items: center !important;
+        gap: 0.278vw !important;
         min-width: 0 !important;
         font-size: 3vw !important;
+    }
+
+    .product-card-sold-count__value,
+    .product-card-sold-count__suffix {
+        display: inline-block !important;
+    }
+
+    .product-card-sold-count__suffix {
+        margin-left: 0 !important;
     }
 }
 
@@ -9735,7 +9747,7 @@
 .settings-panel.settings-panel--modern {
     width: min(1120px, calc(100vw - 48px)) !important;
     max-width: none !important;
-    margin: 18px auto 48px !important;
+    margin: 16px auto 40px !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -9747,27 +9759,28 @@
 
 .settings-panel--modern .settings-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
-    gap: 20px;
-    align-items: stretch;
-    margin-bottom: 20px;
-    padding: 22px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent);
-    border-radius: 24px;
-    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 94%, var(--SideBar_Background_Colour));
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items: start;
+    margin-bottom: 16px;
+    padding: 18px 0 16px;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .settings-panel--modern .settings-hero-copy {
     display: grid;
-    gap: 12px;
+    gap: 8px;
 }
 
 .settings-panel--modern .settings-eyebrow {
     color: var(--Muted_Text_Colour);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
 }
 
@@ -9775,73 +9788,75 @@
     margin: 0;
     color: var(--Default_Text_Colour);
     font-family: 'Inter', sans-serif;
-    font-size: clamp(30px, 2.7vw, 40px);
-    font-weight: 800;
-    line-height: 1.04;
-    letter-spacing: -0.04em;
+    font-size: clamp(28px, 2.4vw, 34px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
 }
 
 .settings-panel--modern .settings-hero p {
     margin: 0;
     max-width: 52ch;
     color: var(--Muted_Text_Colour);
-    font-size: 15px;
-    line-height: 1.58;
+    font-size: 14px;
+    line-height: 1.55;
 }
 
 .settings-panel--modern .settings-hero-summary {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
 .settings-panel--modern .settings-summary-card {
-    display: grid;
-    gap: 4px;
+    display: inline-grid;
+    gap: 2px;
     align-content: center;
-    min-height: 84px;
-    padding: 16px 18px;
-    border-radius: 18px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--SearchBar_Background_Colour));
+    min-height: 0;
+    min-width: 120px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 68%, transparent);
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 98%, var(--body_Background_Colour));
 }
 
 .settings-panel--modern .settings-summary-label {
     color: var(--Muted_Text_Colour);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
 .settings-panel--modern .settings-summary-card strong {
     color: var(--Default_Text_Colour);
-    font-size: 24px;
-    font-weight: 800;
+    font-size: 18px;
+    font-weight: 700;
     line-height: 1.1;
 }
 
 .settings-panel--modern .settings-grid {
     display: grid;
-    gap: 18px;
+    gap: 14px;
 }
 
 .settings-panel--modern .settings-grid--top {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-bottom: 18px;
+    margin-bottom: 14px;
 }
 
 .settings-panel--modern .settings-stack {
     display: grid;
-    gap: 18px;
+    gap: 14px;
 }
 
 .settings-panel--modern .settings-card {
     margin: 0 !important;
-    padding: 22px !important;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent) !important;
-    border-radius: 22px !important;
-    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    padding: 18px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    border-radius: 18px !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+    box-shadow: none !important;
 }
 
 .settings-panel--modern .settings-card:last-child {
@@ -9852,26 +9867,26 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
 .settings-panel--modern .settings-card-kicker {
     color: var(--Muted_Text_Colour);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
 .settings-panel--modern .settings-card h3 {
-    margin: 4px 0 8px !important;
+    margin: 4px 0 6px !important;
     color: var(--Default_Text_Colour);
     font-family: 'Inter', sans-serif;
-    font-size: 24px !important;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.025em;
+    font-size: 20px !important;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
 }
 
 .settings-panel--modern .settings-card-head p,
@@ -9879,33 +9894,33 @@
 .settings-panel--modern .settings-card li,
 .settings-panel--modern .contact-note {
     color: var(--Muted_Text_Colour);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.55;
 }
 
 .settings-panel--modern .settings-inline-setting {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 16px;
-    padding: 16px;
-    border-radius: 18px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 98%, var(--SearchBar_Background_Colour));
+    gap: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 64%, transparent);
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 99%, var(--body_Background_Colour));
 }
 
 .settings-panel--modern .settings-inline-copy {
     display: grid;
-    gap: 6px;
+    gap: 4px;
 }
 
 .settings-panel--modern .settings-inline-copy label,
 .settings-panel--modern .settings-card > label,
 .settings-panel--modern #contact-form label {
-    margin: 0 0 8px !important;
+    margin: 0 0 6px !important;
     background: transparent !important;
     color: var(--Default_Text_Colour) !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-weight: 700 !important;
     line-height: 1.4;
 }
@@ -9913,7 +9928,7 @@
 .settings-panel--modern .settings-inline-help,
 .settings-panel--modern .settings-inline-value {
     color: var(--Muted_Text_Colour);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -9968,29 +9983,29 @@
 .settings-panel--modern .settings-card select,
 .settings-panel--modern .ts-wrapper.single .ts-control {
     width: 100% !important;
-    min-height: 52px;
+    min-height: 48px;
     margin: 0 !important;
-    padding: 0 16px !important;
+    padding: 0 14px !important;
     border: 1px solid color-mix(in srgb, var(--Borders_Colour) 74%, transparent) !important;
-    border-radius: 14px !important;
+    border-radius: 12px !important;
     background: color-mix(in srgb, var(--TopBar_Background_Colour) 96%, var(--SearchBar_Background_Colour)) !important;
     color: var(--Default_Text_Colour) !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
     font-family: 'Inter', 'Afacad', sans-serif !important;
-    font-size: 15px !important;
+    font-size: 14px !important;
 }
 
 .settings-panel--modern .settings-card textarea,
 .settings-panel--modern .MessageTextArea {
-    min-height: 180px !important;
-    padding: 14px 16px !important;
+    min-height: 160px !important;
+    padding: 12px 14px !important;
     resize: vertical;
 }
 
 .settings-panel--modern #contact-form {
     display: grid;
-    gap: 14px;
+    gap: 12px;
 }
 
 .settings-panel--modern .settings-card input:focus-visible,
@@ -10005,8 +10020,8 @@
 .settings-panel--modern .ts-wrapper.single .ts-control {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    padding-right: 16px !important;
+    gap: 6px !important;
+    padding-right: 14px !important;
 }
 
 .settings-panel--modern .ts-wrapper.single .ts-control .item {
@@ -10023,16 +10038,16 @@
 }
 
 .settings-panel--modern .ts-dropdown {
-    margin-top: 8px;
+    margin-top: 6px;
     border: 1px solid color-mix(in srgb, var(--Borders_Colour) 80%, transparent) !important;
-    border-radius: 16px !important;
+    border-radius: 12px !important;
     background: color-mix(in srgb, var(--SearchBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12) !important;
+    box-shadow: none !important;
     overflow: hidden;
 }
 
 .settings-panel--modern .ts-dropdown .option {
-    padding: 12px 14px !important;
+    padding: 10px 12px !important;
     color: var(--Default_Text_Colour) !important;
 }
 
@@ -10043,26 +10058,26 @@
 .settings-panel--modern .settings-card button,
 .settings-panel--modern .clearDataButton {
     width: auto !important;
-    min-height: 48px;
+    min-height: 44px;
     margin: 0 !important;
-    padding: 0 18px !important;
+    padding: 0 16px !important;
     border: 1px solid transparent !important;
-    border-radius: 14px !important;
+    border-radius: 12px !important;
     background: var(--Primary_Button_Colour) !important;
     color: #ffffff !important;
     font-family: 'Inter', 'Afacad', sans-serif !important;
-    font-size: 15px !important;
+    font-size: 14px !important;
     font-weight: 800 !important;
     cursor: pointer;
     transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
-    box-shadow: 0 10px 18px color-mix(in srgb, var(--Primary_Button_Colour) 16%, transparent);
+    box-shadow: none !important;
 }
 
 .settings-panel--modern .settings-card button:hover,
 .settings-panel--modern .clearDataButton:hover {
-    transform: translateY(-1px);
+    transform: none;
     background: var(--Primary_Button_Hover) !important;
-    box-shadow: 0 14px 22px color-mix(in srgb, var(--Primary_Button_Colour) 18%, transparent);
+    box-shadow: none !important;
 }
 
 .settings-panel--modern .settings-card--danger button,
@@ -10077,10 +10092,10 @@
 }
 
 .settings-panel--modern .settings-card h4 {
-    margin: 18px 0 8px;
+    margin: 14px 0 6px;
     color: var(--Default_Text_Colour);
-    font-size: 16px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 .settings-panel--modern .settings-card strong {
@@ -10088,12 +10103,12 @@
 }
 
 .settings-panel--modern .settings-card ul {
-    margin: 10px 0 0 20px;
+    margin: 8px 0 0 18px;
     padding: 0;
 }
 
 .settings-panel--modern .contact-note {
-    margin-top: 2px;
+    margin-top: 0;
 }
 
 .settings-panel--modern .contact-note a {
@@ -10102,7 +10117,7 @@
 
 .dark-mode .settings-panel--modern .settings-hero,
 .dark-mode .settings-panel--modern .settings-card {
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    box-shadow: none !important;
 }
 
 @media (max-width: 680px) {
@@ -10114,110 +10129,114 @@
 
     .settings-panel--modern .settings-hero {
         grid-template-columns: 1fr;
-        gap: 3.333vw;
-        margin-bottom: 3.889vw;
-        padding: 4.444vw;
-        border-radius: 4.722vw;
-        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour));
+        gap: 2.778vw;
+        margin-bottom: 3.333vw;
+        padding: 3.889vw 0 3.333vw;
+        border-radius: 0;
+        border: 0 !important;
+        border-bottom: 0.278vw solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+        background: transparent;
         box-shadow: none;
     }
 
     .settings-panel--modern .settings-hero-copy {
-        gap: 2.5vw;
+        gap: 1.944vw;
     }
 
     .settings-panel--modern .settings-eyebrow {
-        font-size: 2.5vw;
-        letter-spacing: 0.16em;
+        font-size: 2.222vw;
+        letter-spacing: 0.12em;
     }
 
     .settings-panel--modern .settings-hero h2 {
-        font-size: 6.389vw;
-        letter-spacing: -0.035em;
+        font-size: 5.556vw;
+        letter-spacing: -0.02em;
     }
 
     .settings-panel--modern .settings-hero p {
-        font-size: 3.333vw;
-        line-height: 1.55;
+        font-size: 3.056vw;
+        line-height: 1.5;
         max-width: none;
     }
 
     .settings-panel--modern .settings-hero-summary {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 2.5vw;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2.222vw;
     }
 
     .settings-panel--modern .settings-summary-card {
         min-height: 0;
-        padding: 3.333vw 3.611vw;
-        border-radius: 3.889vw;
-        gap: 0.833vw;
+        min-width: 27vw;
+        padding: 2.778vw 3.056vw;
+        border-radius: 3.333vw;
+        gap: 0.556vw;
     }
 
     .settings-panel--modern .settings-summary-label {
-        font-size: 2.222vw;
+        font-size: 2.056vw;
     }
 
     .settings-panel--modern .settings-summary-card strong {
-        font-size: 3.611vw;
+        font-size: 3.333vw;
         line-height: 1.2;
     }
 
     .settings-panel--modern .settings-grid--top,
     .settings-panel--modern .settings-stack {
-        gap: 3.333vw;
+        gap: 2.778vw;
     }
 
     .settings-panel--modern .settings-grid--top {
         grid-template-columns: 1fr;
-        margin-bottom: 3.333vw;
+        margin-bottom: 2.778vw;
     }
 
     .settings-panel--modern .settings-card {
-        padding: 4.167vw !important;
-        border-radius: 4.444vw !important;
+        padding: 3.889vw !important;
+        border-radius: 3.889vw !important;
         box-shadow: none !important;
     }
 
     .settings-panel--modern .settings-card-head {
-        gap: 2.778vw;
-        margin-bottom: 3.333vw;
+        gap: 2.222vw;
+        margin-bottom: 2.778vw;
     }
 
     .settings-panel--modern .settings-card-kicker {
-        font-size: 2.5vw;
+        font-size: 2.222vw;
     }
 
     .settings-panel--modern .settings-card h3 {
-        margin: 0.833vw 0 1.667vw !important;
-        font-size: 5.278vw !important;
+        margin: 0.556vw 0 1.389vw !important;
+        font-size: 4.722vw !important;
     }
 
     .settings-panel--modern .settings-card-head p,
     .settings-panel--modern .settings-card > p,
     .settings-panel--modern .settings-card li,
     .settings-panel--modern .contact-note {
-        font-size: 3.333vw;
-        line-height: 1.55;
+        font-size: 3.056vw;
+        line-height: 1.5;
     }
 
     .settings-panel--modern .settings-inline-setting {
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 3.056vw;
-        padding: 3.889vw 4.167vw;
-        border-radius: 3.889vw;
+        gap: 2.5vw;
+        padding: 3.333vw 3.611vw;
+        border-radius: 3.333vw;
     }
 
     .settings-panel--modern .settings-inline-copy label,
     .settings-panel--modern .settings-card > label,
     .settings-panel--modern #contact-form label {
-        font-size: 3.611vw !important;
-        margin-bottom: 2.222vw !important;
+        font-size: 3.333vw !important;
+        margin-bottom: 1.667vw !important;
     }
 
     .settings-panel--modern .settings-inline-help,
     .settings-panel--modern .settings-inline-value {
-        font-size: 2.778vw;
+        font-size: 2.5vw;
     }
 
     .settings-panel--modern .switch {
@@ -10240,37 +10259,524 @@
     .settings-panel--modern .settings-card textarea,
     .settings-panel--modern .settings-card select,
     .settings-panel--modern .ts-wrapper.single .ts-control {
-        min-height: 12.222vw;
-        padding: 0 4.167vw !important;
-        border-radius: 3.611vw !important;
-        font-size: 3.889vw !important;
+        min-height: 11.667vw;
+        padding: 0 3.611vw !important;
+        border-radius: 3.056vw !important;
+        font-size: 3.611vw !important;
     }
 
     .settings-panel--modern .settings-card textarea,
     .settings-panel--modern .MessageTextArea {
-        min-height: 46.111vw !important;
-        padding: 3.611vw 4.167vw !important;
+        min-height: 40vw !important;
+        padding: 3.333vw 3.611vw !important;
     }
 
     .settings-panel--modern #contact-form {
-        gap: 3.333vw;
+        gap: 2.778vw;
     }
 
     .settings-panel--modern .settings-card button,
     .settings-panel--modern .clearDataButton {
         width: 100% !important;
-        min-height: 11.944vw;
-        padding: 0 4.444vw !important;
-        border-radius: 3.611vw !important;
-        font-size: 3.611vw !important;
+        min-height: 11.111vw;
+        padding: 0 3.889vw !important;
+        border-radius: 3.056vw !important;
+        font-size: 3.333vw !important;
     }
 
     .settings-panel--modern .settings-card h4 {
-        margin: 4.444vw 0 2.222vw;
-        font-size: 4.167vw;
+        margin: 3.333vw 0 1.667vw;
+        font-size: 3.889vw;
     }
 
     .settings-panel--modern .settings-card ul {
-        margin: 2.778vw 0 0 5vw;
+        margin: 2.222vw 0 0 4.444vw;
+    }
+}
+
+/* Minimal review and auth surfaces */
+.ss-auth-page,
+.ss-review-entry-page,
+.Product_Reviews_Section {
+    width: min(1360px, calc(100vw - 56px)) !important;
+    margin: 0 auto !important;
+}
+
+.ss-auth-page {
+    padding: 18px 0 42px !important;
+}
+
+.ss-auth-card,
+.ss-product-reviews-shell {
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 82%, transparent) !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-card {
+    grid-template-columns: minmax(320px, 0.92fr) minmax(520px, 1.18fr) !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+}
+
+.ss-auth-card::before,
+.ss-review-entry-card::before,
+.ss-product-reviews-shell::before {
+    content: none !important;
+    display: none !important;
+}
+
+.ss-auth-hero {
+    padding: 30px 30px 28px !important;
+    gap: 18px !important;
+    border-right: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 86%, var(--body_Background_Colour)) !important;
+}
+
+.ss-auth-brand {
+    margin-bottom: 8px !important;
+}
+
+.ss-auth-brand-wordmark {
+    font-size: clamp(46px, 4.2vw, 64px) !important;
+    letter-spacing: -0.05em !important;
+}
+
+.ss-auth-copy {
+    gap: 10px !important;
+}
+
+.ss-auth-copy h2 {
+    font-size: clamp(36px, 3.4vw, 54px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.05em !important;
+    margin: 0 !important;
+}
+
+.ss-auth-copy p {
+    max-width: 34ch !important;
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+}
+
+.ss-auth-benefits {
+    gap: 14px !important;
+}
+
+.ss-auth-benefit,
+.ss-auth-note-card,
+.ss-auth-register-preview,
+.ss-auth-inline-note,
+.ss-auth-status {
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 95%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-note-card {
+    padding: 16px 18px !important;
+}
+
+.ss-auth-panel {
+    padding: 30px !important;
+    background: transparent !important;
+}
+
+.ss-auth-panel-head {
+    margin-bottom: 20px !important;
+}
+
+.ss-auth-panel-head h3 {
+    font-size: clamp(28px, 2.2vw, 34px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.03em !important;
+}
+
+.ss-auth-panel-head p {
+    color: var(--Muted_Text_Colour) !important;
+}
+
+.ss-auth-form,
+.ss-review-form {
+    gap: 16px !important;
+}
+
+.ss-auth-field input,
+.ss-review-field input,
+.ss-review-field select,
+.ss-review-field textarea {
+    border-radius: 14px !important;
+    box-shadow: none !important;
+}
+
+.ss-review-entry-page {
+    padding: 18px 0 42px !important;
+}
+
+.ss-review-entry-page .ss-auth-card.ss-review-entry-card {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+    padding: 28px !important;
+    border-radius: 24px !important;
+    overflow: visible !important;
+}
+
+.ss-review-entry-page .ss-auth-copy {
+    max-width: none !important;
+}
+
+.ss-review-entry-page .ss-review-entry-head {
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+}
+
+.ss-review-entry-page .ss-review-entry-title {
+    font-size: clamp(34px, 3vw, 42px) !important;
+    line-height: 1.04 !important;
+    letter-spacing: -0.04em !important;
+}
+
+.ss-review-entry-page .ss-auth-copy p {
+    max-width: 72ch !important;
+}
+
+.ss-review-entry-page .ss-review-entry-product {
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    gap: 20px !important;
+    padding: 18px 20px !important;
+    border-radius: 20px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 82%, var(--body_Background_Colour)) !important;
+}
+
+.ss-review-entry-page .ss-review-entry-product-media {
+    width: 128px !important;
+    border-radius: 18px !important;
+}
+
+.ss-review-entry-page .ss-review-entry-product-name {
+    font-size: 22px !important;
+}
+
+.ss-review-entry-page .ss-review-entry-body {
+    gap: 18px !important;
+}
+
+.ss-review-entry-page .ss-review-form,
+.ss-review-entry-page .ss-review-purchases {
+    padding: 22px !important;
+    border-radius: 20px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 95%, var(--body_Background_Colour)) !important;
+}
+
+.ss-review-entry-page .ss-review-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+}
+
+.ss-review-entry-page .ss-review-btn,
+.ss-auth-page .ss-review-btn {
+    min-height: 46px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+}
+
+.ss-product-reviews-shell {
+    position: relative !important;
+    overflow: visible !important;
+    width: 100% !important;
+    margin-top: 24px !important;
+    padding: 26px 28px !important;
+    border-radius: 24px !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 97%, var(--body_Background_Colour)) !important;
+}
+
+.ss-product-reviews-head {
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+    margin-bottom: 18px !important;
+}
+
+.ss-product-reviews-title {
+    font-size: clamp(30px, 2.5vw, 40px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    margin: 0 !important;
+}
+
+.ss-review-muted {
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+}
+
+.ss-review-summary,
+.ss-review-summary--empty {
+    min-width: 260px !important;
+    padding: 16px 18px !important;
+    border-radius: 18px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 84%, var(--body_Background_Colour)) !important;
+    box-shadow: none !important;
+}
+
+.ss-review-gallery {
+    gap: 14px !important;
+    margin-bottom: 20px !important;
+    padding: 18px !important;
+    border-radius: 20px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 84%, var(--body_Background_Colour)) !important;
+}
+
+.ss-review-gallery-head {
+    align-items: center !important;
+}
+
+.ss-review-gallery-title {
+    color: var(--Default_Text_Colour) !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+}
+
+.ss-review-gallery-strip {
+    gap: 12px !important;
+}
+
+.ss-review-gallery-item {
+    border-radius: 16px !important;
+    box-shadow: none !important;
+}
+
+.ss-product-reviews-list {
+    gap: 16px !important;
+}
+
+.ss-review-card {
+    padding: 20px !important;
+    border-radius: 20px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 95%, var(--body_Background_Colour)) !important;
+    box-shadow: none !important;
+}
+
+.ss-review-card-head {
+    align-items: flex-start !important;
+}
+
+.ss-review-card-avatar {
+    box-shadow: none !important;
+}
+
+.ss-review-card-meta,
+.ss-review-card-text {
+    color: var(--Muted_Text_Colour) !important;
+}
+
+.ss-review-card-text {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+}
+
+.ss-review-card-images {
+    gap: 10px !important;
+}
+
+.ss-review-card-image {
+    border-radius: 14px !important;
+}
+
+.ss-review-empty {
+    padding: 22px !important;
+    border-radius: 18px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 84%, var(--body_Background_Colour)) !important;
+    box-shadow: none !important;
+}
+
+.ss-review-more {
+    margin-top: 18px !important;
+}
+
+.dark-mode .ss-auth-card,
+.dark-mode .ss-product-reviews-shell,
+.dark-mode .ss-review-card,
+.dark-mode .ss-review-gallery,
+.dark-mode .ss-review-empty,
+.dark-mode .ss-review-summary,
+.dark-mode .ss-review-summary--empty {
+    box-shadow: none !important;
+}
+
+@media (max-width: 680px) {
+    .ss-auth-page,
+    .ss-review-entry-page,
+    .Product_Reviews_Section {
+        width: 100% !important;
+    }
+
+    .ss-auth-page {
+        padding: 4.444vw 0 6.667vw !important;
+    }
+
+    .ss-auth-card {
+        grid-template-columns: 1fr !important;
+        border-radius: 4.444vw !important;
+    }
+
+    .ss-auth-hero {
+        padding: 4.722vw 4.444vw 4.167vw !important;
+        gap: 2.778vw !important;
+        border-right: 0 !important;
+        border-bottom: 0.278vw solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    }
+
+    .ss-auth-brand-wordmark {
+        font-size: 10.278vw !important;
+    }
+
+    .ss-auth-copy h2 {
+        font-size: 8.333vw !important;
+    }
+
+    .ss-auth-copy p {
+        max-width: none !important;
+        font-size: 3.611vw !important;
+    }
+
+    .ss-auth-benefits {
+        gap: 2.778vw !important;
+    }
+
+    .ss-auth-benefit,
+    .ss-auth-note-card,
+    .ss-auth-register-preview,
+    .ss-auth-inline-note,
+    .ss-auth-status {
+        border-radius: 3.611vw !important;
+    }
+
+    .ss-auth-panel {
+        padding: 4.444vw !important;
+    }
+
+    .ss-auth-panel-head {
+        margin-bottom: 4.167vw !important;
+    }
+
+    .ss-auth-panel-head h3 {
+        font-size: 6.389vw !important;
+    }
+
+    .ss-review-entry-page {
+        padding: 4.444vw 0 6.667vw !important;
+    }
+
+    .ss-review-entry-page .ss-auth-card.ss-review-entry-card {
+        padding: 4.444vw !important;
+        gap: 4.167vw !important;
+        border-radius: 4.444vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-entry-head {
+        gap: 3.611vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-entry-title {
+        font-size: 7.222vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-entry-product {
+        grid-template-columns: 22vw minmax(0, 1fr) !important;
+        gap: 4.167vw !important;
+        padding: 4.167vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-entry-product-media {
+        width: 22vw !important;
+        border-radius: 3.333vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-entry-product-name {
+        font-size: 5.278vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-form,
+    .ss-review-entry-page .ss-review-purchases {
+        padding: 4.167vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    .ss-review-entry-page .ss-review-form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 3.333vw !important;
+    }
+
+    .ss-product-reviews-shell {
+        margin-top: 4.444vw !important;
+        padding: 4.444vw !important;
+        border-radius: 4.444vw !important;
+    }
+
+    .ss-product-reviews-head {
+        gap: 3.611vw !important;
+        margin-bottom: 4.167vw !important;
+    }
+
+    .ss-product-reviews-title {
+        font-size: 5.833vw !important;
+    }
+
+    .ss-review-muted {
+        font-size: 3.056vw !important;
+    }
+
+    .ss-review-summary,
+    .ss-review-summary--empty {
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 3.611vw 4.167vw !important;
+        border-radius: 3.889vw !important;
+    }
+
+    .ss-review-gallery {
+        gap: 2.778vw !important;
+        margin-bottom: 4.167vw !important;
+        padding: 3.611vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    .ss-review-gallery-title {
+        font-size: 3.611vw !important;
+    }
+
+    .ss-review-gallery-strip {
+        gap: 2.5vw !important;
+    }
+
+    .ss-product-reviews-list {
+        gap: 3.333vw !important;
+    }
+
+    .ss-review-card {
+        padding: 4.167vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    .ss-review-card-text {
+        font-size: 3.333vw !important;
+    }
+
+    .ss-review-empty {
+        padding: 4.444vw !important;
+        border-radius: 4.167vw !important;
     }
 }
