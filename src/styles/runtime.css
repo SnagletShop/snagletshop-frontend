@@ -639,6 +639,67 @@ html.dark-mode .ss-ci-btn {
         padding: 0 26px 18px !important;
     }
 
+    .BasketSummaryItems {
+        display: grid !important;
+        gap: 0 !important;
+        margin-top: -2px !important;
+        padding: 2px 0 6px !important;
+    }
+
+    .BasketSummaryItem {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        gap: 16px !important;
+        padding: 10px 0 !important;
+    }
+
+    .BasketSummaryItem + .BasketSummaryItem {
+        border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 52%, transparent) !important;
+    }
+
+    .BasketSummaryItemCopy {
+        min-width: 0 !important;
+        display: grid !important;
+        gap: 4px !important;
+    }
+
+    .BasketSummaryItemName {
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.94rem !important;
+        line-height: 1.35 !important;
+        color: color-mix(in srgb, var(--Default_Text_Colour) 88%, transparent) !important;
+    }
+
+    .BasketSummaryItemQty {
+        font-weight: 700 !important;
+        color: color-mix(in srgb, var(--Default_Text_Colour) 70%, transparent) !important;
+        margin-right: 4px !important;
+    }
+
+    .BasketSummaryItemMeta {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.82rem !important;
+        line-height: 1.35 !important;
+        color: color-mix(in srgb, var(--Default_Text_Colour) 62%, transparent) !important;
+        white-space: normal !important;
+    }
+
+    .BasketSummaryItemValue {
+        flex: 0 0 auto !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        white-space: nowrap !important;
+        color: var(--Default_Text_Colour) !important;
+        text-align: right !important;
+    }
+
     .BasketSummaryLine {
         display: flex !important;
         justify-content: space-between !important;

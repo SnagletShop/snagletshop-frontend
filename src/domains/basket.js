@@ -486,6 +486,31 @@
         ? `<div class="BasketSummaryLine BasketSummaryLine--save"><span class="BasketSummaryLabel">You Save</span><span class="BasketSummaryValue BasketSummaryValue--accent" data-eur="${discountEUR.toFixed(2)}">- ${discountEUR.toFixed(2)}&euro;</span></div>`
         : '';
       const freeShippingText = `Free shipping on orders over ${freeShippingThreshold.toFixed(2)}&euro;`;
+      const summaryItemsHTML = entries.map(([key, item]) => {
+        const product = productByName ? (productByName.get(item?.name || '') || null) : null;
+        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+        const name = __ssEscHtml(item?.name || product?.name || 'Product');
+        const lineTotal = round2((Number(parseFloat(item?.price) || 0) || 0) * qty);
+        let optionLabel = '';
+        try {
+          const selected = window.__ssGetSelectedOptionsForDisplay ? window.__ssGetSelectedOptionsForDisplay(item, product) : [];
+          optionLabel = selected && selected.length && window.__ssFormatSelectedOptionsDisplay
+            ? String(window.__ssFormatSelectedOptionsDisplay(selected) || '').trim()
+            : String(item?.selectedOption || '').trim();
+        } catch {}
+        const optionMeta = optionLabel
+          ? `<span class="BasketSummaryItemMeta">${__ssEscHtml(optionLabel)}</span>`
+          : '';
+        return `
+          <div class="BasketSummaryItem">
+            <div class="BasketSummaryItemCopy">
+              <span class="BasketSummaryItemName"><span class="BasketSummaryItemQty">${qty}&times;</span> ${name}</span>
+              ${optionMeta}
+            </div>
+            <span class="BasketSummaryItemValue" data-eur="${lineTotal.toFixed(2)}">${lineTotal.toFixed(2)}&euro;</span>
+          </div>
+        `;
+      }).join('');
       const receiptDiv = document.createElement('div');
       receiptDiv.className = 'BasketReceipt';
 
@@ -498,6 +523,9 @@
             <div class="BasketSummaryLine">
               <span class="BasketSummaryLabel">Subtotal (${itemCount} item${itemCount === 1 ? '' : 's'})</span>
               <span class="BasketSummaryValue" data-eur="${round2(totalSum).toFixed(2)}">${round2(totalSum).toFixed(2)}&euro;</span>
+            </div>
+            <div class="BasketSummaryItems">
+              ${summaryItemsHTML}
             </div>
             ${saveLine}
             <div class="BasketSummaryDivider"></div>
