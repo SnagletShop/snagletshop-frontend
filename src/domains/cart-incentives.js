@@ -25,7 +25,7 @@ function __ssGetCartIncentivesConfig() {
   if (fallbackCfg && typeof fallbackCfg === "object") return fallbackCfg;
   return {
     enabled: true,
-    freeShipping: { enabled: false, thresholdEUR: 0, shippingFeeEUR: 0 },
+    freeShipping: { enabled: true, isFree: true, thresholdEUR: 0, shippingFeeEUR: 0, applyTariffToShipping: true },
     tierDiscount: { enabled: true, applyToDiscountedItems: false, tiers: [{ minEUR: 25, pct: 3 }, { minEUR: 40, pct: 6 }, { minEUR: 60, pct: 10 }] },
     bundles: { enabled: false, bundles: [] }
   };
@@ -74,7 +74,7 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart, pricingCtx = {}
   try {
     const cfg = __ssGetCartIncentivesConfig();
     const enabled = !!cfg?.enabled;
-    const out = { enabled, baseTotalEUR: round2(baseTotalEUR), tierPct: 0, tierDiscountEUR: 0, bundlePct: 0, bundleDiscountEUR: 0, shippingFeeEUR: 0, freeShippingEligible: false, subtotalAfterDiscountsEUR: round2(baseTotalEUR), totalWithShippingEUR: round2(baseTotalEUR) };
+    const out = { enabled, baseTotalEUR: round2(baseTotalEUR), tierPct: 0, tierDiscountEUR: 0, bundlePct: 0, bundleDiscountEUR: 0, shippingFeeEUR: 0, freeShippingEligible: false, hasFreeShipping: false, freeShippingThresholdEUR: 0, shippingMode: 'free', applyTariffToShipping: true, subtotalAfterDiscountsEUR: round2(baseTotalEUR), totalWithShippingEUR: round2(baseTotalEUR) };
     if (!enabled) return out;
     let subtotal = Number(baseTotalEUR) || 0;
     let tierEligibleSubtotal = 0;
@@ -125,9 +125,34 @@ function __ssComputeCartIncentivesClient(baseTotalEUR, fullCart, pricingCtx = {}
     }
     subtotal = Math.max(0, round2(subtotal));
     out.subtotalAfterDiscountsEUR = subtotal;
-    const ship = cfg?.freeShipping; const enabledShip = !!ship?.enabled; const fee = Math.max(0, Number(ship?.shippingFeeEUR || 0) || 0); const thr = Math.max(0, Number(ship?.thresholdEUR || 0) || 0);
-    if (enabledShip && fee > 0 && thr > 0) { out.freeShippingEligible = subtotal >= thr; out.shippingFeeEUR = out.freeShippingEligible ? 0 : round2(fee); out.totalWithShippingEUR = round2(subtotal + out.shippingFeeEUR); }
-    else { out.freeShippingEligible = true; out.shippingFeeEUR = 0; out.totalWithShippingEUR = subtotal; }
+    const ship = cfg?.freeShipping || {};
+    const enabledShip = ship?.enabled !== false;
+    const fee = Math.max(0, Number(ship?.shippingFeeEUR || 0) || 0);
+    const thr = Math.max(0, Number(ship?.thresholdEUR || 0) || 0);
+    const hasExplicitFreeFlag = ship?.isFree != null;
+    const legacyThresholdMode = !hasExplicitFreeFlag && enabledShip && fee > 0 && thr > 0;
+    out.freeShippingThresholdEUR = thr;
+    out.applyTariffToShipping = ship?.applyTariffToShipping !== false;
+    if (!enabledShip) {
+      out.freeShippingEligible = true;
+      out.hasFreeShipping = true;
+      out.shippingMode = 'free';
+      out.shippingFeeEUR = 0;
+      out.totalWithShippingEUR = subtotal;
+    } else if (legacyThresholdMode) {
+      out.shippingMode = 'threshold';
+      out.freeShippingEligible = subtotal >= thr;
+      out.hasFreeShipping = out.freeShippingEligible;
+      out.shippingFeeEUR = out.freeShippingEligible ? 0 : round2(fee);
+      out.totalWithShippingEUR = round2(subtotal + out.shippingFeeEUR);
+    } else {
+      const isFree = hasExplicitFreeFlag ? !!ship.isFree : !(fee > 0);
+      out.shippingMode = isFree ? 'free' : 'paid';
+      out.freeShippingEligible = isFree;
+      out.hasFreeShipping = isFree;
+      out.shippingFeeEUR = isFree ? 0 : round2(fee);
+      out.totalWithShippingEUR = round2(subtotal + out.shippingFeeEUR);
+    }
     window.__ssLastIncentives = out;
     return out;
   } finally { window.__ssComputingIncentives = false; }
@@ -365,7 +390,7 @@ function __ssBuildProductHref(product, discount = null) {
   return `${window.location.origin}/?product=${nameEnc}${recoQ}`;
 }
 
-function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
+function __ssRenderCartIncentivesHTMLLegacy(totalSumEUR, opts = {}) {
   try {
     const cfg0 = __ssGetCartIncentivesConfig(); if (!cfg0?.enabled) return ''; __ssEnsureCartIncentiveStyles();
     const fullCart = (opts && Array.isArray(opts.fullCart)) ? opts.fullCart : (__ssGetFullCartPreferred());
@@ -376,12 +401,12 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     const tierScaleMax = (() => { const mins = tiers.map(t => Math.max(0, Number(t?.minEUR || 0) || 0)).filter(v => v > 0); const max = mins.length ? Math.max(...mins) : (nextTier ? nextTier.min : 0); return max > 0 ? max : (base > 0 ? base : 1); })();
     const tierProgressGlobal = Math.max(0, Math.min(100, (base / tierScaleMax) * 100));
     const tierTicksHTML = (() => { if (!tiers.length) return ''; const parts=[]; for (const t of tiers) { const min=Math.max(0, Number(t?.minEUR || 0) || 0); const pct=Math.max(0, Number(t?.pct || 0) || 0); if (!min || !pct) continue; const left=Math.max(0, Math.min(100, (min / tierScaleMax) * 100)); parts.push(`<span class="ss-ci-tick" style="left:${left.toFixed(2)}%"></span>`); parts.push(`<span class="ss-ci-ticklbl" style="left:${left.toFixed(2)}%">${pct}%</span>`); } return parts.length ? `<div class="ss-ci-ticks">${parts.join('')}</div>` : ''; })();
-    const shipCfg = cfg?.freeShipping || {}; const shipEnabled = !!shipCfg?.enabled && Number(shipCfg?.shippingFeeEUR || 0) > 0 && Number(shipCfg?.thresholdEUR || 0) > 0; const shipThr = Math.max(0, Number(shipCfg?.thresholdEUR || 0) || 0);
+    const shipCfg = cfg?.freeShipping || {}; const shipEnabled = shipCfg?.enabled !== false && shipCfg?.isFree == null && Number(shipCfg?.shippingFeeEUR || 0) > 0 && Number(shipCfg?.thresholdEUR || 0) > 0; const shipThr = Math.max(0, Number(shipCfg?.thresholdEUR || 0) || 0);
     const shipProg = shipEnabled ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
     const shipText = shipEnabled ? (base >= shipThr ? 'Free shipping unlocked' : (() => { const needEUR = Math.max(0, (shipThr - base)); return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`; })()) : '';
     const desired = nextTier ? Math.max(3, nextTier.min - base) : 0; const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 }; const configuredMaxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4)); const maxItems = (window.innerWidth <= 700) ? Math.min(configuredMaxItems || 4, 4) : configuredMaxItems;
     __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems }); const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
-    const badges=[]; if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind:'saved', eur:Number(inc.tierDiscountEUR) || 0 }); if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind:'bundle', eur:Number(inc.bundleDiscountEUR) || 0 }); if (shipEnabled && base >= shipThr) badges.push({ kind:'text', text:'Free shipping' });
+    const badges=[]; if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind:'saved', eur:Number(inc.tierDiscountEUR) || 0 }); if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind:'bundle', eur:Number(inc.bundleDiscountEUR) || 0 }); if ((shipEnabled && base >= shipThr) || inc?.hasFreeShipping) badges.push({ kind:'text', text:'Free shipping' });
     const addonHTML = addons.length ? `<div class="ss-ci-sub ss-ci-addons-title">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = __ssBuildProductHref(p, hasDisc ? { discountToken: String(p.discountToken || ''), discountPct: pct, discountedPrice: eur } : null); if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-name="${__ssEscHtml(String(p?.name || ''))}" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-addon-pct="${__ssEscHtml(String(pct))}" data-ss-addon-price="${__ssEscHtml(String(eur))}" data-ss-addon-orig="${__ssEscHtml(String(price))}"><a href="${href}" rel="noopener noreferrer" class="ss-link-block"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div class="ss-ci-card-body ss-minw0"><a href="${href}" rel="noopener noreferrer" class="ss-link-reset"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
     const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
       if (b.kind === 'saved') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="saved" data-eur="${Number(b.eur || 0).toFixed(2)}">Saved ${Number(b.eur || 0).toFixed(2)}€</span>`;
@@ -391,6 +416,101 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     return `<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"><div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>${shipEnabled ? `<div class="ss-ci-bar ss-ci-bar--secondary" aria-hidden="true"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}<div class="Badges_Div">${badgesHtml}<div class="ss-ci-title">${tierText}</div>${shipEnabled ? `<div class="ss-ci-sub">${shipText}</div>` : ``}</div>${addonHTML}</div></div>`;
   } catch { return ''; }
 }
+function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
+  try {
+    const cfg0 = __ssGetCartIncentivesConfig();
+    if (!cfg0?.enabled) return '';
+    __ssEnsureCartIncentiveStyles();
+
+    const fullCart = (opts && Array.isArray(opts.fullCart)) ? opts.fullCart : (__ssGetFullCartPreferred());
+    const inc = (opts && opts.inc) ? opts.inc : __ssComputeCartIncentivesClient(totalSumEUR, fullCart);
+    const cfg = __ssGetCartIncentivesConfig();
+    const tiers = (cfg?.tierDiscount?.enabled && Array.isArray(cfg?.tierDiscount?.tiers)) ? cfg.tierDiscount.tiers : [];
+    const base = Number(inc.baseTotalEUR || totalSumEUR) || 0;
+
+    let nextTier = null;
+    let currentTierPct = Number(inc.tierPct || 0) || 0;
+    for (const t of tiers) {
+      const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+      const pct = Math.max(0, Number(t?.pct || 0) || 0);
+      if (min > base && pct > 0) {
+        nextTier = { min, pct };
+        break;
+      }
+    }
+
+    const tierText = nextTier
+      ? (() => {
+          const needEUR = Math.max(0, (nextTier.min - base));
+          return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${nextTier.min.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}&euro;</span> to unlock ${nextTier.pct}% OFF`;
+        })()
+      : (currentTierPct > 0 ? `Unlocked ${currentTierPct}% OFF` : `Add more to unlock a discount`);
+
+    const tierScaleMax = (() => {
+      const mins = tiers.map((t) => Math.max(0, Number(t?.minEUR || 0) || 0)).filter((v) => v > 0);
+      const max = mins.length ? Math.max(...mins) : (nextTier ? nextTier.min : 0);
+      return max > 0 ? max : (base > 0 ? base : 1);
+    })();
+    const tierProgressGlobal = Math.max(0, Math.min(100, (base / tierScaleMax) * 100));
+    const tierTicksHTML = (() => {
+      if (!tiers.length) return '';
+      const parts = [];
+      for (const t of tiers) {
+        const min = Math.max(0, Number(t?.minEUR || 0) || 0);
+        const pct = Math.max(0, Number(t?.pct || 0) || 0);
+        if (!min || !pct) continue;
+        const left = Math.max(0, Math.min(100, (min / tierScaleMax) * 100));
+        parts.push(`<span class="ss-ci-tick" style="left:${left.toFixed(2)}%"></span>`);
+        parts.push(`<span class="ss-ci-ticklbl" style="left:${left.toFixed(2)}%">${pct}%</span>`);
+      }
+      return parts.length ? `<div class="ss-ci-ticks">${parts.join('')}</div>` : '';
+    })();
+
+    const shipMode = String(inc?.shippingMode || 'free').trim().toLowerCase();
+    const shipThr = Math.max(0, Number(inc?.freeShippingThresholdEUR ?? cfg?.freeShipping?.thresholdEUR ?? 0) || 0);
+    const shipFeeEUR = round2(Number(inc?.shippingFeeEUR ?? 0) || 0);
+    const shipThresholdActive = shipMode === 'threshold' && shipThr > 0;
+    const shipProg = shipThresholdActive ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
+    const shipText = shipThresholdActive
+      ? (base >= shipThr
+        ? 'Free shipping unlocked'
+        : (() => {
+            const needEUR = Math.max(0, (shipThr - base));
+            return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}&euro;</span> for free shipping`;
+          })())
+      : (shipMode === 'paid' && shipFeeEUR > 0
+        ? `Base shipping: <span class="ss-ci-amt" data-eur="${shipFeeEUR.toFixed(2)}">${shipFeeEUR.toFixed(2)}&euro;</span>${inc?.applyTariffToShipping === false ? '' : ' + tariffs when applicable'}`
+        : (inc?.hasFreeShipping ? 'Shipping is free for this order.' : ''));
+
+    const desiredByTier = nextTier ? Math.max(3, nextTier.min - base) : 0;
+    const desiredByShipping = shipThresholdActive && base < shipThr ? Math.max(3, shipThr - base) : 0;
+    const desired = desiredByTier > 0 && desiredByShipping > 0
+      ? Math.min(desiredByTier, desiredByShipping)
+      : (desiredByTier || desiredByShipping || 0);
+
+    const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 };
+    const configuredMaxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4));
+    const maxItems = (window.innerWidth <= 700) ? Math.min(configuredMaxItems || 4, 4) : configuredMaxItems;
+    __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems });
+    const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
+
+    const badges = [];
+    if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind: 'saved', eur: Number(inc.tierDiscountEUR) || 0 });
+    if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind: 'bundle', eur: Number(inc.bundleDiscountEUR) || 0 });
+    if ((shipThresholdActive && base >= shipThr) || inc?.hasFreeShipping) badges.push({ kind: 'text', text: 'Free shipping' });
+    else if (shipMode === 'paid' && shipFeeEUR > 0) badges.push({ kind: 'text', text: `Shipping ${shipFeeEUR.toFixed(2)}€` });
+
+    const addonHTML = addons.length ? `<div class="ss-ci-sub ss-ci-addons-title">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const href = __ssBuildProductHref(p, hasDisc ? { discountToken: String(p.discountToken || ''), discountPct: pct, discountedPrice: eur } : null); if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-name="${__ssEscHtml(String(p?.name || ''))}" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-addon-pct="${__ssEscHtml(String(pct))}" data-ss-addon-price="${__ssEscHtml(String(eur))}" data-ss-addon-orig="${__ssEscHtml(String(price))}"><a href="${href}" rel="noopener noreferrer" class="ss-link-block"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div class="ss-ci-card-body ss-minw0"><a href="${href}" rel="noopener noreferrer" class="ss-link-reset"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
+    const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map((b) => {
+      if (b.kind === 'saved') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="saved" data-eur="${Number(b.eur || 0).toFixed(2)}">Saved ${Number(b.eur || 0).toFixed(2)}&euro;</span>`;
+      if (b.kind === 'bundle') return `<span class="ss-ci-badge basket-item-price" data-badge-kind="bundle" data-eur="${Number(b.eur || 0).toFixed(2)}">Bundle -${Number(b.eur || 0).toFixed(2)}&euro;</span>`;
+      return `<span class="ss-ci-badge">${__ssEscHtml(b.text || '')}</span>`;
+    }).join('')}</div>` : '';
+
+    return `<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"><div class="ss-ci-bar" aria-hidden="true"><div class="ss-ci-fill" style="width:${tierProgressGlobal.toFixed(0)}%"></div>${tierTicksHTML}</div>${shipThresholdActive ? `<div class="ss-ci-bar ss-ci-bar--secondary" aria-hidden="true"><div class="ss-ci-fill" style="width:${shipProg.toFixed(0)}%"></div></div>` : ``}<div class="Badges_Div">${badgesHtml}<div class="ss-ci-title">${tierText}</div>${shipText ? `<div class="ss-ci-sub">${shipText}</div>` : ``}</div>${addonHTML}</div></div>`;
+  } catch { return ''; }
+}
+
 function __ssShouldHandleInAppNavigation(event) {
   return !(event?.defaultPrevented || event?.button !== 0 || event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey);
 }

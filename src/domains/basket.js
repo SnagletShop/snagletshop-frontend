@@ -444,7 +444,7 @@
       try {
         fullCart = __ssGetFullCartPreferred();
         inc = __ssComputeCartIncentivesClient(totalSum, fullCart);
-        totalAfter = round2(Number(inc?.subtotalAfterDiscountsEUR ?? totalSum) || totalSum);
+        totalAfter = round2(Number(inc?.totalWithShippingEUR ?? inc?.subtotalAfterDiscountsEUR ?? totalSum) || totalSum);
         discountEUR = round2((Number(inc?.tierDiscountEUR || 0) || 0) + (Number(inc?.bundleDiscountEUR || 0) || 0));
         window.__ssLastCartIncentives = inc;
         try { localStorage.setItem('ss_cart_incentives_last_v1', JSON.stringify({ t: Date.now(), inc })); } catch {}
@@ -479,13 +479,18 @@
         basketMain.appendChild(incentivesDiv);
       }
 
-      const freeShippingThreshold = Number(inc?.freeShippingThresholdEUR || inc?.freeShippingThreshold || 50) || 50;
-      const freeShippingUnlocked = !!(inc?.freeShippingEligible || inc?.hasFreeShipping || totalAfter >= freeShippingThreshold);
-      const shippingLine = freeShippingUnlocked ? 'Free shipping unlocked' : 'Calculated at checkout';
+      const freeShippingThreshold = Number(inc?.freeShippingThresholdEUR || inc?.freeShippingThreshold || 0) || 0;
+      const shippingFeeEUR = round2(Number(inc?.shippingFeeEUR ?? 0) || 0);
+      const freeShippingUnlocked = !!(inc?.freeShippingEligible || inc?.hasFreeShipping || shippingFeeEUR <= 0);
+      const shippingLine = freeShippingUnlocked ? 'Free' : `${shippingFeeEUR.toFixed(2)}&euro;`;
       const saveLine = discountEUR > 0
         ? `<div class="BasketSummaryLine BasketSummaryLine--save"><span class="BasketSummaryLabel">You Save</span><span class="BasketSummaryValue BasketSummaryValue--accent" data-eur="${discountEUR.toFixed(2)}">- ${discountEUR.toFixed(2)}&euro;</span></div>`
         : '';
-      const freeShippingText = `Free shipping on orders over ${freeShippingThreshold.toFixed(2)}&euro;`;
+      const freeShippingText = freeShippingUnlocked
+        ? 'Shipping is free for this order.'
+        : (freeShippingThreshold > 0
+          ? `Free shipping unlocks above ${freeShippingThreshold.toFixed(2)}&euro;.`
+          : `Base shipping: ${shippingFeeEUR.toFixed(2)}&euro;`);
       const summaryItemsHTML = entries.map(([key, item]) => {
         const product = productByName ? (productByName.get(item?.name || '') || null) : null;
         const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);

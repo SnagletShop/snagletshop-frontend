@@ -49,11 +49,15 @@
     }, 0);
 
     const inc = window.__ssComputeCartIncentivesClient(baseEUR, fullCart);
-    let totalEUR = Number(inc?.totalWithShippingEUR ?? inc?.subtotalAfterDiscountsEUR ?? baseEUR) || baseEUR;
+    const itemsSubtotalEUR = Number(inc?.subtotalAfterDiscountsEUR ?? baseEUR) || baseEUR;
+    const shippingFeeEUR = Number(inc?.shippingFeeEUR ?? 0) || 0;
+    let totalEUR = Number(inc?.totalWithShippingEUR ?? (itemsSubtotalEUR + shippingFeeEUR) ?? baseEUR) || baseEUR;
 
     if (typeof window.getApplyTariffFlag === 'function' && window.getApplyTariffFlag()) {
       const tariff = Number(window.tariffMultipliers?.[cc] ?? 0) || 0;
-      totalEUR = totalEUR * (1 + tariff);
+      const itemsWithTariff = itemsSubtotalEUR * (1 + tariff);
+      const shippingWithTariff = shippingFeeEUR * (inc?.applyTariffToShipping !== false ? (1 + tariff) : 1);
+      totalEUR = itemsWithTariff + shippingWithTariff;
     }
 
     const rate = cur === "EUR" ? 1 : (Number(window.exchangeRates?.[cur] ?? 0) || 0);
