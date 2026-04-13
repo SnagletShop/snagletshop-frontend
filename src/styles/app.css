@@ -11731,6 +11731,8 @@
         width: 100% !important;
         max-width: 100% !important;
         padding: 0 !important;
+        margin: 0 !important;
+        min-width: 0 !important;
         box-sizing: border-box !important;
         overflow-x: clip !important;
     }
@@ -11748,7 +11750,7 @@
         grid-column: 1 / -1 !important;
         width: 100% !important;
         max-width: 100% !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         justify-self: stretch !important;
         box-sizing: border-box !important;
     }
