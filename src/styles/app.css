@@ -7280,7 +7280,7 @@
 
 @media (max-width: 680px) {
     #ProductWrapper:has(#Product_Viewer) {
-        padding-top: 4.444vw !important;
+        padding-top: 6.111vw !important;
     }
 
     #ProductWrapper:has(#ProductPageSkeleton) {
@@ -7292,7 +7292,11 @@
     }
 
     .Product_Viewer {
-        margin-top: 0 !important;
+        width: calc(100% - 6.667vw) !important;
+        max-width: calc(100% - 6.667vw) !important;
+        min-width: 0 !important;
+        margin: 1.667vw auto 0 !important;
+        box-sizing: border-box !important;
     }
 
     .Product_Detail_Page .Product_Details {
@@ -7435,6 +7439,17 @@
         width: 100% !important;
         max-width: 100% !important;
         justify-self: stretch !important;
+    }
+
+    #Viewer > #Product_Viewer {
+        grid-column: 1 / -1 !important;
+        width: calc(100% - 6.667vw) !important;
+        max-width: calc(100% - 6.667vw) !important;
+        min-width: 0 !important;
+        margin: 0 auto !important;
+        justify-self: center !important;
+        box-sizing: border-box !important;
+        transform: none !important;
     }
 
     .SortContainer {
