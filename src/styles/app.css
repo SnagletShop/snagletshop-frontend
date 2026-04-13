@@ -12810,9 +12810,27 @@ body.ss-pdp-lightbox-open {
         justify-content: center !important;
     }
 
-    .ss-review-more .ss-review-btn {
+.ss-review-more .ss-review-btn {
         min-height: 11.111vw !important;
         padding: 0 4.444vw !important;
         border-radius: 999vw !important;
+    }
+}
+
+@media (min-width: 681px) {
+    html {
+        min-height: 100%;
+        background: var(--body_Background_Colour) !important;
+        background-color: var(--body_Background_Colour) !important;
+    }
+
+    body {
+        min-height: 100vh !important;
+        background: var(--body_Background_Colour) !important;
+        background-color: var(--body_Background_Colour) !important;
+    }
+
+    .DesktopShell {
+        min-height: 100vh !important;
     }
 }
