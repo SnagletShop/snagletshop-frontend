@@ -12070,13 +12070,15 @@ body.ss-pdp-lightbox-open {
     .TopBar {
         position: sticky !important;
         top: 0 !important;
-        width: 100vw !important;
+        width: auto !important;
+        max-width: none !important;
         margin-left: calc(50% - 50vw) !important;
         margin-right: calc(50% - 50vw) !important;
         grid-template-columns: minmax(220px, 0.7fr) minmax(540px, 1.85fr) auto !important;
         gap: 26px !important;
         min-height: 92px !important;
         padding: 16px clamp(28px, 4vw, 84px) !important;
+        box-sizing: border-box !important;
         border-top: 0 !important;
         border-right: 0 !important;
         border-bottom: 1px solid color-mix(in srgb, var(--Borders_Colour) 46%, transparent) !important;
@@ -12534,10 +12536,12 @@ body.ss-pdp-lightbox-open {
     .SideBar {
         position: static !important;
         top: auto !important;
-        width: 100vw !important;
+        width: auto !important;
+        max-width: none !important;
         margin-left: calc(50% - 50vw) !important;
         margin-right: calc(50% - 50vw) !important;
         padding: 10px clamp(28px, 4vw, 84px) 14px !important;
+        box-sizing: border-box !important;
         border-top: 0 !important;
         border-right: 0 !important;
         border-bottom: 1px solid color-mix(in srgb, var(--Borders_Colour) 46%, transparent) !important;
