@@ -663,14 +663,31 @@ html.dark-mode .ss-ci-btn {
         box-sizing: border-box !important;
     }
 
+    .BasketImageLink {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 170px !important;
+        width: 170px !important;
+        min-width: 170px !important;
+        align-self: stretch !important;
+    }
+
     .Basket_Image {
-        width: 158px !important;
-        max-width: 158px !important;
+        width: 170px !important;
+        max-width: 170px !important;
         aspect-ratio: 1 / 1 !important;
         margin: 0 !important;
         border-radius: 8px !important;
         object-fit: cover !important;
         background: color-mix(in srgb, var(--body_Background_Colour) 65%, var(--SearchBar_Background_Colour)) !important;
+    }
+
+    .Item-Details {
+        display: grid !important;
+        align-content: start !important;
+        gap: 2px !important;
+        min-width: 0 !important;
     }
 
     .BasketReceipt {
@@ -989,7 +1006,23 @@ html.dark-mode .ss-ci-btn {
         -webkit-box-orient: vertical !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
-        margin-bottom: 8px !important;
+        margin: 0 !important;
+    }
+
+    .BasketText {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .BasketVariantMeta {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.96rem !important;
+        font-weight: 400 !important;
+        line-height: 1.24 !important;
+        color: color-mix(in srgb, var(--Default_Text_Colour) 82%, transparent) !important;
     }
 
     .BasketTextDescription {
@@ -998,6 +1031,7 @@ html.dark-mode .ss-ci-btn {
         line-height: 1.5 !important;
         color: color-mix(in srgb, var(--Default_Text_Colour) 82%, transparent) !important;
         opacity: 1 !important;
+        margin: 0 !important;
     }
 
     .BasketLayoutAside .BasketSummaryLine,
