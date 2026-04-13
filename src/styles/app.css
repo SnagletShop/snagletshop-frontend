@@ -4971,6 +4971,10 @@
 /* === OVERRIDE PRODUCT DETAIL LAYOUT (desktop + mobile) === */
 
 @media (min-width: 681px) {
+    #ProductWrapper:has(#ProductPageSkeleton) {
+        padding-top: 24px !important;
+    }
+
     .Product_Viewer {
         margin-top: 24px;
         max-width: 1300px;
