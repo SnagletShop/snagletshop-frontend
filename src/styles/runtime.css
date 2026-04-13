@@ -115,6 +115,54 @@
     min-width: 0;
 }
 
+.BasketIncentivesRail .ss-ci-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 14px;
+}
+
+.BasketIncentivesRail .ss-ci-card-body {
+    display: grid;
+    gap: 6px;
+    align-content: center;
+}
+
+.BasketIncentivesRail .ss-ci-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.BasketIncentivesRail .ss-ci-price {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    opacity: 1;
+    line-height: 1.1;
+}
+
+.BasketIncentivesRail .ss-ci-price .ss-price-old {
+    margin-right: 0;
+    font-size: .84rem;
+    line-height: 1;
+    color: color-mix(in srgb, var(--Default_Text_Colour) 58%, transparent);
+}
+
+.BasketIncentivesRail .ss-ci-price .ss-price-new {
+    font-size: .98rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--Default_Text_Colour);
+}
+
+.BasketIncentivesRail .ss-ci-btn {
+    align-self: center;
+}
+
 /* cart incentives */
 .ss-cart-inc {
     background-color: var(--Modal_Background_Colour);
