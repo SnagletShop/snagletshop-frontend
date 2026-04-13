@@ -11736,11 +11736,12 @@
 
     #Viewer > #Basket_Viewer {
         grid-column: 1 / -1 !important;
-        width: calc(100% - 6.667vw) !important;
-        max-width: calc(100% - 6.667vw) !important;
+        width: calc(100% - 7.222vw) !important;
+        max-width: calc(100% - 7.222vw) !important;
         margin: 0 auto !important;
         justify-self: center !important;
         box-sizing: border-box !important;
+        transform: translateX(-0.556vw) !important;
     }
 
     .settings-panel.settings-panel--modern {
