@@ -12556,11 +12556,12 @@ body.ss-pdp-lightbox-open {
     .desktop-category-ribbon {
         display: flex !important;
         flex-wrap: wrap !important;
-        justify-content: flex-start !important;
+        justify-content: center !important;
         gap: 8px 10px !important;
         padding-top: 10px !important;
         border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 44%, transparent) !important;
         align-items: stretch !important;
+        align-content: center !important;
     }
 
     .Category_Button {
