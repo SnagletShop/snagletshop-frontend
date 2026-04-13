@@ -7280,7 +7280,7 @@
 
 @media (max-width: 680px) {
     #ProductWrapper:has(#Product_Viewer) {
-        padding-top: 6.111vw !important;
+        padding-top: 8.333vw !important;
     }
 
     #ProductWrapper:has(#ProductPageSkeleton) {
@@ -7418,7 +7418,7 @@
     }
 
     #ProductWrapper:has(#Basket_Viewer) {
-        padding: 0 !important;
+        padding: 4.444vw 0 0 !important;
     }
 
     #Viewer:has(> .settings-panel.settings-panel--modern),
@@ -11751,12 +11751,12 @@
 
     #Viewer > #Basket_Viewer {
         grid-column: 1 / -1 !important;
-        width: calc(100% - 7.222vw) !important;
-        max-width: calc(100% - 7.222vw) !important;
+        width: calc(100% - 7.778vw) !important;
+        max-width: calc(100% - 7.778vw) !important;
         margin: 0 auto !important;
         justify-self: center !important;
         box-sizing: border-box !important;
-        transform: translateX(-0.556vw) !important;
+        transform: translateX(-0.833vw) !important;
     }
 
     .settings-panel.settings-panel--modern {
