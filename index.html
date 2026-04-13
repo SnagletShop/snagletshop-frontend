@@ -8,6 +8,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
 
+    <script>
+        (function () {
+            var THEME_STORAGE_KEY = 'themeMode';
+            function getStoredThemeMode() {
+                try {
+                    var raw = String(localStorage.getItem(THEME_STORAGE_KEY) || '').trim().toLowerCase();
+                    if (raw === 'dark' || raw === 'light' || raw === 'auto') return raw;
+                } catch (e) {}
+                return 'auto';
+            }
+            function getSystemPrefersDark() {
+                try {
+                    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                } catch (e) {}
+                return false;
+            }
+            function resolveThemeMode(mode) {
+                var next = String(mode || '').trim().toLowerCase();
+                if (next === 'dark' || next === 'light') return next;
+                return getSystemPrefersDark() ? 'dark' : 'light';
+            }
+            try {
+                var storedMode = getStoredThemeMode();
+                var resolved = resolveThemeMode(storedMode);
+                var root = document.documentElement;
+                root.classList.toggle('dark-mode', resolved === 'dark');
+                root.classList.toggle('light-mode', resolved !== 'dark');
+                root.dataset.themeMode = storedMode;
+                root.dataset.themeResolved = resolved;
+            } catch (e) {}
+        })();
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
     <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/Logo_I.png"
         type="image/png">
