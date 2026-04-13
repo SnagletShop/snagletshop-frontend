@@ -12938,6 +12938,12 @@ body.ss-pdp-lightbox-open {
         min-height: 100vh !important;
     }
 
+    #Viewer,
+    .Viewer {
+        background: var(--body_Background_Colour) !important;
+        background-color: var(--body_Background_Colour) !important;
+    }
+
     .Product_Viewer {
         background: transparent !important;
         background-color: transparent !important;
