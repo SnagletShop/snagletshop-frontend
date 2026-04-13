@@ -955,7 +955,7 @@ html.dark-mode .ss-ci-btn {
 
     .Basket_Viewer,
     .BasketLayout {
-        padding-inline: 3.333vw !important;
+        padding-inline: 1.111vw !important;
     }
 
     .BasketLayout {
@@ -1181,7 +1181,7 @@ html.dark-mode .ss-ci-btn {
     }
 
     .Basket-Item {
-        padding: 12px 12px !important;
+        padding: 10px 10px !important;
         gap: 12px !important;
     }
 
