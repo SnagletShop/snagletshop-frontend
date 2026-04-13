@@ -12437,8 +12437,8 @@ body.ss-pdp-lightbox-open {
     }
 
     .SideBar {
-        position: sticky !important;
-        top: 92px !important;
+        position: static !important;
+        top: auto !important;
         padding: 10px 18px 14px !important;
         border-top: 0 !important;
         border-right: 0 !important;
