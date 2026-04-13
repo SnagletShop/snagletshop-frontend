@@ -12035,6 +12035,28 @@ body.ss-pdp-lightbox-open {
 }
 
 @media (min-width: 681px) {
+    #Viewer:has(> .settings-panel.settings-panel--modern) {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+    }
+
+    #Viewer > .settings-panel.settings-panel--modern {
+        width: min(1280px, calc(100vw - 120px)) !important;
+        max-width: min(1280px, calc(100vw - 120px)) !important;
+        margin: 18px auto 48px !important;
+        justify-self: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .settings-panel.settings-panel--modern {
+        width: min(1280px, calc(100vw - 120px)) !important;
+        max-width: min(1280px, calc(100vw - 120px)) !important;
+        margin: 18px auto 48px !important;
+    }
+
     .DesktopShell {
         width: min(1720px, calc(100vw - 24px)) !important;
         padding-top: 0 !important;
