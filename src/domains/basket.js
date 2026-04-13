@@ -472,12 +472,6 @@
 
       let incentivesHTML = '';
       try { incentivesHTML = __ssRenderCartIncentivesHTML(totalSum, { inc, fullCart }) || ''; } catch { incentivesHTML = ''; }
-      if (String(incentivesHTML || '').trim()) {
-        const incentivesDiv = document.createElement('div');
-        incentivesDiv.className = 'BasketIncentivesRail';
-        incentivesDiv.innerHTML = incentivesHTML;
-        basketMain.appendChild(incentivesDiv);
-      }
 
       const freeShippingThreshold = Number(inc?.freeShippingThresholdEUR || inc?.freeShippingThreshold || 0) || 0;
       const shippingFeeEUR = round2(Number(inc?.shippingFeeEUR ?? 0) || 0);
@@ -516,6 +510,91 @@
           </div>
         `;
       }).join('');
+      const isMobileBasketCheckout = !!(window.matchMedia && window.matchMedia('(max-width: 700px)').matches);
+      const mobileCheckoutItemsHTML = entries.map(([key, item]) => {
+        const product = productByName ? (productByName.get(item?.name || '') || null) : null;
+        const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
+        const name = __ssEscHtml(item?.name || product?.name || 'Product');
+        const lineTotal = round2((Number(parseFloat(item?.price) || 0) || 0) * qty);
+        const unitOriginal = Number(item?.unitPriceOriginalEUR ?? item?.expectedPurchasePrice ?? 0) || 0;
+        const lineOriginal = round2(unitOriginal * qty);
+        let optionLabel = '';
+        try {
+          const selected = window.__ssGetSelectedOptionsForDisplay ? window.__ssGetSelectedOptionsForDisplay(item, product) : [];
+          optionLabel = selected && selected.length && window.__ssFormatSelectedOptionsDisplay
+            ? String(window.__ssFormatSelectedOptionsDisplay(selected) || '').trim()
+            : String(item?.selectedOption || '').trim();
+        } catch {}
+        const optionMeta = optionLabel
+          ? `<span class="ss-ci-checkout-item-meta">${__ssEscHtml(optionLabel)}</span>`
+          : '';
+        const valueHTML = (lineOriginal > lineTotal + 0.009)
+          ? `
+              <span class="ss-ci-checkout-item-price">
+                <span class="ss-ci-checkout-item-price-old" data-eur="${lineOriginal.toFixed(2)}">${lineOriginal.toFixed(2)}&euro;</span>
+                <span class="ss-ci-checkout-item-price-new" data-eur="${lineTotal.toFixed(2)}">${lineTotal.toFixed(2)}&euro;</span>
+              </span>`
+          : `<span class="ss-ci-checkout-item-price-new" data-eur="${lineTotal.toFixed(2)}">${lineTotal.toFixed(2)}&euro;</span>`;
+        return `
+          <div class="ss-ci-checkout-item">
+            <div class="ss-ci-checkout-item-copy">
+              <span class="ss-ci-checkout-item-name"><span class="ss-ci-checkout-item-qty">${qty}&times;</span> ${name}</span>
+              ${optionMeta}
+            </div>
+            <div class="ss-ci-checkout-item-value">${valueHTML}</div>
+          </div>
+        `;
+      }).join('');
+      const mobileSaveLine = discountEUR > 0
+        ? `<div class="ss-ci-checkout-line ss-ci-checkout-line--save"><span class="ss-ci-checkout-label">You save</span><span class="ss-ci-checkout-value ss-ci-checkout-value--accent" data-eur="${discountEUR.toFixed(2)}">- ${discountEUR.toFixed(2)}&euro;</span></div>`
+        : '';
+      const mobileCheckoutHTML = isMobileBasketCheckout ? `
+        <section class="ss-ci-checkout" aria-label="Order summary">
+          <div class="ss-ci-checkout-header">
+            <h3 class="ss-ci-checkout-title">Order summary</h3>
+          </div>
+          <div class="ss-ci-checkout-lines">
+            <div class="ss-ci-checkout-line">
+              <span class="ss-ci-checkout-label">Subtotal (${itemCount} item${itemCount === 1 ? '' : 's'})</span>
+              <span class="ss-ci-checkout-value" data-eur="${round2(totalSum).toFixed(2)}">${round2(totalSum).toFixed(2)}&euro;</span>
+            </div>
+            <div class="ss-ci-checkout-items">
+              ${mobileCheckoutItemsHTML}
+            </div>
+            ${mobileSaveLine}
+            <div class="ss-ci-checkout-line">
+              <span class="ss-ci-checkout-label">Shipping</span>
+              <span class="ss-ci-checkout-value ss-ci-checkout-value--muted">${shippingLine}</span>
+            </div>
+          </div>
+          <div class="ss-ci-checkout-total">
+            <span class="ss-ci-checkout-total-label">Total</span>
+            <strong class="ss-ci-checkout-total-value" data-eur="${totalAfter.toFixed(2)}">
+              ${discountEUR > 0 && totalAfter < totalSum
+                ? `<span class="ss-price-old--muted">${totalSum.toFixed(2)}&euro;</span> <span>${totalAfter.toFixed(2)}&euro;</span>`
+                : `${totalAfter.toFixed(2)}&euro;`}
+            </strong>
+          </div>
+          <div class="ss-ci-checkout-footer">
+            <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || 'Buy now')}</button>
+          </div>
+        </section>
+      ` : '';
+      if (String(incentivesHTML || '').trim() || mobileCheckoutHTML) {
+        const incentivesDiv = document.createElement('div');
+        incentivesDiv.className = 'BasketIncentivesRail';
+        incentivesDiv.innerHTML = String(incentivesHTML || '').trim()
+          ? incentivesHTML
+          : '<div class="ss-cart-inc" id="ss-cart-inc"><div class="ss-ci-wrap"></div></div>';
+        if (mobileCheckoutHTML) {
+          const mobileSummaryHost = incentivesDiv.querySelector('.ss-ci-wrap') || incentivesDiv;
+          const mobileSummaryDiv = document.createElement('div');
+          mobileSummaryDiv.className = 'ss-ci-checkout-shell';
+          mobileSummaryDiv.innerHTML = mobileCheckoutHTML;
+          mobileSummaryHost.appendChild(mobileSummaryDiv);
+        }
+        basketMain.appendChild(incentivesDiv);
+      }
       const receiptDiv = document.createElement('div');
       receiptDiv.className = 'BasketReceipt';
 
