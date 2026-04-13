@@ -940,6 +940,139 @@ html.dark-mode .ss-ci-btn {
 }
 
 @media (max-width: 700px) {
+    .BasketPageHeader {
+        display: none !important;
+    }
+
+    .BasketLayout {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .BasketLayoutMain,
+    .BasketLayoutAside {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .BasketLayoutAside {
+        position: static !important;
+        top: auto !important;
+        margin-top: 4.444vw !important;
+    }
+
+    .BasketReceipt {
+        width: 100% !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .BasketSummaryCard {
+        display: block !important;
+        width: 100% !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .BasketSummaryHeader {
+        padding: 0 0 2.222vw !important;
+    }
+
+    .BasketSummaryTitle {
+        font-size: 7.222vw !important;
+        line-height: 1.1 !important;
+    }
+
+    .BasketSummaryLines {
+        gap: 2.222vw !important;
+        padding: 0 !important;
+    }
+
+    .BasketSummaryItems {
+        margin-top: 0 !important;
+        padding: 0 !important;
+    }
+
+    .BasketSummaryItem {
+        gap: 2.222vw !important;
+        padding: 1.667vw 0 !important;
+    }
+
+    .BasketSummaryItem + .BasketSummaryItem {
+        border-top: 0 !important;
+    }
+
+    .BasketSummaryItemName,
+    .BasketSummaryItemValue,
+    .BasketSummaryItemMeta,
+    .BasketSummaryLabel,
+    .BasketSummaryValue,
+    .BasketSummaryTotalLabel,
+    .PayTotalText {
+        white-space: normal !important;
+    }
+
+    .BasketSummaryDivider {
+        margin: 1.667vw 0 !important;
+    }
+
+    .BasketSummaryTotalRow {
+        margin: 0 !important;
+        padding: 2.222vw 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+    }
+
+    .ReceiptFooter {
+        display: block !important;
+        width: 100% !important;
+        margin: 2.222vw 0 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .PayButton {
+        width: 100% !important;
+        height: 12.222vw !important;
+        min-height: 12.222vw !important;
+        border-radius: 1.667vw !important;
+    }
+
+    .BasketSummaryNote,
+    .BasketSummaryBenefits,
+    .BasketSummaryTrust {
+        display: block !important;
+        margin: 2.778vw 0 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .BasketSummaryBenefit,
+    .BasketSummaryTrustItem {
+        display: block !important;
+        margin: 0 0 1.111vw !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        text-align: left !important;
+    }
+
+    .BasketSummaryBenefit + .BasketSummaryBenefit,
+    .BasketSummaryTrustItem + .BasketSummaryTrustItem {
+        border-left: 0 !important;
+    }
+
     .Quantity-Controls-Basket .BasketChangeQuantityButton {
         width: 38px;
         height: 38px;
