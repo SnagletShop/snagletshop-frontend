@@ -143,6 +143,28 @@
     white-space: nowrap;
     opacity: 1;
     line-height: 1.1;
+    justify-content: flex-start;
+    justify-self: start;
+    align-self: start;
+    width: 100%;
+    margin: 0;
+    text-align: left !important;
+}
+
+.BasketIncentivesRail .ss-ci-card-body .ss-ci-price,
+.BasketIncentivesRail .ss-ci-card-body .basket-item-price {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    justify-content: flex-start !important;
+    justify-self: start !important;
+    align-self: start !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
 }
 
 .BasketIncentivesRail .ss-ci-price .ss-price-old {
