@@ -951,6 +951,8 @@ html.dark-mode .ss-ci-btn {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
 
     .Basket_Viewer,
@@ -960,6 +962,11 @@ html.dark-mode .ss-ci-btn {
 
     .BasketLayout {
         display: block !important;
+    }
+
+    .BasketLayoutMain > .Basket_Item_Container:first-child,
+    .BasketLayoutMain > .Basket-Item:first-child {
+        margin-top: 2.222vw !important;
     }
 
     .BasketLayoutMain,
