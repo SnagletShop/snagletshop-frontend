@@ -7419,7 +7419,8 @@
 
     #Viewer:has(> .settings-panel.settings-panel--modern),
     #Viewer:has(> .ss-auth-page),
-    #Viewer:has(> .ss-review-entry-page) {
+    #Viewer:has(> .ss-review-entry-page),
+    #Viewer:has(> #Basket_Viewer) {
         display: block !important;
         width: 100% !important;
         max-width: 100% !important;
@@ -7428,7 +7429,8 @@
 
     #Viewer > .settings-panel.settings-panel--modern,
     #Viewer > .ss-auth-page,
-    #Viewer > .ss-review-entry-page {
+    #Viewer > .ss-review-entry-page,
+    #Viewer > #Basket_Viewer {
         grid-column: 1 / -1 !important;
         width: 100% !important;
         max-width: 100% !important;
@@ -11714,7 +11716,25 @@
         overflow-x: clip !important;
     }
 
+    #Viewer:has(> #Basket_Viewer) {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: clip !important;
+    }
+
     #Viewer > .settings-panel.settings-panel--modern {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        justify-self: stretch !important;
+        box-sizing: border-box !important;
+    }
+
+    #Viewer > #Basket_Viewer {
         grid-column: 1 / -1 !important;
         width: 100% !important;
         max-width: 100% !important;
