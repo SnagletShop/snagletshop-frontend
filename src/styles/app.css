@@ -12940,8 +12940,8 @@ body.ss-pdp-lightbox-open {
 
     #Viewer,
     .Viewer {
-        background: var(--body_Background_Colour) !important;
-        background-color: var(--body_Background_Colour) !important;
+        background: transparent !important;
+        background-color: transparent !important;
     }
 
     .Product_Viewer {
