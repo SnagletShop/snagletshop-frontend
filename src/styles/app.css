@@ -12937,6 +12937,21 @@ body.ss-pdp-lightbox-open {
     .DesktopShell {
         min-height: 100vh !important;
     }
+
+    .Product_Viewer {
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+
+    .Product_Detail_Page,
+    .Product_Detail_Page .Product_Details,
+    .Product_Detail_Page .Product_Info,
+    .Product_Detail_Page .Product_Images {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
 }
 
 .BrandThemeLogo {
