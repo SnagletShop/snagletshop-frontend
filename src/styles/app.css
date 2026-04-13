@@ -7409,9 +7409,9 @@
     }
 
     #ProductWrapper {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
+        width: 92% !important;
+        max-width: 92% !important;
+        margin: 0 auto !important;
         padding: 16.667vw 1.111vw 5vw !important;
         box-sizing: border-box !important;
         background: transparent !important;
