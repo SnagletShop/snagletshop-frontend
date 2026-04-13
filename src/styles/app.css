@@ -11736,10 +11736,10 @@
 
     #Viewer > #Basket_Viewer {
         grid-column: 1 / -1 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        justify-self: stretch !important;
+        width: calc(100% - 6.667vw) !important;
+        max-width: calc(100% - 6.667vw) !important;
+        margin: 0 auto !important;
+        justify-self: center !important;
         box-sizing: border-box !important;
     }
 
