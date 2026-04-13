@@ -11724,10 +11724,15 @@
     html:has(#Viewer > .settings-panel.settings-panel--modern),
     body:has(#Viewer > .settings-panel.settings-panel--modern) {
         overflow-x: hidden !important;
+        width: auto !important;
+        max-width: 100% !important;
     }
 
     .mobileHeaderWrapper {
         overflow-x: clip !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     #Viewer:has(> .settings-panel.settings-panel--modern) {
