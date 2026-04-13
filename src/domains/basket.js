@@ -517,6 +517,10 @@
           <div class="ReceiptFooter">
             <button class="PayButton">${__ssEscHtml(TEXTS?.PRODUCT_SECTION?.BUY_NOW || 'Buy now')}</button>
           </div>
+          <div class="BasketSummaryNote">
+            <span class="BasketSummaryNoteTitle">Checkout note</span>
+            <span class="BasketSummaryNoteText">Your cart stays saved while you review shipping, payment, and the final total at checkout.</span>
+          </div>
           <div class="BasketSummaryBenefits">
             <div class="BasketSummaryBenefit">
               <span class="BasketSummaryBenefitTitle">Free Shipping</span>
