@@ -12493,8 +12493,9 @@ body.ss-pdp-lightbox-open {
     }
 
     .desktop-category-ribbon {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
         gap: 8px 10px !important;
         padding-top: 10px !important;
         border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 44%, transparent) !important;
@@ -12504,13 +12505,14 @@ body.ss-pdp-lightbox-open {
     .Category_Button {
         display: flex !important;
         align-items: center !important;
-        justify-content: flex-start !important;
-        width: 100% !important;
-        min-width: 0 !important;
+        justify-content: center !important;
+        width: auto !important;
+        min-width: fit-content !important;
         max-width: 100% !important;
+        flex: 0 1 auto !important;
         min-height: 46px !important;
         height: auto !important;
-        padding: 7px 12px !important;
+        padding: 7px 16px !important;
         border: 1px solid color-mix(in srgb, var(--Borders_Colour) 48%, transparent) !important;
         border-radius: 16px !important;
         background: color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
@@ -12521,8 +12523,8 @@ body.ss-pdp-lightbox-open {
         letter-spacing: -0.01em !important;
         line-height: 1.1 !important;
         box-shadow: none !important;
-        white-space: normal !important;
-        overflow: hidden !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
     }
 
     .Category_Button_Heading,
@@ -12537,21 +12539,20 @@ body.ss-pdp-lightbox-open {
 
     .Category_Button_Heading {
         display: grid !important;
-        grid-template-columns: auto minmax(0, 1fr) !important;
+        grid-template-columns: auto auto !important;
         align-items: center !important;
         gap: 8px !important;
-        width: 100% !important;
+        width: auto !important;
         margin: 0 !important;
+        justify-content: center !important;
     }
 
     .category-label {
-        display: -webkit-box !important;
-        -webkit-line-clamp: 2 !important;
-        -webkit-box-orient: vertical !important;
-        overflow: hidden !important;
-        white-space: normal !important;
-        text-align: left !important;
-        word-break: break-word !important;
+        display: block !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+        word-break: normal !important;
     }
 
     .category-icon-wrapper {
