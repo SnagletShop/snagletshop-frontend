@@ -7229,17 +7229,52 @@
 @media (min-width: 681px) {
     .product-card {
         grid-template-areas:
-            "media"
-            "name"
-            "price"
-            "meta"
-            "actions" !important;
+            "media media"
+            "name name"
+            "price meta"
+            "actions actions" !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        grid-template-rows: auto auto auto auto !important;
+        column-gap: 16px !important;
+        row-gap: 10px !important;
     }
 
     .product-rating-meta {
         grid-area: meta !important;
-        margin: -4px 0 2px !important;
-        font-size: 14px !important;
+        margin: 0 !important;
+        font-size: 15.4px !important;
+        justify-self: end !important;
+        align-self: center !important;
+        width: auto !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        gap: 8px !important;
+    }
+
+    .product-price {
+        margin: 0 !important;
+        align-self: center !important;
+    }
+
+    .product-card-rating-primary {
+        gap: 7px !important;
+    }
+
+    .product-card-rating-secondary {
+        gap: 5px !important;
+        padding-left: 10px !important;
+    }
+
+    .product-card-rating-stars {
+        font-size: 12px !important;
+    }
+
+    .product-card-rating-value,
+    .product-card-sold-count {
+        font-size: 15.4px !important;
+        line-height: 1 !important;
     }
 }
 
