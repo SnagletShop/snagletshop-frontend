@@ -12880,3 +12880,91 @@ body.ss-pdp-lightbox-open {
         min-height: 100vh !important;
     }
 }
+
+.BrandThemeLogo {
+    display: none;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.BrandThemeLogo--light {
+    display: inline-flex;
+}
+
+.BrandThemeLogo--dark {
+    display: none;
+}
+
+.dark-mode .BrandThemeLogo--light {
+    display: none !important;
+}
+
+.dark-mode .BrandThemeLogo--dark {
+    display: inline-flex !important;
+}
+
+.light-mode .BrandThemeLogo--light {
+    display: inline-flex !important;
+}
+
+.light-mode .BrandThemeLogo--dark {
+    display: none !important;
+}
+
+.BrandLogoImage {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.BrandThemeLogo.is-ready .DesktopBrandWordmark--fallback,
+.BrandThemeLogo.is-ready .mobileLogoTextFallback {
+    display: none !important;
+}
+
+@media (max-width: 680px) {
+    .mobileLogo {
+        display: flex !important;
+        align-items: center !important;
+        min-width: 0 !important;
+    }
+
+    .mobileBrandLogoTheme {
+        max-width: min(100%, 58vw) !important;
+    }
+
+    .mobileBrandLogoImage {
+        width: auto !important;
+        height: min(8.5vw, 48px) !important;
+        max-width: 100% !important;
+    }
+
+    .mobileLogoTextFallback {
+        display: inline-block;
+        margin: 0 !important;
+        font-size: 8.5vw !important;
+        line-height: 0.95 !important;
+        font-weight: 700 !important;
+        color: var(--Default_Text_Colour) !important;
+        letter-spacing: -0.03em !important;
+    }
+}
+
+@media (min-width: 681px) {
+    .desktopBrandLogoTheme {
+        justify-content: flex-start;
+        max-width: min(100%, 330px);
+    }
+
+    .desktopBrandLogoImage {
+        width: auto !important;
+        height: clamp(34px, 2.45vw, 48px) !important;
+        max-width: 100% !important;
+    }
+
+    .DesktopBrandWordmark--fallback {
+        display: inline-block;
+    }
+}
