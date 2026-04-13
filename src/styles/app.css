@@ -7324,7 +7324,7 @@
         grid-template-columns: auto minmax(0, 1fr) auto !important;
         align-items: center !important;
         gap: 2.5vw !important;
-        width: 100% !important;
+        width: 100vw !important;
         padding: 3.333vw 4vw 2.222vw !important;
         box-sizing: border-box !important;
         background: transparent !important;
@@ -7386,7 +7386,7 @@
     .mobileSearchRow {
         display: flex !important;
         align-items: center !important;
-        width: 100% !important;
+        width: 100vw !important;
         margin: 0 !important;
         padding: 0 4vw 2.222vw !important;
         box-sizing: border-box !important;
