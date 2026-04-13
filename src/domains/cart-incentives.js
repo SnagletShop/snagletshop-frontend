@@ -8,6 +8,7 @@ let __ssBasketNeedsRerender = false;
 let __ssBasketRerenderQueued = false;
 let __ssContributionCache = { at: 0, items: null };
 let __ssAddonPoolSortedCache = { src: "", ref: null, len: 0, sorted: [] };
+let __ssCartAddonDisplayState = window.__ssCartAddonDisplayState || { items: [], justAddedKey: "", justAddedAt: 0 };
 window.__ssSmartCartRecoCache = window.__ssSmartCartRecoCache || __ssSmartCartRecoCache;
 window.__ssSmartCartRecoPending = window.__ssSmartCartRecoPending || __ssSmartCartRecoPending;
 window.__ssSmartRecoRerenderTimer = window.__ssSmartRecoRerenderTimer || __ssSmartRecoRerenderTimer;
@@ -17,6 +18,7 @@ window.__ssBasketNeedsRerender = !!window.__ssBasketNeedsRerender;
 window.__ssBasketRerenderQueued = !!window.__ssBasketRerenderQueued;
 window.__ssContributionCache = window.__ssContributionCache || __ssContributionCache;
 window.__ssAddonPoolSortedCache = window.__ssAddonPoolSortedCache || __ssAddonPoolSortedCache;
+window.__ssCartAddonDisplayState = window.__ssCartAddonDisplayState || __ssCartAddonDisplayState;
 
 function __ssGetCartIncentivesConfig() {
   const cfg = window?.preloadedData?.storefrontConfig?.cartIncentives;
@@ -353,6 +355,65 @@ function __ssGetAddonPoolSorted() {
   for (const p of raw) { const k = String(p?.key || p?.productId || p?.id || p?.productLink || p?.name || '').trim(); if (!k || seen.has(k)) continue; seen.add(k); const obj = { key:k, productId:String(p?.productId || '').trim(), name:String(p?.name || '').trim(), price:__ssResolveAddonPriceEUR(p), image:String(p?.image || p?.imageUrl || (Array.isArray(p?.images) ? p.images[0] : '') || '').trim(), productLink:String(p?.productLink || '').trim(), description:String(p?.description || '').trim(), discountPct:Number(p?.discountPct || 0) || 0, discountedPrice:Number(p?.discountedPrice || 0) || 0, discountToken:String(p?.discountToken || '').trim() }; if (!obj.name || !(obj.price > 0) || !obj.image) continue; cleaned.push(obj); }
   cleaned.sort((a,b) => a.price - b.price); __ssAddonPoolSortedCache = { src, ref: src === 'contrib' ? ref : null, len: src === 'contrib' ? len : 0, sorted: cleaned }; window.__ssAddonPoolSortedCache = __ssAddonPoolSortedCache; return cleaned;
 }
+function __ssAddonStableKey(item) {
+  try {
+    const token = String(item?.discountToken || '').trim();
+    const pid = String(item?.productId || '').trim();
+    const key = String(item?.key || '').trim();
+    const name = String(item?.name || '').trim().toLowerCase();
+    return token || pid || key || name || '';
+  } catch { return ''; }
+}
+function __ssAddonExistsInBasket(item) {
+  try {
+    const pid = String(item?.productId || '').trim();
+    const name = String(item?.name || '').trim();
+    return Object.values(basket || {}).some((entry) => {
+      const basketPid = String(entry?.productId || '').trim();
+      const basketName = String(entry?.name || '').trim();
+      return (pid && basketPid && pid === basketPid) || (name && basketName && name === basketName);
+    });
+  } catch { return false; }
+}
+function __ssAddonIsRenderable(item) {
+  try {
+    return !!(__ssAddonStableKey(item) && String(item?.name || '').trim() && (Number(item?.price || 0) > 0) && String(item?.image || '').trim());
+  } catch { return false; }
+}
+function __ssResolveDisplayedCartAddons(candidates, { limit = 4 } = {}) {
+  try {
+    const maxN = Math.max(0, Number(limit || 4) || 4);
+    const state = window.__ssCartAddonDisplayState || __ssCartAddonDisplayState;
+    const now = Date.now();
+    const justAddedKey = (state && state.justAddedKey && (now - Number(state.justAddedAt || 0) < 2 * 60 * 1000))
+      ? String(state.justAddedKey || '')
+      : '';
+    const prev = Array.isArray(state?.items) ? state.items : [];
+    const next = [];
+    const seen = new Set();
+    const take = (item) => {
+      if (next.length >= maxN) return;
+      if (!__ssAddonIsRenderable(item)) return;
+      const stableKey = __ssAddonStableKey(item);
+      if (!stableKey || seen.has(stableKey)) return;
+      if (justAddedKey && stableKey === justAddedKey) return;
+      if (__ssAddonExistsInBasket(item)) return;
+      seen.add(stableKey);
+      next.push(item);
+    };
+    prev.forEach(take);
+    (Array.isArray(candidates) ? candidates : []).forEach(take);
+    __ssCartAddonDisplayState = {
+      items: next.slice(),
+      justAddedKey: '',
+      justAddedAt: 0
+    };
+    window.__ssCartAddonDisplayState = __ssCartAddonDisplayState;
+    return next;
+  } catch {
+    return Array.isArray(candidates) ? candidates.slice(0, Math.max(0, Number(limit || 4) || 4)) : [];
+  }
+}
 function __ssCartPickAddonProducts({ desiredEUR, limit = 4 } = {}) {
   const desired = Math.max(0, Number(desiredEUR || 0) || 0); const maxN = Math.max(0, Number(limit || 4) || 4); const basketNames = new Set(Object.values(basket || {}).map(i => String(i?.name || '').trim()).filter(Boolean));
   let smart=[];
@@ -405,7 +466,8 @@ function __ssRenderCartIncentivesHTMLLegacy(totalSumEUR, opts = {}) {
     const shipProg = shipEnabled ? Math.max(0, Math.min(100, (base / shipThr) * 100)) : 0;
     const shipText = shipEnabled ? (base >= shipThr ? 'Free shipping unlocked' : (() => { const needEUR = Math.max(0, (shipThr - base)); return `Add <span class="ss-ci-amt" data-eur="${needEUR.toFixed(2)}" data-ci-min-eur="${shipThr.toFixed(2)}" data-ci-base-eur="${base.toFixed(2)}">${needEUR.toFixed(2)}€</span> for free shipping`; })()) : '';
     const desired = nextTier ? Math.max(3, nextTier.min - base) : 0; const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 }; const configuredMaxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4)); const maxItems = (window.innerWidth <= 700) ? Math.min(configuredMaxItems || 4, 4) : configuredMaxItems;
-    __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems }); const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
+    const candidateLimit = Math.min(12, Math.max(maxItems + 4, maxItems * 2));
+    __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: candidateLimit }); const addons = __ssResolveDisplayedCartAddons(__ssCartPickAddonProducts({ desiredEUR: desired, limit: candidateLimit }), { limit: maxItems });
     const badges=[]; if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind:'saved', eur:Number(inc.tierDiscountEUR) || 0 }); if (Number(inc.bundleDiscountEUR || 0) > 0) badges.push({ kind:'bundle', eur:Number(inc.bundleDiscountEUR) || 0 }); if ((shipEnabled && base >= shipThr) || inc?.hasFreeShipping) badges.push({ kind:'text', text:'Free shipping' });
     const addonHTML = addons.length ? `<div class="ss-ci-sub ss-ci-addons-title">Frequently added with your items:</div><div class="ss-ci-addons">${addons.map(p => { const price = Number(p?.price || 0) || 0; const hasDisc = (Number(p?.discountPct || 0) > 0 && Number(p?.discountedPrice || 0) > 0 && Number(p?.discountedPrice || 0) < price); const eur = hasDisc ? Number(p.discountedPrice || 0) : price; const eurOrig = hasDisc ? price : null; const pct = hasDisc ? Number(p.discountPct || 0) : 0; const nameEnc = encodeURIComponent(String(p?.name || '')); const recoQ = hasDisc && String(p?.discountToken || '') ? `&reco=${encodeURIComponent(String(p.discountToken))}` : ''; const href = __ssBuildProductHref(p, hasDisc ? { discountToken: String(p.discountToken || ''), discountPct: pct, discountedPrice: eur } : null); if (hasDisc && String(p?.discountToken || '')) { try { __ssRecoDiscountStorePut(String(p.discountToken), { productId: __ssIdNorm(p?.productId || ''), discountPct: pct, discountedPrice: eur }); } catch {} } return `<div class="ss-ci-card" data-ss-addon-name="${__ssEscHtml(String(p?.name || ''))}" data-ss-addon-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-addon-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-addon-pct="${__ssEscHtml(String(pct))}" data-ss-addon-price="${__ssEscHtml(String(eur))}" data-ss-addon-orig="${__ssEscHtml(String(price))}"><a href="${href}" rel="noopener noreferrer" class="ss-link-block"><img class="ss-ci-img" src="${__ssEscHtml(p?.image || '')}" alt="${__ssEscHtml(p?.name || '')}"></a><div class="ss-ci-card-body ss-minw0"><a href="${href}" rel="noopener noreferrer" class="ss-link-reset"><div class="ss-ci-name">${__ssEscHtml(p?.name || '')}</div></a>${hasDisc ? `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}" data-eur-original="${eurOrig.toFixed(2)}" data-discount-pct="${pct}">${eur.toFixed(2)}€</div>` : `<div class="ss-ci-price basket-item-price" data-eur="${eur.toFixed(2)}">${eur.toFixed(2)}€</div>`}</div><button class="ss-ci-btn" type="button" data-ss-quickadd="${__ssEscHtml(p?.name || '')}" data-ss-quickadd-pid="${__ssEscHtml(String(p?.productId || ''))}" data-ss-quickadd-token="${__ssEscHtml(String(p?.discountToken || ''))}" data-ss-quickadd-pct="${__ssEscHtml(String(p?.discountPct || ''))}" data-ss-quickadd-orig="${__ssEscHtml(String(price))}" data-ss-quickadd-disc="${__ssEscHtml(String(eur))}">Add</button></div>`; }).join('')}</div>` : '';
     const badgesHtml = badges.length ? `<div class="ss-ci-badges">${badges.map(b => {
@@ -491,8 +553,9 @@ function __ssRenderCartIncentivesHTML(totalSumEUR, opts = {}) {
     const topCfg = (cfg?.topup && typeof cfg.topup === 'object') ? cfg.topup : { maxItems: 4, maxPriceDeltaPct: 25 };
     const configuredMaxItems = Math.max(0, Math.min(12, Number(topCfg.maxItems || 4) || 4));
     const maxItems = (window.innerWidth <= 700) ? Math.min(configuredMaxItems || 4, 4) : configuredMaxItems;
-    __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: maxItems });
-    const addons = __ssCartPickAddonProducts({ desiredEUR: desired, limit: maxItems });
+    const candidateLimit = Math.min(12, Math.max(maxItems + 4, maxItems * 2));
+    __ssEnsureSmartCartRecs({ desiredEUR: desired, limit: candidateLimit });
+    const addons = __ssResolveDisplayedCartAddons(__ssCartPickAddonProducts({ desiredEUR: desired, limit: candidateLimit }), { limit: maxItems });
 
     const badges = [];
     if (Number(inc.tierDiscountEUR || 0) > 0) badges.push({ kind: 'saved', eur: Number(inc.tierDiscountEUR) || 0 });
@@ -588,6 +651,18 @@ function __ssBindCartIncentives(rootEl) {
       } catch {}
       const buttonDisc = Number(btn.getAttribute('data-ss-quickadd-disc') || 0) || 0;
       const basePrice = (quotedOrig > 0 ? quotedOrig : (livePrice || Number(p.price || 0) || buttonDisc || 0));
+      try {
+        const stableAddedKey = __ssAddonStableKey({
+          key: String(p?.key || '').trim(),
+          productId: String(p?.productId || pid || '').trim(),
+          discountToken: String(tok || '').trim(),
+          name: String(p?.name || name || '').trim()
+        });
+        __ssCartAddonDisplayState = window.__ssCartAddonDisplayState || __ssCartAddonDisplayState;
+        __ssCartAddonDisplayState.justAddedKey = stableAddedKey;
+        __ssCartAddonDisplayState.justAddedAt = Date.now();
+        window.__ssCartAddonDisplayState = __ssCartAddonDisplayState;
+      } catch {}
       addToCart(p.name, basePrice, p.image || '', p.expectedPurchasePrice || 0, p.productLink || '', p.description || '', '', sel, (p.productId || null), explicitRecoMeta);
       try { updateBasket(); } catch {}
       return;
