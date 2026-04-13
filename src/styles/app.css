@@ -12952,6 +12952,20 @@ body.ss-pdp-lightbox-open {
         background: transparent !important;
         background-color: transparent !important;
     }
+
+    .Product_Detail_Page .product-page-rating-stars {
+        font-size: 20px !important;
+    }
+
+    .Product_Detail_Page .product-page-sold-count {
+        gap: 0.28em !important;
+        font-size: 18px !important;
+    }
+
+    .Product_Detail_Page .product-page-sold-count__suffix {
+        display: inline !important;
+        margin-left: 0.06em !important;
+    }
 }
 
 .BrandThemeLogo {
