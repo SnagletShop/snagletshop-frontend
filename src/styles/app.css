@@ -7345,7 +7345,7 @@
         justify-self: end !important;
         width: max-content !important;
         min-width: 0 !important;
-        padding-right: 1.111vw !important;
+        padding-right: 0 !important;
         box-sizing: border-box !important;
     }
 
