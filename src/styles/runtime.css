@@ -1171,23 +1171,23 @@ html.dark-mode .ss-ci-btn {
     }
 
     .Quantity-Controls-Basket .BasketChangeQuantityButton {
-        width: 38px;
-        height: 38px;
-        font-size: 22px;
+        width: 10.556vw !important;
+        height: 10.556vw !important;
+        font-size: 6.111vw !important;
     }
 
     .Quantity-Controls-Basket .BasketChangeQuantityText {
-        font-size: 18px;
+        font-size: 5vw !important;
     }
 
     .Basket-Item {
-        padding: 10px 10px !important;
-        gap: 12px !important;
+        padding: 2.778vw 2.778vw !important;
+        gap: 3.333vw !important;
     }
 
     .BasketOptionChip {
-        font-size: 14px;
-        padding: 5px 10px;
+        font-size: 3.889vw !important;
+        padding: 1.389vw 2.778vw !important;
     }
 
     .BasketTextDescription {
@@ -1195,7 +1195,7 @@ html.dark-mode .ss-ci-btn {
     }
 
     .ReceiptOptionChips .BasketOptionChip {
-        font-size: 13px;
+        font-size: 3.611vw !important;
     }
 }
 
