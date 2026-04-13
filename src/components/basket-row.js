@@ -48,13 +48,20 @@
     const safeName = window.__ssEscHtml ? window.__ssEscHtml(item?.name || '') : String(item?.name || '');
     const safeDesc = window.__ssEscHtml ? window.__ssEscHtml(item?.description || '') : String(item?.description || '');
     const qty = Math.max(1, parseInt(item?.quantity || 1, 10) || 1);
-    const optionChipsHTML = window.__ssBuildOptionChipsHTML ? window.__ssBuildOptionChipsHTML(window.__ssGetSelectedOptionsForDisplay ? window.__ssGetSelectedOptionsForDisplay(item, product) : [], false) : '';
+    let optionLabel = '';
+    try {
+      const selected = window.__ssGetSelectedOptionsForDisplay ? window.__ssGetSelectedOptionsForDisplay(item, product) : [];
+      optionLabel = selected && selected.length && window.__ssFormatSelectedOptionsDisplay
+        ? String(window.__ssFormatSelectedOptionsDisplay(selected) || '').trim()
+        : String(item?.selectedOption || '').trim();
+    } catch {}
 
     const basketItem = document.createElement('div');
     basketItem.className = 'Basket-Item';
 
     const imgLink = document.createElement('a');
     imgLink.href = buildProductHref(item, product);
+    imgLink.className = 'BasketImageLink';
 
     const img = document.createElement('img');
     img.className = 'Basket_Image';
@@ -73,8 +80,9 @@
     titleLink.className = 'BasketText';
     titleLink.innerHTML = `<strong class="BasketText BasketTitle">${safeName}</strong>`;
 
-    const chipsWrap = document.createElement('div');
-    chipsWrap.innerHTML = optionChipsHTML;
+    const optionMeta = document.createElement('div');
+    optionMeta.className = 'BasketVariantMeta';
+    optionMeta.textContent = optionLabel;
 
     const desc = document.createElement('p');
     desc.className = 'BasketTextDescription';
@@ -83,7 +91,8 @@
     imgLink.addEventListener('click', (event) => openBasketItemProduct(event, item, product));
     titleLink.addEventListener('click', (event) => openBasketItemProduct(event, item, product));
 
-    details.append(titleLink, chipsWrap);
+    details.appendChild(titleLink);
+    if (optionLabel) details.appendChild(optionMeta);
     details.appendChild(desc);
 
     const qtyControls = getQuantityControls()?.createBasketQuantityControls?.(key, qty, {
