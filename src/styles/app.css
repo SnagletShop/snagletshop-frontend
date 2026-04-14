@@ -14606,6 +14606,193 @@ body.ss-pdp-lightbox-open {
     }
 }
 
+/* Auth phone polish: final centered login/register layout */
+@media (max-width: 680px) {
+    #Viewer > .ss-auth-page {
+        padding: 4.444vw 0 8.333vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-card {
+        width: min(92vw, 34rem) !important;
+        gap: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-switch-row {
+        padding: 1.667vw 0 0 !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-mode-switch {
+        width: min(74vw, 23rem) !important;
+        gap: 1.389vw !important;
+        padding: 1.111vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-mode-btn {
+        min-height: 12.222vw !important;
+        font-size: 4.444vw !important;
+        gap: 2.222vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-mode-btn .ss-auth-icon {
+        width: 5vw !important;
+        height: 5vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-hero {
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 3.611vw !important;
+        padding: 0 !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-badge {
+        min-height: 10.278vw !important;
+        padding: 0 4.167vw !important;
+        font-size: 3.333vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-copy {
+        gap: 1.111vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-copy h2 {
+        font-size: 11.111vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-subtitle {
+        font-size: 6.111vw !important;
+        line-height: 1.08 !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-copy p {
+        max-width: 81vw !important;
+        margin-top: 1.389vw !important;
+        font-size: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-panel-shell {
+        gap: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-form {
+        gap: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-field {
+        gap: 1.944vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-card .ss-auth-field span {
+        font-size: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-input-shell {
+        min-height: 14.444vw !important;
+        padding: 0 4.444vw !important;
+        gap: 3.333vw !important;
+        border-radius: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-input-shell .ss-auth-icon {
+        width: 5.278vw !important;
+        height: 5.278vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-card .ss-auth-field input {
+        font-size: 4.722vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-inline-links {
+        margin-top: -0.833vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-aux-link {
+        font-size: 4.167vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-submit {
+        min-height: 14.722vw !important;
+        border-radius: 4.444vw !important;
+        font-size: 5vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-divider {
+        margin-top: 0.833vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-link-btn {
+        font-size: 4.722vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-trust-row {
+        gap: 3.333vw !important;
+        margin-top: 1.667vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-trust-item {
+        gap: 1.944vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-trust-icon {
+        width: 12.5vw !important;
+        height: 12.5vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-trust-copy strong {
+        font-size: 4.167vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-trust-copy span {
+        font-size: 3.611vw !important;
+        max-width: 23vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-note-card--mobile {
+        margin-top: 1.667vw !important;
+        padding: 4.444vw !important;
+        border-radius: 4.444vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-note-card--mobile .ss-auth-note-label {
+        font-size: 3.611vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-note-card--mobile .ss-auth-note-text {
+        font-size: 4.167vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-register-preview {
+        grid-template-columns: 16.111vw minmax(0, 1fr) !important;
+        justify-items: stretch !important;
+        align-items: center !important;
+        gap: 3.333vw !important;
+        padding: 4.167vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-avatar-preview {
+        width: 16.111vw !important;
+        height: 16.111vw !important;
+        margin: 0 !important;
+        border-radius: 4.167vw !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-field--file {
+        width: 100% !important;
+        text-align: left !important;
+    }
+
+    #Viewer > .ss-auth-page .ss-auth-field--file input {
+        width: 100% !important;
+    }
+}
+
 /* Auth final structure: shared switch row + phone-first stacked flow */
 .ss-auth-card {
     grid-template-areas:
