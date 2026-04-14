@@ -236,27 +236,29 @@
             </div>
           </section>
           <section class="ss-auth-panel">
-            ${modeSwitchMarkup(isRegister)}
-            <div class="ss-auth-panel-head">
-              <h3>${copy.panelTitle}</h3>
-              <p>${copy.panelBody}</p>
+            <div class="ss-auth-panel-shell">
+              ${modeSwitchMarkup(isRegister)}
+              <div class="ss-auth-panel-head">
+                <h3>${copy.panelTitle}</h3>
+                <p>${copy.panelBody}</p>
+              </div>
+              <form class="ss-auth-form" id="ssAuthForm">
+                ${isRegister ? registerFieldsMarkup() : loginFieldsMarkup()}
+                <label class="ss-auth-field">
+                  <span>Password</span>
+                  <input id="ssAuthPassword" autocomplete="${isRegister ? 'new-password' : 'current-password'}" minlength="8" placeholder="${isRegister ? 'At least 8 characters' : 'Your password'}" required type="password"/>
+                </label>
+                <div class="ss-auth-inline-note">Use the same email as your order history so review eligibility works automatically.</div>
+                <div class="ss-auth-actions">
+                  <button class="ss-review-btn ss-review-btn-primary ss-auth-submit" id="ssAuthSubmit" type="submit">${copy.submitLabel}</button>
+                </div>
+                <div class="ss-auth-footer-row">
+                  <span class="ss-auth-footer-copy">${copy.switchCopy}</span>
+                  <button class="ss-auth-link-btn" id="ssAuthSwitch" type="button">${copy.switchLabel}</button>
+                </div>
+                <div class="ss-auth-status" id="ssAuthStatus" aria-live="polite"></div>
+              </form>
             </div>
-            <form class="ss-auth-form" id="ssAuthForm">
-              ${isRegister ? registerFieldsMarkup() : loginFieldsMarkup()}
-              <label class="ss-auth-field">
-                <span>Password</span>
-                <input id="ssAuthPassword" autocomplete="${isRegister ? 'new-password' : 'current-password'}" minlength="8" placeholder="${isRegister ? 'At least 8 characters' : 'Your password'}" required type="password"/>
-              </label>
-              <div class="ss-auth-inline-note">Use the same email as your order history so review eligibility works automatically.</div>
-              <div class="ss-auth-actions">
-                <button class="ss-review-btn ss-review-btn-primary ss-auth-submit" id="ssAuthSubmit" type="submit">${copy.submitLabel}</button>
-              </div>
-              <div class="ss-auth-footer-row">
-                <span class="ss-auth-footer-copy">${copy.switchCopy}</span>
-                <button class="ss-auth-link-btn" id="ssAuthSwitch" type="button">${copy.switchLabel}</button>
-              </div>
-              <div class="ss-auth-status" id="ssAuthStatus" aria-live="polite"></div>
-            </form>
           </section>
         </div>
       </div>`;

@@ -13322,6 +13322,292 @@ body.ss-pdp-lightbox-open {
     }
 }
 
+/* Auth cleanup: simpler, calmer, easier to scan */
+.ss-auth-page {
+    padding: 28px 0 48px !important;
+}
+
+.ss-auth-card {
+    width: min(1120px, calc(100vw - 64px)) !important;
+    margin: 0 auto !important;
+    grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1fr) !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 98%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 78%, transparent) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
+}
+
+.ss-auth-hero {
+    padding: 28px 30px !important;
+    gap: 16px !important;
+    border-right: 1px solid color-mix(in srgb, var(--Borders_Colour) 70%, transparent) !important;
+    background: color-mix(in srgb, var(--TopBar_Background_Colour) 88%, var(--body_Background_Colour)) !important;
+}
+
+.ss-auth-brand {
+    gap: 4px !important;
+    margin: 0 !important;
+}
+
+.ss-auth-brand-wordmark {
+    font-size: clamp(28px, 2.8vw, 42px) !important;
+    font-weight: 800 !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.04em !important;
+}
+
+.ss-auth-brand-caption,
+.ss-auth-kicker {
+    font-size: 11px !important;
+    letter-spacing: 0.12em !important;
+}
+
+.ss-auth-copy {
+    gap: 8px !important;
+}
+
+.ss-auth-copy h2 {
+    font-size: clamp(28px, 3vw, 40px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.04em !important;
+    max-width: 10ch !important;
+}
+
+.ss-auth-copy p {
+    max-width: 34ch !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+}
+
+.ss-auth-benefits {
+    gap: 0 !important;
+}
+
+.ss-auth-benefit {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 12px 0 !important;
+    border: 0 !important;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 60%, transparent) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-benefit:first-child {
+    padding-top: 0 !important;
+    border-top: 0 !important;
+}
+
+.ss-auth-benefit-index {
+    display: none !important;
+}
+
+.ss-auth-benefit-copy {
+    display: grid !important;
+    gap: 3px !important;
+}
+
+.ss-auth-benefit-copy strong {
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+}
+
+.ss-auth-benefit-copy span {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    color: var(--Muted_Text_Colour) !important;
+}
+
+.ss-auth-note-card {
+    padding: 14px 0 0 !important;
+    border: 0 !important;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 60%, transparent) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-note-label {
+    font-size: 11px !important;
+    letter-spacing: 0.12em !important;
+}
+
+.ss-auth-note-text {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    color: var(--Muted_Text_Colour) !important;
+}
+
+.ss-auth-panel {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    padding: 28px 30px !important;
+    background: transparent !important;
+}
+
+.ss-auth-panel-shell {
+    width: min(100%, 460px) !important;
+    display: grid !important;
+    gap: 18px !important;
+}
+
+.ss-auth-mode-switch {
+    width: fit-content !important;
+    padding: 4px !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 95%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+}
+
+.ss-auth-mode-btn {
+    min-width: 112px !important;
+    min-height: 40px !important;
+    padding: 0 18px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.ss-auth-panel-head {
+    margin: 0 !important;
+}
+
+.ss-auth-panel-head h3 {
+    font-size: clamp(28px, 2vw, 34px) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -0.03em !important;
+    margin: 0 !important;
+}
+
+.ss-auth-panel-head p {
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+    margin-top: 8px !important;
+    color: var(--Muted_Text_Colour) !important;
+}
+
+.ss-auth-form {
+    gap: 14px !important;
+}
+
+.ss-auth-form-grid {
+    gap: 14px !important;
+}
+
+.ss-auth-card .ss-auth-field span {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--Default_Text_Colour) !important;
+}
+
+.ss-auth-card .ss-auth-field input {
+    min-height: 46px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+}
+
+.ss-auth-inline-note {
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    color: var(--Muted_Text_Colour) !important;
+}
+
+.ss-auth-actions {
+    margin-top: 2px !important;
+}
+
+.ss-auth-submit {
+    width: 100% !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+}
+
+.ss-auth-footer-row {
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.ss-auth-footer-copy,
+.ss-auth-link-btn,
+.ss-auth-status {
+    font-size: 13px !important;
+}
+
+@media (max-width: 680px) {
+    .ss-auth-page {
+        padding: 4.444vw 0 8.333vw !important;
+    }
+
+    .ss-auth-card {
+        width: min(100%, calc(100vw - 4.444vw)) !important;
+        grid-template-columns: 1fr !important;
+        border-radius: 4.444vw !important;
+    }
+
+    .ss-auth-hero {
+        padding: 4.444vw !important;
+        gap: 3.333vw !important;
+        border-right: 0 !important;
+        border-bottom: 1px solid color-mix(in srgb, var(--Borders_Colour) 62%, transparent) !important;
+    }
+
+    .ss-auth-copy h2 {
+        max-width: none !important;
+        font-size: 9.444vw !important;
+    }
+
+    .ss-auth-copy p {
+        max-width: none !important;
+        font-size: 3.889vw !important;
+    }
+
+    .ss-auth-panel {
+        padding: 4.444vw !important;
+    }
+
+    .ss-auth-panel-shell {
+        width: 100% !important;
+        gap: 4.167vw !important;
+    }
+
+    .ss-auth-mode-switch {
+        width: fit-content !important;
+    }
+
+    .ss-auth-mode-btn {
+        min-width: 28vw !important;
+        min-height: 10vw !important;
+        padding: 0 4.167vw !important;
+        font-size: 3.611vw !important;
+    }
+
+    .ss-auth-panel-head h3 {
+        font-size: 8.333vw !important;
+    }
+
+    .ss-auth-panel-head p,
+    .ss-auth-inline-note {
+        font-size: 3.611vw !important;
+    }
+
+    .ss-auth-card .ss-auth-field input {
+        min-height: 11.667vw !important;
+        font-size: 4.167vw !important;
+    }
+
+    .ss-auth-submit {
+        min-height: 12.222vw !important;
+        font-size: 4.167vw !important;
+    }
+}
+
 .ss-review-summary-meta {
     display: flex !important;
     align-items: center !important;
