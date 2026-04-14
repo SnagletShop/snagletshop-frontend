@@ -100,6 +100,55 @@ function __ssSafeEscHtml(input) {
     }[ch] || ch));
 }
 
+function __ssBuildPdpTrustStripHtml() {
+    const items = [
+        {
+            title: 'Free Shipping',
+            subtitle: '3-7 Business Days',
+            icon: `
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M3 7.5H13V16H3V7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M13 10H17.2L20.5 13.2V16H13V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M7.5 18.5C8.32843 18.5 9 17.8284 9 17C9 16.1716 8.32843 15.5 7.5 15.5C6.67157 15.5 6 16.1716 6 17C6 17.8284 6.67157 18.5 7.5 18.5Z" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M17 18.5C17.8284 18.5 18.5 17.8284 18.5 17C18.5 16.1716 17.8284 15.5 17 15.5C16.1716 15.5 15.5 16.1716 15.5 17C15.5 17.8284 16.1716 18.5 17 18.5Z" stroke="currentColor" stroke-width="1.8"/>
+                </svg>`
+        },
+        {
+            title: '1-Year Warranty',
+            subtitle: 'Quality Guarantee',
+            icon: `
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3L18.5 5.5V10.8C18.5 15.1 15.7 19 12 20.5C8.3 19 5.5 15.1 5.5 10.8V5.5L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M9.2 12.1L11.1 14L14.9 10.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`
+        },
+        {
+            title: '30-Day Returns',
+            subtitle: 'Hassle-Free',
+            icon: `
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7.5 7H17.5V17H7.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M10.5 10L7.5 7L10.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M7.5 12H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>`
+        }
+    ];
+
+    return `
+        <section class="ss-pdp-trust-strip" aria-label="Purchase assurance">
+            ${items.map((item) => `
+                <article class="ss-pdp-trust-item">
+                    <span class="ss-pdp-trust-icon">${item.icon}</span>
+                    <span class="ss-pdp-trust-copy">
+                        <strong>${item.title}</strong>
+                        <span>${item.subtitle}</span>
+                    </span>
+                </article>
+            `).join('')}
+        </section>
+    `;
+}
+
 function __ssSafeDefaultSelectedOptions(groups) {
     try {
         if (typeof window.__ssDefaultSelectedOptions === 'function') {
@@ -1448,6 +1497,10 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     });
 
     infoCol.appendChild(buyBtn);
+
+    const trustStrip = document.createElement("div");
+    trustStrip.innerHTML = __ssBuildPdpTrustStripHtml();
+    infoCol.appendChild(trustStrip.firstElementChild);
 
     // Assemble
     details.append(imagesCol, infoCol);

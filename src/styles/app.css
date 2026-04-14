@@ -14990,3 +14990,94 @@ body.ss-pdp-lightbox-open {
         line-height: 1.55 !important;
     }
 }
+
+/* PDP trust strip */
+.Product_Detail_Page .ss-pdp-trust-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent);
+    box-sizing: border-box;
+}
+
+.Product_Detail_Page .ss-pdp-trust-item {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.875rem;
+    min-width: 0;
+}
+
+.Product_Detail_Page .ss-pdp-trust-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    color: var(--Primary_Button_Colour);
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 10%, var(--body_Background_Colour));
+    border: 1px solid color-mix(in srgb, var(--Primary_Button_Colour) 18%, var(--Borders_Colour));
+    box-sizing: border-box;
+}
+
+.Product_Detail_Page .ss-pdp-trust-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    display: block;
+}
+
+.Product_Detail_Page .ss-pdp-trust-copy {
+    display: grid;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+.Product_Detail_Page .ss-pdp-trust-copy strong {
+    font-size: 0.96rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--Default_Text_Colour);
+}
+
+.Product_Detail_Page .ss-pdp-trust-copy span {
+    font-size: 0.84rem;
+    line-height: 1.35;
+    color: var(--Muted_Text_Colour);
+}
+
+@media (max-width: 680px) {
+    .Product_Detail_Page .ss-pdp-trust-strip {
+        grid-template-columns: 1fr;
+        gap: 2.778vw;
+        width: calc(100% - 8.888vw);
+        margin: 3.333vw 4.444vw 0 !important;
+        padding-top: 3.333vw;
+    }
+
+    .Product_Detail_Page .ss-pdp-trust-item {
+        grid-template-columns: 10.556vw minmax(0, 1fr);
+        gap: 3.056vw;
+    }
+
+    .Product_Detail_Page .ss-pdp-trust-icon {
+        width: 10.556vw;
+        height: 10.556vw;
+    }
+
+    .Product_Detail_Page .ss-pdp-trust-icon svg {
+        width: 4.722vw;
+        height: 4.722vw;
+    }
+
+    .Product_Detail_Page .ss-pdp-trust-copy strong {
+        font-size: 3.889vw;
+    }
+
+    .Product_Detail_Page .ss-pdp-trust-copy span {
+        font-size: 3.333vw;
+    }
+}
