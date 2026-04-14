@@ -119,7 +119,31 @@
     }).join('');
   }
 
-  function reviewSummaryMarkup(summary) {
+  function reviewDistributionMarkup(reviews, summary) {
+    const list = Array.isArray(reviews) ? reviews : [];
+    const total = Math.max(0, Number(summary?.reviewCount || 0) || list.length || 0);
+    if (total < 1) return '';
+    const buckets = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    list.forEach((review) => {
+      const bucket = Math.max(1, Math.min(5, Math.round(Number(review?.starRating || 0) || 0)));
+      buckets[bucket] = (buckets[bucket] || 0) + 1;
+    });
+    return `
+      <div class="ss-review-summary-distribution">
+        ${[5, 4, 3, 2, 1].map((star) => {
+          const count = Number(buckets[star] || 0) || 0;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          return `
+            <div class="ss-review-summary-row">
+              <span class="ss-review-summary-row-label">${star}</span>
+              <span class="ss-review-summary-row-bar"><span style="width:${pct}%"></span></span>
+              <span class="ss-review-summary-row-value">${pct}%</span>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  function reviewSummaryMarkup(summary, reviews) {
     const count = Math.max(0, Number(summary?.reviewCount || 0) || 0);
     const avg = Math.max(0, Math.min(5, Number(summary?.avgRating || 0) || 0));
     if (count < 1 || avg <= 0) {
@@ -134,9 +158,13 @@
       <div class="ss-review-summary">
         <div class="ss-review-summary-inline">
           <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : '—'}</div>
-          <div class="ss-review-summary-stars">${createStars(avg)}</div>
-          <div class="ss-review-summary-count">${count.toLocaleString()} rating${count === 1 ? '' : 's'}</div>
+          <div class="ss-review-summary-meta">
+            <div class="ss-review-summary-stars">${createStars(avg)}</div>
+            <div class="ss-review-summary-count">${count.toLocaleString()} rating${count === 1 ? '' : 's'}</div>
+          </div>
         </div>
+        <div class="ss-review-summary-kicker">Based on ${count.toLocaleString()} verified review${count === 1 ? '' : 's'}.</div>
+        ${reviewDistributionMarkup(reviews, summary)}
       </div>`;
   }
 
@@ -173,6 +201,69 @@
             </div>
           </div>
           ${selectedPurchaseLabel ? `<div class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</div>` : ''}
+        </header>
+        <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
+        ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
+      </article>`;
+  }
+
+  function reviewSummaryPublicMarkup(summary, reviews) {
+    const count = Math.max(0, Number(summary?.reviewCount || 0) || 0);
+    const avg = Math.max(0, Math.min(5, Number(summary?.avgRating || 0) || 0));
+    if (count < 1 || avg <= 0) return reviewSummaryMarkup(summary, reviews);
+    const list = Array.isArray(reviews) ? reviews : [];
+    const buckets = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    list.forEach((review) => {
+      const bucket = Math.max(1, Math.min(5, Math.round(Number(review?.starRating || 0) || 0)));
+      buckets[bucket] = (buckets[bucket] || 0) + 1;
+    });
+    return `
+      <div class="ss-review-summary ss-review-summary--desktop-public">
+        <div class="ss-review-summary-score">${avg.toFixed(1)}</div>
+        <div class="ss-review-summary-stars">${createStars(avg)}</div>
+        <div class="ss-review-summary-count">Based on ${count.toLocaleString()} review${count === 1 ? '' : 's'}.</div>
+        <div class="ss-review-summary-distribution">
+          ${[5, 4, 3, 2, 1].map((star) => {
+            const rowCount = Number(buckets[star] || 0) || 0;
+            const pct = count > 0 ? Math.round((rowCount / count) * 100) : 0;
+            return `
+              <div class="ss-review-summary-row">
+                <span class="ss-review-summary-row-label">${star}</span>
+                <span class="ss-review-summary-row-bar"><span style="width:${pct}%"></span></span>
+                <span class="ss-review-summary-row-value">${pct}%</span>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  function reviewCardPublicMarkup(review) {
+    const images = Array.isArray(review?.images) ? review.images : [];
+    const reviewDate = formatDate(review?.reviewDate || review?.createdAt);
+    const reviewerName = esc(review?.reviewerName || 'Verified customer');
+    const selectedPurchaseLabel = String(review?.selectedPurchaseLabel || '').trim();
+    const avatarUrl = esc(review?.reviewerAvatarUrl || review?.profilePictureLink || review?.avatarUrl || '');
+    return `
+      <article class="ss-review-card ss-review-card--desktop-public">
+        <header class="ss-review-card-head">
+          <div class="ss-review-card-author">
+            <div class="ss-review-card-avatar">
+              ${avatarUrl ? `<img alt="${reviewerName}" src="${avatarUrl}"/>` : `<span aria-hidden="true">${reviewerName.charAt(0).toUpperCase()}</span>`}
+            </div>
+            <div class="ss-review-card-meta">
+              <div class="ss-review-card-topline">
+                <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
+                <div class="ss-review-card-identity">
+                  <span class="ss-review-card-name">${reviewerName}</span>
+                  ${reviewDate ? `<span class="ss-review-card-dot">•</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
+                </div>
+              </div>
+              <div class="ss-review-card-purchase-line">
+                <span class="ss-review-card-verified">Verified Purchase</span>
+                ${selectedPurchaseLabel ? `<span class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</span>` : ''}
+              </div>
+            </div>
+          </div>
         </header>
         <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
         ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
@@ -492,6 +583,7 @@
     const summary = state.reviews?.summary || { reviewCount: 0, avgRating: 0 };
     const reviews = Array.isArray(state.reviews?.reviews) ? state.reviews.reviews : [];
     const mode = String(state.mode || 'public').trim().toLowerCase();
+    const isDesktopPublic = mode === 'public' && !__ssIsMobileViewport();
     const account = auth()?.getAccount?.() || null;
     const eligibility = state.eligibility || null;
     const canReview = !!eligibility?.canReview;
@@ -503,17 +595,17 @@
       <section class="ss-product-reviews-shell ss-product-reviews-shell--${esc(mode)}">
         <div class="ss-product-reviews-head">
           <div>
-            <h3 class="ss-product-reviews-title">${mode === 'public' ? 'Reviews' : 'Customer reviews'}</h3>
+            <h3 class="ss-product-reviews-title">${mode === 'public' ? 'Customer Reviews' : 'Customer reviews'}</h3>
             <div class="ss-review-muted">${mode === 'public' ? 'All from verified purchases' : 'Only verified customers with completed orders can leave a review for this product.'}</div>
           </div>
-          ${reviewSummaryMarkup(summary)}
+          ${isDesktopPublic ? reviewSummaryPublicMarkup(summary, reviews) : reviewSummaryMarkup(summary, reviews)}
         </div>
-        ${mode === 'public' ? reviewGalleryMarkup(reviews) : ''}
+        ${mode === 'public' && !isDesktopPublic ? reviewGalleryMarkup(reviews) : ''}
         ${mode === 'public' ? '' : `<div class="ss-product-reviews-compose">
           ${!account ? authPromptMarkup() : canReview ? formMarkup(eligibility) : eligibilityListMarkup(eligibility)}
         </div>`}
         <div class="ss-product-reviews-list ${reviews.length ? '' : 'is-empty'}">
-          ${reviews.length ? visibleReviews.map(reviewCardMarkup).join('') : emptyReviewsMarkup()}
+          ${reviews.length ? visibleReviews.map((review) => isDesktopPublic ? reviewCardPublicMarkup(review) : reviewCardMarkup(review)).join('') : emptyReviewsMarkup()}
         </div>
         ${reviews.length > visibleCount ? `<div class="ss-review-more"><button class="ss-review-btn" data-review-load-more="1" type="button">Load 3 more reviews</button></div>` : ''}
       </section>`;

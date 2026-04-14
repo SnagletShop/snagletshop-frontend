@@ -594,7 +594,7 @@ async function __ssRecoRenderForProduct(product) {
         head.className = "RecoHead";
 
         const h = document.createElement("h3");
-        h.textContent = "Related items";
+        h.textContent = "You May Also Like";
 
         const navs = document.createElement("div");
         navs.className = "RecoNavs";
@@ -920,7 +920,8 @@ async function __ssRecoRenderForProduct(product) {
         section.append(head, viewport);
 
         const pdp = document.querySelector('.Product_Detail_Page');
-        const anchor = pdp || pv;
+        const reviewsSection = pv?.querySelector?.('.Product_Reviews_Section');
+        const anchor = reviewsSection || pdp || pv;
         if ((window.__ssRecoRenderToken || 0) !== renderToken) return;
         anchor.insertAdjacentElement('afterend', section);
 
