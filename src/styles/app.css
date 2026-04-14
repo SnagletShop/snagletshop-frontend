@@ -15037,6 +15037,7 @@ body.ss-pdp-lightbox-open {
 }
 
 .Product_Detail_Page .ss-pdp-trust-copy strong {
+    font-family: 'Rubik', sans-serif;
     font-size: 0.96rem;
     font-weight: 600;
     line-height: 1.25;
@@ -15044,6 +15045,7 @@ body.ss-pdp-lightbox-open {
 }
 
 .Product_Detail_Page .ss-pdp-trust-copy span {
+    font-family: 'Afacad', sans-serif;
     font-size: 0.84rem;
     line-height: 1.35;
     color: var(--Muted_Text_Colour);
