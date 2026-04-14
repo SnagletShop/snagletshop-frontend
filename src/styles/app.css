@@ -14337,6 +14337,118 @@ body.ss-pdp-lightbox-open {
     }
 }
 
+/* Auth register preview cleanup */
+.ss-auth-register-preview {
+    grid-template-columns: 6.5rem minmax(0, 1fr) !important;
+    gap: 1.15rem !important;
+    align-items: center !important;
+    padding: 1.1rem 1.25rem !important;
+    border-radius: 1.25rem !important;
+    background: color-mix(in srgb, var(--SearchBar_Background_Colour) 94%, var(--body_Background_Colour)) !important;
+}
+
+.ss-auth-avatar-preview {
+    width: 5.5rem !important;
+    border-radius: 1.35rem !important;
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 8%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Primary_Button_Colour) 18%, var(--Borders_Colour)) !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-avatar-fallback {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.ss-auth-avatar-fallback.is-icon {
+    color: var(--Primary_Button_Colour) !important;
+}
+
+.ss-auth-avatar-fallback.is-icon .ss-auth-icon {
+    width: 2.2rem !important;
+    height: 2.2rem !important;
+    color: currentColor !important;
+}
+
+.ss-auth-field--file {
+    display: grid !important;
+    gap: 0.5rem !important;
+}
+
+.ss-auth-field--file span {
+    font-size: 0.95rem !important;
+}
+
+.ss-auth-field--file input {
+    min-height: auto !important;
+    width: 100% !important;
+    padding: 0.55rem 0.65rem !important;
+    border-radius: 0.9rem !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--body_Background_Colour) 78%, var(--SearchBar_Background_Colour)) !important;
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.3 !important;
+    box-sizing: border-box !important;
+}
+
+.ss-auth-field--file input::file-selector-button {
+    margin-right: 0.85rem !important;
+    padding: 0.7rem 1rem !important;
+    border: 0 !important;
+    border-radius: 0.75rem !important;
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 12%, var(--body_Background_Colour)) !important;
+    color: var(--Primary_Button_Colour) !important;
+    font: inherit !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+}
+
+.ss-auth-field--file small {
+    margin-top: 0.05rem !important;
+    color: var(--Muted_Text_Colour) !important;
+}
+
+@media (max-width: 680px) {
+    .ss-auth-register-preview {
+        grid-template-columns: 1fr !important;
+        justify-items: center !important;
+        gap: 3.333vw !important;
+        padding: 4.167vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    .ss-auth-avatar-preview {
+        width: 19.444vw !important;
+        border-radius: 4.722vw !important;
+    }
+
+    .ss-auth-avatar-fallback.is-icon .ss-auth-icon {
+        width: 8.056vw !important;
+        height: 8.056vw !important;
+    }
+
+    .ss-auth-field--file {
+        width: 100% !important;
+    }
+
+    .ss-auth-field--file input {
+        padding: 2.222vw 2.5vw !important;
+        border-radius: 3.611vw !important;
+        font-size: 3.889vw !important;
+    }
+
+    .ss-auth-field--file input::file-selector-button {
+        margin-right: 2.5vw !important;
+        padding: 2.5vw 3.611vw !important;
+        border-radius: 3.056vw !important;
+    }
+}
+
 /* Auth final structure: shared switch row + phone-first stacked flow */
 .ss-auth-card {
     grid-template-areas:

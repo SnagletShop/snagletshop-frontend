@@ -205,7 +205,7 @@
       <div class="ss-auth-register-preview">
         <div class="ss-auth-avatar-preview" id="ssAuthAvatarPreview" data-has-image="no" aria-hidden="true">
           <img id="ssAuthAvatarImage" alt="" hidden />
-          <span class="ss-auth-avatar-fallback" id="ssAuthAvatarFallback">SS</span>
+          <span class="ss-auth-avatar-fallback is-icon" id="ssAuthAvatarFallback">${iconMarkup('profile')}</span>
         </div>
         <label class="ss-auth-field ss-auth-field--file">
           <span>Profile picture (optional)</span>
@@ -243,7 +243,14 @@
     }
 
     function renderPreview() {
-      fallback.textContent = initialsOf(nameInput.value);
+      const displayName = String(nameInput.value || '').trim();
+      if (displayName) {
+        fallback.textContent = initialsOf(displayName);
+        fallback.classList.remove('is-icon');
+      } else {
+        fallback.innerHTML = iconMarkup('profile');
+        fallback.classList.add('is-icon');
+      }
       clearPreviewUrl();
       const file = fileInput.files?.[0] || null;
       if (file) {
