@@ -15054,32 +15054,49 @@ body.ss-pdp-lightbox-open {
 @media (max-width: 680px) {
     .Product_Detail_Page .ss-pdp-trust-strip {
         grid-template-columns: 1fr;
-        gap: 2.778vw;
+        gap: 0;
         width: calc(100% - 8.888vw);
-        margin: 3.333vw 4.444vw 0 !important;
-        padding-top: 3.333vw;
+        margin: 4.167vw 4.444vw 0 !important;
+        padding: 3.889vw 4.444vw !important;
+        border-top: 0 !important;
+        border: 1px solid color-mix(in srgb, var(--Borders_Colour) 58%, transparent) !important;
+        border-radius: 4.444vw !important;
+        background: color-mix(in srgb, var(--SearchBar_Background_Colour) 92%, var(--body_Background_Colour)) !important;
+        box-shadow: 0 2.222vw 5.556vw rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .Product_Detail_Page .ss-pdp-trust-item:not(:last-child) {
+        padding-bottom: 3.333vw;
+        margin-bottom: 3.333vw;
+        border-bottom: 1px solid color-mix(in srgb, var(--Borders_Colour) 48%, transparent);
     }
 
     .Product_Detail_Page .ss-pdp-trust-item {
-        grid-template-columns: 10.556vw minmax(0, 1fr);
-        gap: 3.056vw;
+        grid-template-columns: 12.222vw minmax(0, 1fr);
+        gap: 3.333vw;
+        align-items: center;
     }
 
     .Product_Detail_Page .ss-pdp-trust-icon {
-        width: 10.556vw;
-        height: 10.556vw;
+        width: 12.222vw;
+        height: 12.222vw;
+        border-radius: 3.333vw;
+        background: color-mix(in srgb, var(--Primary_Button_Colour) 10%, var(--body_Background_Colour)) !important;
+        border-color: color-mix(in srgb, var(--Primary_Button_Colour) 14%, var(--Borders_Colour)) !important;
     }
 
     .Product_Detail_Page .ss-pdp-trust-icon svg {
-        width: 4.722vw;
-        height: 4.722vw;
+        width: 5vw;
+        height: 5vw;
     }
 
     .Product_Detail_Page .ss-pdp-trust-copy strong {
-        font-size: 3.889vw;
+        font-size: 4.167vw;
+        line-height: 1.2;
     }
 
     .Product_Detail_Page .ss-pdp-trust-copy span {
-        font-size: 3.333vw;
+        font-size: 3.611vw;
+        line-height: 1.3;
     }
 }
