@@ -138,6 +138,17 @@
       </article>`).join('');
   }
 
+  function reviewTimingMarkup(extraClass = '') {
+    return `
+      <div class="${`ss-auth-note-card ${extraClass}`.trim()}">
+        <div class="ss-auth-note-icon">${iconMarkup('timing')}</div>
+        <div class="ss-auth-note-copy">
+          <div class="ss-auth-note-label">Review timing</div>
+          <div class="ss-auth-note-text">Verified product reviews unlock after the current waiting period on eligible orders. Right now that window is 5 days.</div>
+        </div>
+      </div>`;
+  }
+
   function copyFor(mode) {
     if (mode === 'register') {
       return {
@@ -267,6 +278,9 @@
     node.innerHTML = `
       <div class="ss-auth-page">
         <div class="ss-auth-card ss-auth-card--${isRegister ? 'register' : 'login'}">
+          <div class="ss-auth-switch-row">
+            ${modeSwitchMarkup(isRegister)}
+          </div>
           <section class="ss-auth-hero">
             <div class="ss-auth-badge">
               ${iconMarkup('access')}
@@ -278,17 +292,10 @@
               <p>${copy.heroBody}</p>
             </div>
             <div class="ss-auth-benefits">${benefitMarkup()}</div>
-            <div class="ss-auth-note-card">
-              <div class="ss-auth-note-icon">${iconMarkup('timing')}</div>
-              <div class="ss-auth-note-copy">
-                <div class="ss-auth-note-label">Review timing</div>
-                <div class="ss-auth-note-text">Verified product reviews unlock after the current waiting period on eligible orders. Right now that window is 5 days.</div>
-              </div>
-            </div>
+            ${reviewTimingMarkup('ss-auth-note-card--hero')}
           </section>
           <section class="ss-auth-panel">
             <div class="ss-auth-panel-shell">
-              ${modeSwitchMarkup(isRegister)}
               ${copy.panelTitle || copy.panelBody ? `<div class="ss-auth-panel-head">
                 <h3>${copy.panelTitle}</h3>
                 <p>${copy.panelBody}</p>
@@ -315,6 +322,7 @@
                   <button class="ss-auth-link-btn" id="ssAuthSwitch" type="button">${copy.switchLabel}</button>
                 </div>
                 <div class="ss-auth-trust-row">${trustMarkup()}</div>
+                ${reviewTimingMarkup('ss-auth-note-card--mobile')}
                 <div class="ss-auth-status" id="ssAuthStatus" aria-live="polite"></div>
               </form>
             </div>
