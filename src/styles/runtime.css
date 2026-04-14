@@ -1011,6 +1011,7 @@ html.dark-mode .ss-ci-btn {
 
     .BasketText {
         display: block !important;
+        height: 25px !important;
         margin: 0 !important;
         padding: 0 !important;
     }
