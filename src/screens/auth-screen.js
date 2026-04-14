@@ -70,22 +70,40 @@
     return initials || 'SS';
   }
 
+  function iconMarkup(name) {
+    const icons = {
+      access: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 5.5 6v5.2c0 4.1 2.4 7.8 6.5 9.3 4.1-1.5 6.5-5.2 6.5-9.3V6L12 3.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 12h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 9.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      review: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 5.5 6v5.2c0 4.1 2.4 7.8 6.5 9.3 4.1-1.5 6.5-5.2 6.5-9.3V6L12 3.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 8.5 1.1 2.3 2.5.3-1.8 1.8.5 2.6-2.3-1.2-2.3 1.2.5-2.6-1.8-1.8 2.5-.3L12 8.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+      profile: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M4.75 19.25c1.7-3.1 4.1-4.65 7.25-4.65s5.55 1.55 7.25 4.65" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      checkout: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7.5h10.5l-1.3 9H7.8L7 7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5V6a3 3 0 1 1 6 0v1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      timing: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v4l2.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 21a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17Z" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 2.8h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      login: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8"/><path d="M5 19c1.5-2.7 3.8-4 7-4s5.5 1.3 7 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      register: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c1.4-2.7 3.5-4 6.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.5 8v6M14.5 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      email: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 6.5h15a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16V8a1.5 1.5 0 0 1 1.5-1.5Z" stroke="currentColor" stroke-width="1.8"/><path d="m4.5 8 7.5 6 7.5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      password: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5.5" y="10" width="13" height="10" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10V8a3.5 3.5 0 1 1 7 0v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      secure: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 5.5 6v5.2c0 4.1 2.4 7.8 6.5 9.3 4.1-1.5 6.5-5.2 6.5-9.3V6L12 3.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 11.8 11.4 13 14.5 9.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      linked: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 14 8.2 15.8a3 3 0 0 1-4.2-4.2L6.8 8.8A3 3 0 0 1 11 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 10 15.8 8.2a3 3 0 1 1 4.2 4.2l-2.8 2.8A3 3 0 0 1 13 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9.5 14.5 14.5 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      quick: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m13 3-7 10h5l-1 8 8-11h-5l0-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'
+    };
+    return `<span class="ss-auth-icon ss-auth-icon--${esc(name)}" aria-hidden="true">${icons[name] || icons.secure}</span>`;
+  }
+
   function benefitItems() {
     return [
       {
-        index: '01',
+        icon: 'review',
         title: 'Verified review access',
         body: 'Use the same email you checked out with so product reviews stay tied to real orders.',
       },
       {
-        index: '02',
+        icon: 'profile',
         title: 'Your own profile',
         body: 'Add your name and optional profile photo once, then reuse them anywhere reviews appear.',
       },
       {
-        index: '03',
-        title: 'Cleaner future checkout',
-        body: 'Your account stays ready for order-linked tools and anything we add next.',
+        icon: 'checkout',
+        title: 'Faster checkout',
+        body: 'Your details are saved and ready for order-linked tools and future purchases.',
       },
     ];
   }
@@ -93,8 +111,27 @@
   function benefitMarkup() {
     return benefitItems().map((item) => `
       <article class="ss-auth-benefit">
-        <div class="ss-auth-benefit-index" aria-hidden="true">${item.index}</div>
+        <div class="ss-auth-benefit-icon">${iconMarkup(item.icon)}</div>
         <div class="ss-auth-benefit-copy">
+          <strong>${item.title}</strong>
+          <span>${item.body}</span>
+        </div>
+      </article>`).join('');
+  }
+
+  function trustItems() {
+    return [
+      { icon: 'secure', title: 'Secure & Protected', body: 'Your data is safe with us' },
+      { icon: 'linked', title: 'Order-Linked', body: 'Reviews stay verified' },
+      { icon: 'quick', title: 'Quick & Easy', body: 'Set up in seconds' }
+    ];
+  }
+
+  function trustMarkup() {
+    return trustItems().map((item) => `
+      <article class="ss-auth-trust-item">
+        <div class="ss-auth-trust-icon">${iconMarkup(item.icon)}</div>
+        <div class="ss-auth-trust-copy">
           <strong>${item.title}</strong>
           <span>${item.body}</span>
         </div>
@@ -104,23 +141,25 @@
   function copyFor(mode) {
     if (mode === 'register') {
       return {
-        heroKicker: 'Customer account',
-        heroTitle: 'Create one account that matches your real orders.',
-        heroBody: 'That keeps review access clean, order-linked, and ready for the products you actually bought.',
-        panelTitle: 'Set up your SnagletShop profile',
-        panelBody: 'Use the same email you ordered with. That is what unlocks verified product reviews.',
+        heroKicker: 'Order-linked access',
+        heroTitle: 'Create your account',
+        heroSubtitle: 'Register to continue',
+        heroBody: 'Use the same email you ordered with so verified reviews stay matched to your real purchases.',
+        panelTitle: '',
+        panelBody: '',
         submitLabel: 'Create account',
         switchCopy: 'Already registered?',
         switchLabel: 'Login instead',
       };
     }
     return {
-      heroKicker: 'Customer account',
-      heroTitle: 'Welcome back to your order-linked profile.',
-      heroBody: 'Log in with the email attached to your orders so your verified reviews and account details stay in sync.',
-      panelTitle: 'Login to continue',
-      panelBody: 'We will send you straight back to the storefront or review flow you came from.',
-      submitLabel: 'Login',
+      heroKicker: 'Order-linked access',
+      heroTitle: 'Welcome back!',
+      heroSubtitle: 'Log in to continue',
+      heroBody: 'We’ll take you straight back to the storefront or your review flow.',
+      panelTitle: '',
+      panelBody: '',
+      submitLabel: 'Log in',
       switchCopy: 'New here?',
       switchLabel: 'Create an account',
     };
@@ -129,8 +168,8 @@
   function modeSwitchMarkup(isRegister) {
     return `
       <div class="ss-auth-mode-switch" role="tablist" aria-label="Account mode">
-        <button class="ss-auth-mode-btn ${!isRegister ? 'is-active' : ''}" id="ssAuthModeLogin" type="button" aria-pressed="${!isRegister ? 'true' : 'false'}">Login</button>
-        <button class="ss-auth-mode-btn ${isRegister ? 'is-active' : ''}" id="ssAuthModeRegister" type="button" aria-pressed="${isRegister ? 'true' : 'false'}">Register</button>
+        <button class="ss-auth-mode-btn ${!isRegister ? 'is-active' : ''}" id="ssAuthModeLogin" type="button" aria-pressed="${!isRegister ? 'true' : 'false'}">${iconMarkup('login')}<span>Login</span></button>
+        <button class="ss-auth-mode-btn ${isRegister ? 'is-active' : ''}" id="ssAuthModeRegister" type="button" aria-pressed="${isRegister ? 'true' : 'false'}">${iconMarkup('register')}<span>Register</span></button>
       </div>`;
   }
 
@@ -139,11 +178,17 @@
       <div class="ss-auth-form-grid">
         <label class="ss-auth-field ss-auth-field--half">
           <span>Name</span>
-          <input id="ssAuthName" maxlength="80" placeholder="Your display name" required type="text"/>
+          <div class="ss-auth-input-shell">
+            ${iconMarkup('profile')}
+            <input id="ssAuthName" maxlength="80" placeholder="Your display name" required type="text"/>
+          </div>
         </label>
         <label class="ss-auth-field ss-auth-field--half">
           <span>Email</span>
-          <input id="ssAuthEmail" autocomplete="email" placeholder="you@example.com" required type="email"/>
+          <div class="ss-auth-input-shell">
+            ${iconMarkup('email')}
+            <input id="ssAuthEmail" autocomplete="email" placeholder="you@example.com" required type="email"/>
+          </div>
         </label>
       </div>
       <div class="ss-auth-register-preview">
@@ -163,7 +208,10 @@
     return `
       <label class="ss-auth-field">
         <span>Email</span>
-        <input id="ssAuthEmail" autocomplete="email" placeholder="you@example.com" required type="email"/>
+        <div class="ss-auth-input-shell">
+          ${iconMarkup('email')}
+          <input id="ssAuthEmail" autocomplete="email" placeholder="you@example.com" required type="email"/>
+        </div>
       </label>`;
   }
 
@@ -220,42 +268,49 @@
       <div class="ss-auth-page">
         <div class="ss-auth-card ss-auth-card--${isRegister ? 'register' : 'login'}">
           <section class="ss-auth-hero">
-            <div class="ss-auth-brand">
-              <div class="ss-auth-brand-wordmark">SnagletShop</div>
-              <div class="ss-auth-brand-caption">Order-linked access</div>
+            <div class="ss-auth-badge">
+              ${iconMarkup('access')}
+              <span>${copy.heroKicker}</span>
             </div>
             <div class="ss-auth-copy">
-              <div class="ss-auth-kicker">${copy.heroKicker}</div>
               <h2>${copy.heroTitle}</h2>
+              <div class="ss-auth-subtitle">${copy.heroSubtitle}</div>
               <p>${copy.heroBody}</p>
             </div>
             <div class="ss-auth-benefits">${benefitMarkup()}</div>
             <div class="ss-auth-note-card">
-              <div class="ss-auth-note-label">Review timing</div>
-              <div class="ss-auth-note-text">Verified product reviews unlock after the current waiting period on eligible orders. Right now that window is 5 days.</div>
+              <div class="ss-auth-note-icon">${iconMarkup('timing')}</div>
+              <div class="ss-auth-note-copy">
+                <div class="ss-auth-note-label">Review timing</div>
+                <div class="ss-auth-note-text">Verified product reviews unlock after the current waiting period on eligible orders. Right now that window is 5 days.</div>
+              </div>
             </div>
           </section>
           <section class="ss-auth-panel">
             <div class="ss-auth-panel-shell">
               ${modeSwitchMarkup(isRegister)}
-              <div class="ss-auth-panel-head">
+              ${copy.panelTitle || copy.panelBody ? `<div class="ss-auth-panel-head">
                 <h3>${copy.panelTitle}</h3>
                 <p>${copy.panelBody}</p>
-              </div>
+              </div>` : ''}
               <form class="ss-auth-form" id="ssAuthForm">
                 ${isRegister ? registerFieldsMarkup() : loginFieldsMarkup()}
                 <label class="ss-auth-field">
                   <span>Password</span>
-                  <input id="ssAuthPassword" autocomplete="${isRegister ? 'new-password' : 'current-password'}" minlength="8" placeholder="${isRegister ? 'At least 8 characters' : 'Your password'}" required type="password"/>
+                  <div class="ss-auth-input-shell ss-auth-input-shell--password">
+                    ${iconMarkup('password')}
+                    <input id="ssAuthPassword" autocomplete="${isRegister ? 'new-password' : 'current-password'}" minlength="8" placeholder="${isRegister ? 'At least 8 characters' : 'Your password'}" required type="password"/>
+                  </div>
                 </label>
                 <div class="ss-auth-inline-note">Use the same email as your order history so review eligibility works automatically.</div>
                 <div class="ss-auth-actions">
                   <button class="ss-review-btn ss-review-btn-primary ss-auth-submit" id="ssAuthSubmit" type="submit">${copy.submitLabel}</button>
                 </div>
+                <div class="ss-auth-divider"><span>${copy.switchCopy}</span></div>
                 <div class="ss-auth-footer-row">
-                  <span class="ss-auth-footer-copy">${copy.switchCopy}</span>
                   <button class="ss-auth-link-btn" id="ssAuthSwitch" type="button">${copy.switchLabel}</button>
                 </div>
+                <div class="ss-auth-trust-row">${trustMarkup()}</div>
                 <div class="ss-auth-status" id="ssAuthStatus" aria-live="polite"></div>
               </form>
             </div>
