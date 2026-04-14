@@ -224,6 +224,15 @@ function __ssGetCurrentPdpImageSrc() {
     return images[__ssGetCurrentPdpImageIndex()] || images[0] || '/favicon.png';
 }
 
+function __ssNormalizePdpImageUrl(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+    try {
+        return new URL(raw, window.location.href).href;
+    } catch {}
+    return raw;
+}
+
 function __ssSetCurrentPdpImageIndex(nextIndex, direction = "none") {
     const images = __ssGetCurrentPdpImages();
     if (!images.length) return;
@@ -1063,6 +1072,10 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const viewer = document.getElementById("Viewer");
     if (!viewer) return;
 
+    const previousProductId = String(window.__ssCurrentProductId || '').trim();
+    const previousImageSrc = __ssNormalizePdpImageUrl(document.getElementById("mainImage")?.src || '');
+    const previousImageIndex = Number(window.currentProductImageIndex || 0);
+
     __ssCloseProductImageExperience({ force: true, fromHistory: true });
     const existing = document.getElementById("Product_Viewer");
     if (existing) existing.remove();
@@ -1072,9 +1085,21 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     Product_Viewer.className = "Product_Viewer";
 
     window.currentProductImages = Array.isArray(validImages) ? validImages.filter(Boolean) : [];
-    window.__ssCurrentProductId = String(product?.productId || product?.id || '').trim() || null;
+    const nextProductId = String(product?.productId || product?.id || '').trim();
+    window.__ssCurrentProductId = nextProductId || null;
 
-    window.currentProductImageIndex = 0;
+    let restoredImageIndex = 0;
+    const currentImages = Array.isArray(window.currentProductImages) ? window.currentProductImages : [];
+    if (currentImages.length) {
+        const isSameProduct = !!previousProductId && !!nextProductId && previousProductId === nextProductId;
+        if (isSameProduct) {
+            const normalizedCurrentImages = currentImages.map(__ssNormalizePdpImageUrl);
+            const matchingIndex = normalizedCurrentImages.findIndex(src => src === previousImageSrc);
+            if (matchingIndex >= 0) restoredImageIndex = matchingIndex;
+            else restoredImageIndex = Math.max(0, Math.min(previousImageIndex, currentImages.length - 1));
+        }
+    }
+    window.currentProductImageIndex = restoredImageIndex;
 
     if (typeof cart === "object" && cart) cart[productName] = 1;
 
@@ -1107,7 +1132,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     const mainImg = document.createElement("img");
     mainImg.id = "mainImage";
     mainImg.className = "mainImage slide-image";
-    mainImg.src = window.currentProductImages[0] || "";
+    mainImg.src = window.currentProductImages[window.currentProductImageIndex] || window.currentProductImages[0] || "";
     mainImg.alt = productName || "";
     mainImg.style.transition = "transform 0.4s ease";
     mainImg.style.willChange = "transform";
@@ -1135,7 +1160,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     (window.currentProductImages || []).forEach((src, idx) => {
         const t = document.createElement("img");
-        t.className = `Thumbnail${idx === 0 ? " active" : ""}`;
+        t.className = `Thumbnail${idx === window.currentProductImageIndex ? " active" : ""}`;
         t.src = src;
         t.alt = `${productName || "image"} ${idx + 1}`;
         t.addEventListener("click", (e) => {
