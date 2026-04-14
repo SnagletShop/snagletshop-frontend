@@ -13614,3 +13614,725 @@ body.ss-pdp-lightbox-open {
     flex-wrap: wrap !important;
     gap: 0.625rem !important;
 }
+
+/* Auth refresh: closer to the provided split-layout reference */
+.ss-auth-page {
+    position: relative !important;
+    padding: 2.5rem 0 4.5rem !important;
+    background:
+        radial-gradient(circle at 11% 18%,
+            color-mix(in srgb, var(--Primary_Button_Colour) 8%, transparent) 0%,
+            transparent 26%) !important;
+}
+
+.ss-auth-card {
+    width: min(1360px, calc(100vw - 72px)) !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(340px, 0.92fr) minmax(500px, 1.08fr) !important;
+    gap: clamp(2.75rem, 5vw, 5.5rem) !important;
+    padding: 0 0 1rem !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+
+.ss-auth-card::before,
+.ss-auth-brand,
+.ss-auth-brand-wordmark,
+.ss-auth-brand-caption,
+.ss-auth-kicker {
+    display: none !important;
+}
+
+.ss-auth-hero {
+    position: relative !important;
+    z-index: 1 !important;
+    display: grid !important;
+    align-content: start !important;
+    gap: 1.6rem !important;
+    padding: 2.35rem 1rem 1rem 0.35rem !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.ss-auth-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.7rem !important;
+    width: fit-content !important;
+    min-height: 2.75rem !important;
+    padding: 0 1.15rem !important;
+    border-radius: 999px !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 55%, transparent) !important;
+    background: color-mix(in srgb, var(--body_Background_Colour) 82%, var(--TopBar_Background_Colour)) !important;
+    color: var(--Primary_Button_Colour) !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+}
+
+.ss-auth-badge .ss-auth-icon {
+    width: 1.15rem !important;
+    height: 1.15rem !important;
+    color: currentColor !important;
+}
+
+.ss-auth-copy {
+    display: grid !important;
+    gap: 0.2rem !important;
+    max-width: 36rem !important;
+}
+
+.ss-auth-copy h2 {
+    margin: 0 !important;
+    color: var(--Default_Text_Colour) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: clamp(3.4rem, 6vw, 5rem) !important;
+    font-weight: 800 !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.05em !important;
+    max-width: none !important;
+}
+
+.ss-auth-subtitle {
+    color: var(--Default_Text_Colour) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: clamp(2rem, 2.45vw, 2.7rem) !important;
+    font-weight: 500 !important;
+    line-height: 1.08 !important;
+}
+
+.ss-auth-copy p {
+    margin: 1rem 0 0 !important;
+    max-width: 28rem !important;
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+}
+
+.ss-auth-benefits {
+    display: grid !important;
+    gap: 1.4rem !important;
+    margin-top: 0.5rem !important;
+}
+
+.ss-auth-benefit {
+    display: grid !important;
+    grid-template-columns: 4.85rem minmax(0, 1fr) !important;
+    gap: 1.15rem !important;
+    align-items: start !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-benefit-icon,
+.ss-auth-note-icon,
+.ss-auth-trust-icon {
+    width: 4.85rem !important;
+    height: 4.85rem !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 9%, var(--body_Background_Colour)) !important;
+    border: 1px solid color-mix(in srgb, var(--Primary_Button_Colour) 10%, var(--Borders_Colour)) !important;
+}
+
+.ss-auth-benefit-icon .ss-auth-icon,
+.ss-auth-note-icon .ss-auth-icon,
+.ss-auth-trust-icon .ss-auth-icon {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    color: var(--Primary_Button_Colour) !important;
+}
+
+.ss-auth-benefit-copy {
+    display: grid !important;
+    gap: 0.35rem !important;
+    padding-top: 0.3rem !important;
+}
+
+.ss-auth-benefit-copy strong {
+    color: var(--Default_Text_Colour) !important;
+    font-size: 1.02rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+}
+
+.ss-auth-benefit-copy span {
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.55 !important;
+    max-width: 24rem !important;
+}
+
+.ss-auth-note-card {
+    display: grid !important;
+    grid-template-columns: 4.85rem minmax(0, 1fr) !important;
+    gap: 1rem !important;
+    align-items: start !important;
+    margin-top: 0.6rem !important;
+    padding: 1.25rem 0 0 !important;
+    border: 0 !important;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 52%, transparent) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-note-copy {
+    display: grid !important;
+    gap: 0.3rem !important;
+    padding-top: 0.35rem !important;
+}
+
+.ss-auth-note-label {
+    color: var(--Primary_Button_Colour) !important;
+    font-size: 0.93rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+
+.ss-auth-note-text {
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.55 !important;
+    max-width: 28rem !important;
+}
+
+.ss-auth-panel {
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    padding: 3rem 0.5rem 0.75rem !important;
+    background: transparent !important;
+}
+
+.ss-auth-panel-shell {
+    width: min(100%, 40rem) !important;
+    display: grid !important;
+    gap: 1.35rem !important;
+}
+
+.ss-auth-mode-switch {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    width: fit-content !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.ss-auth-mode-btn {
+    min-width: 10.75rem !important;
+    min-height: 3.45rem !important;
+    padding: 0 1.5rem !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: color-mix(in srgb, var(--Default_Text_Colour) 52%, var(--Muted_Text_Colour)) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.7rem !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-mode-btn .ss-auth-icon {
+    width: 1.3rem !important;
+    height: 1.3rem !important;
+    color: currentColor !important;
+}
+
+.ss-auth-mode-btn:hover {
+    color: var(--Default_Text_Colour) !important;
+}
+
+.ss-auth-mode-btn.is-active {
+    background: var(--Primary_Button_Colour) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-panel-head {
+    display: none !important;
+}
+
+.ss-auth-form {
+    display: grid !important;
+    gap: 1.5rem !important;
+}
+
+.ss-auth-form-grid {
+    gap: 1rem !important;
+}
+
+.ss-auth-field {
+    display: grid !important;
+    gap: 0.7rem !important;
+}
+
+.ss-auth-card .ss-auth-field span {
+    color: var(--Default_Text_Colour) !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+}
+
+.ss-auth-input-shell {
+    min-height: 4.55rem !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    padding: 0 1.35rem !important;
+    border-radius: 1.1rem !important;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--body_Background_Colour) 84%, var(--SearchBar_Background_Colour)) !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-input-shell .ss-auth-icon {
+    width: 1.6rem !important;
+    height: 1.6rem !important;
+    color: color-mix(in srgb, var(--Muted_Text_Colour) 84%, transparent) !important;
+}
+
+.ss-auth-card .ss-auth-field input {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--Default_Text_Colour) !important;
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+}
+
+.ss-auth-card .ss-auth-field input::placeholder {
+    color: color-mix(in srgb, var(--Muted_Text_Colour) 76%, transparent) !important;
+}
+
+.ss-auth-card .ss-auth-field input:focus-visible {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.ss-auth-inline-links {
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin-top: -0.45rem !important;
+}
+
+.ss-auth-aux-link {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--Primary_Button_Colour) !important;
+    font: inherit !important;
+    font-size: 0.98rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+.ss-auth-aux-link:hover {
+    color: var(--Primary_Button_Hover) !important;
+}
+
+.ss-auth-inline-note {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 0.93rem !important;
+    line-height: 1.55 !important;
+}
+
+.ss-auth-actions {
+    margin-top: 0.2rem !important;
+}
+
+.ss-auth-submit {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 4.15rem !important;
+    padding: 0 4rem 0 1.75rem !important;
+    border: 0 !important;
+    border-radius: 1rem !important;
+    background: var(--Primary_Button_Colour) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+}
+
+.ss-auth-submit::after {
+    content: '→' !important;
+    position: absolute !important;
+    right: 1.7rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 1.7rem !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+}
+
+.ss-auth-submit:hover:not(:disabled) {
+    transform: none !important;
+    background: var(--Primary_Button_Hover) !important;
+    box-shadow: none !important;
+}
+
+.ss-auth-divider {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1.25rem !important;
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 0.95rem !important;
+}
+
+.ss-auth-divider::before,
+.ss-auth-divider::after {
+    content: '' !important;
+    flex: 1 1 auto !important;
+    height: 1px !important;
+    background: color-mix(in srgb, var(--Borders_Colour) 70%, transparent) !important;
+}
+
+.ss-auth-divider span {
+    white-space: nowrap !important;
+}
+
+.ss-auth-footer-row {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0 !important;
+}
+
+.ss-auth-link-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.6rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--Primary_Button_Colour) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+}
+
+.ss-auth-link-btn::after {
+    content: '→' !important;
+    font-size: 1.4rem !important;
+    line-height: 1 !important;
+}
+
+.ss-auth-link-btn:hover {
+    color: var(--Primary_Button_Hover) !important;
+}
+
+.ss-auth-trust-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    margin-top: 1rem !important;
+    padding-top: 1.5rem !important;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 55%, transparent) !important;
+}
+
+.ss-auth-trust-item {
+    display: grid !important;
+    grid-template-columns: 3.5rem minmax(0, 1fr) !important;
+    gap: 0.85rem !important;
+    align-items: center !important;
+}
+
+.ss-auth-trust-icon {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+}
+
+.ss-auth-trust-icon .ss-auth-icon {
+    width: 1.45rem !important;
+    height: 1.45rem !important;
+}
+
+.ss-auth-trust-copy {
+    display: grid !important;
+    gap: 0.1rem !important;
+}
+
+.ss-auth-trust-copy strong {
+    color: var(--Default_Text_Colour) !important;
+    font-size: 0.98rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+}
+
+.ss-auth-trust-copy span {
+    color: var(--Muted_Text_Colour) !important;
+    font-size: 0.92rem !important;
+    line-height: 1.4 !important;
+}
+
+.ss-auth-status {
+    margin-top: 0.25rem !important;
+    padding: 0.9rem 1rem !important;
+    border-radius: 0.95rem !important;
+}
+
+@media (max-width: 900px) {
+    .ss-auth-page {
+        padding: 1.25rem 0 2.5rem !important;
+    }
+
+    .ss-auth-card {
+        width: min(100%, calc(100vw - 1.5rem)) !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+        padding: 0 !important;
+    }
+
+    .ss-auth-hero {
+        padding: 1.25rem 0.5rem 0.25rem !important;
+        gap: 1rem !important;
+    }
+
+    .ss-auth-copy h2 {
+        font-size: 3.1rem !important;
+    }
+
+    .ss-auth-subtitle {
+        font-size: 1.75rem !important;
+    }
+
+    .ss-auth-copy p {
+        margin-top: 0.7rem !important;
+        font-size: 0.98rem !important;
+    }
+
+    .ss-auth-benefit,
+    .ss-auth-note-card {
+        grid-template-columns: 4rem minmax(0, 1fr) !important;
+    }
+
+    .ss-auth-benefit-icon,
+    .ss-auth-note-icon {
+        width: 4rem !important;
+        height: 4rem !important;
+    }
+
+    .ss-auth-panel {
+        padding: 0.5rem 0.25rem 0.75rem !important;
+    }
+
+    .ss-auth-panel-shell {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 680px) {
+    .ss-auth-page {
+        padding: 4.444vw 0 8.333vw !important;
+        background: transparent !important;
+    }
+
+    .ss-auth-card {
+        width: min(100%, calc(100vw - 4.444vw)) !important;
+        grid-template-columns: 1fr !important;
+        gap: 4.167vw !important;
+        padding: 0 !important;
+    }
+
+    .ss-auth-hero {
+        padding: 4.444vw 0.556vw 0.556vw !important;
+        gap: 4.444vw !important;
+    }
+
+    .ss-auth-badge {
+        min-height: 10.556vw !important;
+        padding: 0 4.167vw !important;
+        font-size: 3.333vw !important;
+    }
+
+    .ss-auth-copy h2 {
+        font-size: 13.333vw !important;
+        line-height: 0.98 !important;
+    }
+
+    .ss-auth-subtitle {
+        font-size: 7.222vw !important;
+    }
+
+    .ss-auth-copy p {
+        margin-top: 2.5vw !important;
+        font-size: 4.167vw !important;
+        max-width: none !important;
+    }
+
+    .ss-auth-benefits {
+        gap: 4.444vw !important;
+    }
+
+    .ss-auth-benefit {
+        grid-template-columns: 15.556vw minmax(0, 1fr) !important;
+        gap: 3.611vw !important;
+    }
+
+    .ss-auth-benefit-icon,
+    .ss-auth-note-icon {
+        width: 15.556vw !important;
+        height: 15.556vw !important;
+    }
+
+    .ss-auth-benefit-icon .ss-auth-icon,
+    .ss-auth-note-icon .ss-auth-icon {
+        width: 7.5vw !important;
+        height: 7.5vw !important;
+    }
+
+    .ss-auth-benefit-copy strong {
+        font-size: 4.444vw !important;
+    }
+
+    .ss-auth-benefit-copy span,
+    .ss-auth-note-text {
+        font-size: 3.889vw !important;
+        max-width: none !important;
+    }
+
+    .ss-auth-note-card {
+        grid-template-columns: 15.556vw minmax(0, 1fr) !important;
+        gap: 3.333vw !important;
+        padding-top: 4.444vw !important;
+    }
+
+    .ss-auth-note-label {
+        font-size: 3.611vw !important;
+    }
+
+    .ss-auth-panel {
+        padding: 1.111vw !important;
+    }
+
+    .ss-auth-panel-shell {
+        gap: 4.444vw !important;
+    }
+
+    .ss-auth-mode-switch {
+        gap: 2.5vw !important;
+    }
+
+    .ss-auth-mode-btn {
+        min-width: 33vw !important;
+        min-height: 12.5vw !important;
+        padding: 0 4.444vw !important;
+        font-size: 4.167vw !important;
+        gap: 2.222vw !important;
+    }
+
+    .ss-auth-mode-btn .ss-auth-icon {
+        width: 5vw !important;
+        height: 5vw !important;
+    }
+
+    .ss-auth-card .ss-auth-field span {
+        font-size: 3.889vw !important;
+    }
+
+    .ss-auth-input-shell {
+        min-height: 13.611vw !important;
+        gap: 3.333vw !important;
+        padding: 0 4.444vw !important;
+        border-radius: 4.167vw !important;
+    }
+
+    .ss-auth-input-shell .ss-auth-icon {
+        width: 5.278vw !important;
+        height: 5.278vw !important;
+    }
+
+    .ss-auth-card .ss-auth-field input {
+        font-size: 4.444vw !important;
+    }
+
+    .ss-auth-inline-links {
+        margin-top: -1.111vw !important;
+    }
+
+    .ss-auth-aux-link,
+    .ss-auth-inline-note,
+    .ss-auth-divider,
+    .ss-auth-trust-copy span,
+    .ss-auth-status {
+        font-size: 3.611vw !important;
+    }
+
+    .ss-auth-submit {
+        min-height: 13.611vw !important;
+        padding: 0 12.5vw 0 5vw !important;
+        border-radius: 4.167vw !important;
+        font-size: 4.722vw !important;
+    }
+
+    .ss-auth-submit::after {
+        right: 5vw !important;
+        font-size: 7.222vw !important;
+    }
+
+    .ss-auth-link-btn {
+        font-size: 4.444vw !important;
+    }
+
+    .ss-auth-link-btn::after {
+        font-size: 6.389vw !important;
+    }
+
+    .ss-auth-trust-row {
+        grid-template-columns: 1fr !important;
+        gap: 3.611vw !important;
+        padding-top: 4.444vw !important;
+    }
+
+    .ss-auth-trust-item {
+        grid-template-columns: 12.5vw minmax(0, 1fr) !important;
+        gap: 3.333vw !important;
+    }
+
+    .ss-auth-trust-icon {
+        width: 12.5vw !important;
+        height: 12.5vw !important;
+    }
+
+    .ss-auth-trust-icon .ss-auth-icon {
+        width: 5.278vw !important;
+        height: 5.278vw !important;
+    }
+
+    .ss-auth-trust-copy strong {
+        font-size: 4.167vw !important;
+    }
+}

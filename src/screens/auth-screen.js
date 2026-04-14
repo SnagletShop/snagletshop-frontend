@@ -156,7 +156,7 @@
       heroKicker: 'Order-linked access',
       heroTitle: 'Welcome back!',
       heroSubtitle: 'Log in to continue',
-      heroBody: 'We’ll take you straight back to the storefront or your review flow.',
+      heroBody: "We'll take you straight back to the storefront or your review flow.",
       panelTitle: '',
       panelBody: '',
       submitLabel: 'Log in',
@@ -302,6 +302,10 @@
                     <input id="ssAuthPassword" autocomplete="${isRegister ? 'new-password' : 'current-password'}" minlength="8" placeholder="${isRegister ? 'At least 8 characters' : 'Your password'}" required type="password"/>
                   </div>
                 </label>
+                ${!isRegister ? `
+                <div class="ss-auth-inline-links">
+                  <button class="ss-auth-aux-link" id="ssAuthForgot" type="button">Forgot password?</button>
+                </div>` : ''}
                 <div class="ss-auth-inline-note">Use the same email as your order history so review eligibility works automatically.</div>
                 <div class="ss-auth-actions">
                   <button class="ss-review-btn ss-review-btn-primary ss-auth-submit" id="ssAuthSubmit" type="submit">${copy.submitLabel}</button>
@@ -323,6 +327,7 @@
     const switchBtn = document.getElementById('ssAuthSwitch');
     const loginModeBtn = document.getElementById('ssAuthModeLogin');
     const registerModeBtn = document.getElementById('ssAuthModeRegister');
+    const forgotBtn = document.getElementById('ssAuthForgot');
     const submitBtn = document.getElementById('ssAuthSubmit');
 
     if (isRegister) attachRegisterPreview();
@@ -339,6 +344,11 @@
     registerModeBtn?.addEventListener('click', () => {
       if (isRegister) return;
       try { window.navigate?.('GoToRegister', []); } catch {}
+    });
+
+    forgotBtn?.addEventListener('click', () => {
+      status.textContent = 'Password reset is not available yet. Please use the password you registered with or create a new account.';
+      status.dataset.tone = 'neutral';
     });
 
     form?.addEventListener('submit', async (event) => {
