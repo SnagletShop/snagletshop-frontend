@@ -14453,10 +14453,12 @@ body.ss-pdp-lightbox-open {
 @media (max-width: 680px) {
     #Viewer > .ss-auth-page {
         width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
     #Viewer > .ss-auth-page .ss-auth-card {
-        width: min(100%, calc(100vw - 4.444vw)) !important;
+        width: min(100%, calc(100vw - 8.889vw)) !important;
         margin: 0 auto !important;
         display: flex !important;
         flex-direction: column !important;
@@ -14483,7 +14485,9 @@ body.ss-pdp-lightbox-open {
         justify-items: center !important;
         text-align: center !important;
         gap: 4.444vw !important;
-        padding: 0 1.111vw !important;
+        width: min(100%, 84.444vw) !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
         background: transparent !important;
         border: 0 !important;
     }
@@ -14491,7 +14495,9 @@ body.ss-pdp-lightbox-open {
     #Viewer > .ss-auth-page .ss-auth-panel {
         order: 3 !important;
         display: block !important;
-        padding: 0 1.111vw 1.667vw !important;
+        width: min(100%, 84.444vw) !important;
+        margin: 0 auto !important;
+        padding: 0 0 1.667vw !important;
         background: transparent !important;
     }
 
