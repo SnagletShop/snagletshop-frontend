@@ -11,7 +11,7 @@
     try {
       return normalizeCountryCode(localStorage.getItem(COUNTRY_OVERRIDE_STORAGE_KEY)) ||
         normalizeCountryCode(localStorage.getItem('detectedCountry'), 'US');
-    } catch {}
+    } catch { }
     return 'US';
   }
 
@@ -21,7 +21,7 @@
     try {
       localStorage.setItem(COUNTRY_OVERRIDE_STORAGE_KEY, code);
       localStorage.setItem('detectedCountry', code);
-    } catch {}
+    } catch { }
     return code;
   }
 
@@ -152,23 +152,23 @@
   }
 
   function clearSettingsCache(ctx = {}) {
-    try { ctx.setPreloadPromise?.(null); } catch {}
+    try { ctx.setPreloadPromise?.(null); } catch { }
     try {
       const key = String(ctx.SETTINGS_CACHE_KEY || window.SETTINGS_CACHE_KEY || 'preloadedSettings').trim() || 'preloadedSettings';
       if (typeof ctx.lsRemove === 'function') ctx.lsRemove(key);
       else localStorage.removeItem(key);
-    } catch {}
+    } catch { }
     try {
       if (typeof ctx.setExchangeRatesFetchedAt === 'function') ctx.setExchangeRatesFetchedAt(0);
-    } catch {}
-    try { window.exchangeRatesFetchedAt = 0; } catch {}
+    } catch { }
+    try { window.exchangeRatesFetchedAt = 0; } catch { }
     try {
       window.preloadedData = window.preloadedData || {};
       window.preloadedData.tariffs = null;
       window.preloadedData.countries = null;
       window.preloadedData.exchangeRates = null;
       window.preloadedData.ratesFetchedAt = 0;
-    } catch {}
+    } catch { }
   }
 
   function addUniqueCode(out, seen, value) {
@@ -292,7 +292,7 @@
   function normalizeSearchText(value) {
     let text = String(value || '').trim().toLowerCase();
     if (!text) return '';
-    try { text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch {}
+    try { text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch { }
     text = text
       .replace(/ß/g, 'ss')
       .replace(/æ/g, 'ae')
@@ -321,7 +321,7 @@
         if (!value || value.toUpperCase() === String(code).toUpperCase() || seen.has(value)) continue;
         seen.add(value);
         out.push(value);
-      } catch {}
+      } catch { }
     }
     return out;
   }
@@ -389,11 +389,11 @@
           input.disabled = false;
           input.removeAttribute('readonly');
           input.removeAttribute('disabled');
-        } catch {}
+        } catch { }
         try {
           input.setAttribute('placeholder', placeholder);
           input.setAttribute('aria-label', placeholder);
-        } catch {}
+        } catch { }
       };
       try {
         input.setAttribute('type', 'search');
@@ -401,30 +401,30 @@
         input.setAttribute('autocomplete', 'off');
         input.setAttribute('autocapitalize', 'none');
         input.setAttribute('spellcheck', 'false');
-      } catch {}
+      } catch { }
       if (control.dataset.ssSearchReady === '1') return;
       const focusInput = () => {
         syncInput();
         try {
           requestAnimationFrame(() => {
             try { input.focus({ preventScroll: true }); } catch {
-              try { input.focus(); } catch {}
+              try { input.focus(); } catch { }
             }
           });
         } catch {
-          try { input.focus(); } catch {}
+          try { input.focus(); } catch { }
         }
       };
       syncInput();
-      try { instance.on?.('dropdown_open', focusInput); } catch {}
-      try { instance.on?.('focus', syncInput); } catch {}
-      try { instance.on?.('type', syncInput); } catch {}
+      try { instance.on?.('dropdown_open', focusInput); } catch { }
+      try { instance.on?.('focus', syncInput); } catch { }
+      try { instance.on?.('type', syncInput); } catch { }
       control.dataset.ssSearchReady = '1';
     };
     attach();
-    try { requestAnimationFrame(attach); } catch {}
-    try { setTimeout(attach, 0); } catch {}
-    try { setTimeout(attach, 80); } catch {}
+    try { requestAnimationFrame(attach); } catch { }
+    try { setTimeout(attach, 0); } catch { }
+    try { setTimeout(attach, 80); } catch { }
     return instance;
   }
 
@@ -436,11 +436,11 @@
       try {
         const values = Array.isArray(instance.items) ? instance.items.slice() : [];
         if (values.length) return values.filter(Boolean);
-      } catch {}
+      } catch { }
       try {
         const single = instance.getValue?.();
         return single ? [single] : [];
-      } catch {}
+      } catch { }
       return [];
     };
     const render = (query = '') => {
@@ -465,18 +465,18 @@
         seen.add(value);
         return true;
       });
-      try { instance.clearOptions(); } catch {}
+      try { instance.clearOptions(); } catch { }
       for (const option of finalOptions) {
-        try { instance.addOption(option); } catch {}
+        try { instance.addOption(option); } catch { }
       }
-      try { instance.refreshOptions(String(query || '').trim().length > 0); } catch {}
+      try { instance.refreshOptions(String(query || '').trim().length > 0); } catch { }
     };
     try {
       instance.on?.('type', render);
       instance.on?.('dropdown_open', () => render(instance.control_input?.value || ''));
       instance.on?.('clear', () => render(''));
       instance.on?.('change', () => render(instance.control_input?.value || ''));
-    } catch {}
+    } catch { }
     render('');
     instance.__ssFilteringReady = true;
     return instance;
@@ -585,10 +585,10 @@
       countryToCurrency: overrides.countryToCurrency || window.countryToCurrency || {},
       getSelectedCurrency: overrides.getSelectedCurrency || (() => String(window.selectedCurrency || localStorage.getItem('selectedCurrency') || 'EUR').trim().toUpperCase() || 'EUR'),
       setSelectedCurrency: overrides.setSelectedCurrency || ((value) => {
-        try { window.selectedCurrency = String(value || 'EUR').trim().toUpperCase() || 'EUR'; } catch {}
+        try { window.selectedCurrency = String(value || 'EUR').trim().toUpperCase() || 'EUR'; } catch { }
       }),
-      syncCurrencySelects: overrides.syncCurrencySelects || window.syncCurrencySelects || (() => {}),
-      updateAllPrices: overrides.updateAllPrices || window.updateAllPrices || (() => {}),
+      syncCurrencySelects: overrides.syncCurrencySelects || window.syncCurrencySelects || (() => { }),
+      updateAllPrices: overrides.updateAllPrices || window.updateAllPrices || (() => { }),
       getTariffMultipliers: overrides.getTariffMultipliers || (() => window.tariffMultipliers || {}),
       AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE: typeof overrides.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE === 'boolean'
         ? overrides.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE
@@ -858,8 +858,8 @@
     const focusActiveSearch = () => {
       if (!state.activePanel) return;
       const input = modal.querySelector(`.ss-desktop-region-field[data-kind="${state.activePanel}"] [data-search-kind="${state.activePanel}"]`);
-      try { input?.focus({ preventScroll: true }); } catch { try { input?.focus(); } catch {} }
-      try { input?.select?.(); } catch {}
+      try { input?.focus({ preventScroll: true }); } catch { try { input?.focus(); } catch { } }
+      try { input?.select?.(); } catch { }
     };
 
     const positionPopup = () => {
@@ -899,7 +899,7 @@
       state.currencyQuery = '';
       state.currencyTouched = false;
       state.activePanel = '';
-      try { await getCtx().preloadSettingsData?.(); } catch {}
+      try { await getCtx().preloadSettingsData?.(); } catch { }
       renderPanels();
       modal.hidden = false;
       modal.classList.add('is-open');
@@ -930,14 +930,14 @@
         try {
           if (liveCountrySelect?.tomselect) liveCountrySelect.tomselect.setValue(state.stagedCountry, true);
           else if (liveCountrySelect) liveCountrySelect.value = state.stagedCountry;
-        } catch {}
+        } catch { }
       }
       if (!state.currencyTouched && state.stagedCountry !== currentCountry && ctx.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE && !localStorage.getItem('manualCurrencyOverride')) {
         const autoCurrency = String(ctx.countryToCurrency?.[state.stagedCountry] || '').trim().toUpperCase();
         if (autoCurrency) state.stagedCurrency = autoCurrency;
       }
       if (state.stagedCurrency && state.stagedCurrency !== currentCurrency) {
-        try { localStorage.setItem('manualCurrencyOverride', 'true'); } catch {}
+        try { localStorage.setItem('manualCurrencyOverride', 'true'); } catch { }
         try {
           if (typeof window.handleCurrencyChange === 'function') window.handleCurrencyChange(state.stagedCurrency);
           else {
@@ -946,9 +946,9 @@
             ctx.syncCurrencySelects?.(state.stagedCurrency);
             ctx.updateAllPrices?.();
           }
-        } catch {}
+        } catch { }
       } else if (state.stagedCountry !== currentCountry) {
-        try { ctx.updateAllPrices?.(); } catch {}
+        try { ctx.updateAllPrices?.(); } catch { }
       }
       syncDesktopRegionLauncher({ currency: state.stagedCurrency });
       closeModal();
@@ -1318,7 +1318,7 @@
     }
     try {
       window.addEventListener('ss:theme-mode-changed', syncThemeControls);
-    } catch {}
+    } catch { }
     bindToggleLabel(themeAutoToggle);
     bindToggleLabel(themeToggle);
     syncThemeControls();
@@ -1474,7 +1474,7 @@
         if (!isValidEmailClient(email)) return alert('Please enter a valid email address (e.g., name@example.com).');
         if (message.length < 5) return alert('Please enter a message (at least 5 characters).');
         if (website) {
-          try { cf.reset(); } catch {}
+          try { cf.reset(); } catch { }
           alert('Message sent.');
           return;
         }
