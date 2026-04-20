@@ -7203,10 +7203,38 @@
         width: auto !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
+        align-items: flex-start !important;
     }
 
     .Product_Price_Meta_Row .Product_Price_Label strong {
         display: none !important;
+    }
+
+    .Product_Price_Meta_Row .Product_Price_Label .productPrice,
+    #product-page-price {
+        display: inline-flex !important;
+        flex-wrap: wrap !important;
+        align-items: baseline !important;
+        justify-content: flex-start !important;
+        row-gap: 0.278vw !important;
+        column-gap: 1.111vw !important;
+        white-space: normal !important;
+        line-height: 1 !important;
+    }
+
+    .Product_Price_Meta_Row .Product_Price_Label .productPrice .ss-price-old,
+    #product-page-price .ss-price-old {
+        flex: 0 0 100% !important;
+        font-size: 3.333vw !important;
+        line-height: 1 !important;
+        color: var(--Muted_Text_Colour) !important;
+    }
+
+    .Product_Price_Meta_Row .Product_Price_Label .productPrice .ss-price-new,
+    #product-page-price .ss-price-new {
+        font-size: 4.5vw !important;
+        line-height: 1 !important;
+        color: var(--Default_Text_Colour) !important;
     }
 
     .product-rating-meta {
