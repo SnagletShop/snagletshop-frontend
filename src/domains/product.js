@@ -382,6 +382,18 @@ function __ssPushProductImageViewerState() {
     } catch {}
 }
 
+function __ssClearProductImageViewerHistoryMarker() {
+    const state = __ssGetProductImageExperienceState();
+    try {
+        if (!history.state?.[PDP_IMAGE_VIEWER_HISTORY_KEY]) return;
+        const currentState = __ssGetCurrentRouteSnapshot();
+        const nextState = { ...currentState };
+        delete nextState[PDP_IMAGE_VIEWER_HISTORY_KEY];
+        history.replaceState(nextState, '', window.location.href);
+    } catch {}
+    state.historyPushed = false;
+}
+
 function __ssResetMobileLightboxTransform(options = {}) {
     const state = __ssGetProductImageExperienceState();
     state.scale = 1;
@@ -838,7 +850,7 @@ function __ssCloseProductImageExperience(options = {}) {
     const force = options.force === true;
 
     if (!fromHistory && !force && !window.__ssHandlingPopstate && history.state?.[PDP_IMAGE_VIEWER_HISTORY_KEY]) {
-        try { history.back(); return; } catch {}
+        __ssClearProductImageViewerHistoryMarker();
     }
 
     if (state.desktopWrapper) {
