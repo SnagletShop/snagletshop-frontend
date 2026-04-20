@@ -506,6 +506,20 @@ function __ssOpenMobileLightbox(options = {}) {
         __ssCloseProductImageExperience({});
     });
 
+    const topBar = document.createElement('div');
+    topBar.className = 'ss-pdp-lightbox-top';
+
+    const mediaTabs = document.createElement('div');
+    mediaTabs.className = 'ss-pdp-lightbox-tabs';
+    mediaTabs.setAttribute('aria-hidden', 'true');
+    mediaTabs.innerHTML = `
+        <span class="ss-pdp-lightbox-tab is-inactive">Video</span>
+        <span class="ss-pdp-lightbox-tab is-active">Photo</span>
+    `;
+
+    const topSpacer = document.createElement('div');
+    topSpacer.className = 'ss-pdp-lightbox-top-spacer';
+
     const stage = document.createElement('div');
     stage.className = 'ss-pdp-lightbox-stage';
 
@@ -544,7 +558,8 @@ function __ssOpenMobileLightbox(options = {}) {
     });
 
     bottomBar.append(prevBtn, counter, nextBtn);
-    overlay.append(backdrop, closeBtn, stage, bottomBar);
+    topBar.append(closeBtn, mediaTabs, topSpacer);
+    overlay.append(backdrop, topBar, stage, bottomBar);
     document.body.appendChild(overlay);
 
     state.overlayEl = overlay;

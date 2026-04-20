@@ -11905,6 +11905,7 @@ body.ss-pdp-lightbox-open {
     inset: 0;
     z-index: 95000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px 20px max(96px, env(safe-area-inset-bottom));
@@ -11915,30 +11916,58 @@ body.ss-pdp-lightbox-open {
     position: absolute;
     inset: 0;
     border: 0;
-    background: color-mix(in srgb, #000000 76%, var(--body_Background_Colour) 24%);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: color-mix(in srgb, #000000 92%, var(--body_Background_Colour) 8%);
+}
+
+.ss-pdp-lightbox-top {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    left: 20px;
+    right: 20px;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    align-items: center;
+}
+
+.ss-pdp-lightbox-tabs {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.ss-pdp-lightbox-tab {
+    color: rgba(255, 255, 255, 0.46);
+}
+
+.ss-pdp-lightbox-tab.is-active {
+    color: #ffffff;
+}
+
+.ss-pdp-lightbox-tab.is-inactive {
+    color: rgba(255, 255, 255, 0.34);
 }
 
 .ss-pdp-lightbox-close {
-    position: absolute;
-    top: max(14px, env(safe-area-inset-top));
-    right: max(14px, env(safe-area-inset-right));
-    z-index: 2;
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 46px;
     height: 46px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, transparent);
-    color: var(--Default_Text_Colour);
-    font-size: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 32px;
     line-height: 1;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 10px 26px color-mix(in srgb, #000000 18%, transparent);
 }
 
 .ss-pdp-lightbox-stage {
@@ -11982,13 +12011,12 @@ body.ss-pdp-lightbox-open {
     align-items: center;
     justify-content: center;
     min-height: 48px;
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
+    border: 0;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 92%, transparent);
-    color: var(--Default_Text_Colour);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.96);
     font-size: 34px;
     line-height: 1;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
@@ -11998,27 +12026,24 @@ body.ss-pdp-lightbox-open {
     align-items: center;
     justify-content: center;
     min-height: 44px;
-    padding: 0 18px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--TopBar_Background_Colour) 90%, transparent);
-    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 72%, transparent);
-    color: var(--Default_Text_Colour);
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    box-shadow: 0 10px 24px color-mix(in srgb, #000000 16%, transparent);
 }
 
 .ss-pdp-lightbox-close:hover,
 .ss-pdp-lightbox-nav-btn:hover {
-    background: color-mix(in srgb, var(--Primary_Button_Colour) 18%, var(--TopBar_Background_Colour));
-    border-color: color-mix(in srgb, var(--Primary_Button_Colour) 56%, var(--Borders_Colour));
+    color: rgba(255, 255, 255, 0.78);
 }
 
 .ss-pdp-lightbox-close:focus-visible,
 .ss-pdp-lightbox-nav-btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--Primary_Button_Colour) 24%, transparent), 0 10px 26px color-mix(in srgb, #000000 18%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--Primary_Button_Colour) 30%, transparent);
 }
 
 @media (max-width: 680px) {
@@ -12031,39 +12056,53 @@ body.ss-pdp-lightbox-open {
     }
 
     .ss-pdp-lightbox {
-        padding: 4.444vw 4.444vw max(20vw, env(safe-area-inset-bottom));
+        padding: 0 0 max(20vw, env(safe-area-inset-bottom));
+    }
+
+    .ss-pdp-lightbox-top {
+        top: max(3.611vw, env(safe-area-inset-top));
+        left: 3.333vw;
+        right: 3.333vw;
+        grid-template-columns: 12.222vw 1fr 12.222vw;
+    }
+
+    .ss-pdp-lightbox-tabs {
+        gap: 4.167vw;
+        font-size: 4.167vw;
     }
 
     .ss-pdp-lightbox-close {
-        top: max(3.889vw, env(safe-area-inset-top));
-        right: max(3.889vw, env(safe-area-inset-right));
-        width: 11.667vw;
-        height: 11.667vw;
-        font-size: 7.778vw;
+        width: 12.222vw;
+        height: 12.222vw;
+        font-size: 9.167vw;
     }
 
     .ss-pdp-lightbox-stage {
-        width: 91.111vw;
-        height: 67vh;
+        width: 100vw;
+        height: 100vh;
+        padding: 18vw 0 24vw;
+        box-sizing: border-box;
     }
 
     .ss-pdp-lightbox-bottom {
-        width: 90vw;
+        width: 100vw;
+        padding: 0 4.444vw;
+        box-sizing: border-box;
         gap: 3.333vw;
-        grid-template-columns: minmax(26.667vw, 1fr) auto minmax(26.667vw, 1fr);
+        grid-template-columns: 1fr auto 1fr;
         bottom: max(4.444vw, env(safe-area-inset-bottom));
     }
 
     .ss-pdp-lightbox-nav-btn {
         min-height: 12.222vw;
-        font-size: 8.889vw;
+        font-size: 9.444vw;
         border-radius: 999vw;
     }
 
     .ss-pdp-lightbox-counter {
         min-height: 11.111vw;
-        padding: 0 4.444vw;
-        font-size: 3.611vw;
+        padding: 0 2.222vw;
+        font-size: 4.167vw;
         border-radius: 999vw;
     }
 }
