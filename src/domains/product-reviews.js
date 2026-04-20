@@ -63,9 +63,9 @@
       }
     } catch {}
     try {
-      const pid = String(product?.productId || product?.id || '').trim();
-      if (pid) {
-        window.location.assign(`/?p=${encodeURIComponent(pid)}`);
+      const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data: payload });
+      if (typeof href === 'string' && href.trim()) {
+        window.location.assign(href);
         return;
       }
     } catch {}

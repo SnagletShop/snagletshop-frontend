@@ -11,7 +11,7 @@
   window.__SS_CONFIG__ = Object.assign({}, existing, {
     DEFAULT_BACKEND_PORT,
     API_BASE: apiBase,
-    USE_PATH_ROUTES: existing.USE_PATH_ROUTES ?? false,
+    USE_PATH_ROUTES: existing.USE_PATH_ROUTES ?? true,
     AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE: existing.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE ?? true,
   });
 })(window, document);

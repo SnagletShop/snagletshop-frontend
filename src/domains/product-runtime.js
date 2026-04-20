@@ -93,7 +93,29 @@
       return out;
     },
     slugifyName(name){
-      return String(name || '').trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      return String(name || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'item';
+    },
+    getProductId(ctx, product){
+      return String(product?.productId || product?.id || '').trim();
+    },
+    getCanonicalProductSlug(ctx, product, fallback = {}){
+      const explicit = String(product?.slug || fallback?.slug || '').trim();
+      if (explicit) return explicit;
+      const productId = api.getProductId(ctx, product) || String(fallback?.productId || fallback?.id || '').trim();
+      const baseSource = String(product?.name || fallback?.name || product?.productLink || fallback?.productLink || productId || '').trim();
+      if (!baseSource) return '';
+      const base = api.slugifyName(baseSource);
+      return productId ? `${base}-${productId}` : base;
+    },
+    getCanonicalProductPath(ctx, product, fallback = {}){
+      const slug = api.getCanonicalProductSlug(ctx, product, fallback);
+      return slug ? `/product/${encodeURIComponent(slug)}` : '';
     },
     findProductById(ctx, productId){
       const id = String(productId || '').trim();
@@ -111,7 +133,14 @@
       if (!s) return null;
       try {
         const cats = ctx.getCatalog?.() || {};
-        for (const arr of Object.values(cats)) for (const p of (arr || [])) if (ctx.slugifyName?.(p?.name || '') === s) return p;
+        for (const arr of Object.values(cats)) {
+          for (const p of (arr || [])) {
+            const canonicalSlug = String(api.getCanonicalProductSlug(ctx, p) || '').trim().toLowerCase();
+            const explicitSlug = String(p?.slug || '').trim().toLowerCase();
+            const legacyNameSlug = api.slugifyName(p?.name || '');
+            if (canonicalSlug === s || explicitSlug === s || legacyNameSlug === s) return p;
+          }
+        }
       } catch {}
       return null;
     },

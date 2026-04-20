@@ -19,10 +19,28 @@
       const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data });
       if (typeof href === 'string' && href.trim()) return href;
     } catch {}
-    const encName = encodeURIComponent(String(item?.name || product?.name || ''));
+    try {
+      const fallbackPath = window.__SS_ROUTER__?.getCanonicalProductPath?.(product || item || {}, {
+        name: item?.name || product?.name || '',
+        productId: String(item?.productId || product?.productId || product?.id || '').trim(),
+        productLink: item?.productLink || product?.productLink || ''
+      });
+      if (typeof fallbackPath === 'string' && fallbackPath.trim()) {
+        const recoTok = String(item?.recoDiscountToken || '').trim();
+        const recoQ = recoTok ? `?reco=${encodeURIComponent(recoTok)}` : '';
+        return `${window.location.origin}${fallbackPath}${recoQ}`;
+      }
+    } catch {}
+    const fallbackSlug = String(item?.name || product?.name || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'product';
     const recoTok = String(item?.recoDiscountToken || '').trim();
-    const recoQ = recoTok ? `&reco=${encodeURIComponent(recoTok)}` : '';
-    return `${window.location.origin}/?product=${encName}${recoQ}`;
+    const recoQ = recoTok ? `?reco=${encodeURIComponent(recoTok)}` : '';
+    return `${window.location.origin}/product/${encodeURIComponent(fallbackSlug)}${recoQ}`;
   }
 
   function shouldHandleInAppNavigation(event) {

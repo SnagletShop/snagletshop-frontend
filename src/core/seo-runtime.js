@@ -82,14 +82,37 @@
 
   function slugify(value) {
     return String(value || '')
-      .trim()
-      .toLowerCase()
       .normalize('NFKD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'item';
+  }
+
+  function getCanonicalCategoryPath(category) {
+    try {
+      const path = window.__SS_ROUTER__?.getCanonicalCategoryPath?.(category);
+      if (typeof path === 'string' && path.trim()) return path;
+    } catch {}
+    const slug = slugify(category || 'products');
+    return `/category/${encodeURIComponent(slug)}`;
+  }
+
+  function getCanonicalProductPath(product) {
+    try {
+      const path = window.__SS_ROUTER__?.getCanonicalProductPath?.(product, {
+        name: product?.name,
+        productId: product?.productId || product?.id || ''
+      });
+      if (typeof path === 'string' && path.trim()) return path;
+    } catch {}
+    const slug = String(product?.slug || '').trim() || (() => {
+      const base = slugify(product?.name || product?.productLink || product?.productId || product?.id || 'product');
+      const productId = String(product?.productId || product?.id || '').trim();
+      return productId ? `${base}-${productId}` : base;
+    })();
+    return `/product/${encodeURIComponent(slug)}`;
   }
 
   function truncate(value, max) {
@@ -202,11 +225,10 @@
 
   function applyCategory(category) {
     const name = String(category || '').trim() || 'Products';
-    const slug = slugify(name);
     applyMeta({
       title: `${name} | ${SITE_NAME}`,
       description: truncate(`Browse ${name} products at ${SITE_NAME}. Compare prices, see images, and open detailed product pages with current store content.`, 155),
-      canonical: `${window.location.origin}/category/${encodeURIComponent(slug)}`,
+      canonical: `${window.location.origin}${getCanonicalCategoryPath(name)}`,
       image: DEFAULT_IMAGE,
       robots: DEFAULT_ROBOTS,
       ogType: 'website'
@@ -218,11 +240,10 @@
     const name = String(product.name || 'Product').trim() || 'Product';
     const description = truncate(product.description || DEFAULT_DESC, 155) || DEFAULT_DESC;
     const image = product.image || (Array.isArray(product.images) ? product.images[0] : '') || DEFAULT_IMAGE;
-    const slug = slugify(product.slug || product.name || product.productId || 'product');
     applyMeta({
       title: `${name} | ${SITE_NAME}`,
       description,
-      canonical: `${window.location.origin}/product/${encodeURIComponent(slug)}`,
+      canonical: `${window.location.origin}${getCanonicalProductPath(product)}`,
       image,
       robots: DEFAULT_ROBOTS,
       ogType: 'product'
@@ -279,7 +300,8 @@
       if (route?.productId || route?.productName || route?.productSlug || String(route?.path || '').startsWith('/product/') || String(route?.path || '').startsWith('/p/')) {
         applyProduct(findProductForRoute(route) || inferProductFromDom() || {
           name: route?.productName || 'Product',
-          slug: route?.productSlug || route?.productName || route?.productId || 'product'
+          slug: route?.productSlug || '',
+          productId: route?.productId || ''
         });
         return;
       }

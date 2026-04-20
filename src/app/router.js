@@ -72,11 +72,12 @@
 
   function slugifySegment(value) {
     return String(value || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9_\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'item';
   }
 
   function resolveCategoryKey(value) {
@@ -84,9 +85,81 @@
     if (!raw) return '';
     const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
     if (db && Object.prototype.hasOwnProperty.call(db, raw)) return raw;
-    const normalized = slugifySegment(decodeURIComponent(raw)).replace(/_/g, '-');
+    const normalized = slugifySegment(decodeURIComponent(raw));
     const keys = Object.keys(db || {});
-    return keys.find((key) => slugifySegment(key).replace(/_/g, '-') === normalized) || raw;
+    return keys.find((key) => slugifySegment(key) === normalized) || raw;
+  }
+
+  function getFlatCatalogProducts() {
+    try {
+      if (typeof window.getAllProductsFlatSafe === 'function') return window.getAllProductsFlatSafe() || [];
+    } catch {}
+    try {
+      if (typeof window.__ssGetCatalogFlat === 'function') return window.__ssGetCatalogFlat() || [];
+    } catch {}
+    const db = (window.productsDatabase && typeof window.productsDatabase === 'object') ? window.productsDatabase : (window.products || {});
+    try { return Object.values(db || {}).flat().filter(Boolean); } catch {}
+    return [];
+  }
+
+  function idNorm(value) {
+    return typeof window.__ssIdNorm === 'function' ? window.__ssIdNorm(value) : String(value ?? '').trim();
+  }
+
+  function isBadId(value) {
+    return typeof window.__ssIsBadId === 'function' ? window.__ssIsBadId(value) : !String(value ?? '').trim();
+  }
+
+  function getProductIdValue(product) {
+    return idNorm(product?.productId || product?.id || product?.pid || '');
+  }
+
+  function findProductByIdFromCatalog(productId) {
+    const wanted = idNorm(productId);
+    if (!wanted) return null;
+    return getFlatCatalogProducts().find((product) => idNorm(product?.productId || product?.id || product?.pid || '') === wanted) || null;
+  }
+
+  function findProductByNameFromCatalog(name) {
+    const productName = String(name || '').trim();
+    if (!productName) return null;
+    try {
+      if (typeof window.findProductByNameParam === 'function') return window.findProductByNameParam(productName) || null;
+    } catch {}
+    try {
+      if (typeof window.findProductByName === 'function') return window.findProductByName(productName) || null;
+    } catch {}
+    return getFlatCatalogProducts().find((product) => String(product?.name || '').trim() === productName) || null;
+  }
+
+  function getCanonicalProductSlug(product, fallback = {}) {
+    const explicit = String(product?.slug || fallback?.slug || '').trim();
+    if (explicit) return explicit;
+    const productId = getProductIdValue(product) || idNorm(fallback?.productId || fallback?.id || fallback?.pid || '');
+    const baseSource = String(
+      product?.name ||
+      fallback?.name ||
+      product?.productLink ||
+      fallback?.productLink ||
+      productId ||
+      ''
+    ).trim();
+    if (!baseSource) return '';
+    const base = slugifySegment(baseSource);
+    if (!base) return '';
+    return productId ? `${base}-${productId}` : base;
+  }
+
+  function getCanonicalProductPath(product, fallback = {}) {
+    const slug = getCanonicalProductSlug(product, fallback);
+    return slug ? `/product/${encodeURIComponent(slug)}` : '';
+  }
+
+  function getCanonicalCategoryPath(category) {
+    const name = String(category || '').trim();
+    if (!name) return '';
+    const slug = slugifySegment(name);
+    return slug ? `/category/${encodeURIComponent(slug)}` : '';
   }
 
   function parseRoute(urlLike) {
@@ -261,22 +334,18 @@
     try {
       if (state?.action === 'GoToProductPage') {
         const name = state?.data?.[0];
-        const idNorm = typeof window.__ssIdNorm === 'function' ? window.__ssIdNorm : (v) => String(v ?? '').trim();
-        const isBadId = typeof window.__ssIsBadId === 'function' ? window.__ssIsBadId : (v) => !String(v ?? '').trim();
         const pidRaw = state?.data?.[4];
         const pid = idNorm(pidRaw);
         const disc = state?.data?.[5] && typeof state.data[5] === 'object' ? state.data[5] : null;
         const tok = idNorm(disc?.discountToken || disc?.recoToken || '');
         const pidOk = pid && !isBadId(pid);
-        if (pidOk) {
-          if (window.__SS_USE_PATH_ROUTES__) {
-            if (tok) return `/p/${encodeURIComponent(pid)}?reco=${encodeURIComponent(tok)}`;
-            return `/p/${encodeURIComponent(pid)}`;
-          }
-          if (tok) return `/?p=${encodeURIComponent(pid)}&reco=${encodeURIComponent(tok)}`;
-          return `/?p=${encodeURIComponent(pid)}`;
+        const product = (pidOk ? findProductByIdFromCatalog(pid) : null) || findProductByNameFromCatalog(name);
+        const canonicalPath = getCanonicalProductPath(product, { name, productId: pid });
+        if (canonicalPath) {
+          if (tok) return `${canonicalPath}?reco=${encodeURIComponent(tok)}`;
+          return canonicalPath;
         }
-        if (name) return `/?product=${encodeURIComponent(name)}`;
+        if (name) return getCanonicalProductPath(null, { name }) || '/';
       }
 
       if (state?.action === 'searchQuery') {
@@ -319,11 +388,10 @@
         if (sortBy && sortBy !== getDefaultSort()) params.set('sort', sortBy);
         if (sortOrder !== 'asc') params.set('order', sortOrder);
         const query = params.toString();
-        if (window.__SS_USE_PATH_ROUTES__ && !isDefaultCategory) {
-          const path = `/category/${encodeURIComponent(slugifySegment(category))}`;
+        if (!isDefaultCategory) {
+          const path = getCanonicalCategoryPath(category);
           return query ? `${path}?${query}` : path;
         }
-        if (!isDefaultCategory) params.set('category', category);
         const fallbackQuery = params.toString();
         return fallbackQuery ? `/?${fallbackQuery}` : '/';
       }
@@ -618,6 +686,9 @@
     bind,
     unbind,
     resolveCategoryKey,
+    getCanonicalProductSlug,
+    getCanonicalProductPath,
+    getCanonicalCategoryPath,
     inspect() {
       return {
         popstateBound,

@@ -126,7 +126,24 @@
       const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data });
       if (typeof href === 'string' && href.trim()) return href;
     } catch {}
-    return `${window.location.origin}/?product=${encodeURIComponent(product?.name || '')}`;
+    try {
+      const fallbackPath = window.__SS_ROUTER__?.getCanonicalProductPath?.(product, {
+        name: opts.displayName || product?.name || '',
+        productId: String(opts.productId || product?.productId || product?.id || '').trim(),
+        productLink: product?.productLink || ''
+      });
+      if (typeof fallbackPath === 'string' && fallbackPath.trim()) {
+        return `${window.location.origin}${fallbackPath}`;
+      }
+    } catch {}
+    const fallbackSlug = String(opts.displayName || product?.name || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'product';
+    return `${window.location.origin}/product/${encodeURIComponent(fallbackSlug)}`;
   }
 
   function parseLooseNumber(value) {

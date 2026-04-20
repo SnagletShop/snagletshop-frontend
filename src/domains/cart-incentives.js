@@ -445,10 +445,28 @@ function __ssBuildProductHref(product, discount = null) {
     const href = window.__SS_ROUTER__?.buildUrlForState?.({ action: 'GoToProductPage', data });
     if (typeof href === 'string' && href.trim()) return href;
   } catch {}
-  const nameEnc = encodeURIComponent(String(product?.name || ''));
+  try {
+    const fallbackPath = window.__SS_ROUTER__?.getCanonicalProductPath?.(product, {
+      name: product?.name || '',
+      productId: String(product?.productId || product?.id || '').trim(),
+      productLink: product?.productLink || product?.url || product?.link || ''
+    });
+    if (typeof fallbackPath === 'string' && fallbackPath.trim()) {
+      const tok = String(discount?.discountToken || '').trim();
+      const recoQ = tok ? `?reco=${encodeURIComponent(tok)}` : '';
+      return `${window.location.origin}${fallbackPath}${recoQ}`;
+    }
+  } catch {}
+  const fallbackSlug = String(product?.name || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'product';
   const tok = String(discount?.discountToken || '').trim();
-  const recoQ = tok ? `&reco=${encodeURIComponent(tok)}` : '';
-  return `${window.location.origin}/?product=${nameEnc}${recoQ}`;
+  const recoQ = tok ? `?reco=${encodeURIComponent(tok)}` : '';
+  return `${window.location.origin}/product/${encodeURIComponent(fallbackSlug)}${recoQ}`;
 }
 
 function __ssRenderCartIncentivesHTMLLegacy(totalSumEUR, opts = {}) {

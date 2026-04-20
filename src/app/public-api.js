@@ -115,6 +115,26 @@
         }, productParam);
       }
       return typeof window.findProductByName === 'function' ? window.findProductByName : null;
+    }),
+    findProductBySlug: bindGlobal('findProductBySlug', () => {
+      const runtime = resolve('domain.productRuntime', window.__SS_PRODUCT_RUNTIME__ || null);
+      if (runtime?.findProductBySlug) {
+        return (slug) => runtime.findProductBySlug({
+          getCatalog: () => window.products || window.productsDatabase || {},
+          getProductsById: () => {
+            const flat = typeof window.getAllProductsFlatSafe === 'function'
+              ? window.getAllProductsFlatSafe()
+              : (typeof window.__ssGetCatalogFlat === 'function' ? window.__ssGetCatalogFlat() : []);
+            const byId = {};
+            (flat || []).forEach((product) => {
+              const productId = String(product?.productId || product?.id || '').trim();
+              if (productId) byId[productId] = product;
+            });
+            return byId;
+          }
+        }, slug);
+      }
+      return null;
     })
   };
 
