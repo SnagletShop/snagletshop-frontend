@@ -311,8 +311,10 @@ function __ssGetProductImageExperienceState() {
             historyPushed: false,
             overlayEl: null,
             overlayImageEl: null,
+            overlayTrackEl: null,
             overlayCounterEl: null,
             overlayStageEl: null,
+            overlaySlideImageEls: [],
             desktopWrapper: null,
             desktopZoomLayer: null,
             scale: 1,
@@ -330,6 +332,15 @@ function __ssGetProductImageExperienceState() {
         };
     }
     return window.__ssProductImageExperience;
+}
+
+function __ssGetCurrentMobileLightboxImageEl() {
+    const state = __ssGetProductImageExperienceState();
+    const idx = __ssGetCurrentPdpImageIndex();
+    if (Array.isArray(state.overlaySlideImageEls) && state.overlaySlideImageEls[idx]) {
+        return state.overlaySlideImageEls[idx];
+    }
+    return state.overlayImageEl || null;
 }
 
 function __ssGetCurrentRouteSnapshot() {
@@ -358,7 +369,7 @@ function __ssPushProductImageViewerState() {
     } catch {}
 }
 
-function __ssResetMobileLightboxTransform() {
+function __ssResetMobileLightboxTransform(options = {}) {
     const state = __ssGetProductImageExperienceState();
     state.scale = 1;
     state.translateX = 0;
@@ -372,14 +383,81 @@ function __ssResetMobileLightboxTransform() {
     state.gestureStartX = 0;
     state.gestureStartY = 0;
     state.swipeDeltaX = 0;
+    try {
+        (state.overlaySlideImageEls || []).forEach((img) => {
+            if (img) img.style.transform = 'translate(0px, 0px) scale(1)';
+        });
+    } catch {}
     __ssApplyMobileLightboxTransform();
+    if (options.skipTrack !== true) {
+        __ssApplyMobileLightboxTrackPosition({ animate: false });
+    }
 }
 
 function __ssApplyMobileLightboxTransform() {
     const state = __ssGetProductImageExperienceState();
-    const imageEl = state.overlayImageEl;
+    const imageEl = __ssGetCurrentMobileLightboxImageEl();
     if (!imageEl) return;
     imageEl.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+}
+
+function __ssApplyMobileLightboxTrackPosition(options = {}) {
+    const state = __ssGetProductImageExperienceState();
+    const trackEl = state.overlayTrackEl;
+    if (!trackEl) return;
+    const idx = __ssGetCurrentPdpImageIndex();
+    const animate = options.animate !== false;
+    trackEl.style.transition = animate ? 'transform 260ms cubic-bezier(.22,.61,.36,1)' : 'none';
+    const swipeOffset = state.scale > 1.01 ? 0 : Number(state.swipeDeltaX || 0);
+    trackEl.style.transform = `translate3d(calc(${-idx * 100}% + ${swipeOffset}px), 0, 0)`;
+}
+
+function __ssRenderMobileLightboxSlides() {
+    const state = __ssGetProductImageExperienceState();
+    const stage = state.overlayStageEl;
+    if (!stage) return;
+    const images = __ssGetCurrentPdpImages();
+    const normalized = images.map(__ssNormalizePdpImageUrl);
+    const currentRendered = Array.isArray(state.overlaySlideImageEls)
+        ? state.overlaySlideImageEls.map((img) => __ssNormalizePdpImageUrl(img?.getAttribute('src') || ''))
+        : [];
+
+    const needsRebuild =
+        !state.overlayTrackEl ||
+        !Array.isArray(state.overlaySlideImageEls) ||
+        currentRendered.length !== normalized.length ||
+        currentRendered.some((src, index) => src !== normalized[index]);
+
+    if (!needsRebuild) return;
+
+    const track = document.createElement('div');
+    track.className = 'ss-pdp-lightbox-track';
+
+    const slideImageEls = [];
+    normalized.forEach((src, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'ss-pdp-lightbox-slide';
+        slide.dataset.index = String(index);
+
+        const image = document.createElement('img');
+        image.className = 'ss-pdp-lightbox-image';
+        image.alt = `Product image ${index + 1}`;
+        image.draggable = false;
+        image.src = src || '/favicon.png';
+
+        slide.appendChild(image);
+        track.appendChild(slide);
+        slideImageEls.push(image);
+    });
+
+    try { stage.replaceChildren(track); } catch {
+        stage.innerHTML = '';
+        stage.appendChild(track);
+    }
+
+    state.overlayTrackEl = track;
+    state.overlaySlideImageEls = slideImageEls;
+    state.overlayImageEl = slideImageEls[__ssGetCurrentPdpImageIndex()] || slideImageEls[0] || null;
 }
 
 function __ssSyncDesktopZoomLayer() {
@@ -424,15 +502,22 @@ function __ssActivateDesktopZoom(wrapper, sourceEvent = null, options = {}) {
 
 function __ssSyncMobileLightboxImage() {
     const state = __ssGetProductImageExperienceState();
-    if (!state.overlayEl || !state.overlayImageEl) return;
+    if (!state.overlayEl || !state.overlayStageEl) return;
+    __ssRenderMobileLightboxSlides();
     const images = __ssGetCurrentPdpImages();
     const idx = __ssGetCurrentPdpImageIndex();
-    const src = images[idx] || images[0] || '/favicon.png';
-    state.overlayImageEl.src = src;
-    state.overlayImageEl.alt = `Product image ${idx + 1}`;
+    state.overlayImageEl = (state.overlaySlideImageEls || [])[idx] || (state.overlaySlideImageEls || [])[0] || null;
+    try {
+        (state.overlaySlideImageEls || []).forEach((img, imageIndex) => {
+            img?.parentElement?.classList.toggle('is-active', imageIndex === idx);
+            if (img) img.alt = `Product image ${imageIndex + 1}`;
+        });
+    } catch {}
     if (state.overlayCounterEl) {
         state.overlayCounterEl.textContent = `${idx + 1} / ${images.length}`;
     }
+    __ssApplyMobileLightboxTrackPosition({ animate: true });
+    __ssApplyMobileLightboxTransform();
 }
 
 function __ssEnsureProductImageViewerBinding() {
@@ -523,12 +608,6 @@ function __ssOpenMobileLightbox(options = {}) {
     const stage = document.createElement('div');
     stage.className = 'ss-pdp-lightbox-stage';
 
-    const image = document.createElement('img');
-    image.className = 'ss-pdp-lightbox-image';
-    image.alt = 'Product image preview';
-    image.draggable = false;
-    stage.appendChild(image);
-
     const bottomBar = document.createElement('div');
     bottomBar.className = 'ss-pdp-lightbox-bottom';
 
@@ -539,8 +618,8 @@ function __ssOpenMobileLightbox(options = {}) {
     prevBtn.innerHTML = '<span aria-hidden="true">&#8249;</span>';
     prevBtn.addEventListener('click', (event) => {
         event.preventDefault();
+        __ssResetMobileLightboxTransform({ skipTrack: true });
         prevImage();
-        __ssResetMobileLightboxTransform();
     });
 
     const counter = document.createElement('div');
@@ -553,8 +632,8 @@ function __ssOpenMobileLightbox(options = {}) {
     nextBtn.innerHTML = '<span aria-hidden="true">&#8250;</span>';
     nextBtn.addEventListener('click', (event) => {
         event.preventDefault();
+        __ssResetMobileLightboxTransform({ skipTrack: true });
         nextImage();
-        __ssResetMobileLightboxTransform();
     });
 
     bottomBar.append(prevBtn, counter, nextBtn);
@@ -563,9 +642,11 @@ function __ssOpenMobileLightbox(options = {}) {
     document.body.appendChild(overlay);
 
     state.overlayEl = overlay;
-    state.overlayImageEl = image;
+    state.overlayImageEl = null;
+    state.overlayTrackEl = null;
     state.overlayCounterEl = counter;
     state.overlayStageEl = stage;
+    state.overlaySlideImageEls = [];
     state.open = true;
     state.mode = 'mobile';
 
@@ -626,13 +707,20 @@ function __ssOpenMobileLightbox(options = {}) {
 
         if (state.gestureMode === 'swipe') {
             state.swipeDeltaX = Number(touch?.clientX || 0) - state.gestureStartX;
+            __ssApplyMobileLightboxTrackPosition({ animate: false });
         }
     }, { passive: false });
 
     stage.addEventListener('touchend', () => {
         if (state.gestureMode === 'swipe' && Math.abs(state.swipeDeltaX) > 48) {
-            if (state.swipeDeltaX < 0) nextImage();
+            const swipeDirection = state.swipeDeltaX;
+            state.swipeDeltaX = 0;
+            __ssResetMobileLightboxTransform({ skipTrack: true });
+            if (swipeDirection < 0) nextImage();
             else prevImage();
+        } else if (state.gestureMode === 'swipe') {
+            state.swipeDeltaX = 0;
+            __ssApplyMobileLightboxTrackPosition({ animate: true });
         }
         state.gestureMode = '';
         state.pinchStartDistance = 0;
@@ -699,8 +787,10 @@ function __ssCloseProductImageExperience(options = {}) {
     state.historyPushed = false;
     state.overlayEl = null;
     state.overlayImageEl = null;
+    state.overlayTrackEl = null;
     state.overlayCounterEl = null;
     state.overlayStageEl = null;
+    state.overlaySlideImageEls = [];
     state.desktopWrapper = null;
     state.desktopZoomLayer = null;
     __ssResetMobileLightboxTransform();
