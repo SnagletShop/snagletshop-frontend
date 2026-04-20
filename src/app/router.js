@@ -483,10 +483,22 @@
     const modal = document.getElementById('paymentModal');
     const eventState = (event?.state && typeof event.state === 'object') ? event.state : null;
     const wantsModalOpen = eventState?.modalOpen === true;
+    const viewerOnlyPopstate = window.__ssSkipNextRouterPopstateForPdpViewer === true;
     window.__ssHandlingPopstate = true;
     try {
       if (modal && typeof window.closeModal === 'function') {
         window.closeModal({ fromHistory: true });
+      }
+
+      if (viewerOnlyPopstate) {
+        window.__ssSkipNextRouterPopstateForPdpViewer = false;
+        const viewerRouteState = resolvePopstateRoute(eventState);
+        if (viewerRouteState) {
+          const nextIndex = syncRouteIntoStack(viewerRouteState, eventState?.index, 'history-pop-viewer-only');
+          window.__ssModalHistoryPushed = wantsModalOpen;
+          replaceBrowserState(viewerRouteState, nextIndex, { modalOpen: wantsModalOpen }, window.location.href);
+          return;
+        }
       }
 
       const routeState = resolvePopstateRoute(eventState);
@@ -512,6 +524,9 @@
       window.__ssModalHistoryPushed = false;
       console.warn('[ss router] Unable to resolve popstate route:', eventState);
     } finally {
+      if (viewerOnlyPopstate) {
+        window.__ssSkipNextRouterPopstateForPdpViewer = false;
+      }
       window.__ssHandlingPopstate = false;
       window.isReplaying = false;
     }

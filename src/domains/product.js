@@ -596,6 +596,7 @@ function __ssEnsureProductImageViewerBinding() {
             const state = __ssGetProductImageExperienceState();
             const wantsViewer = !!(event?.state && event.state[PDP_IMAGE_VIEWER_HISTORY_KEY] === true);
             if (state.open && !wantsViewer) {
+                window.__ssSkipNextRouterPopstateForPdpViewer = true;
                 window.__ssSuppressNextProductRerender = true;
                 __ssCloseProductImageExperience({ fromHistory: true, force: true });
                 return;
@@ -604,6 +605,7 @@ function __ssEnsureProductImageViewerBinding() {
                 const wrapper = document.querySelector('#Product_Viewer .image-slider-wrapper');
                 const mainImage = document.getElementById('mainImage');
                 if (!wrapper || !mainImage) return;
+                window.__ssSkipNextRouterPopstateForPdpViewer = true;
                 window.__ssSuppressNextProductRerender = true;
                 __ssOpenProductImageExperience({ wrapper, mainImage, fromHistory: true });
             }
