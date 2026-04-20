@@ -79,9 +79,9 @@ window.functionBlacklist = new Set([
 
 ]);
 
-// Routing mode: path routes (/p/<id>) require server rewrite. Query routes (/?p=<id>) are reload-safe on any static host.
-// Set to true only if your web server rewrites /p/* to /index.html.
-const __SS_USE_PATH_ROUTES__ = window.__SS_CONFIG__?.USE_PATH_ROUTES ?? false;
+// Public product/category URLs use canonical clean paths served by the backend SEO routes.
+// Legacy /p/<id> and query-style URLs remain compatibility entry points only and should not be emitted by active code.
+const __SS_USE_PATH_ROUTES__ = window.__SS_CONFIG__?.USE_PATH_ROUTES ?? true;
 const AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE = window.__SS_CONFIG__?.AUTO_UPDATE_CURRENCY_ON_COUNTRY_CHANGE ?? true;
 // applyTariff is controlled by the backend (see /products payload: applyTariff).
 // We keep a local fallback for offline/backwards compatibility.
@@ -458,9 +458,6 @@ function __ssRestoreHistoryStateFromSession() {
     return false;
 }
 
-if (location.pathname !== "/" && !location.pathname.includes(".") && !location.pathname.startsWith("/p/")) {
-    // Allow deep links for product slugs and /p/<id>.
-}
 function normalizeProductKey(s) {
     const runtime = window.__SS_PRODUCT_ID_RUNTIME__;
     if (runtime && typeof runtime.normalizeProductKey === "function") return runtime.normalizeProductKey(s);
