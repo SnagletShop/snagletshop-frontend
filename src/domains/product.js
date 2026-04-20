@@ -287,6 +287,7 @@ function __ssSetCurrentPdpImageIndex(nextIndex, direction = "none") {
     if (!images.length) return;
     const total = images.length;
     const normalized = ((Number(nextIndex || 0) % total) + total) % total;
+    try { __ssGetProductImageExperienceState().lastNavDirection = String(direction || 'none'); } catch {}
     window.currentProductImageIndex = normalized;
     updateImage(direction);
 }
@@ -315,6 +316,10 @@ function __ssGetProductImageExperienceState() {
             overlayCounterEl: null,
             overlayStageEl: null,
             overlaySlideImageEls: [],
+            overlaySlideEls: [],
+            overlayLogicalIndex: 0,
+            overlayVisualIndex: 0,
+            overlayLoopResetVisualIndex: null,
             desktopWrapper: null,
             desktopZoomLayer: null,
             scale: 1,
@@ -328,7 +333,8 @@ function __ssGetProductImageExperienceState() {
             gestureMode: '',
             gestureStartX: 0,
             gestureStartY: 0,
-            swipeDeltaX: 0
+            swipeDeltaX: 0,
+            lastNavDirection: 'none'
         };
     }
     return window.__ssProductImageExperience;
@@ -341,6 +347,13 @@ function __ssGetCurrentMobileLightboxImageEl() {
         return state.overlaySlideImageEls[idx];
     }
     return state.overlayImageEl || null;
+}
+
+function __ssGetMobileLightboxVisualIndex(logicalIndex) {
+    const images = __ssGetCurrentPdpImages();
+    const total = images.length;
+    if (total <= 1) return 0;
+    return __ssClamp(Number(logicalIndex || 0), 0, total - 1) + 1;
 }
 
 function __ssGetCurrentRouteSnapshot() {
@@ -405,8 +418,13 @@ function __ssApplyMobileLightboxTrackPosition(options = {}) {
     const state = __ssGetProductImageExperienceState();
     const trackEl = state.overlayTrackEl;
     if (!trackEl) return;
-    const idx = __ssGetCurrentPdpImageIndex();
+    const idx = Number.isInteger(options.visualIndex)
+        ? options.visualIndex
+        : (Number.isInteger(state.overlayVisualIndex)
+            ? state.overlayVisualIndex
+            : __ssGetMobileLightboxVisualIndex(__ssGetCurrentPdpImageIndex()));
     const animate = options.animate !== false;
+    state.overlayVisualIndex = idx;
     trackEl.style.transition = animate ? 'transform 260ms cubic-bezier(.22,.61,.36,1)' : 'none';
     const swipeOffset = state.scale > 1.01 ? 0 : Number(state.swipeDeltaX || 0);
     trackEl.style.transform = `translate3d(calc(${-idx * 100}% + ${swipeOffset}px), 0, 0)`;
@@ -433,21 +451,47 @@ function __ssRenderMobileLightboxSlides() {
     const track = document.createElement('div');
     track.className = 'ss-pdp-lightbox-track';
 
+    const total = normalized.length;
     const slideImageEls = [];
+    const slideEls = [];
+    const slideSpecs = [];
+    if (total > 1) {
+        slideSpecs.push({ src: normalized[total - 1], logicalIndex: total - 1, isClone: true });
+    }
     normalized.forEach((src, index) => {
+        slideSpecs.push({ src, logicalIndex: index, isClone: false });
+    });
+    if (total > 1) {
+        slideSpecs.push({ src: normalized[0], logicalIndex: 0, isClone: true });
+    }
+
+    slideSpecs.forEach(({ src, logicalIndex, isClone }) => {
         const slide = document.createElement('div');
         slide.className = 'ss-pdp-lightbox-slide';
-        slide.dataset.index = String(index);
+        slide.dataset.index = String(logicalIndex);
+        if (isClone) slide.dataset.clone = 'yes';
 
         const image = document.createElement('img');
         image.className = 'ss-pdp-lightbox-image';
-        image.alt = `Product image ${index + 1}`;
+        image.alt = `Product image ${logicalIndex + 1}`;
         image.draggable = false;
         image.src = src || '/favicon.png';
 
         slide.appendChild(image);
         track.appendChild(slide);
-        slideImageEls.push(image);
+        slideEls.push(slide);
+        if (!isClone) slideImageEls[logicalIndex] = image;
+    });
+
+    track.addEventListener('transitionend', (event) => {
+        if (event?.propertyName !== 'transform') return;
+        const pendingVisualIndex = state.overlayLoopResetVisualIndex;
+        if (!Number.isInteger(pendingVisualIndex)) return;
+        state.overlayLoopResetVisualIndex = null;
+        state.overlayVisualIndex = pendingVisualIndex;
+        track.style.transition = 'none';
+        track.style.transform = `translate3d(${-pendingVisualIndex * 100}%, 0, 0)`;
+        void track.offsetWidth;
     });
 
     try { stage.replaceChildren(track); } catch {
@@ -457,6 +501,8 @@ function __ssRenderMobileLightboxSlides() {
 
     state.overlayTrackEl = track;
     state.overlaySlideImageEls = slideImageEls;
+    state.overlaySlideEls = slideEls;
+    state.overlayVisualIndex = __ssGetMobileLightboxVisualIndex(__ssGetCurrentPdpImageIndex());
     state.overlayImageEl = slideImageEls[__ssGetCurrentPdpImageIndex()] || slideImageEls[0] || null;
 }
 
@@ -500,12 +546,33 @@ function __ssActivateDesktopZoom(wrapper, sourceEvent = null, options = {}) {
     else state.historyPushed = true;
 }
 
-function __ssSyncMobileLightboxImage() {
+function __ssSyncMobileLightboxImage(options = {}) {
     const state = __ssGetProductImageExperienceState();
     if (!state.overlayEl || !state.overlayStageEl) return;
     __ssRenderMobileLightboxSlides();
     const images = __ssGetCurrentPdpImages();
     const idx = __ssGetCurrentPdpImageIndex();
+    const total = images.length;
+    const previousLogicalIndex = Number(state.overlayLogicalIndex || 0);
+    const direction = String(options.direction || state.lastNavDirection || 'none');
+    const animate = options.animate !== false;
+    let visualIndex = __ssGetMobileLightboxVisualIndex(idx);
+
+    if (total > 1 && animate) {
+        if (direction === 'left' && previousLogicalIndex === total - 1 && idx === 0) {
+            visualIndex = total + 1;
+            state.overlayLoopResetVisualIndex = 1;
+        } else if (direction === 'right' && previousLogicalIndex === 0 && idx === total - 1) {
+            visualIndex = 0;
+            state.overlayLoopResetVisualIndex = total;
+        } else {
+            state.overlayLoopResetVisualIndex = null;
+        }
+    } else {
+        state.overlayLoopResetVisualIndex = null;
+    }
+
+    state.overlayLogicalIndex = idx;
     state.overlayImageEl = (state.overlaySlideImageEls || [])[idx] || (state.overlaySlideImageEls || [])[0] || null;
     try {
         (state.overlaySlideImageEls || []).forEach((img, imageIndex) => {
@@ -516,8 +583,9 @@ function __ssSyncMobileLightboxImage() {
     if (state.overlayCounterEl) {
         state.overlayCounterEl.textContent = `${idx + 1} / ${images.length}`;
     }
-    __ssApplyMobileLightboxTrackPosition({ animate: true });
+    __ssApplyMobileLightboxTrackPosition({ animate, visualIndex });
     __ssApplyMobileLightboxTransform();
+    state.lastNavDirection = 'none';
 }
 
 function __ssEnsureProductImageViewerBinding() {
@@ -557,7 +625,7 @@ function __ssOpenMobileLightbox(options = {}) {
     if (state.overlayEl) {
         state.open = true;
         state.mode = 'mobile';
-        __ssSyncMobileLightboxImage();
+        __ssSyncMobileLightboxImage({ animate: false });
         __ssResetMobileLightboxTransform();
         if (options.fromHistory !== true) __ssPushProductImageViewerState();
         else state.historyPushed = true;
@@ -647,6 +715,10 @@ function __ssOpenMobileLightbox(options = {}) {
     state.overlayCounterEl = counter;
     state.overlayStageEl = stage;
     state.overlaySlideImageEls = [];
+    state.overlaySlideEls = [];
+    state.overlayLogicalIndex = __ssGetCurrentPdpImageIndex();
+    state.overlayVisualIndex = __ssGetMobileLightboxVisualIndex(state.overlayLogicalIndex);
+    state.overlayLoopResetVisualIndex = null;
     state.open = true;
     state.mode = 'mobile';
 
@@ -738,7 +810,7 @@ function __ssOpenMobileLightbox(options = {}) {
         }
     });
 
-    __ssSyncMobileLightboxImage();
+    __ssSyncMobileLightboxImage({ animate: false });
     __ssResetMobileLightboxTransform();
     document.documentElement.classList.add('ss-pdp-lightbox-open');
     document.body.classList.add('ss-pdp-lightbox-open');
@@ -791,6 +863,10 @@ function __ssCloseProductImageExperience(options = {}) {
     state.overlayCounterEl = null;
     state.overlayStageEl = null;
     state.overlaySlideImageEls = [];
+    state.overlaySlideEls = [];
+    state.overlayLogicalIndex = 0;
+    state.overlayVisualIndex = 0;
+    state.overlayLoopResetVisualIndex = null;
     state.desktopWrapper = null;
     state.desktopZoomLayer = null;
     __ssResetMobileLightboxTransform();
