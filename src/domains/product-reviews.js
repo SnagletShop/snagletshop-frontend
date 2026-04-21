@@ -172,15 +172,129 @@
     }).join('');
   }
 
-  function reviewDistributionMarkup(reviews, summary) {
-    const list = Array.isArray(reviews) ? reviews : [];
-    const total = Math.max(0, Number(summary?.reviewCount || 0) || list.length || 0);
-    if (total < 1) return '';
+  function buildReviewBuckets(reviews) {
     const buckets = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    const list = Array.isArray(reviews) ? reviews : [];
     list.forEach((review) => {
       const bucket = Math.max(1, Math.min(5, Math.round(Number(review?.starRating || 0) || 0)));
       buckets[bucket] = (buckets[bucket] || 0) + 1;
     });
+    return buckets;
+  }
+
+  function reviewImageList(review) {
+    return (Array.isArray(review?.images) ? review.images : []).filter((image) => String(image?.url || '').trim());
+  }
+
+  function reviewPhotoReviewCount(reviews) {
+    const list = Array.isArray(reviews) ? reviews : [];
+    return list.reduce((total, review) => total + (reviewImageList(review).length ? 1 : 0), 0);
+  }
+
+  function reviewInitials(value) {
+    const parts = String(value || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'VC';
+    return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
+  }
+
+  function reviewTimestamp(review) {
+    const timestamp = new Date(review?.reviewDate || review?.createdAt || 0).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
+  function reviewFilterOptions(reviews) {
+    const list = Array.isArray(reviews) ? reviews : [];
+    const buckets = buildReviewBuckets(list);
+    const withPhotos = reviewPhotoReviewCount(list);
+    const options = [
+      { key: 'all', label: `All (${list.length.toLocaleString()})`, count: list.length },
+      { key: 'photos', label: `With photos (${withPhotos.toLocaleString()})`, count: withPhotos },
+    ];
+    [5, 4, 3, 2, 1].forEach((star) => {
+      const count = Number(buckets[star] || 0) || 0;
+      if (count > 0) {
+        options.push({ key: `rating-${star}`, label: `${star} ★ (${count.toLocaleString()})`, count });
+      }
+    });
+    return options.filter((option) => option.key === 'all' || option.count > 0);
+  }
+
+  function reviewFilterValueOf(section) {
+    const filter = String(section?.dataset?.reviewFilter || 'all').trim().toLowerCase();
+    return filter || 'all';
+  }
+
+  function reviewSortValueOf(section) {
+    const sort = String(section?.dataset?.reviewSort || 'recent').trim().toLowerCase();
+    return sort || 'recent';
+  }
+
+  function filterReviews(reviews, filter) {
+    const list = Array.isArray(reviews) ? reviews : [];
+    if (!filter || filter === 'all') return list.slice();
+    if (filter === 'photos') return list.filter((review) => reviewImageList(review).length > 0);
+    if (filter.startsWith('rating-')) {
+      const rating = Math.max(1, Math.min(5, Number(filter.replace('rating-', '')) || 0));
+      return list.filter((review) => Math.max(1, Math.min(5, Math.round(Number(review?.starRating || 0) || 0))) === rating);
+    }
+    return list.slice();
+  }
+
+  function sortReviews(reviews, sort) {
+    const list = Array.isArray(reviews) ? reviews.slice() : [];
+    const byRecent = (a, b) => reviewTimestamp(b) - reviewTimestamp(a);
+    switch (String(sort || 'recent').trim().toLowerCase()) {
+      case 'highest':
+        return list.sort((a, b) => (Number(b?.starRating || 0) || 0) - (Number(a?.starRating || 0) || 0) || byRecent(a, b));
+      case 'lowest':
+        return list.sort((a, b) => (Number(a?.starRating || 0) || 0) - (Number(b?.starRating || 0) || 0) || byRecent(a, b));
+      case 'helpful':
+        return list.sort((a, b) => (Number(b?.helpfulCount || 0) || 0) - (Number(a?.helpfulCount || 0) || 0) || byRecent(a, b));
+      case 'photos':
+        return list.sort((a, b) => reviewImageList(b).length - reviewImageList(a).length || byRecent(a, b));
+      case 'recent':
+      default:
+        return list.sort(byRecent);
+    }
+  }
+
+  function reviewSortOptions() {
+    return [
+      { key: 'recent', label: 'Most recent' },
+      { key: 'highest', label: 'Highest rating' },
+      { key: 'lowest', label: 'Lowest rating' },
+      { key: 'helpful', label: 'Most helpful' },
+      { key: 'photos', label: 'With photos first' },
+    ];
+  }
+
+  function reviewMobileFiltersMarkup(reviews, activeFilter) {
+    const options = reviewFilterOptions(reviews);
+    if (!options.length) return '';
+    return `
+      <div class="ss-review-mobile-filters" role="group" aria-label="Review filters">
+        ${options.map((option) => `<button class="ss-review-mobile-chip ${activeFilter === option.key ? 'is-active' : ''}" data-review-filter="${esc(option.key)}" type="button">${esc(option.label)}</button>`).join('')}
+      </div>`;
+  }
+
+  function reviewMobileSortMarkup(activeSort) {
+    const options = reviewSortOptions();
+    return `
+      <div class="ss-review-mobile-sort">
+        <label class="ss-review-mobile-sort-label" for="ssReviewSortSelect">Sort by:</label>
+        <div class="ss-review-mobile-sort-shell">
+          <select class="ss-review-mobile-sort-select" id="ssReviewSortSelect" data-review-sort>
+            ${options.map((option) => `<option value="${esc(option.key)}" ${activeSort === option.key ? 'selected' : ''}>${esc(option.label)}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+  }
+
+  function reviewDistributionMarkup(reviews, summary) {
+    const list = Array.isArray(reviews) ? reviews : [];
+    const total = Math.max(0, Number(summary?.reviewCount || 0) || list.length || 0);
+    if (total < 1) return '';
+    const buckets = buildReviewBuckets(list);
     return `
       <div class="ss-review-summary-distribution">
         ${[5, 4, 3, 2, 1].map((star) => {
@@ -210,7 +324,7 @@
     return `
       <div class="ss-review-summary">
         <div class="ss-review-summary-inline">
-          <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : 'â€”'}</div>
+          <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : '—'}</div>
           <div class="ss-review-summary-meta">
             <div class="ss-review-summary-stars">${createStars(avg)}</div>
             <div class="ss-review-summary-count">${count.toLocaleString()} rating${count === 1 ? '' : 's'}</div>
@@ -224,7 +338,7 @@
   function emptyReviewsMarkup(message) {
     return `
       <div class="ss-review-empty">
-        <div class="ss-review-empty-icon" aria-hidden="true">â˜†</div>
+        <div class="ss-review-empty-icon" aria-hidden="true">☆</div>
         <div class="ss-review-empty-body">
           <div class="ss-review-empty-title">No published reviews yet</div>
           <div class="ss-review-empty-copy">${esc(message || 'Once verified customers share feedback on this item, it will show up here.')}</div>
@@ -266,7 +380,7 @@
             <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
             <div class="ss-review-card-identity">
               <span class="ss-review-card-name">${reviewerName}</span>
-              ${reviewDate ? `<span class="ss-review-card-dot">â€¢</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
+              ${reviewDate ? `<span class="ss-review-card-dot">•</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
             </div>
           </div>
           ${selectedPurchaseLabel ? `<div class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</div>` : ''}
@@ -282,11 +396,7 @@
     const avg = Math.max(0, Math.min(5, Number(summary?.avgRating || 0) || 0));
     if (count < 1 || avg <= 0) return reviewSummaryMarkup(summary, reviews);
     const list = Array.isArray(reviews) ? reviews : [];
-    const buckets = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    list.forEach((review) => {
-      const bucket = Math.max(1, Math.min(5, Math.round(Number(review?.starRating || 0) || 0)));
-      buckets[bucket] = (buckets[bucket] || 0) + 1;
-    });
+    const buckets = buildReviewBuckets(list);
     return `
       <div class="ss-review-summary ss-review-summary--desktop-public">
         <div class="ss-review-summary-score">${avg.toFixed(1)}</div>
@@ -310,6 +420,40 @@
       </div>`;
   }
 
+  function reviewSummaryMobilePublicMarkup(summary, reviews, activeFilter, activeSort) {
+    const count = Math.max(0, Number(summary?.reviewCount || 0) || 0);
+    const avg = Math.max(0, Math.min(5, Number(summary?.avgRating || 0) || 0));
+    if (count < 1 || avg <= 0) return reviewSummaryMarkup(summary, reviews);
+    const list = Array.isArray(reviews) ? reviews : [];
+    const buckets = buildReviewBuckets(list);
+    return `
+      <div class="ss-review-mobile-stack">
+        <div class="ss-review-summary ss-review-summary--mobile-public">
+          <div class="ss-review-summary-mobile-panel">
+            <div class="ss-review-summary-mobile-score">
+              <div class="ss-review-summary-score">${avg.toFixed(1)}</div>
+              <div class="ss-review-summary-stars">${createStars(avg)}</div>
+              <div class="ss-review-summary-count">Based on ${count.toLocaleString()} review${count === 1 ? '' : 's'}</div>
+            </div>
+            <div class="ss-review-summary-distribution">
+              ${[5, 4, 3, 2, 1].map((star) => {
+                const rowCount = Number(buckets[star] || 0) || 0;
+                const pct = count > 0 ? Math.round((rowCount / count) * 100) : 0;
+                return `
+                  <div class="ss-review-summary-row">
+                    <span class="ss-review-summary-row-label"><span class="ss-review-summary-row-number">${star}</span><span aria-hidden="true">★</span></span>
+                    <span class="ss-review-summary-row-bar"><span style="width:${pct}%"></span></span>
+                    <span class="ss-review-summary-row-value">${pct}%</span>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+        ${reviewMobileFiltersMarkup(reviews, activeFilter)}
+        ${reviewMobileSortMarkup(activeSort)}
+      </div>`;
+  }
+
   function reviewCardPublicMarkup(review) {
     const images = Array.isArray(review?.images) ? review.images.slice(0, 3) : [];
     const reviewDate = formatDate(review?.reviewDate || review?.createdAt);
@@ -321,7 +465,7 @@
         <header class="ss-review-card-head">
           <div class="ss-review-card-author">
             <div class="ss-review-card-avatar">
-              ${avatarUrl ? `<img alt="${reviewerName}" src="${avatarUrl}"/>` : `<span aria-hidden="true">${reviewerName.charAt(0).toUpperCase()}</span>`}
+              ${avatarUrl ? `<img alt="${reviewerName}" src="${avatarUrl}"/>` : `<span aria-hidden="true">${reviewInitials(reviewerName)}</span>`}
               <span class="ss-review-card-avatar-badge" aria-hidden="true">✓</span>
             </div>
             <div class="ss-review-card-meta">
@@ -332,6 +476,43 @@
                   <span class="ss-review-card-verified">Verified Purchase</span>
                 </div>
                 <span class="ss-review-card-menu" aria-hidden="true">•••</span>
+              </div>
+              <div class="ss-review-card-purchase-line">
+                ${reviewDate ? `<span class="ss-review-card-date">${reviewDate}</span>` : ''}
+                ${reviewDate && selectedPurchaseLabel ? `<span class="ss-review-card-dot">•</span>` : ''}
+                ${selectedPurchaseLabel ? `<span class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        </header>
+        <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
+        ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
+        ${reviewHelpfulMarkup(review)}
+      </article>`;
+  }
+
+  function reviewCardMobilePublicMarkup(review) {
+    const images = reviewImageList(review).slice(0, 4);
+    const reviewDate = formatDate(review?.reviewDate || review?.createdAt);
+    const reviewerName = esc(review?.reviewerName || 'Verified customer');
+    const selectedPurchaseLabel = String(review?.selectedPurchaseLabel || '').trim();
+    const avatarUrl = esc(review?.reviewerAvatarUrl || review?.profilePictureLink || review?.avatarUrl || '');
+    return `
+      <article class="ss-review-card ss-review-card--mobile-public">
+        <header class="ss-review-card-head">
+          <div class="ss-review-card-author">
+            <div class="ss-review-card-avatar">
+              ${avatarUrl ? `<img alt="${reviewerName}" src="${avatarUrl}"/>` : `<span aria-hidden="true">${reviewInitials(reviewerName)}</span>`}
+              <span class="ss-review-card-avatar-badge" aria-hidden="true">✓</span>
+            </div>
+            <div class="ss-review-card-meta">
+              <div class="ss-review-card-header-row">
+                <span class="ss-review-card-name">${reviewerName}</span>
+                <span class="ss-review-card-menu" aria-hidden="true">•••</span>
+              </div>
+              <div class="ss-review-card-rating-line">
+                <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
+                <span class="ss-review-card-verified">Verified Purchase</span>
               </div>
               <div class="ss-review-card-purchase-line">
                 ${reviewDate ? `<span class="ss-review-card-date">${reviewDate}</span>` : ''}
@@ -660,6 +841,24 @@
     host.querySelectorAll('[data-review-open-product]').forEach((button) => {
       button.addEventListener('click', () => openProductRoute(host.__reviewRenderState?.product || { productId }));
     });
+    host.querySelectorAll('[data-review-filter]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const shell = host.closest('.ss-product-reviews');
+        if (!shell || !shell.__reviewRenderState) return;
+        shell.dataset.reviewFilter = String(button.getAttribute('data-review-filter') || 'all').trim().toLowerCase() || 'all';
+        shell.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
+        renderInto(shell, shell.__reviewRenderState.product, shell.__reviewRenderState);
+      });
+    });
+    host.querySelectorAll('[data-review-sort]').forEach((select) => {
+      select.addEventListener('change', () => {
+        const shell = host.closest('.ss-product-reviews');
+        if (!shell || !shell.__reviewRenderState) return;
+        shell.dataset.reviewSort = String(select.value || 'recent').trim().toLowerCase() || 'recent';
+        shell.dataset.reviewVisibleCount = String(REVIEWS_PAGE_SIZE);
+        renderInto(shell, shell.__reviewRenderState.product, shell.__reviewRenderState);
+      });
+    });
     const fileInput = host.querySelector('#ssReviewImages');
     if (fileInput) fileInput.addEventListener('change', () => updateUploadMeta(host));
     const form = host.querySelector('#ssReviewForm');
@@ -673,7 +872,11 @@
       button.addEventListener('click', () => {
         const shell = host.closest('.ss-product-reviews');
         if (!shell || !shell.__reviewRenderState) return;
-        const current = visibleCountOf(shell, shell.__reviewRenderState.reviews?.reviews?.length || 0);
+        const allReviews = Array.isArray(shell.__reviewRenderState.reviews?.reviews) ? shell.__reviewRenderState.reviews.reviews : [];
+        const prepared = shell.__reviewRenderState.mode === 'public'
+          ? sortReviews(filterReviews(allReviews, reviewFilterValueOf(shell)), reviewSortValueOf(shell))
+          : allReviews;
+        const current = visibleCountOf(shell, prepared.length);
         shell.dataset.reviewVisibleCount = String(current + REVIEWS_PAGE_SIZE);
         renderInto(shell, shell.__reviewRenderState.product, shell.__reviewRenderState);
       });
@@ -709,13 +912,18 @@
     const summary = state.reviews?.summary || { reviewCount: 0, avgRating: 0 };
     const reviews = Array.isArray(state.reviews?.reviews) ? state.reviews.reviews : [];
     const mode = String(state.mode || 'public').trim().toLowerCase();
-    const isDesktopPublic = mode === 'public' && !__ssIsMobileViewport();
+    const isPublic = mode === 'public';
+    const isDesktopPublic = isPublic && !__ssIsMobileViewport();
+    const isMobilePublic = isPublic && !isDesktopPublic;
     const account = auth()?.getAccount?.() || null;
     const eligibility = state.eligibility || null;
     const canReview = !!eligibility?.canReview;
-    const visibleCount = visibleCountOf(section, reviews.length);
-    const visibleReviews = reviews.slice(0, visibleCount);
-    section.__reviewRenderState = { product, reviews: state.reviews, eligibility, mode };
+    const activeFilter = isPublic ? reviewFilterValueOf(section) : 'all';
+    const activeSort = isPublic ? reviewSortValueOf(section) : 'recent';
+    const preparedReviews = isPublic ? sortReviews(filterReviews(reviews, activeFilter), activeSort) : reviews;
+    const visibleCount = visibleCountOf(section, preparedReviews.length);
+    const visibleReviews = preparedReviews.slice(0, visibleCount);
+    section.__reviewRenderState = { product, reviews: state.reviews, eligibility, mode, activeFilter, activeSort };
 
     section.innerHTML = `
       <section class="ss-product-reviews-shell ss-product-reviews-shell--${esc(mode)}">
@@ -724,16 +932,16 @@
             <h3 class="ss-product-reviews-title">${mode === 'public' ? 'Customer Reviews' : 'Customer reviews'}</h3>
             <div class="ss-review-muted">${mode === 'public' ? 'All from verified purchases' : 'Only verified customers with completed orders can leave a review for this product.'}</div>
           </div>
-          ${isDesktopPublic ? reviewSummaryPublicMarkup(summary, reviews) : reviewSummaryMarkup(summary, reviews)}
+          ${isDesktopPublic ? reviewSummaryPublicMarkup(summary, reviews) : isMobilePublic ? reviewSummaryMobilePublicMarkup(summary, reviews, activeFilter, activeSort) : reviewSummaryMarkup(summary, reviews)}
         </div>
-        ${mode === 'public' && !isDesktopPublic ? reviewGalleryMarkup(reviews) : ''}
+        ${mode === 'public' && !isDesktopPublic && !isMobilePublic ? reviewGalleryMarkup(reviews) : ''}
         ${mode === 'public' ? '' : `<div class="ss-product-reviews-compose">
           ${!account ? authPromptMarkup() : canReview ? formMarkup(eligibility) : eligibilityListMarkup(eligibility)}
         </div>`}
-        <div class="ss-product-reviews-list ${reviews.length ? '' : 'is-empty'}">
-          ${reviews.length ? visibleReviews.map((review) => isDesktopPublic ? reviewCardPublicMarkup(review) : reviewCardMarkup(review)).join('') : emptyReviewsMarkup()}
+        <div class="ss-product-reviews-list ${preparedReviews.length ? '' : 'is-empty'}">
+          ${preparedReviews.length ? visibleReviews.map((review) => isDesktopPublic ? reviewCardPublicMarkup(review) : isMobilePublic ? reviewCardMobilePublicMarkup(review) : reviewCardMarkup(review)).join('') : emptyReviewsMarkup(isPublic && activeFilter !== 'all' ? 'No reviews match the selected filter yet.' : undefined)}
         </div>
-        ${reviews.length > visibleCount ? `<div class="ss-review-more"><button class="ss-review-btn" data-review-load-more="1" type="button">Load 3 more reviews</button></div>` : ''}
+        ${preparedReviews.length > visibleCount ? `<div class="ss-review-more"><button class="ss-review-btn" data-review-load-more="1" type="button">Load 3 more reviews</button></div>` : ''}
       </section>`;
     bindForm(section, productIdOf(product), eligibility);
   }
