@@ -15,13 +15,13 @@
                 try {
                     var raw = String(localStorage.getItem(THEME_STORAGE_KEY) || '').trim().toLowerCase();
                     if (raw === 'dark' || raw === 'light' || raw === 'auto') return raw;
-                } catch (e) { }
+                } catch (e) {}
                 return 'auto';
             }
             function getSystemPrefersDark() {
                 try {
                     return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                } catch (e) { }
+                } catch (e) {}
                 return false;
             }
             function resolveThemeMode(mode) {
@@ -37,7 +37,7 @@
                 root.classList.toggle('light-mode', resolved !== 'dark');
                 root.dataset.themeMode = storedMode;
                 root.dataset.themeResolved = resolved;
-            } catch (e) { }
+            } catch (e) {}
         })();
     </script>
 
@@ -154,12 +154,14 @@
             <div class="mobileLogo" onclick="trackedGoHome()">
                 <span class="BrandThemeLogo BrandThemeLogo--light mobileBrandLogoTheme">
                     <img class="BrandLogoImage mobileBrandLogoImage" src="Logo/Logo_Lightmode.png" alt="SnagletShop"
-                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')" onerror="this.remove()" />
+                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')"
+                        onerror="this.remove()" />
                     <span class="mobileLogoTextFallback">SnagletShop</span>
                 </span>
                 <span class="BrandThemeLogo BrandThemeLogo--dark mobileBrandLogoTheme">
                     <img class="BrandLogoImage mobileBrandLogoImage" src="Logo/Logo_DarkMode.png" alt="SnagletShop"
-                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')" onerror="this.remove()" />
+                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')"
+                        onerror="this.remove()" />
                     <span class="mobileLogoTextFallback">SnagletShop</span>
                 </span>
             </div>
@@ -192,12 +194,14 @@
             <div class="mobileLogo" onclick="trackedGoHome()">
                 <span class="BrandThemeLogo BrandThemeLogo--light mobileBrandLogoTheme">
                     <img class="BrandLogoImage mobileBrandLogoImage" src="Logo/Logo_Lightmode.png" alt="SnagletShop"
-                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')" onerror="this.remove()" />
+                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')"
+                        onerror="this.remove()" />
                     <span class="mobileLogoTextFallback">SnagletShop</span>
                 </span>
                 <span class="BrandThemeLogo BrandThemeLogo--dark mobileBrandLogoTheme">
                     <img class="BrandLogoImage mobileBrandLogoImage" src="Logo/Logo_DarkMode.png" alt="SnagletShop"
-                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')" onerror="this.remove()" />
+                        onload="this.closest('.BrandThemeLogo').classList.add('is-ready')"
+                        onerror="this.remove()" />
                     <span class="mobileLogoTextFallback">SnagletShop</span>
                 </span>
             </div>
@@ -213,8 +217,8 @@
             <div class="DesktopHeaderBrand">
                 <button class="MainPage" onclick="trackedGoHome()">
                     <span class="BrandThemeLogo BrandThemeLogo--light desktopBrandLogoTheme">
-                        <img class="BrandLogoImage desktopBrandLogoImage" src="Logo/Logo_Lightmode.png"
-                            alt="SnagletShop" onload="this.closest('.BrandThemeLogo').classList.add('is-ready')"
+                        <img class="BrandLogoImage desktopBrandLogoImage" src="Logo/Logo_Lightmode.png" alt="SnagletShop"
+                            onload="this.closest('.BrandThemeLogo').classList.add('is-ready')"
                             onerror="this.remove()" />
                         <span class="DesktopBrandWordmark DesktopBrandWordmark--fallback">SnagletShop</span>
                     </span>
@@ -231,14 +235,11 @@
                 <div class="DesktopSearchShell">
                     <span class="DesktopSearchGlyph" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M21 21L16.65 16.65M18 10.5C18 14.6421 14.6421 18 10.5 18C6.35786 18 3 14.6421 3 10.5C3 6.35786 6.35786 3 10.5 3C14.6421 3 18 6.35786 18 10.5Z"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M21 21L16.65 16.65M18 10.5C18 14.6421 14.6421 18 10.5 18C6.35786 18 3 14.6421 3 10.5C3 6.35786 6.35786 3 10.5 3C14.6421 3 18 6.35786 18 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
                     <input type="text" class="Search_Bar" id="Search_Bar" placeholder="Search products...">
-                    <button type="button" class="DesktopSearchAction"
-                        onclick="document.getElementById('Search_Bar')?.focus(); document.getElementById('Search_Bar')?.dispatchEvent(new Event('input',{bubbles:true}));">
+                    <button type="button" class="DesktopSearchAction" onclick="document.getElementById('Search_Bar')?.focus(); document.getElementById('Search_Bar')?.dispatchEvent(new Event('input',{bubbles:true}));">
                         Search
                     </button>
                 </div>
@@ -252,15 +253,13 @@
                     <option value="CAD">CAD C$</option>
                     <option value="AUD">AUD A$</option>
                 </select>
-                <button class="BasketButton" id="BasketButtonDesktop" onclick="trackedGoToCart()"
-                    aria-label="Open cart">
+                <button class="BasketButton" id="BasketButtonDesktop" onclick="trackedGoToCart()" aria-label="Open cart">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                         <path
                             d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75 0 1.41-.41 1.75-1.05l3.58-6.49a.75.75 0 0 0-.66-1.11H5.21L4.27 2H1v2h2.27l3.6 7.59-1.35 2.45C4.11 15.14 5.08 17 6.5 17H19v-2H7.42c-.14 0-.25-.11-.25-.25L7.16 14z" />
                     </svg>
                 </button>
-                <button class="SettingsButton" id="SettingsButton" onclick="trackedGoToSettings()"
-                    aria-label="Open settings">
+                <button class="SettingsButton" id="SettingsButton" onclick="trackedGoToSettings()" aria-label="Open settings">
                     <svg class="Icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path fill="currentColor"
                             d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.025 7.025 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.025 7.025 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.52.39 1.09.72 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65c.6-.26 1.17-.59 1.69-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
