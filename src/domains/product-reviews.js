@@ -3,11 +3,16 @@
 
   const MAX_IMAGE_BYTES_TOTAL = 10 * 1024 * 1024;
   const REVIEWS_PAGE_SIZE = 3;
+  const REVIEW_VIEWER_TOKEN_KEY = 'ss_review_viewer_token_v1';
   let lastProductKey = '';
 
   function api() { return window.__SS_API__ || null; }
   function auth() { return window.__SS_CUSTOMER_AUTH__ || null; }
   function viewer() { return document.getElementById('Viewer'); }
+  function storage() {
+    try { return window.localStorage; } catch {}
+    return null;
+  }
   function clearSort() {
     try { window.removeSortContainer?.(); } catch {}
   }
@@ -33,6 +38,34 @@
       idx += 1;
     }
     return `${num.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+  }
+
+  function randomViewerToken() {
+    try {
+      const arr = new Uint8Array(16);
+      window.crypto?.getRandomValues?.(arr);
+      const out = Array.from(arr).map((value) => value.toString(16).padStart(2, '0')).join('');
+      if (out) return out;
+    } catch {}
+    return `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
+  }
+
+  function getReviewViewerToken() {
+    try {
+      const current = String(storage()?.getItem?.(REVIEW_VIEWER_TOKEN_KEY) || '').trim();
+      if (current) return current;
+      const next = randomViewerToken();
+      if (next) storage()?.setItem?.(REVIEW_VIEWER_TOKEN_KEY, next);
+      return next;
+    } catch {}
+    return randomViewerToken();
+  }
+
+  function reviewHeaders(json = false) {
+    const headers = auth()?.authHeaders?.(json) || {};
+    const token = getReviewViewerToken();
+    if (token) headers['x-ss-review-viewer-token'] = token;
+    return headers;
   }
 
   function productIdOf(product) {
@@ -205,6 +238,22 @@
     return Array.isArray(payload?.reviews) ? payload.reviews.length : 0;
   }
 
+  function reviewHelpfulMarkup(review) {
+    const reviewId = String(review?.id || '').trim();
+    if (!reviewId) return '';
+    const helpfulCount = Math.max(0, Number(review?.helpfulCount || 0) || 0);
+    const viewerLiked = !!review?.viewerLiked;
+    const label = viewerLiked ? 'Remove helpful vote from this review' : 'Mark this review as helpful';
+    return `
+      <div class="ss-review-card-helpful">
+        <span class="ss-review-card-helpful-label">Was this helpful?</span>
+        <button class="ss-review-card-helpful-btn ${viewerLiked ? 'is-liked' : ''}" data-review-id="${esc(reviewId)}" data-review-like="${viewerLiked ? 'unlike' : 'like'}" aria-pressed="${viewerLiked ? 'true' : 'false'}" aria-label="${esc(label)}" title="${esc(label)}" type="button">
+          <span class="ss-review-card-helpful-icon" aria-hidden="true">${viewerLiked ? '♥' : '♡'}</span>
+          <span class="ss-review-card-helpful-count">${helpfulCount}</span>
+        </button>
+      </div>`;
+  }
+
   function reviewCardMarkup(review) {
     const images = Array.isArray(review?.images) ? review.images : [];
     const reviewDate = formatDate(review?.reviewDate || review?.createdAt);
@@ -224,6 +273,7 @@
         </header>
         <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
         ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
+        ${reviewHelpfulMarkup(review)}
       </article>`;
   }
 
@@ -293,6 +343,7 @@
         </header>
         <div class="ss-review-card-text">${esc(review?.text || '').replace(/\n/g, '<br/>')}</div>
         ${images.length ? `<div class="ss-review-card-images">${images.map((image) => `<a class="ss-review-card-image" href="${esc(image?.url || '')}" target="_blank" rel="noopener noreferrer"><img alt="${esc(image?.filename || 'Review image')}" src="${esc(image?.url || '')}"/></a>`).join('')}</div>` : ''}
+        ${reviewHelpfulMarkup(review)}
       </article>`;
   }
 
@@ -450,7 +501,9 @@
   }
 
   async function loadReviews(productId) {
-    return api()?.json?.(`/products/${encodeURIComponent(productId)}/reviews?limit=30`);
+    return api()?.json?.(`/products/${encodeURIComponent(productId)}/reviews?limit=30`, {
+      headers: reviewHeaders(false),
+    });
   }
 
   async function loadEligibility(productId) {
@@ -477,6 +530,47 @@
     const total = selectedFilesTotal(input);
     out.textContent = `${files.length} image${files.length === 1 ? '' : 's'} selected â€¢ ${formatBytes(total)}`;
     out.dataset.tone = total > MAX_IMAGE_BYTES_TOTAL ? 'error' : 'neutral';
+  }
+
+  async function requestReviewLike(productId, reviewId, nextAction) {
+    const action = String(nextAction || 'like').trim().toLowerCase() === 'unlike' ? 'unlike' : 'like';
+    const method = action === 'unlike' ? 'DELETE' : 'POST';
+    return api()?.json?.(`/products/${encodeURIComponent(productId)}/reviews/${encodeURIComponent(reviewId)}/like`, {
+      method,
+      headers: reviewHeaders(false),
+    });
+  }
+
+  function applyReviewLikeState(section, reviewId, payload = {}) {
+    const list = Array.isArray(section?.__reviewRenderState?.reviews?.reviews) ? section.__reviewRenderState.reviews.reviews : null;
+    if (!list) return false;
+    let changed = false;
+    list.forEach((review) => {
+      if (String(review?.id || '').trim() !== String(reviewId || '').trim()) return;
+      review.helpfulCount = Math.max(0, Number(payload?.helpfulCount || 0) || 0);
+      review.viewerLiked = !!payload?.liked;
+      changed = true;
+    });
+    return changed;
+  }
+
+  async function toggleReviewLike(section, button, productId) {
+    const reviewId = String(button?.dataset?.reviewId || '').trim();
+    const nextAction = String(button?.dataset?.reviewLike || 'like').trim().toLowerCase() === 'unlike' ? 'unlike' : 'like';
+    if (!reviewId || !productId) return;
+    button.disabled = true;
+    button.dataset.loading = '1';
+    try {
+      const payload = await requestReviewLike(productId, reviewId, nextAction);
+      applyReviewLikeState(section, reviewId, payload || {});
+      const state = section?.__reviewRenderState || {};
+      await renderInto(section, state.product || null, state);
+    } catch (error) {
+      console.error('[reviews] like toggle failed', error);
+      button.disabled = false;
+      button.dataset.loading = '0';
+      button.title = 'Could not save your feedback right now. Please try again.';
+    }
   }
 
   function openAuthRoute(mode) {
@@ -556,6 +650,9 @@
   function bindForm(host, productId, eligibility) {
     host.querySelectorAll('[data-review-auth]').forEach((button) => {
       button.addEventListener('click', () => openAuthRoute(button.getAttribute('data-review-auth')));
+    });
+    host.querySelectorAll('[data-review-like]').forEach((button) => {
+      button.addEventListener('click', () => toggleReviewLike(host, button, productId));
     });
     host.querySelectorAll('[data-review-write]').forEach((button) => {
       button.addEventListener('click', () => openReviewRoute(host.__reviewRenderState?.product || { productId }));

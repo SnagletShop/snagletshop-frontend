@@ -8989,6 +8989,68 @@
     margin-top: 16px;
 }
 
+.ss-review-card-helpful {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid color-mix(in srgb, var(--Borders_Colour) 46%, transparent);
+}
+
+.ss-review-card-helpful-label {
+    color: var(--Muted_Text_Colour);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.ss-review-card-helpful-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 66px;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--Borders_Colour) 64%, transparent);
+    background: color-mix(in srgb, var(--Input_Background) 68%, transparent);
+    color: var(--Default_Text_Colour);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, opacity .18s ease;
+}
+
+.ss-review-card-helpful-btn:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--Primary_Button_Colour) 46%, var(--Borders_Colour));
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 12%, var(--Input_Background));
+}
+
+.ss-review-card-helpful-btn:disabled {
+    cursor: wait;
+    opacity: .72;
+}
+
+.ss-review-card-helpful-btn.is-liked {
+    border-color: color-mix(in srgb, var(--Primary_Button_Colour) 56%, transparent);
+    background: color-mix(in srgb, var(--Primary_Button_Colour) 16%, transparent);
+    color: color-mix(in srgb, var(--Primary_Button_Colour) 80%, var(--Default_Text_Colour));
+}
+
+.ss-review-card-helpful-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.ss-review-card-helpful-count {
+    min-width: 1ch;
+    font-variant-numeric: tabular-nums;
+}
+
 .ss-review-card-image {
     width: 92px;
     border-radius: 16px;
@@ -13511,6 +13573,25 @@ body.ss-pdp-lightbox-open {
         height: 100% !important;
         object-fit: cover !important;
         display: block !important;
+    }
+
+    .Product_Reviews_Section .ss-product-reviews-shell--public .ss-review-card-helpful {
+        justify-content: flex-start !important;
+        gap: 1rem !important;
+        margin-top: 1.05rem !important;
+        padding-top: 1rem !important;
+    }
+
+    .Product_Reviews_Section .ss-product-reviews-shell--public .ss-review-card-helpful-label {
+        font-size: 1rem !important;
+    }
+
+    .Product_Reviews_Section .ss-product-reviews-shell--public .ss-review-card-helpful-btn {
+        min-width: 4.65rem !important;
+        min-height: 2.45rem !important;
+        padding: 0 0.95rem !important;
+        border-radius: 999px !important;
+        font-size: 0.98rem !important;
     }
 
     .Product_Reviews_Section .ss-product-reviews-shell--public .ss-review-more {
