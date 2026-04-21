@@ -1,4 +1,4 @@
-(function (window, document) {
+﻿(function (window, document) {
   'use strict';
 
   const MAX_IMAGE_BYTES_TOTAL = 10 * 1024 * 1024;
@@ -45,6 +45,26 @@
     const productName = String(product?.name || product?.productName || '').trim();
     if (productName) return `/?view=review&product=${encodeURIComponent(productName)}`;
     return '/?view=review';
+  }
+
+  function openReviewRoute(product) {
+    try {
+      const state = window.__SS_ROUTER__?.createReviewState?.(product || {}, {});
+      if (state && typeof window.navigate === 'function') {
+        window.navigate(state.action, state.data);
+        return;
+      }
+    } catch {}
+    try {
+      const href = window.__SS_ROUTER__?.buildUrlForState?.(
+        window.__SS_ROUTER__?.createReviewState?.(product || {}, {}) || null
+      );
+      if (typeof href === 'string' && href.trim()) {
+        window.location.assign(href);
+        return;
+      }
+    } catch {}
+    try { window.location.assign(reviewRouteUrl(product)); } catch {}
   }
 
   function openProductRoute(product) {
@@ -115,7 +135,7 @@
     return Array.from({ length: 5 }).map((_, index) => {
       const fill = Math.max(0, Math.min(1, normalized - index));
       const fillPct = Math.round(fill * 100);
-      return `<span class="ss-review-star" style="--star-fill:${fillPct}%"><span class="ss-review-star__base">★</span><span class="ss-review-star__fill">★</span></span>`;
+      return `<span class="ss-review-star" style="--star-fill:${fillPct}%"><span class="ss-review-star__base">â˜…</span><span class="ss-review-star__fill">â˜…</span></span>`;
     }).join('');
   }
 
@@ -157,7 +177,7 @@
     return `
       <div class="ss-review-summary">
         <div class="ss-review-summary-inline">
-          <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : '—'}</div>
+          <div class="ss-review-summary-score">${avg > 0 ? avg.toFixed(1) : 'â€”'}</div>
           <div class="ss-review-summary-meta">
             <div class="ss-review-summary-stars">${createStars(avg)}</div>
             <div class="ss-review-summary-count">${count.toLocaleString()} rating${count === 1 ? '' : 's'}</div>
@@ -171,7 +191,7 @@
   function emptyReviewsMarkup(message) {
     return `
       <div class="ss-review-empty">
-        <div class="ss-review-empty-icon" aria-hidden="true">☆</div>
+        <div class="ss-review-empty-icon" aria-hidden="true">â˜†</div>
         <div class="ss-review-empty-body">
           <div class="ss-review-empty-title">No published reviews yet</div>
           <div class="ss-review-empty-copy">${esc(message || 'Once verified customers share feedback on this item, it will show up here.')}</div>
@@ -197,7 +217,7 @@
             <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
             <div class="ss-review-card-identity">
               <span class="ss-review-card-name">${reviewerName}</span>
-              ${reviewDate ? `<span class="ss-review-card-dot">•</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
+              ${reviewDate ? `<span class="ss-review-card-dot">â€¢</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
             </div>
           </div>
           ${selectedPurchaseLabel ? `<div class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</div>` : ''}
@@ -221,24 +241,27 @@
       <div class="ss-review-summary ss-review-summary--desktop-public">
         <div class="ss-review-summary-score">${avg.toFixed(1)}</div>
         <div class="ss-review-summary-stars">${createStars(avg)}</div>
-        <div class="ss-review-summary-count">Based on ${count.toLocaleString()} review${count === 1 ? '' : 's'}.</div>
+        <div class="ss-review-summary-count">Based on ${count.toLocaleString()} review${count === 1 ? '' : 's'}</div>
         <div class="ss-review-summary-distribution">
           ${[5, 4, 3, 2, 1].map((star) => {
             const rowCount = Number(buckets[star] || 0) || 0;
             const pct = count > 0 ? Math.round((rowCount / count) * 100) : 0;
             return `
               <div class="ss-review-summary-row">
-                <span class="ss-review-summary-row-label">${star}</span>
+                <span class="ss-review-summary-row-label">${star}<span aria-hidden="true">★</span></span>
                 <span class="ss-review-summary-row-bar"><span style="width:${pct}%"></span></span>
                 <span class="ss-review-summary-row-value">${pct}%</span>
               </div>`;
           }).join('')}
         </div>
+        <div class="ss-review-summary-footer">
+          <button class="ss-review-btn ss-review-summary-action" data-review-write="1" type="button">Write a review</button>
+        </div>
       </div>`;
   }
 
   function reviewCardPublicMarkup(review) {
-    const images = Array.isArray(review?.images) ? review.images : [];
+    const images = Array.isArray(review?.images) ? review.images.slice(0, 3) : [];
     const reviewDate = formatDate(review?.reviewDate || review?.createdAt);
     const reviewerName = esc(review?.reviewerName || 'Verified customer');
     const selectedPurchaseLabel = String(review?.selectedPurchaseLabel || '').trim();
@@ -249,17 +272,20 @@
           <div class="ss-review-card-author">
             <div class="ss-review-card-avatar">
               ${avatarUrl ? `<img alt="${reviewerName}" src="${avatarUrl}"/>` : `<span aria-hidden="true">${reviewerName.charAt(0).toUpperCase()}</span>`}
+              <span class="ss-review-card-avatar-badge" aria-hidden="true">✓</span>
             </div>
             <div class="ss-review-card-meta">
-              <div class="ss-review-card-topline">
-                <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
-                <div class="ss-review-card-identity">
+              <div class="ss-review-card-header-row">
+                <div class="ss-review-card-identity-main">
                   <span class="ss-review-card-name">${reviewerName}</span>
-                  ${reviewDate ? `<span class="ss-review-card-dot">•</span><span class="ss-review-card-date">${reviewDate}</span>` : ''}
+                  <div class="ss-review-card-stars">${createStars(review?.starRating)}</div>
+                  <span class="ss-review-card-verified">Verified Purchase</span>
                 </div>
+                <span class="ss-review-card-menu" aria-hidden="true">•••</span>
               </div>
               <div class="ss-review-card-purchase-line">
-                <span class="ss-review-card-verified">Verified Purchase</span>
+                ${reviewDate ? `<span class="ss-review-card-date">${reviewDate}</span>` : ''}
+                ${reviewDate && selectedPurchaseLabel ? `<span class="ss-review-card-dot">•</span>` : ''}
                 ${selectedPurchaseLabel ? `<span class="ss-review-card-variant">${esc(selectedPurchaseLabel)}</span>` : ''}
               </div>
             </div>
@@ -369,7 +395,7 @@
             <div class="ss-review-purchase-title">${esc(purchase.selectedPurchaseLabel || 'Ordered variant')}</div>
             <div class="ss-review-purchase-meta">
               <span>Order ${esc(purchase.orderId || '')}</span>
-              <span>•</span>
+              <span>â€¢</span>
               <span>Purchased ${formatDate(purchase.purchasedAt)}</span>
             </div>
             <div class="ss-review-purchase-state">
@@ -449,7 +475,7 @@
       return;
     }
     const total = selectedFilesTotal(input);
-    out.textContent = `${files.length} image${files.length === 1 ? '' : 's'} selected • ${formatBytes(total)}`;
+    out.textContent = `${files.length} image${files.length === 1 ? '' : 's'} selected â€¢ ${formatBytes(total)}`;
     out.dataset.tone = total > MAX_IMAGE_BYTES_TOTAL ? 'error' : 'neutral';
   }
 
@@ -485,7 +511,7 @@
       return;
     }
 
-    status.textContent = 'Submitting review…';
+    status.textContent = 'Submitting reviewâ€¦';
     status.dataset.tone = 'neutral';
 
     const formData = new FormData();
@@ -530,6 +556,9 @@
   function bindForm(host, productId, eligibility) {
     host.querySelectorAll('[data-review-auth]').forEach((button) => {
       button.addEventListener('click', () => openAuthRoute(button.getAttribute('data-review-auth')));
+    });
+    host.querySelectorAll('[data-review-write]').forEach((button) => {
+      button.addEventListener('click', () => openReviewRoute(host.__reviewRenderState?.product || { productId }));
     });
     host.querySelectorAll('[data-review-open-product]').forEach((button) => {
       button.addEventListener('click', () => openProductRoute(host.__reviewRenderState?.product || { productId }));
@@ -620,7 +649,7 @@
     if (!options?.force && lastProductKey === `${productId}:${mode}` && section.dataset.reviewReady === '1') return true;
 
     section.classList.add('ss-product-reviews');
-    section.innerHTML = `<div class="ss-review-loading">Loading reviews…</div>`;
+    section.innerHTML = `<div class="ss-review-loading">Loading reviewsâ€¦</div>`;
     section.dataset.reviewReady = '0';
     section.dataset.reviewMode = mode;
     lastProductKey = `${productId}:${mode}`;
@@ -662,7 +691,7 @@
     section.__reviewRenderState = { product, eligibility: null };
 
     if (!auth()?.isLoggedIn?.()) {
-      section.innerHTML = reviewEntryEmptyMarkup('You need to log in with the same email you used for your order. Redirecting you now…', 'Login required');
+      section.innerHTML = reviewEntryEmptyMarkup('You need to log in with the same email you used for your order. Redirecting you nowâ€¦', 'Login required');
       try { auth()?.rememberRedirect?.(reviewRouteUrl(product)); } catch {}
       try {
         window.setTimeout(() => {
@@ -672,7 +701,7 @@
       return true;
     }
 
-    section.innerHTML = reviewEntryEmptyMarkup('Loading your purchased variants…', 'Review your purchase');
+    section.innerHTML = reviewEntryEmptyMarkup('Loading your purchased variantsâ€¦', 'Review your purchase');
     try {
       const eligibility = await loadEligibility(productId);
       renderEntryInto(section, product, { eligibility });
@@ -694,3 +723,4 @@
   const service = { mount, mountReviewPage, mountReviewPageInto };
   window.__SS_PRODUCT_REVIEWS__ = service;
 })(window, document);
+
