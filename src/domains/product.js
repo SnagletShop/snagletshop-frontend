@@ -1378,6 +1378,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     mainImg.className = "mainImage slide-image";
     mainImg.src = window.currentProductImages[window.currentProductImageIndex] || window.currentProductImages[0] || "";
     mainImg.alt = productName || "";
+    mainImg.decoding = "async";
+    try { mainImg.fetchPriority = "high"; } catch {}
     mainImg.style.transition = "transform 0.4s ease";
     mainImg.style.willChange = "transform";
     mainImg.draggable = false;
@@ -1423,7 +1425,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
 
     __ssEnsureABUiStyles();
 
-    const heading = document.createElement("div");
+    const heading = document.createElement("h1");
     heading.className = "Product_Name_Heading";
     heading.dataset.canonicalName = String(productName || "");
     heading.textContent = (__ssABGetProductName(product) || productName || "");

@@ -121,6 +121,13 @@
     return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}...`;
   }
 
+  function stripHtml(value) {
+    return String(value || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function getCurrentPathCanonical() {
     try {
       return new URL(window.location.pathname + window.location.search, window.location.origin).toString();
@@ -238,7 +245,7 @@
   function applyProduct(product) {
     if (!product) return;
     const name = String(product.name || 'Product').trim() || 'Product';
-    const description = truncate(product.description || DEFAULT_DESC, 155) || DEFAULT_DESC;
+    const description = truncate(stripHtml(product.description || DEFAULT_DESC), 155) || DEFAULT_DESC;
     const image = product.image || (Array.isArray(product.images) ? product.images[0] : '') || DEFAULT_IMAGE;
     applyMeta({
       title: `${name} | ${SITE_NAME}`,

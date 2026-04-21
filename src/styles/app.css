@@ -2492,7 +2492,7 @@
         /* or 600, 500, etc. */
         font-size: 30px;
         color: var(--Default_Text_Colour);
-        margin-bottom: 10px;
+        margin: 0 0 10px;
 
     }
 
@@ -4466,7 +4466,7 @@
         /* or 600, 500, etc. */
         font-size: 5vw;
         color: var(--Default_Text_Colour);
-        margin-bottom: 2.778vw;
+        margin: 0 0 2.778vw;
         width: 80vw;
         text-align: center;
     }
