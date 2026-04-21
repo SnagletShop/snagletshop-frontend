@@ -2157,6 +2157,7 @@
         text-align: center;
         min-width: fit-content;
         font-size: 2vw;
+        min-height: 2vw;
         color: var(--Default_Text_Colour);
         padding: 10px;
         space: nowrap;
