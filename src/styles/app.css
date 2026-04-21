@@ -8450,6 +8450,8 @@
     display: inline-flex;
     align-items: center;
     gap: 1px;
+    line-height: 1;
+    letter-spacing: 0.02em;
     color: #fbbf24;
 }
 
@@ -8459,6 +8461,7 @@
     width: 1em;
     height: 1em;
     line-height: 1;
+    vertical-align: middle;
     overflow: hidden;
 }
 
@@ -8469,6 +8472,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    line-height: 1;
+    white-space: nowrap;
+    font: inherit;
 }
 
 .ss-review-star__base {
@@ -13455,18 +13461,19 @@ body.ss-pdp-lightbox-open {
 
     .Product_Reviews_Section .ss-product-reviews-shell--public .ss-review-card-avatar-badge {
         position: absolute !important;
-        right: 0.06rem !important;
-        bottom: 0.06rem !important;
+        right: 0.18rem !important;
+        bottom: 0.18rem !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 1.45rem !important;
-        height: 1.45rem !important;
+        width: 1.2rem !important;
+        height: 1.2rem !important;
         border-radius: 999px !important;
         background: #22c55e !important;
         border: 2px solid color-mix(in srgb, var(--SearchBar_Background_Colour) 96%, var(--body_Background_Colour)) !important;
+        z-index: 1 !important;
         color: #fff !important;
-        font-size: 0.9rem !important;
+        font-size: 0.76rem !important;
         font-weight: 800 !important;
         line-height: 1 !important;
     }

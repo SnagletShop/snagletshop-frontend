@@ -168,7 +168,7 @@
     return Array.from({ length: 5 }).map((_, index) => {
       const fill = Math.max(0, Math.min(1, normalized - index));
       const fillPct = Math.round(fill * 100);
-      return `<span class="ss-review-star" style="--star-fill:${fillPct}%"><span class="ss-review-star__base">â˜…</span><span class="ss-review-star__fill">â˜…</span></span>`;
+      return `<span class="ss-review-star" style="--star-fill:${fillPct}%"><span class="ss-review-star__base">★</span><span class="ss-review-star__fill">★</span></span>`;
     }).join('');
   }
 
