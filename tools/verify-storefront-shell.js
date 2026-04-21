@@ -43,6 +43,9 @@ function ok(msg) {
 const indexHtml = fs.readFileSync(indexPath, 'utf8');
 const scriptJs = fs.readFileSync(scriptPath, 'utf8');
 
+if (!/<base\s+href="\/"\s*>/i.test(indexHtml)) fail('index.html missing root base href for deep-link asset resolution');
+else ok('root base href present for deep-link asset resolution');
+
 for (const rel of requiredScripts) {
   if (!indexHtml.includes(rel)) fail(`index.html missing script include: ${rel}`);
   else ok(`script include present: ${rel}`);
