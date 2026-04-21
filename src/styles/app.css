@@ -2157,7 +2157,7 @@
         text-align: center;
         min-width: fit-content;
         font-size: 2vw;
-        color: var(--Muted_Text_Colour);
+        color: var(--Default_Text_Colour);
         padding: 10px;
         space: nowrap;
         overflow: hidden;
@@ -4154,7 +4154,7 @@
         text-align: center;
         font-size: 5vw;
         width: 90vw;
-        color: var(--Muted_Text_Colour);
+        color: var(--Default_Text_Colour);
         padding: 2.778vw;
     }
 
