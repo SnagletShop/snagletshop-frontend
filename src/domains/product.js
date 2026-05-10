@@ -127,9 +127,9 @@ function __ssBuildPdpTrustStripHtml() {
             subtitle: 'Hassle-Free',
             icon: `
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M7.5 7H17.5V17H7.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    <path d="M10.5 10L7.5 7L10.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7.5 12H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M3.75 8V3.75H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3.95 8.15A8.25 8.25 0 1 1 5.7 17.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3.75 8H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>`
         }
     ];
