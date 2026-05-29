@@ -64,6 +64,17 @@ function __ssHideProductPageSkeleton() {
     try { document.getElementById('ProductPageSkeleton')?.remove(); } catch {}
 }
 
+function __ssWaitForProductPageSkeletonPaint() {
+    return new Promise((resolve) => {
+        try {
+            const raf = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
+            raf(() => raf(resolve));
+        } catch {
+            setTimeout(resolve, 32);
+        }
+    });
+}
+
 function __ssBuildPdpThumbnailUrl(src) {
     return window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(src, {
         width: 96,
@@ -84,11 +95,24 @@ function __ssBuildPdpThumbnailSrcSet(src) {
     }) || "";
 }
 
-function __ssPreloadPdpThumbnails(imageUrls, timeoutMs = 900) {
-    const urls = (Array.isArray(imageUrls) ? imageUrls : [])
-        .map((src) => __ssBuildPdpThumbnailUrl(src))
-        .filter(Boolean)
-        .slice(0, 10);
+function __ssGetPdpThumbnailPreloadUrls(src) {
+    const urls = new Set();
+    const primary = __ssBuildPdpThumbnailUrl(src);
+    if (primary) urls.add(primary);
+    const srcset = __ssBuildPdpThumbnailSrcSet(src);
+    if (srcset) {
+        srcset.split(",").forEach((entry) => {
+            const url = String(entry || "").trim().split(/\s+/)[0];
+            if (url) urls.add(url);
+        });
+    }
+    return Array.from(urls);
+}
+
+function __ssPreloadPdpThumbnails(imageUrls, timeoutMs = 5000) {
+    const urls = Array.from(new Set((Array.isArray(imageUrls) ? imageUrls : [])
+        .flatMap((src) => __ssGetPdpThumbnailPreloadUrls(src))
+        .filter(Boolean)));
     if (!urls.length) return Promise.resolve();
 
     const loads = urls.map((src) => new Promise((resolve) => {
@@ -103,7 +127,7 @@ function __ssPreloadPdpThumbnails(imageUrls, timeoutMs = 900) {
 
     return Promise.race([
         Promise.allSettled(loads),
-        new Promise((resolve) => setTimeout(resolve, Math.max(250, Number(timeoutMs) || 900)))
+        new Promise((resolve) => setTimeout(resolve, Math.max(1500, Number(timeoutMs) || 5000)))
     ]);
 }
 
@@ -1336,7 +1360,8 @@ function GoToProductPage(productName, productPrice, productDescription) {
     }
 
     const fastImages = __ssImagesForViewer.length ? __ssImagesForViewer : ['/favicon.png'];
-    __ssPreloadPdpThumbnails(fastImages)
+    __ssWaitForProductPageSkeletonPaint()
+        .then(() => __ssPreloadPdpThumbnails(fastImages))
         .catch(() => {})
         .then(() => renderProductPage(product, fastImages, productName, productPrice, productDescription));
 }
