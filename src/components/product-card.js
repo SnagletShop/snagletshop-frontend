@@ -5,6 +5,9 @@
   function getQuantityControls() {
     return getResolver()?.resolve?.('component.quantityControls', window.__SS_QUANTITY_CONTROLS__ || null) || null;
   }
+  function getImageRuntime() {
+    return window.__SS_CATALOG_IMAGE_RUNTIME__ || null;
+  }
   function parseMaybeJson(value) {
     if (typeof value !== 'string') return value;
     const s = value.trim();
@@ -285,12 +288,37 @@
     const img = document.createElement('img');
     img.className = 'Clickable_Image';
     const resolvedPrice = getResolvedPrice(product, opts);
-    img.src = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
+    const imageIsPriority = opts.imagePriority === true || opts.eagerImage === true;
+    const originalImage = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
+    const thumbnailWidth = Number(opts.thumbnailWidth || opts.imageWidth || 360) || 360;
+    const imageRuntime = getImageRuntime();
+    const thumbnailSrc = imageRuntime?.buildResizedImageUrl?.(originalImage, {
+      width: thumbnailWidth,
+      quality: Number(opts.thumbnailQuality || 68) || 68,
+      output: 'webp',
+      fit: 'inside'
+    }) || originalImage;
+    img.src = thumbnailSrc;
+    const srcset = imageRuntime?.buildThumbnailSrcSet?.(originalImage, {
+      width: thumbnailWidth,
+      quality: Number(opts.thumbnailQuality || 68) || 68,
+      output: 'webp',
+      fit: 'inside'
+    }) || '';
+    if (srcset && srcset !== thumbnailSrc) img.srcset = srcset;
     img.alt = product?.name || '';
+    img.loading = imageIsPriority ? 'eager' : 'lazy';
+    img.decoding = 'async';
+    try { img.fetchPriority = imageIsPriority ? 'high' : 'low'; } catch {}
     img.dataset.name = product?.name || '';
     img.dataset.price = String(resolvedPrice || '');
-    img.dataset.imageurl = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
+    img.dataset.imageurl = originalImage;
     img.dataset.description = opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '';
+    img.addEventListener('error', () => {
+      if (!originalImage || img.src === originalImage) return;
+      img.removeAttribute('srcset');
+      img.src = originalImage;
+    }, { once: true });
     img.addEventListener('click', () => opts.onOpenProduct?.(product));
     mediaFrame.appendChild(img);
 

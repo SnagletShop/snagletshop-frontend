@@ -1292,23 +1292,8 @@ function GoToProductPage(productName, productPrice, productDescription) {
         return;
     }
 
-    const imagePromises = __ssImagesForViewer.map(src => new Promise(resolve => {
-        const img = new Image();
-        img.src = src;
-        img.onload = () => resolve(src);
-        img.onerror = () => resolve(null);
-    }));
-
-    Promise.all(imagePromises).then(loadedImages => {
-        const validImages = loadedImages.filter(Boolean);
-        if (validImages.length === 0) {
-            console.error("❌ No valid images loaded for:", productName);
-            const safeImages = __ssGetProductImageCandidates(product, __imgArg);
-            renderProductPage(product, safeImages.length ? safeImages : ['/favicon.png'], productName, productPrice, productDescription);
-            return;
-        }
-        renderProductPage(product, validImages, productName, productPrice, productDescription);
-    });
+    const fastImages = __ssImagesForViewer.length ? __ssImagesForViewer : ['/favicon.png'];
+    renderProductPage(product, fastImages, productName, productPrice, productDescription);
 }
 
 function renderProductPage(product, validImages, productName, productPrice, productDescription) {
@@ -1379,6 +1364,20 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     mainImg.alt = productName || "";
     mainImg.decoding = "async";
     try { mainImg.fetchPriority = "high"; } catch {}
+    mainImg.addEventListener("error", () => {
+        try {
+            const imgs = Array.isArray(window.currentProductImages) ? window.currentProductImages : [];
+            const currentIndex = Number(window.currentProductImageIndex || 0);
+            const failed = __ssNormalizePdpImageUrl(mainImg.getAttribute("src") || mainImg.src || "");
+            const nextIndex = imgs.findIndex((src, idx) => idx !== currentIndex && __ssNormalizePdpImageUrl(src) !== failed);
+            if (nextIndex >= 0) {
+                window.currentProductImageIndex = nextIndex;
+                mainImg.src = imgs[nextIndex];
+                return;
+            }
+        } catch {}
+        if (!String(mainImg.src || "").endsWith("/favicon.png")) mainImg.src = "/favicon.png";
+    });
     mainImg.style.transition = "transform 0.4s ease";
     mainImg.style.willChange = "transform";
     mainImg.draggable = false;
@@ -1406,8 +1405,38 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     (window.currentProductImages || []).forEach((src, idx) => {
         const t = document.createElement("img");
         t.className = `Thumbnail${idx === window.currentProductImageIndex ? " active" : ""}`;
-        t.src = src;
+        const thumbnailSrc = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(src, {
+            width: 112,
+            height: 112,
+            quality: 62,
+            output: "webp",
+            fit: "cover"
+        }) || src;
+        const thumbnailSrcSet = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildThumbnailSrcSet?.(src, {
+            width: 112,
+            height: 112,
+            quality: 62,
+            output: "webp",
+            fit: "cover"
+        }) || "";
+        t.src = thumbnailSrc;
+        if (thumbnailSrcSet && thumbnailSrcSet !== thumbnailSrc) t.srcset = thumbnailSrcSet;
+        t.dataset.fullSrc = src;
         t.alt = `${productName || "image"} ${idx + 1}`;
+        t.loading = idx === window.currentProductImageIndex ? "eager" : "lazy";
+        t.decoding = "async";
+        try { t.fetchPriority = idx === window.currentProductImageIndex ? "high" : "low"; } catch {}
+        t.addEventListener("error", () => {
+            try {
+                if (src && t.dataset.originalFallbackTried !== "yes") {
+                    t.dataset.originalFallbackTried = "yes";
+                    t.removeAttribute("srcset");
+                    t.src = src;
+                    return;
+                }
+                t.remove();
+            } catch {}
+        });
         t.addEventListener("click", (e) => {
             e.preventDefault();
             window.currentProductImageIndex = idx;

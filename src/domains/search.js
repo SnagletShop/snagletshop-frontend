@@ -135,8 +135,29 @@ function searchProducts(forcedQuery = null) {
                 fallback.className = 'product';
                 const img = document.createElement('img');
                 img.className = 'Clickable_Image';
-                img.src = resolvedImage;
+                const thumbnailSrc = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(resolvedImage, {
+                    width: 360,
+                    quality: 68,
+                    output: 'webp',
+                    fit: 'inside'
+                }) || resolvedImage;
+                const thumbnailSrcSet = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildThumbnailSrcSet?.(resolvedImage, {
+                    width: 360,
+                    quality: 68,
+                    output: 'webp',
+                    fit: 'inside'
+                }) || '';
+                img.src = thumbnailSrc;
+                if (thumbnailSrcSet && thumbnailSrcSet !== thumbnailSrc) img.srcset = thumbnailSrcSet;
                 img.alt = product.name || '';
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                try { img.fetchPriority = 'low'; } catch {}
+                img.addEventListener('error', () => {
+                    if (!resolvedImage || img.src === resolvedImage) return;
+                    img.removeAttribute('srcset');
+                    img.src = resolvedImage;
+                }, { once: true });
                 img.addEventListener('click', () => navigate("GoToProductPage", [product.name, resolvedPrice, ((window.__ssABGetProductDescription?.(product) || product.description) || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER), resolvedImage, (product.productId || null), null]));
                 const title = document.createElement('a');
                 title.className = 'product-name';

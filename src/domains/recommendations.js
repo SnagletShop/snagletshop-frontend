@@ -651,7 +651,28 @@ async function __ssRecoRenderForProduct(product) {
             img.className = "RecoImg";
             img.loading = "lazy";
             img.alt = String(it.name || "");
-            img.src = String(it.image || "");
+            const originalImage = String(it.image || "");
+            const thumbnailSrc = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(originalImage, {
+                width: 260,
+                quality: 66,
+                output: "webp",
+                fit: "inside"
+            }) || originalImage;
+            const thumbnailSrcSet = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildThumbnailSrcSet?.(originalImage, {
+                width: 260,
+                quality: 66,
+                output: "webp",
+                fit: "inside"
+            }) || "";
+            img.src = thumbnailSrc;
+            if (thumbnailSrcSet && thumbnailSrcSet !== thumbnailSrc) img.srcset = thumbnailSrcSet;
+            img.decoding = "async";
+            try { img.fetchPriority = "low"; } catch {}
+            img.addEventListener("error", () => {
+                if (!originalImage || img.src === originalImage) return;
+                img.removeAttribute("srcset");
+                img.src = originalImage;
+            }, { once: true });
 
             media.appendChild(img);
 

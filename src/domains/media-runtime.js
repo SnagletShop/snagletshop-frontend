@@ -10,8 +10,13 @@
     const list = Array.isArray(products[cat]) ? products[cat] : [];
     if (!list.length) return;
 
-    const MAX_PRODUCTS = 20;
-    const CONCURRENCY = 4;
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+    const saveData = connection?.saveData === true;
+    const effectiveType = String(connection?.effectiveType || '').toLowerCase();
+    if (saveData || effectiveType === 'slow-2g' || effectiveType === '2g') return;
+
+    const MAX_PRODUCTS = 8;
+    const CONCURRENCY = 2;
     const urls = [];
 
     for (let i = 0; i < Math.min(MAX_PRODUCTS, list.length); i++) {
@@ -21,6 +26,14 @@
       if (!/^https?:\/\//i.test(url) && !/^data:/i.test(url) && !/^blob:/i.test(url)) {
         url = url.startsWith('/') ? `${window.location.origin}${url}` : `${window.location.origin}/${url}`;
       }
+      try {
+        url = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(url, {
+          width: 360,
+          quality: 68,
+          output: 'webp',
+          fit: 'inside'
+        }) || url;
+      } catch {}
       if (!preloadedImages.has(url)) urls.push(url);
     }
 
@@ -57,8 +70,8 @@
       pump();
     };
 
-    if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1200 });
-    else setTimeout(run, 0);
+    if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2500 });
+    else setTimeout(run, 1200);
   }
 
   window.__SS_MEDIA_RUNTIME__ = { preloadProductImages };

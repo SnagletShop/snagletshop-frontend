@@ -9,6 +9,13 @@
     <meta name="referrer" content="no-referrer">
     <base href="/">
 
+    <link rel="preconnect" href="https://api.snagletshop.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//js.stripe.com">
+    <link rel="dns-prefetch" href="//challenges.cloudflare.com">
+
     <script>
         (function () {
             var THEME_STORAGE_KEY = 'themeMode';
@@ -43,13 +50,10 @@
     </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Afacad&display=swap" rel="stylesheet">
-    <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/Logo_I.png"
-        type="image/png">
-    <link rel="icon" href="https://raw.githubusercontent.com/SnagletShop/snagletshop-frontend/main/favicon.png"
-        type="image/png">
+    <link rel="icon" href="favicon.png" type="image/png">
 
     <title>SnagletShop</title>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="src/app/boot.js" defer></script>
     <script src="src/core/config.js" defer></script>
     <script src="src/core/storage.js" defer></script>
@@ -135,11 +139,12 @@
     <script src="src/app/startup.js" defer></script>
     <script src="script.js" defer></script>
     <script src="src/app/lifecycle/teardown.js" defer></script>
-    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://js.stripe.com/v3/" async></script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet"></noscript>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js" async></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link id="appBootLoaderStyles" rel="stylesheet" href="src/styles/app.css">

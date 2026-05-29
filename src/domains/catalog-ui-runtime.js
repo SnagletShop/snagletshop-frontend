@@ -407,11 +407,12 @@
         }
       }
       try { api.setupSortDropdown(ctx, sortBy); } catch (e) { console.warn('Sort dropdown setup failed:', e); }
-      productList.forEach(product => {
+      productList.forEach((product, index) => {
         if (!product?.name) return;
         ctx.setCartItemQty?.(product.name, 1);
         const resolvedPrice = resolvePrice(product);
         const productDiv = ctx.createProductCard?.(product, {
+          imagePriority: index < 8,
           displayName: (ctx.getABProductName?.(product) || product.name),
           displayDescription: ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
           priceValue: resolvedPrice,
