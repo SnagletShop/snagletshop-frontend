@@ -136,14 +136,14 @@ function searchProducts(forcedQuery = null) {
                 const img = document.createElement('img');
                 img.className = 'Clickable_Image';
                 const thumbnailSrc = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(resolvedImage, {
-                    width: 360,
-                    quality: 68,
+                    width: 280,
+                    quality: 64,
                     output: 'webp',
                     fit: 'inside'
                 }) || resolvedImage;
                 const thumbnailSrcSet = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildThumbnailSrcSet?.(resolvedImage, {
-                    width: 360,
-                    quality: 68,
+                    width: 280,
+                    quality: 64,
                     output: 'webp',
                     fit: 'inside'
                 }) || '';

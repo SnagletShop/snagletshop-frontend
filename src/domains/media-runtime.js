@@ -28,8 +28,8 @@
       }
       try {
         url = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(url, {
-          width: 360,
-          quality: 68,
+          width: 280,
+          quality: 64,
           output: 'webp',
           fit: 'inside'
         }) || url;

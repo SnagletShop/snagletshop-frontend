@@ -413,6 +413,8 @@
         const resolvedPrice = resolvePrice(product);
         const productDiv = ctx.createProductCard?.(product, {
           imagePriority: index < 8,
+          thumbnailWidth: 280,
+          thumbnailQuality: 64,
           displayName: (ctx.getABProductName?.(product) || product.name),
           displayDescription: ((ctx.getABProductDescription?.(product) || product.description) || ctx.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER),
           priceValue: resolvedPrice,

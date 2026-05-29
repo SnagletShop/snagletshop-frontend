@@ -290,18 +290,19 @@
     const resolvedPrice = getResolvedPrice(product, opts);
     const imageIsPriority = opts.imagePriority === true || opts.eagerImage === true;
     const originalImage = product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || (Array.isArray(product?.imagesB) ? product.imagesB[0] : '') || '';
-    const thumbnailWidth = Number(opts.thumbnailWidth || opts.imageWidth || 360) || 360;
+    const thumbnailWidth = Number(opts.thumbnailWidth || opts.imageWidth || 280) || 280;
+    const thumbnailQuality = Number(opts.thumbnailQuality || 64) || 64;
     const imageRuntime = getImageRuntime();
     const thumbnailSrc = imageRuntime?.buildResizedImageUrl?.(originalImage, {
       width: thumbnailWidth,
-      quality: Number(opts.thumbnailQuality || 68) || 68,
+      quality: thumbnailQuality,
       output: 'webp',
       fit: 'inside'
     }) || originalImage;
     img.src = thumbnailSrc;
     const srcset = imageRuntime?.buildThumbnailSrcSet?.(originalImage, {
       width: thumbnailWidth,
-      quality: Number(opts.thumbnailQuality || 68) || 68,
+      quality: thumbnailQuality,
       output: 'webp',
       fit: 'inside'
     }) || '';

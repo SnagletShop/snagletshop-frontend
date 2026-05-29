@@ -64,6 +64,49 @@ function __ssHideProductPageSkeleton() {
     try { document.getElementById('ProductPageSkeleton')?.remove(); } catch {}
 }
 
+function __ssBuildPdpThumbnailUrl(src) {
+    return window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(src, {
+        width: 96,
+        height: 96,
+        quality: 38,
+        output: "webp",
+        fit: "cover"
+    }) || src;
+}
+
+function __ssBuildPdpThumbnailSrcSet(src) {
+    return window.__SS_CATALOG_IMAGE_RUNTIME__?.buildThumbnailSrcSet?.(src, {
+        width: 96,
+        height: 96,
+        quality: 38,
+        output: "webp",
+        fit: "cover"
+    }) || "";
+}
+
+function __ssPreloadPdpThumbnails(imageUrls, timeoutMs = 900) {
+    const urls = (Array.isArray(imageUrls) ? imageUrls : [])
+        .map((src) => __ssBuildPdpThumbnailUrl(src))
+        .filter(Boolean)
+        .slice(0, 10);
+    if (!urls.length) return Promise.resolve();
+
+    const loads = urls.map((src) => new Promise((resolve) => {
+        const img = new Image();
+        const done = () => resolve(src);
+        img.onload = done;
+        img.onerror = done;
+        img.decoding = "async";
+        try { img.fetchPriority = "low"; } catch {}
+        img.src = src;
+    }));
+
+    return Promise.race([
+        Promise.allSettled(loads),
+        new Promise((resolve) => setTimeout(resolve, Math.max(250, Number(timeoutMs) || 900)))
+    ]);
+}
+
 function __ssGetProductOptionsApi() {
     return window.__SS_PRODUCT_OPTIONS__ || null;
 }
@@ -1293,7 +1336,9 @@ function GoToProductPage(productName, productPrice, productDescription) {
     }
 
     const fastImages = __ssImagesForViewer.length ? __ssImagesForViewer : ['/favicon.png'];
-    renderProductPage(product, fastImages, productName, productPrice, productDescription);
+    __ssPreloadPdpThumbnails(fastImages)
+        .catch(() => {})
+        .then(() => renderProductPage(product, fastImages, productName, productPrice, productDescription));
 }
 
 function renderProductPage(product, validImages, productName, productPrice, productDescription) {
@@ -1405,20 +1450,8 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     (window.currentProductImages || []).forEach((src, idx) => {
         const t = document.createElement("img");
         t.className = `Thumbnail${idx === window.currentProductImageIndex ? " active" : ""}`;
-        const thumbnailSrc = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildResizedImageUrl?.(src, {
-            width: 112,
-            height: 112,
-            quality: 62,
-            output: "webp",
-            fit: "cover"
-        }) || src;
-        const thumbnailSrcSet = window.__SS_CATALOG_IMAGE_RUNTIME__?.buildThumbnailSrcSet?.(src, {
-            width: 112,
-            height: 112,
-            quality: 62,
-            output: "webp",
-            fit: "cover"
-        }) || "";
+        const thumbnailSrc = __ssBuildPdpThumbnailUrl(src);
+        const thumbnailSrcSet = __ssBuildPdpThumbnailSrcSet(src);
         t.src = thumbnailSrc;
         if (thumbnailSrcSet && thumbnailSrcSet !== thumbnailSrc) t.srcset = thumbnailSrcSet;
         t.dataset.fullSrc = src;
