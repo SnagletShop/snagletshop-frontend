@@ -64,6 +64,89 @@ function __ssHideProductPageSkeleton() {
     try { document.getElementById('ProductPageSkeleton')?.remove(); } catch {}
 }
 
+function __ssGetWindowScrollY() {
+    return Math.max(0, Number(window.scrollY || window.pageYOffset || document.documentElement?.scrollTop || document.body?.scrollTop || 0) || 0);
+}
+
+function __ssGetWindowScrollX() {
+    return Math.max(0, Number(window.scrollX || window.pageXOffset || document.documentElement?.scrollLeft || document.body?.scrollLeft || 0) || 0);
+}
+
+function __ssCaptureProductPageScrollPosition(userMoved = false, initialY = null) {
+    const y = __ssGetWindowScrollY();
+    return {
+        x: __ssGetWindowScrollX(),
+        y,
+        initialY: Number.isFinite(initialY) ? Math.max(0, Number(initialY) || 0) : y,
+        userMoved: !!userMoved
+    };
+}
+
+function __ssRestoreProductPageScrollPosition(state) {
+    if (!state || typeof window.scrollTo !== "function") return;
+    try {
+        const doc = document.documentElement;
+        const body = document.body;
+        const maxY = Math.max(0, Math.max(
+            body?.scrollHeight || 0,
+            doc?.scrollHeight || 0,
+            body?.offsetHeight || 0,
+            doc?.offsetHeight || 0
+        ) - (window.innerHeight || doc?.clientHeight || 0));
+        const targetY = Math.max(0, Math.min(Number(state.y || 0), maxY));
+        const targetX = Math.max(0, Number(state.x || 0));
+        window.scrollTo({ top: targetY, left: targetX, behavior: "auto" });
+        try { document.documentElement.scrollTop = targetY; } catch {}
+        try { document.body.scrollTop = targetY; } catch {}
+    } catch {}
+}
+
+function __ssStartProductSkeletonScrollTracking() {
+    try {
+        const initial = __ssCaptureProductPageScrollPosition(false);
+        const state = { initialY: initial.y, userMoved: false };
+        const markMoved = () => { state.userMoved = true; };
+        const markScroll = () => {
+            const y = __ssGetWindowScrollY();
+            if (Math.abs(y - state.initialY) > 8) state.userMoved = true;
+        };
+        const markKey = (event) => {
+            const key = String(event?.key || "");
+            if (["ArrowDown", "ArrowUp", "End", "Home", "PageDown", "PageUp", " ", "Spacebar"].includes(key)) {
+                state.userMoved = true;
+            }
+        };
+        window.addEventListener("scroll", markScroll, { passive: true });
+        window.addEventListener("wheel", markMoved, { passive: true });
+        window.addEventListener("touchmove", markMoved, { passive: true });
+        window.addEventListener("keydown", markKey);
+        return {
+            state,
+            cleanup() {
+                try { window.removeEventListener("scroll", markScroll); } catch {}
+                try { window.removeEventListener("wheel", markMoved); } catch {}
+                try { window.removeEventListener("touchmove", markMoved); } catch {}
+                try { window.removeEventListener("keydown", markKey); } catch {}
+            }
+        };
+    } catch {
+        return null;
+    }
+}
+
+function __ssFinishProductSkeletonScrollTracking(tracker) {
+    try {
+        if (!tracker) return __ssCaptureProductPageScrollPosition(false);
+        tracker.cleanup?.();
+        const currentY = __ssGetWindowScrollY();
+        const initialY = Math.max(0, Number(tracker.state?.initialY || 0) || 0);
+        const userMoved = !!tracker.state?.userMoved || Math.abs(currentY - initialY) > 8;
+        return __ssCaptureProductPageScrollPosition(userMoved, initialY);
+    } catch {
+        return __ssCaptureProductPageScrollPosition(false);
+    }
+}
+
 function __ssWaitForProductPageSkeletonPaint() {
     return new Promise((resolve) => {
         try {
@@ -1317,6 +1400,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     try { window.__ssPrimePriceCacheFromDom?.(viewer); } catch {}
     try { if (typeof window.__ssShowProductPageSkeleton === 'function') window.__ssShowProductPageSkeleton(); } catch {}
     try { if (typeof window.__ssScrollToTopForProductSkeleton === 'function') window.__ssScrollToTopForProductSkeleton(); } catch {}
+    const __ssSkeletonScrollTracker = __ssStartProductSkeletonScrollTracking();
     try { removeSortContainer(); } catch { }
 
     const __pidArg = String(arguments[4] || "").trim();
@@ -1355,6 +1439,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     const __ssImagesForViewer = __ssGetProductImageCandidates(product, __imgArg);
     if (!product) {
         console.error("❌ Product not found:", productName, __pidArg);
+        try { __ssFinishProductSkeletonScrollTracking(__ssSkeletonScrollTracker); } catch {}
         try { if (typeof window.__ssHideProductPageSkeleton === 'function') window.__ssHideProductPageSkeleton(); } catch {}
         return;
     }
@@ -1363,12 +1448,19 @@ function GoToProductPage(productName, productPrice, productDescription) {
     __ssWaitForProductPageSkeletonPaint()
         .then(() => __ssPreloadPdpThumbnails(fastImages))
         .catch(() => {})
-        .then(() => renderProductPage(product, fastImages, productName, productPrice, productDescription));
+        .then(() => {
+            const scrollState = __ssFinishProductSkeletonScrollTracking(__ssSkeletonScrollTracker);
+            renderProductPage(product, fastImages, productName, productPrice, productDescription, {
+                preserveScroll: !!scrollState?.userMoved,
+                scrollState
+            });
+        });
 }
 
-function renderProductPage(product, validImages, productName, productPrice, productDescription) {
+function renderProductPage(product, validImages, productName, productPrice, productDescription, options = {}) {
     const viewer = document.getElementById("Viewer");
     if (!viewer) return;
+    const preserveSkeletonScroll = options?.preserveScroll === true && !!options?.scrollState;
 
     const previousProductId = String(window.__ssCurrentProductId || '').trim();
     const previousImageSrc = __ssNormalizePdpImageUrl(document.getElementById("mainImage")?.src || '');
@@ -1796,6 +1888,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
         Promise.resolve(window.__SS_PRODUCT_REVIEWS__?.mount?.(reviewsSection, { product, mode: 'public' })).catch(() => {});
     } catch {}
     try { viewer.replaceChildren(Product_Viewer); } catch { viewer.innerHTML = ''; viewer.appendChild(Product_Viewer); }
+    if (preserveSkeletonScroll) __ssRestoreProductPageScrollPosition(options.scrollState);
 
     // Ensure product.productId is sane for recommendations + discount matching
     try {
@@ -1841,12 +1934,19 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     } catch { }
 
     try {
-        const __isPhoneAfterRender = !!(window.matchMedia && window.matchMedia("(max-width: 680px)").matches);
-        __ssScrollToTopForProductOpen(__isPhoneAfterRender ? "auto" : "smooth");
-        if (__isPhoneAfterRender) {
+        if (preserveSkeletonScroll) {
             requestAnimationFrame(() => {
-                requestAnimationFrame(() => __ssScrollToTopForProductOpen("auto"));
+                __ssRestoreProductPageScrollPosition(options.scrollState);
+                requestAnimationFrame(() => __ssRestoreProductPageScrollPosition(options.scrollState));
             });
+        } else {
+            const __isPhoneAfterRender = !!(window.matchMedia && window.matchMedia("(max-width: 680px)").matches);
+            __ssScrollToTopForProductOpen(__isPhoneAfterRender ? "auto" : "smooth");
+            if (__isPhoneAfterRender) {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => __ssScrollToTopForProductOpen("auto"));
+                });
+            }
         }
     } catch { }
     try { updateAllPrices(); } catch { }
