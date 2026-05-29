@@ -315,6 +315,9 @@
     img.dataset.price = String(resolvedPrice || '');
     img.dataset.imageurl = originalImage;
     img.dataset.description = opts.displayDescription || product?.description || window.TEXTS?.PRODUCT_SECTION?.DESCRIPTION_PLACEHOLDER || '';
+    img.addEventListener('load', () => {
+      try { window.__SS_MEDIA_RUNTIME__?.rememberImageElement?.(img, [thumbnailSrc]); } catch {}
+    });
     img.addEventListener('error', () => {
       if (!originalImage || img.src === originalImage) return;
       img.removeAttribute('srcset');
