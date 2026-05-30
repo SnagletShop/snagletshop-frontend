@@ -214,6 +214,53 @@ function __ssPreloadPdpThumbnails(imageUrls, timeoutMs = 5000) {
     ]);
 }
 
+let __ssProductPageRenderSequence = 0;
+let __ssActiveProductPageRenderToken = null;
+let __ssProductRouteCancelBound = false;
+
+function __ssBeginProductPageRender(productName = '', productId = '') {
+    const token = {
+        seq: ++__ssProductPageRenderSequence,
+        productName: String(productName || '').trim(),
+        productId: String(productId || '').trim(),
+        cancelled: false
+    };
+    __ssActiveProductPageRenderToken = token;
+    try { window.__ssActiveProductPageRenderSeq = token.seq; } catch {}
+    return token;
+}
+
+function __ssCancelPendingProductPageRender() {
+    __ssProductPageRenderSequence += 1;
+    if (__ssActiveProductPageRenderToken) __ssActiveProductPageRenderToken.cancelled = true;
+    __ssActiveProductPageRenderToken = null;
+    try { window.__ssActiveProductPageRenderSeq = __ssProductPageRenderSequence; } catch {}
+}
+
+function __ssIsProductPageRenderCurrent(token) {
+    if (!token || token.cancelled) return false;
+    if (__ssActiveProductPageRenderToken !== token) return false;
+    if (Number(window.__ssActiveProductPageRenderSeq || 0) !== Number(token.seq || 0)) return false;
+    try {
+        const activeScreen = String(window.__SS_SCREENS__?.getActive?.()?.name || '').trim();
+        if (activeScreen && activeScreen !== 'product') return false;
+    } catch {}
+    return !!document.getElementById('Viewer');
+}
+
+function __ssBindProductRouteCancellation() {
+    if (__ssProductRouteCancelBound) return;
+    const app = window.__SS_APP__;
+    if (!app || typeof app.on !== 'function') return;
+    __ssProductRouteCancelBound = true;
+    try {
+        app.on('router:before-dispatch', ({ action } = {}) => {
+            const nextAction = String(action || '').trim();
+            if (nextAction && nextAction !== 'GoToProductPage') __ssCancelPendingProductPageRender();
+        });
+    } catch {}
+}
+
 function __ssGetProductOptionsApi() {
     return window.__SS_PRODUCT_OPTIONS__ || null;
 }
@@ -1359,6 +1406,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
         window.__ssSuppressNextProductRerender = false;
         return;
     }
+    const __ssRenderToken = __ssBeginProductPageRender(productName, incomingPidArg);
     window.__ssSuppressNextProductRerender = false;
     __ssCloseProductImageExperience({ force: true, fromHistory: true });
     console.log("Product clicked:", productName);
@@ -1439,6 +1487,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
     const __ssImagesForViewer = __ssGetProductImageCandidates(product, __imgArg);
     if (!product) {
         console.error("❌ Product not found:", productName, __pidArg);
+        __ssCancelPendingProductPageRender();
         try { __ssFinishProductSkeletonScrollTracking(__ssSkeletonScrollTracker); } catch {}
         try { if (typeof window.__ssHideProductPageSkeleton === 'function') window.__ssHideProductPageSkeleton(); } catch {}
         return;
@@ -1449,10 +1498,16 @@ function GoToProductPage(productName, productPrice, productDescription) {
         .then(() => __ssPreloadPdpThumbnails(fastImages))
         .catch(() => {})
         .then(() => {
+            if (!__ssIsProductPageRenderCurrent(__ssRenderToken)) {
+                try { __ssFinishProductSkeletonScrollTracking(__ssSkeletonScrollTracker); } catch {}
+                return;
+            }
             const scrollState = __ssFinishProductSkeletonScrollTracking(__ssSkeletonScrollTracker);
+            if (!__ssIsProductPageRenderCurrent(__ssRenderToken)) return;
             renderProductPage(product, fastImages, productName, productPrice, productDescription, {
                 preserveScroll: !!scrollState?.userMoved,
-                scrollState
+                scrollState,
+                renderToken: __ssRenderToken
             });
         });
 }
@@ -1460,6 +1515,7 @@ function GoToProductPage(productName, productPrice, productDescription) {
 function renderProductPage(product, validImages, productName, productPrice, productDescription, options = {}) {
     const viewer = document.getElementById("Viewer");
     if (!viewer) return;
+    if (options?.renderToken && !__ssIsProductPageRenderCurrent(options.renderToken)) return;
     const preserveSkeletonScroll = options?.preserveScroll === true && !!options?.scrollState;
 
     const previousProductId = String(window.__ssCurrentProductId || '').trim();
@@ -1887,6 +1943,7 @@ function renderProductPage(product, validImages, productName, productPrice, prod
         Product_Viewer.appendChild(reviewsSection);
         Promise.resolve(window.__SS_PRODUCT_REVIEWS__?.mount?.(reviewsSection, { product, mode: 'public' })).catch(() => {});
     } catch {}
+    if (options?.renderToken && !__ssIsProductPageRenderCurrent(options.renderToken)) return;
     try { viewer.replaceChildren(Product_Viewer); } catch { viewer.innerHTML = ''; viewer.appendChild(Product_Viewer); }
     if (preserveSkeletonScroll) __ssRestoreProductPageScrollPosition(options.scrollState);
 
@@ -1905,6 +1962,9 @@ function renderProductPage(product, validImages, productName, productPrice, prod
         try {
             setTimeout(() => {
                 try {
+                    const activeScreen = String(window.__SS_SCREENS__?.getActive?.()?.name || '').trim();
+                    if (activeScreen && activeScreen !== 'product') return;
+                    if (!document.getElementById("Product_Viewer")) return;
                     if (document.getElementById("RecoSection")) return;
                     const renderReco = window.__SS_RECOMMENDATIONS__?.__ssRecoRenderForProduct || window.__ssRecoRenderForProduct;
                     if (typeof renderReco === "function") renderReco(product);
@@ -1969,22 +2029,26 @@ function renderProductPage(product, validImages, productName, productPrice, prod
     window.__ssBuildProductPageSkeletonHtml = __ssBuildProductPageSkeletonHtml;
     window.__ssShowProductPageSkeleton = __ssShowProductPageSkeleton;
     window.__ssHideProductPageSkeleton = __ssHideProductPageSkeleton;
+    window.__ssCancelPendingProductPageRender = __ssCancelPendingProductPageRender;
     window.handleSwipeGesture = handleSwipeGesture;
     window.nextImage = nextImage;
     window.prevImage = prevImage;
   } catch {}
 
-  window.__SS_PRODUCT__ = {
+  const api = {
     buyNow,
     updateImage,
     nextImage,
     prevImage,
     GoToProductPage,
     renderProductPage,
+    cancelPendingProductRender: __ssCancelPendingProductPageRender,
     __ssResolveProductForPdp,
     __ssBuildProductPageSkeletonHtml,
     __ssShowProductPageSkeleton,
     __ssHideProductPageSkeleton,
     handleSwipeGesture
   };
+  try { window.__SS_RESOLVE__?.expose?.('domain.product', api, ['__SS_PRODUCT__']); } catch { window.__SS_PRODUCT__ = api; }
+  __ssBindProductRouteCancellation();
 })(window, document);

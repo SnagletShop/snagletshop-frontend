@@ -194,7 +194,7 @@ function detectUserCurrency() {
             } catch { }
         });
 }
-  window.__SS_PRICING__ = {
+  const api = {
     fetchTariffsFromServer,
     fetchCountriesFromServer,
     fetchStorefrontConfigFromServer,
@@ -203,4 +203,5 @@ function detectUserCurrency() {
     handleCurrencyChange,
     detectUserCurrency
   };
+  try { window.__SS_RESOLVE__?.expose?.('domain.pricing', api, ['__SS_PRICING__']); } catch { window.__SS_PRICING__ = api; }
 })(window);

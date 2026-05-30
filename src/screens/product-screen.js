@@ -9,7 +9,10 @@
     const data = Array.isArray(payload?.data) ? payload.data : [];
     const product = getResolver()?.resolve?.('domain.product', window.__SS_PRODUCT__ || null);
     if (typeof product?.GoToProductPage === 'function') product.GoToProductPage(data[0], data[1], data[2], data[3], data[4], data[5]);
-    return function cleanupProductScreen() {};
+    return function cleanupProductScreen() {
+      try { product?.cancelPendingProductRender?.(); } catch {}
+      try { window.__ssCancelPendingProductPageRender?.(); } catch {}
+    };
   }
 
   getScreens()?.register?.('product', mount);

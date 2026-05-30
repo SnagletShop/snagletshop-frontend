@@ -43,5 +43,22 @@
     AF:'Afghanistan', AL:'Albania', DZ:'Algeria', AD:'Andorra', AO:'Angola', AG:'Antigua and Barbuda', AM:'Armenia', AZ:'Azerbaijan', BS:'Bahamas', BH:'Bahrain', BB:'Barbados', BY:'Belarus',
     BZ:'Belize', BJ:'Benin', BT:'Bhutan', BO:'Bolivia', BA:'Bosnia and Herzegovina', BW:'Botswana', BN:'Brunei', BF:'Burkina Faso', BI:'Burundi', KH:'Cambodia', CM:'Cameroon', CV:'Cape Verde', CF:'Central African Republic', TD:'Chad', KM:'Comoros', CG:'Congo', CR:'Costa Rica', CI:'Côte d’Ivoire', HR:'Croatia', CU:'Cuba', CY:'Cyprus', DJ:'Djibouti', DM:'Dominica', EC:'Ecuador', SV:'El Salvador', GQ:'Equatorial Guinea', ER:'Eritrea', SZ:'Eswatini', ET:'Ethiopia', GA:'Gabon', GM:'Gambia', GE:'Georgia', GD:'Grenada', GT:'Guatemala', GN:'Guinea', GW:'Guinea-Bissau', GY:'Guyana', HT:'Haiti', HN:'Honduras', IS:'Iceland', IQ:'Iraq', JO:'Jordan', KZ:'Kazakhstan', KI:'Kiribati', XK:'Kosovo', KW:'Kuwait', KG:'Kyrgyzstan', LA:'Laos', LB:'Lebanon', LS:'Lesotho', LR:'Liberia', LY:'Libya', LI:'Liechtenstein', LU:'Luxembourg', MG:'Madagascar', MW:'Malawi', MV:'Maldives', ML:'Mali', MT:'Malta', MH:'Marshall Islands', MR:'Mauritania', MU:'Mauritius', FM:'Micronesia', MD:'Moldova', MC:'Monaco', MN:'Mongolia', ME:'Montenegro', MA:'Morocco', MZ:'Mozambique', MM:'Myanmar', NA:'Namibia', NR:'Nauru', NP:'Nepal', NI:'Nicaragua', NE:'Niger', MK:'North Macedonia', OM:'Oman', PW:'Palau', PA:'Panama', PY:'Paraguay', QA:'Qatar', RW:'Rwanda', KN:'Saint Kitts and Nevis', LC:'Saint Lucia', VC:'Saint Vincent and the Grenadines', WS:'Samoa', SM:'San Marino', ST:'Sao Tome and Principe', SN:'Senegal', RS:'Serbia', SC:'Seychelles', SL:'Sierra Leone', SG:'Singapore', SB:'Solomon Islands', SO:'Somalia', SS:'South Sudan', LK:'Sri Lanka', SD:'Sudan', SR:'Suriname', CH:'Switzerland', SY:'Syria', TJ:'Tajikistan', TL:'Timor-Leste', TG:'Togo', TO:'Tonga', TT:'Trinidad and Tobago', TN:'Tunisia', TM:'Turkmenistan', TV:'Tuvalu', UG:'Uganda', UY:'Uruguay', UZ:'Uzbekistan', VU:'Vanuatu', VA:'Vatican City', YE:'Yemen', ZM:'Zambia', ZW:'Zimbabwe'
   };
+  Object.assign(countryNames, {
+    AI:'Anguilla', AQ:'Antarctica', AS:'American Samoa', AW:'Aruba', AX:'Aland Islands',
+    BL:'Saint Barthelemy', BM:'Bermuda', BQ:'Caribbean Netherlands', BV:'Bouvet Island',
+    CC:'Cocos (Keeling) Islands', CD:'Congo - Kinshasa', CK:'Cook Islands', CW:'Curacao',
+    CX:'Christmas Island', EH:'Western Sahara', FK:'Falkland Islands', FO:'Faroe Islands',
+    GF:'French Guiana', GG:'Guernsey', GI:'Gibraltar', GL:'Greenland', GP:'Guadeloupe',
+    GS:'South Georgia and the South Sandwich Islands', GU:'Guam', HK:'Hong Kong',
+    HM:'Heard Island and McDonald Islands', IM:'Isle of Man', IO:'British Indian Ocean Territory',
+    JE:'Jersey', KP:'North Korea', KY:'Cayman Islands', MF:'Saint Martin', MO:'Macao',
+    MP:'Northern Mariana Islands', MQ:'Martinique', MS:'Montserrat', NC:'New Caledonia',
+    NF:'Norfolk Island', NU:'Niue', PF:'French Polynesia', PM:'Saint Pierre and Miquelon',
+    PN:'Pitcairn Islands', PR:'Puerto Rico', PS:'Palestinian Territories', RE:'Reunion',
+    SH:'Saint Helena', SJ:'Svalbard and Jan Mayen', SX:'Sint Maarten',
+    TC:'Turks and Caicos Islands', TF:'French Southern Territories', TK:'Tokelau',
+    TW:'Taiwan', UM:'United States Minor Outlying Islands', VG:'British Virgin Islands',
+    VI:'U.S. Virgin Islands', WF:'Wallis and Futuna', YT:'Mayotte'
+  });
   window.__SS_SHARED_DATA__ = { TEXTS, countryToCurrency, countryNames };
 })(window);

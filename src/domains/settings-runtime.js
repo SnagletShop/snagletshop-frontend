@@ -855,11 +855,14 @@
       });
     };
 
-    const focusActiveSearch = () => {
+    const focusActiveSearch = ({ caretPosition } = {}) => {
       if (!state.activePanel) return;
       const input = modal.querySelector(`.ss-desktop-region-field[data-kind="${state.activePanel}"] [data-search-kind="${state.activePanel}"]`);
+      if (!input) return;
       try { input?.focus({ preventScroll: true }); } catch { try { input?.focus(); } catch { } }
-      try { input?.select?.(); } catch { }
+      const valueLength = String(input.value || '').length;
+      const nextCaret = Number.isFinite(caretPosition) ? Math.max(0, Math.min(caretPosition, valueLength)) : valueLength;
+      try { input.setSelectionRange?.(nextCaret, nextCaret); } catch { }
     };
 
     const positionPopup = () => {
@@ -965,6 +968,12 @@
 
     nativeSelect.addEventListener('change', () => syncDesktopRegionLauncher({ currency: nativeSelect.value }));
     modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeModal();
+        return;
+      }
       const trigger = event.target.closest('[data-trigger]');
       if (trigger) {
         const nextPanel = String(trigger.dataset.trigger || '');
@@ -1004,14 +1013,20 @@
       const search = event.target.closest('[data-search-kind]');
       if (!search) return;
       const kind = String(search.dataset.searchKind || '');
+      const caretPosition = typeof search.selectionStart === 'number' ? search.selectionStart : String(search.value || '').length;
       if (kind === 'country') state.countryQuery = search.value || '';
       if (kind === 'currency') state.currencyQuery = search.value || '';
       renderPanels();
-      requestAnimationFrame(focusActiveSearch);
+      requestAnimationFrame(() => focusActiveSearch({ caretPosition }));
     });
 
     document.addEventListener('mousedown', (event) => {
       if (!state.open) return;
+      if (event.target === modal) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (event.target.closest('#desktopRegionLauncher')) return;
       if (event.target.closest('#ssDesktopRegionModal .ss-desktop-region-modal__dialog')) return;
       closeModal();

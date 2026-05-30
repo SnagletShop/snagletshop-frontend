@@ -12419,7 +12419,7 @@ body.ss-pdp-lightbox-open {
         inset: 0;
         z-index: 2200;
         display: none;
-        pointer-events: none;
+        pointer-events: auto;
         padding: 0;
     }
 
@@ -12542,11 +12542,7 @@ body.ss-pdp-lightbox-open {
 
     .ss-desktop-region-field__panel {
         display: none;
-        position: absolute;
-        top: calc(100% + 10px);
-        left: 0;
-        right: 0;
-        z-index: 4;
+        margin-top: 10px;
         padding: 14px;
         border: 1px solid color-mix(in srgb, var(--Borders_Colour) 64%, transparent);
         border-radius: 20px;
@@ -15879,5 +15875,77 @@ body.ss-pdp-lightbox-open {
         min-height: 11.667vw !important;
         border-radius: 999vw !important;
         background: color-mix(in srgb, var(--SearchBar_Background_Colour) 94%, var(--body_Background_Colour)) !important;
+    }
+}
+
+@media (min-width: 681px) {
+    #Viewer>#Product_Viewer,
+    .Product_Viewer {
+        width: min(1300px, calc(100vw - 48px)) !important;
+        max-width: calc(100vw - 48px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box !important;
+        padding-left: clamp(24px, 4vw, 80px) !important;
+        padding-right: clamp(24px, 4vw, 80px) !important;
+    }
+
+    .Product_Detail_Page .Product_Details {
+        display: grid !important;
+        grid-template-columns: minmax(420px, 620px) minmax(0, 520px) !important;
+        justify-content: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: clamp(24px, 3vw, 40px) !important;
+        box-sizing: border-box !important;
+    }
+
+    .Product_Detail_Page .Product_Images,
+    .Product_Detail_Page .Product_Info {
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .Product_Detail_Page .Product_Images {
+        width: 100% !important;
+        max-width: 620px !important;
+        flex: 0 1 620px !important;
+    }
+
+    .Product_Detail_Page .Product_Info {
+        width: 100% !important;
+        max-width: 520px !important;
+        flex: 1 1 auto !important;
+    }
+
+    .Product_Detail_Page .ImageControl {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 620px !important;
+        grid-template-columns: 48px minmax(0, 500px) 48px !important;
+        box-sizing: border-box !important;
+    }
+
+    .Product_Detail_Page .image-slider-wrapper {
+        width: min(500px, 100%) !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1 !important;
+    }
+
+    .Product_Detail_Page .ProductPageQuantityContainer {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+}
+
+@media (min-width: 681px) and (max-width: 1100px) {
+    .Product_Detail_Page .Product_Details {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .Product_Detail_Page .Product_Images,
+    .Product_Detail_Page .Product_Info {
+        justify-self: center !important;
     }
 }
